@@ -45,6 +45,7 @@ var _grid_player: Array[UnitState] = []
 var _grid_enemy: Array[UnitState] = []
 
 var _hand: Array[Dictionary] = []
+var _hand_ids: Array[String] = []
 
 var _lbl_state: Label
 var _lbl_toast: Label
@@ -136,7 +137,12 @@ func _start_turn() -> void:
 		_enemy_play()
 
 func _draw_new_hand() -> void:
-	_hand = UnitDatabase.random_units(5, _rng)
+	_hand.clear()
+	_hand_ids = Array(GameState.active_team, TYPE_STRING, "", null)
+	for id in _hand_ids:
+		var defn := UnitDatabase.get_unit(id)
+		if not defn.is_empty():
+			_hand.append(defn)
 	_refresh_hand_ui()
 
 func _refresh_hand_ui() -> void:
@@ -253,6 +259,7 @@ func _check_end() -> bool:
 	if _player_core_hp <= 0 or _enemy_core_hp <= 0:
 		_finish_match()
 		return true
+	# Exhaustion deadlock prevention: no active units + no playable hand
 	if _no_units(_grid_player) and _hand.is_empty():
 		_finish_match()
 		return true

@@ -33,11 +33,29 @@ func _show_hub() -> void:
 	hub.open_team.connect(_on_open_team)
 	hub.back_to_title.connect(_show_title)
 	_set_screen(hub)
+	if not bool(GameState.progress.get("starter_chosen", false)):
+		_show_starter_choice()
 
 func _show_battle() -> void:
 	var battle := preload("res://Battle/BattleScreen.gd").new()
 	battle.exit_to_hub.connect(_show_hub)
 	_set_screen(battle)
+
+func _show_shop() -> void:
+	var shop := preload("res://Hub/ShopScreen.gd").new()
+	shop.back.connect(_show_hub)
+	_set_screen(shop)
+
+func _show_team() -> void:
+	var team := preload("res://Hub/TeamScreen.gd").new()
+	team.back.connect(_show_hub)
+	_set_screen(team)
+
+func _show_starter_choice() -> void:
+	var starter := preload("res://Hub/StarterChoiceScreen.gd").new()
+	starter.back.connect(_show_hub)
+	starter.starter_chosen.connect(_on_starter_chosen)
+	_set_screen(starter)
 
 func _on_start_new_game(slot: int) -> void:
 	SaveSystem.create_new_slot(slot)
@@ -58,8 +76,17 @@ func _on_open_battle() -> void:
 	_show_battle()
 
 func _on_open_shop() -> void:
-	EventBus.request_toast.emit("Shop (MVP) not wired yet.")
+	_show_shop()
 
 func _on_open_team() -> void:
-	EventBus.request_toast.emit("Team Manager (MVP) not wired yet.")
+	_show_team()
+
+func _on_starter_chosen(unit_id: String) -> void:
+	GameState.progress["starter_chosen"] = true
+	if GameState.active_team.is_empty():
+		# Starter rule: grant physical unit to battle, but do NOT grant blueprint.
+		GameState.active_team.append(unit_id)
+	if GameState.active_slot >= 1:
+		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
+	_show_hub()
 
