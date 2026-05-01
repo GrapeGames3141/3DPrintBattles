@@ -1,7 +1,7 @@
 [gd_project type="project" format=3]
 
 config/name="3D Print Battles"
-config/features=PackedStringArray("4.0")
+config/features=PackedStringArray("4.3")
 run/main_scene="res://Main.tscn"
 config/icon="res://icon.svg"
 

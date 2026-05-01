@@ -31,10 +31,10 @@ func load_slot(slot: int) -> Dictionary:
 	var err := json.parse(text)
 	if err != OK:
 		return {}
-	var data = json.data
-	if typeof(data) != TYPE_DICTIONARY:
+	var raw: Variant = json.data
+	if typeof(raw) != TYPE_DICTIONARY:
 		return {}
-	return data
+	return raw as Dictionary
 
 func write_slot(slot: int, data: Dictionary) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVE_DIR))

@@ -18,14 +18,16 @@ func load_units(path: String) -> void:
 	if err != OK:
 		push_error("Failed parsing units.json: %s" % json.get_error_message())
 		return
-	var data = json.data
-	if typeof(data) != TYPE_ARRAY:
+	var raw: Variant = json.data
+	if typeof(raw) != TYPE_ARRAY:
 		push_error("units.json must be an array of unit objects")
 		return
-	for item in data:
-		if typeof(item) != TYPE_DICTIONARY:
+	var rows: Array = raw as Array
+	for item_raw in rows:
+		if typeof(item_raw) != TYPE_DICTIONARY:
 			continue
-		var id := str(item.get("id", ""))
+		var item: Dictionary = item_raw as Dictionary
+		var id: String = str(item.get("id", ""))
 		if id == "":
 			continue
 		units_by_id[id] = item

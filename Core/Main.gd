@@ -22,14 +22,14 @@ func _set_screen(screen: Node) -> void:
 	add_child(_current)
 
 func _show_title() -> void:
-	var title = TITLE_SCENE.instantiate()
+	var title: Control = TITLE_SCENE.instantiate() as Control
 	title.start_new_game.connect(_on_start_new_game)
 	title.continue_game.connect(_on_continue_game)
 	title.delete_slot.connect(_on_delete_slot)
 	_set_screen(title)
 
 func _show_hub() -> void:
-	var hub := preload("res://Hub/HubScreen.gd").new()
+	var hub: Control = preload("res://Hub/HubScreen.gd").new() as Control
 	hub.open_battle.connect(_on_open_battle)
 	hub.open_shop.connect(_on_open_shop)
 	hub.open_team.connect(_on_open_team)
@@ -39,22 +39,22 @@ func _show_hub() -> void:
 		_show_starter_choice()
 
 func _show_battle() -> void:
-	var battle := preload("res://Battle/BattleScreen.gd").new()
+	var battle: Control = preload("res://Battle/BattleScreen.gd").new() as Control
 	battle.exit_to_hub.connect(_show_hub)
 	_set_screen(battle)
 
 func _show_shop() -> void:
-	var shop := preload("res://Hub/ShopScreen.gd").new()
+	var shop: Control = preload("res://Hub/ShopScreen.gd").new() as Control
 	shop.back.connect(_show_hub)
 	_set_screen(shop)
 
 func _show_team() -> void:
-	var team := preload("res://Hub/TeamScreen.gd").new()
+	var team: Control = preload("res://Hub/TeamScreen.gd").new() as Control
 	team.back.connect(_show_hub)
 	_set_screen(team)
 
 func _show_starter_choice() -> void:
-	var starter := preload("res://Hub/StarterChoiceScreen.gd").new()
+	var starter: Control = preload("res://Hub/StarterChoiceScreen.gd").new() as Control
 	starter.back.connect(_show_hub)
 	starter.starter_chosen.connect(_on_starter_chosen)
 	_set_screen(starter)

@@ -3,3 +3,6 @@
 
 # Imported assets (Godot regenerates from source)
 *.import
+
+# Local Godot 4.x script UIDs (optional; editor regenerates)
+*.uid

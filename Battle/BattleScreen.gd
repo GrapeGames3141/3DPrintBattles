@@ -168,13 +168,13 @@ func _ready() -> void:
 	_coin_flip_and_start()
 
 func _apply_touch_layout() -> void:
-	var s := get_viewport().get_visible_rect().size
-	var short_side := min(s.x, s.y)
-	if short_side < 720:
-		var sz := Vector2(180, 104)
-		for b in _player_grid_buttons:
+	var vp_size: Vector2 = get_viewport().get_visible_rect().size
+	var short_side: float = minf(vp_size.x, vp_size.y)
+	if short_side < 720.0:
+		var sz: Vector2 = Vector2(180, 104)
+		for b: Button in _player_grid_buttons:
 			b.custom_minimum_size = sz
-		for b in _enemy_grid_buttons:
+		for b: Button in _enemy_grid_buttons:
 			b.custom_minimum_size = sz
 
 func _apply_hit(attacker: UnitState, defender: UnitState) -> void:
@@ -239,8 +239,8 @@ func _coin_flip_and_start() -> void:
 	_start_turn()
 
 func _start_turn() -> void:
-	_player_filament = min(_player_filament + 1, _player_filament_max)
-	_enemy_filament = min(_enemy_filament + 1, _enemy_filament_max)
+	_player_filament = mini(_player_filament + 1, _player_filament_max)
+	_enemy_filament = mini(_enemy_filament + 1, _enemy_filament_max)
 	if _turn_owner == 0:
 		_reset_player_attack_targets()
 		_targeting_from_slot = -1
@@ -257,7 +257,7 @@ func _draw_new_hand() -> void:
 	_hand.clear()
 	_hand_ids = Array(GameState.active_team, TYPE_STRING, "", null)
 	for id in _hand_ids:
-		var defn := UnitDatabase.get_unit(id)
+		var defn: Dictionary = UnitDatabase.get_unit(id)
 		if not defn.is_empty():
 			_hand.append(defn)
 	if _hand.is_empty():
@@ -268,21 +268,22 @@ func _refresh_hand_ui() -> void:
 	for c in _player_hand_row.get_children():
 		c.queue_free()
 	for defn in _hand:
+		var row: Dictionary = defn
 		var b := Button.new()
-		var cost := int(defn.get("cost", 1))
-		b.text = "%s (C%d)" % [str(defn.get("name", "Unit")), cost]
-		b.pressed.connect(_try_summon_from_hand.bind(defn))
+		var cost: int = int(row.get("cost", 1))
+		b.text = "%s (C%d)" % [str(row.get("name", "Unit")), cost]
+		b.pressed.connect(_try_summon_from_hand.bind(row))
 		_player_hand_row.add_child(b)
 
 func _try_summon_from_hand(defn: Dictionary) -> void:
 	if _match_over or _turn_owner != 0:
 		_lbl_toast.text = "Wait your turn."
 		return
-	var cost := int(defn.get("cost", 1))
+	var cost: int = int(defn.get("cost", 1))
 	if cost > _player_filament:
 		_lbl_toast.text = "Not enough filament."
 		return
-	var empty := _first_empty_index(_grid_player)
+	var empty: int = _first_empty_index(_grid_player)
 	if empty < 0:
 		_lbl_toast.text = "No empty slot."
 		return
@@ -292,16 +293,17 @@ func _try_summon_from_hand(defn: Dictionary) -> void:
 	_refresh_ui()
 
 func _enemy_play() -> void:
-	var empty := _first_empty_index(_grid_enemy)
+	var empty: int = _first_empty_index(_grid_enemy)
 	if empty >= 0:
-		var candidates := UnitDatabase.random_units(6, _rng)
+		var candidates: Array[Dictionary] = UnitDatabase.random_units(6, _rng)
 		candidates.sort_custom(func(a, b): return int(a.get("cost", 1)) < int(b.get("cost", 1)))
 		for d in candidates:
-			var c := int(d.get("cost", 1))
+			var cand: Dictionary = d
+			var c: int = int(cand.get("cost", 1))
 			if c <= _enemy_filament:
 				_enemy_filament -= c
-				_grid_enemy[empty] = UnitState.new(d, 1, empty)
-				_lbl_toast.text = "Enemy printed %s." % str(d.get("name", "Unit"))
+				_grid_enemy[empty] = UnitState.new(cand, 1, empty)
+				_lbl_toast.text = "Enemy printed %s." % str(cand.get("name", "Unit"))
 				break
 	_refresh_ui()
 	_on_end_turn_pressed()
@@ -334,7 +336,7 @@ func _resolve_combat() -> void:
 		var u2: UnitState = _grid_player[i]
 		if u2 == null:
 			continue
-		var tgt := u2.attack_target
+		var tgt: int = u2.attack_target
 		if tgt == BattleResolver.TARGET_UNSET:
 			tgt = i
 		if tgt == BattleResolver.TARGET_CORE:
@@ -396,9 +398,10 @@ func _is_exhausted_player() -> bool:
 func _is_exhausted_enemy() -> bool:
 	if not _no_units(_grid_enemy):
 		return false
-	var cheapest := 9999
+	var cheapest: int = 9999
 	for d in UnitDatabase.units_array:
-		cheapest = min(cheapest, int(d.get("cost", 1)))
+		var ud: Dictionary = d
+		cheapest = mini(cheapest, int(ud.get("cost", 1)))
 	return _enemy_filament < cheapest
 
 func _has_playable_hand(hand: Array[Dictionary], filament: int, grid: Array) -> bool:

@@ -37,7 +37,7 @@ func _test_unit_database_loads() -> void:
 func _test_save_roundtrip() -> void:
 	var slot := 3
 	SaveSystem.create_new_slot(slot)
-	var s := SaveSystem.load_slot(slot)
+	var s: Dictionary = SaveSystem.load_slot(slot)
 	_assert_true(typeof(s) == TYPE_DICTIONARY, "loaded save should be a Dictionary")
 
 	GameState.active_slot = slot
@@ -49,7 +49,7 @@ func _test_save_roundtrip() -> void:
 	GameState.progress["starter_chosen"] = true
 
 	SaveSystem.write_slot(slot, GameState.to_save())
-	var s2 := SaveSystem.load_slot(slot)
+	var s2: Dictionary = SaveSystem.load_slot(slot)
 	_assert_eq(int(s2.get("coins", -1)), 123, "coins should persist")
 	_assert_true(Array(s2.get("owned_blueprints", [])).has("010"), "owned_blueprints should persist")
 	_assert_true(Array(s2.get("active_team", [])).has("001"), "active_team should persist")
@@ -84,7 +84,7 @@ func _test_smoke_newgame_to_battle_ready() -> void:
 	UnitDatabase.load_units("res://Data/units.json")
 	var slot := 2
 	SaveSystem.create_new_slot(slot)
-	var s0 := SaveSystem.load_slot(slot)
+	var s0: Dictionary = SaveSystem.load_slot(slot)
 	_assert_true(bool(s0.get("progress", {}).get("starter_chosen", false)) == false, "new slot not starter-complete")
 
 	GameState.active_slot = slot
@@ -93,11 +93,11 @@ func _test_smoke_newgame_to_battle_ready() -> void:
 	GameState.active_team = ["001"]
 	SaveSystem.write_slot(slot, GameState.to_save())
 
-	var s := SaveSystem.load_slot(slot)
+	var s: Dictionary = SaveSystem.load_slot(slot)
 	_assert_true(bool(s.get("progress", {}).get("starter_chosen", false)), "starter flag saved")
-	var team: Array = s.get("active_team", [])
+	var team: Array = s.get("active_team", []) as Array
 	_assert_true(team.size() >= 1, "active team non-empty")
-	var first_id := str(team[0])
+	var first_id: String = str(team[0])
 	_assert_true(not UnitDatabase.get_unit(first_id).is_empty(), "team unit loads from json")
 
 	SaveSystem.delete_slot(slot)

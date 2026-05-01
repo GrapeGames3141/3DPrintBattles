@@ -5,13 +5,13 @@ Kid-safe collectible creature battler inspired by 3D printing + STEM.
 **Current focus:** development and playtesting are **Windows-only** for now (Godot editor + run from `Main.tscn`). Android / Steam / Linux notes below stay as **future** shipping reference, not what we validate every change against.
 
 ### Run on Windows (recommended for dev)
-- Install **Godot 4.x** (standard `.exe` build is easiest on Windows)
+- Install **Godot 4.3+** (matches `project.godot` → `config/features`; standard `.exe` build is easiest on Windows)
 - Launch Godot and **Import** this folder (it contains `project.godot`)
 - Press **Play** (main scene: `Main.tscn`)
 
 Save files are written to `user://Saves/` (Godot maps this to your Windows user app-data location).
 
-If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.0+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for 4.0 compatibility.
+If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.3+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for compatibility across patch releases.
 
 ### Headless unit tests (Windows)
 This repo includes a tiny built-in test runner at `res://Tests/run_tests.gd`.

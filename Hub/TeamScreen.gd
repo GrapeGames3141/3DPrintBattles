@@ -102,14 +102,14 @@ func _refresh() -> void:
 		_owned_box.add_child(_owned_row(id))
 
 func _team_row(unit_id: String) -> Control:
-	var defn := UnitDatabase.get_unit(unit_id)
-	var name := String(defn.get("name", unit_id))
+	var defn: Dictionary = UnitDatabase.get_unit(unit_id)
+	var display_name: String = str(defn.get("name", unit_id))
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 
 	var lbl := Label.new()
-	lbl.text = name
+	lbl.text = display_name
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 
@@ -125,14 +125,14 @@ func _team_row(unit_id: String) -> Control:
 	return _panel(row)
 
 func _owned_row(unit_id: String) -> Control:
-	var defn := UnitDatabase.get_unit(unit_id)
-	var name := String(defn.get("name", unit_id))
+	var defn: Dictionary = UnitDatabase.get_unit(unit_id)
+	var display_name: String = str(defn.get("name", unit_id))
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 
 	var lbl := Label.new()
-	lbl.text = name
+	lbl.text = display_name
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 

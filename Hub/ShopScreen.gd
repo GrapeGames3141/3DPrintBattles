@@ -67,7 +67,7 @@ func _generate_offers() -> void:
 		return
 	while _offers.size() < 5:
 		var pick: Dictionary = UnitDatabase.units_array[_rng.randi_range(0, UnitDatabase.units_array.size() - 1)]
-		var id := String(pick.get("id", ""))
+		var id: String = str(pick.get("id", ""))
 		if id != "" and not _offers.has(id):
 			_offers.append(id)
 
@@ -81,18 +81,18 @@ func _refresh() -> void:
 		_list.add_child(_make_offer_row(id))
 
 func _make_offer_row(unit_id: String) -> Control:
-	var defn := UnitDatabase.get_unit(unit_id)
-	var name := String(defn.get("name", "Unknown"))
-	var tier_level := int(defn.get("tier_level", 1))
-	var cost := int(defn.get("cost", 1))
-	var price := 8 + tier_level * 4 + cost
-	var owned := GameState.owned_blueprints.has(unit_id)
+	var defn: Dictionary = UnitDatabase.get_unit(unit_id)
+	var unit_name: String = str(defn.get("name", "Unknown"))
+	var tier_level: int = int(defn.get("tier_level", 1))
+	var cost: int = int(defn.get("cost", 1))
+	var price: int = 8 + tier_level * 4 + cost
+	var owned: bool = GameState.owned_blueprints.has(unit_id)
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 
 	var lbl := Label.new()
-	lbl.text = "%s  (Blueprint)  Tier %d  Price %d" % [name, tier_level, price]
+	lbl.text = "%s  (Blueprint)  Tier %d  Price %d" % [unit_name, tier_level, price]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 

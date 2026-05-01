@@ -15,8 +15,8 @@ static func tpu_dodges(rng: RandomNumberGenerator) -> bool:
 
 
 static func is_element_advantage(attacker_element: String, defender_element: String) -> bool:
-	var a := attacker_element
-	var b := defender_element
+	var a: String = attacker_element
+	var b: String = defender_element
 	if a == "Heat" and b == "PLA":
 		return true
 	if a == "PLA" and b == "Resin":
@@ -27,7 +27,7 @@ static func is_element_advantage(attacker_element: String, defender_element: Str
 
 
 static func effective_damage(attacker_element: String, atk: int, defender_element: String) -> int:
-	var mult := 1.0
+	var mult: float = 1.0
 	if is_element_advantage(attacker_element, defender_element):
 		mult = 1.5
 	elif is_element_advantage(defender_element, attacker_element):

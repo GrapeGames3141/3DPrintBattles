@@ -1,6 +1,6 @@
 extends Control
 
-## Title screen: three save slots. Signals use untyped args for Godot 4.0 compatibility.
+## Title screen: three save slots. Signals use untyped args (broad Godot 4.x compatibility).
 
 signal start_new_game(slot)
 signal continue_game(slot)
@@ -29,7 +29,7 @@ func _notification(what: int) -> void:
 
 ## Main is a Node, not a Control — fill the window explicitly.
 func _fit_to_viewport() -> void:
-	var r := get_viewport_rect()
+	var r: Rect2 = get_viewport_rect()
 	set_position(Vector2.ZERO)
 	set_size(r.size)
 
