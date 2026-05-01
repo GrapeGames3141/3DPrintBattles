@@ -89,14 +89,14 @@ func _make_slot_panel(slot: int) -> Control:
 
 	var exists := SaveSystem.slot_exists(slot)
 	var status := Label.new()
-	status.text = exists ? "Status: Ready" : "Status: Empty"
+	status.text = "Status: Ready" if exists else "Status: Empty"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(status)
 
 	vb.add_child(_spacer(6))
 
 	var btn_new := Button.new()
-	btn_new.text = exists ? "New Game (Overwrite)" : "New Game"
+	btn_new.text = "New Game (Overwrite)" if exists else "New Game"
 	btn_new.pressed.connect(func():
 		start_new_game.emit(slot)
 	)

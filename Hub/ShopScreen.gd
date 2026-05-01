@@ -97,7 +97,7 @@ func _make_offer_row(unit_id: String) -> Control:
 	row.add_child(lbl)
 
 	var btn := Button.new()
-	btn.text = owned ? "Owned" : "Buy"
+	btn.text = "Owned" if owned else "Buy"
 	btn.disabled = owned
 	btn.pressed.connect(func():
 		_buy(unit_id, price)

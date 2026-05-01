@@ -227,7 +227,7 @@ func _coin_flip_and_start() -> void:
 	_match_over = false
 	_results_panel.visible = false
 	_turn_owner = _rng.randi_range(0, 1)
-	_lbl_toast.text = "Coin flip: %s starts." % (_turn_owner == 0 ? "Player" : "Enemy")
+	_lbl_toast.text = "Coin flip: %s starts." % ("Player" if _turn_owner == 0 else "Enemy")
 	_turn = 1
 	_player_filament = 0
 	_enemy_filament = 0
@@ -372,13 +372,13 @@ func _check_end() -> bool:
 func _finish_match() -> void:
 	_match_over = true
 	var player_won := _enemy_core_hp <= 0 or (_player_core_hp > 0 and _no_units(_grid_enemy))
-	var payout := player_won ? 40 : 15
+	var payout := 40 if player_won else 15
 	GameState.coins += payout
 	if player_won:
 		GameState.progress["battles_won"] = int(GameState.progress.get("battles_won", 0)) + 1
 	if GameState.active_slot >= 1:
 		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
-	var msg := player_won ? "Victory! +%d coins" % payout : "Defeat. +%d coins" % payout
+	var msg := ("Victory! +%d coins" % payout) if player_won else ("Defeat. +%d coins" % payout)
 	_lbl_toast.text = msg
 	_results_label.text = "%s\n\n(Player Core %d vs Enemy Core %d)" % [msg, _player_core_hp, _enemy_core_hp]
 	_results_panel.visible = true
@@ -421,7 +421,7 @@ func _refresh_ui() -> void:
 		_enemy_core_hp,
 		_player_filament,
 		_player_filament_max,
-		_turn_owner == 0 ? "Your turn" : "Enemy turn"
+		"Your turn" if _turn_owner == 0 else "Enemy turn"
 	]
 	if _btn_end != null:
 		_btn_end.disabled = _match_over or (_turn_owner != 0)
@@ -442,7 +442,7 @@ func _make_side(title: String, is_player_team: bool) -> Control:
 	grid.columns = COLS
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid.name = is_player_team ? "PlayerGrid" : "EnemyGrid"
+	grid.name = "PlayerGrid" if is_player_team else "EnemyGrid"
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	side.add_child(grid)
