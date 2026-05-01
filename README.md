@@ -1,4 +1,4 @@
-## Filament Fighters (Godot 4)
+## 3D Print Battles (Godot 4)
 
 Kid-safe collectible creature battler inspired by 3D printing + STEM.
 
@@ -14,4 +14,4 @@ sudo apt update
 sudo apt install -y libfuse2t64
 ```
 
-starter
+

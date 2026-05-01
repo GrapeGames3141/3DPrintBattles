@@ -1,6 +1,6 @@
 [gd_project type="project" format=3]
 
-config/name="Filament Fighters"
+config/name="3D Print Battles"
 config/features=PackedStringArray("4.0")
 run/main_scene="res://Main.tscn"
 config/icon="res://icon.svg"
