@@ -1,4 +1,4 @@
 extends Node
 
-signal request_toast(message: String)
+signal request_toast(message)
 

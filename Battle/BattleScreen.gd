@@ -6,8 +6,6 @@ const COLS := 4
 const ROWS := 2
 const CORE_HP_START := 20
 
-class_name BattleScreen
-
 class UnitState:
 	var id: String
 	var name: String
@@ -18,7 +16,7 @@ class UnitState:
 	var owner: int # 0 player, 1 enemy
 	var slot_index: int
 	## Where this unit aims this turn (player only). UNSET = frontal column.
-	var attack_target: int = BattleResolver.TARGET_UNSET
+	var attack_target: int
 
 	func _init(defn: Dictionary, p_owner: int, p_slot_index: int) -> void:
 		id = str(defn.get("id", ""))
@@ -270,7 +268,7 @@ func _refresh_hand_ui() -> void:
 		var b := Button.new()
 		var cost := int(defn.get("cost", 1))
 		b.text = "%s (C%d)" % [str(defn.get("name", "Unit")), cost]
-		b.pressed.connect(func(d := defn): _try_summon_from_hand(d))
+		b.pressed.connect(_try_summon_from_hand.bind(defn))
 		_player_hand_row.add_child(b)
 
 func _try_summon_from_hand(defn: Dictionary) -> void:

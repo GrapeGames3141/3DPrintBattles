@@ -1,6 +1,6 @@
 extends Control
 
-signal starter_chosen(unit_id: String)
+signal starter_chosen(unit_id)
 signal back
 
 const STARTERS := [
@@ -48,7 +48,7 @@ func _ready() -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(260, 90)
 		b.text = "%s" % s["name"]
-		b.pressed.connect(func(id := String(s["id"])): _choose(id))
+		b.pressed.connect(_choose.bind(String(s["id"])))
 		row.add_child(b)
 
 	root.add_child(_spacer(8))

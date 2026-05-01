@@ -40,3 +40,4 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - Always run even with no art/audio: generate primitive meshes + simple materials.
 - All unit roster must load from JSON: `res://Data/units.json` (no hardcoded roster in scripts).
 - **COPPA / kid-safe**: if you add multiplayer or accounts, architect chat-free or heavily moderated flows before Steam/Android social features.
+- **Godot 4.0 parse compatibility**: avoid typed `signal` parameters; use `.bind()` instead of lambdas with `:=` default args where older parsers choke.

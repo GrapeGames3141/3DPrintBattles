@@ -1,8 +1,8 @@
 extends Control
 
-signal start_new_game(slot: int)
-signal continue_game(slot: int)
-signal delete_slot(slot: int)
+signal start_new_game(slot)
+signal continue_game(slot)
+signal delete_slot(slot)
 
 var _toast: Label
 
