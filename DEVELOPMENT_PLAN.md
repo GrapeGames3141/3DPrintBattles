@@ -2,6 +2,8 @@
 
 **Current phase**: 🟢 STAGE 1 (MVP) — playable loop + test harness
 
+**Active dev / test OS:** **Windows** only for now (editor + F5 play). Cross-platform and store work stay planned; don’t block day-to-day iteration on them.
+
 ### Release targets (keep in scope)
 Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no platform-specific APIs in core gameplay — add Steamworks / Play Billing in dedicated wrappers later.
 
