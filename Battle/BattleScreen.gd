@@ -227,7 +227,10 @@ func _coin_flip_and_start() -> void:
 	_match_over = false
 	_results_panel.visible = false
 	_turn_owner = _rng.randi_range(0, 1)
-	_lbl_toast.text = "Coin flip: %s starts." % ("Player" if _turn_owner == 0 else "Enemy")
+	var starter_label := "Enemy"
+	if _turn_owner == 0:
+		starter_label = "Player"
+	_lbl_toast.text = "Coin flip: %s starts." % starter_label
 	_turn = 1
 	_player_filament = 0
 	_enemy_filament = 0
@@ -372,13 +375,17 @@ func _check_end() -> bool:
 func _finish_match() -> void:
 	_match_over = true
 	var player_won := _enemy_core_hp <= 0 or (_player_core_hp > 0 and _no_units(_grid_enemy))
-	var payout := 40 if player_won else 15
+	var payout := 15
+	if player_won:
+		payout = 40
 	GameState.coins += payout
 	if player_won:
 		GameState.progress["battles_won"] = int(GameState.progress.get("battles_won", 0)) + 1
 	if GameState.active_slot >= 1:
 		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
-	var msg := ("Victory! +%d coins" % payout) if player_won else ("Defeat. +%d coins" % payout)
+	var msg := "Defeat. +%d coins" % payout
+	if player_won:
+		msg = "Victory! +%d coins" % payout
 	_lbl_toast.text = msg
 	_results_label.text = "%s\n\n(Player Core %d vs Enemy Core %d)" % [msg, _player_core_hp, _enemy_core_hp]
 	_results_panel.visible = true
@@ -415,13 +422,16 @@ func _first_empty_index(grid: Array) -> int:
 	return -1
 
 func _refresh_ui() -> void:
+	var turn_label := "Enemy turn"
+	if _turn_owner == 0:
+		turn_label = "Your turn"
 	_lbl_state.text = "Turn %d | Player HP %d | Enemy HP %d | Filament %d/%d | %s" % [
 		_turn,
 		_player_core_hp,
 		_enemy_core_hp,
 		_player_filament,
 		_player_filament_max,
-		"Your turn" if _turn_owner == 0 else "Enemy turn"
+		turn_label
 	]
 	if _btn_end != null:
 		_btn_end.disabled = _match_over or (_turn_owner != 0)
@@ -442,7 +452,10 @@ func _make_side(title: String, is_player_team: bool) -> Control:
 	grid.columns = COLS
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid.name = "PlayerGrid" if is_player_team else "EnemyGrid"
+	if is_player_team:
+		grid.name = "PlayerGrid"
+	else:
+		grid.name = "EnemyGrid"
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	side.add_child(grid)
