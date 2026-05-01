@@ -16,8 +16,9 @@
 - [x] Post-match: coin payout winner/loser, return to hub
 - [ ] HTML5 export readiness pass (no platform-only APIs, responsive UI containers/anchors)
 - [ ] Linux dev note: AppImage `libfuse2t64` dependency instructions
-- [ ] Testing: add headless unit test runner + run it before each commit
+- [x] Testing: add headless unit test runner + run it before each commit
 - [ ] Testing: add smoke test covering title→new game→starter→hub→battle loop
+- [x] Battle: player attack targeting (unit → enemy slot or Core) + shared `BattleResolver` math
 
 ### Active blockers
 - None

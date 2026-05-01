@@ -8,6 +8,7 @@ signal back_to_title
 var _toast: Label
 var _coins: Label
 var _filament: Label
+var _battles: Label
 
 func _ready() -> void:
 	name = "HubScreen"
@@ -34,8 +35,10 @@ func _ready() -> void:
 
 	_coins = Label.new()
 	_filament = Label.new()
+	_battles = Label.new()
 	top.add_child(_coins)
 	top.add_child(_filament)
+	top.add_child(_battles)
 	_refresh_stats()
 
 	var body := HBoxContainer.new()
@@ -108,6 +111,7 @@ func _ready() -> void:
 func _refresh_stats() -> void:
 	_coins.text = "Coins: %d" % GameState.coins
 	_filament.text = "Filament Cap: %d" % int(GameState.printer_upgrades.get("filament_cap", 3))
+	_battles.text = "Battles won: %d" % int(GameState.progress.get("battles_won", 0))
 
 func _on_upgrade_filament() -> void:
 	var cap := int(GameState.printer_upgrades.get("filament_cap", 3))

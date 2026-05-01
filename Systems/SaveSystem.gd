@@ -14,7 +14,7 @@ func create_new_slot(slot: int) -> void:
 		"owned_blueprints": [],
 		"active_team": [],
 		"printer_upgrades": {"filament_cap": 3},
-		"progress": {"starter_chosen": false},
+		"progress": {"starter_chosen": false, "battles_won": 0},
 		"settings": {"music": true, "sfx": true}
 	}
 	write_slot(slot, save)

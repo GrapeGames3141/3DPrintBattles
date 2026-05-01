@@ -16,6 +16,7 @@ func _run_all() -> void:
 	_test_unit_database_loads()
 	_test_save_roundtrip()
 	_test_starter_rule_does_not_grant_blueprint()
+	_test_battle_resolver_elements()
 
 func _assert_true(cond: bool, message: String) -> void:
 	if not cond:
@@ -68,4 +69,12 @@ func _test_starter_rule_does_not_grant_blueprint() -> void:
 
 	_assert_true(GameState.active_team.has("001"), "starter should be granted as a physical unit")
 	_assert_true(not GameState.owned_blueprints.has("001"), "starter blueprint should NOT be granted")
+
+
+func _test_battle_resolver_elements() -> void:
+	_assert_true(BattleResolver.is_element_advantage("Heat", "PLA"), "Heat should beat PLA")
+	_assert_true(not BattleResolver.is_element_advantage("PLA", "Heat"), "PLA should not beat Heat")
+	_assert_eq(BattleResolver.effective_damage("Heat", 4, "PLA"), 6, "advantage ~1.5x rounded")
+	_assert_eq(BattleResolver.effective_damage("PLA", 4, "Heat"), 3, "disadvantage 0.75x rounded")
+	_assert_eq(BattleResolver.effective_damage("PLA", 4, "PLA"), 4, "same element neutral")
 

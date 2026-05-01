@@ -9,7 +9,8 @@ var printer_upgrades := {
 	"filament_cap": 3
 }
 var progress := {
-	"starter_chosen": false
+	"starter_chosen": false,
+	"battles_won": 0
 }
 var settings := {
 	"music": true,
@@ -21,7 +22,9 @@ func load_from_save(save: Dictionary) -> void:
 	owned_blueprints = Array(save.get("owned_blueprints", []), TYPE_STRING, "", null)
 	active_team = Array(save.get("active_team", []), TYPE_STRING, "", null)
 	printer_upgrades = save.get("printer_upgrades", {"filament_cap": 3})
-	progress = save.get("progress", {"starter_chosen": false})
+	progress = save.get("progress", {"starter_chosen": false, "battles_won": 0})
+	if not progress.has("battles_won"):
+		progress["battles_won"] = 0
 	settings = save.get("settings", {"music": true, "sfx": true})
 
 func to_save() -> Dictionary:
