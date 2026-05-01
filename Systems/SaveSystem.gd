@@ -10,7 +10,7 @@ func slot_exists(slot: int) -> bool:
 
 func create_new_slot(slot: int) -> void:
 	var save := {
-		"coins": 0,
+		"coins": 25,
 		"owned_blueprints": [],
 		"active_team": [],
 		"printer_upgrades": {"filament_cap": 3},
