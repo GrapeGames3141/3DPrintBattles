@@ -70,7 +70,7 @@ func _ready() -> void:
 	left.add_child(_divider())
 
 	var btn_upgrade := Button.new()
-	btn_upgrade.text = "Slicer Station: +1 Filament Cap (Cost 25)"
+	btn_upgrade.text = "Slicer Station: +1 Filament Cap (Cost %d)" % GameRules.SLICER_UPGRADE_COST_COINS
 	btn_upgrade.pressed.connect(_on_upgrade_filament)
 	left.add_child(btn_upgrade)
 
@@ -115,13 +115,13 @@ func _refresh_stats() -> void:
 
 func _on_upgrade_filament() -> void:
 	var cap := int(GameState.printer_upgrades.get("filament_cap", 3))
-	if cap >= 10:
-		EventBus.request_toast.emit("Filament cap already at max (10).")
+	if cap >= GameRules.FILAMENT_CAP_MAX:
+		EventBus.request_toast.emit("Filament cap already at max (%d)." % GameRules.FILAMENT_CAP_MAX)
 		return
-	if GameState.coins < 25:
+	if GameState.coins < GameRules.SLICER_UPGRADE_COST_COINS:
 		EventBus.request_toast.emit("Not enough coins.")
 		return
-	GameState.coins -= 25
+	GameState.coins -= GameRules.SLICER_UPGRADE_COST_COINS
 	GameState.printer_upgrades["filament_cap"] = cap + 1
 	_refresh_stats()
 	EventBus.request_toast.emit("Upgraded filament cap to %d." % (cap + 1))

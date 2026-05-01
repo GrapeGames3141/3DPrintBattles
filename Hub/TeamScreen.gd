@@ -2,8 +2,6 @@ extends Control
 
 signal back
 
-const TEAM_SIZE := 3
-
 var _toast: Label
 var _team_box: VBoxContainer
 var _owned_box: VBoxContainer
@@ -37,7 +35,7 @@ func _ready() -> void:
 	top.add_child(title)
 
 	_toast = Label.new()
-	_toast.text = "Your active team is what appears in battle as summon options."
+	_toast.text = "Pick up to %d units — they are your battle summon options." % GameRules.TEAM_MAX_UNITS
 	_toast.modulate.a = 0.85
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_panel(_toast))
@@ -138,9 +136,9 @@ func _owned_row(unit_id: String) -> Control:
 
 	var btn := Button.new()
 	btn.text = "Add"
-	btn.disabled = GameState.active_team.has(unit_id) or GameState.active_team.size() >= TEAM_SIZE
+	btn.disabled = GameState.active_team.has(unit_id) or GameState.active_team.size() >= GameRules.TEAM_MAX_UNITS
 	btn.pressed.connect(func():
-		if GameState.active_team.size() < TEAM_SIZE and not GameState.active_team.has(unit_id):
+		if GameRules.can_add_team_member(GameState.active_team.size()) and not GameState.active_team.has(unit_id):
 			GameState.active_team.append(unit_id)
 			_save()
 			_refresh()

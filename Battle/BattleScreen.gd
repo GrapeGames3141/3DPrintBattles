@@ -377,9 +377,9 @@ func _check_end() -> bool:
 func _finish_match() -> void:
 	_match_over = true
 	var player_won := _enemy_core_hp <= 0 or (_player_core_hp > 0 and _no_units(_grid_enemy))
-	var payout := 15
+	var payout: int = GameRules.BATTLE_LOSS_COINS
 	if player_won:
-		payout = 40
+		payout = GameRules.BATTLE_WIN_COINS
 	GameState.coins += payout
 	if player_won:
 		GameState.progress["battles_won"] = int(GameState.progress.get("battles_won", 0)) + 1

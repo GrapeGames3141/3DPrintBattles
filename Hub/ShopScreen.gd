@@ -62,14 +62,7 @@ func _ready() -> void:
 	_refresh()
 
 func _generate_offers() -> void:
-	_offers.clear()
-	if UnitDatabase.units_array.is_empty():
-		return
-	while _offers.size() < 5:
-		var pick: Dictionary = UnitDatabase.units_array[_rng.randi_range(0, UnitDatabase.units_array.size() - 1)]
-		var id: String = str(pick.get("id", ""))
-		if id != "" and not _offers.has(id):
-			_offers.append(id)
+	_offers = GameRules.pick_shop_offer_unit_ids(_rng, UnitDatabase.units_array, GameRules.SHOP_OFFER_COUNT)
 
 func _refresh() -> void:
 	_coins.text = "Coins: %d" % GameState.coins
@@ -85,7 +78,7 @@ func _make_offer_row(unit_id: String) -> Control:
 	var unit_name: String = str(defn.get("name", "Unknown"))
 	var tier_level: int = int(defn.get("tier_level", 1))
 	var cost: int = int(defn.get("cost", 1))
-	var price: int = 8 + tier_level * 4 + cost
+	var price: int = GameRules.blueprint_shop_price(tier_level, cost)
 	var owned: bool = GameState.owned_blueprints.has(unit_id)
 
 	var row := HBoxContainer.new()

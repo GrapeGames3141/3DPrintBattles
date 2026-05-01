@@ -14,7 +14,7 @@ Save files are written to `user://Saves/` (Godot maps this to your Windows user 
 If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.3+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for compatibility across patch releases.
 
 ### Headless unit tests (Windows)
-This repo includes a tiny built-in test runner at `res://Tests/run_tests.gd`.
+This repo includes a built-in test runner at `res://Tests/run_tests.gd` (economy rules, saves, battle math, smoke flow). **Add or extend a test for every new gameplay rule or balance knob**, then run:
 
 From PowerShell, run (replace the path to your Godot executable as needed):
 

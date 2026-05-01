@@ -31,6 +31,8 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Linux dev note: AppImage `libfuse2t64` dependency instructions (see `README.md`)
 - [x] Testing: add headless unit test runner + run it before each commit
 - [x] Testing: smoke test (save + starter + battle-ready team data)
+- [x] `Systems/GameRules.gd` — single source for shop price, offer count, team cap, battle payouts, upgrade costs (with unit tests)
+- [ ] **Policy:** each new gameplay/economy feature must add or extend a test in `res://Tests/run_tests.gd` and be run headless before merge
 - [ ] Steam: Steamworks integration plan (GDExtension / addon) + depot layout
 - [ ] Android: export preset + release signing + Play internal testing track
 
@@ -43,3 +45,4 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - All unit roster must load from JSON: `res://Data/units.json` (no hardcoded roster in scripts).
 - **COPPA / kid-safe**: if you add multiplayer or accounts, architect chat-free or heavily moderated flows before Steam/Android social features.
 - **Godot / GDScript**: Project targets **4.3** (`config/features`). Prefer **explicit types** where values come from `Variant` (`Dictionary.get`, `JSON`, `min`/`max`) so strict warnings stay clean. Untyped `signal` args kept for broad compatibility. Avoid C-style `?:`; use plain `if` / `else` blocks (no inline `a if b else c` on older parsers).
+- **Tests:** Run `res://Tests/run_tests.gd` headless (see `README.md`) after logic changes. Put balance rules in `GameRules` / `BattleResolver` when possible so they stay testable without scenes.
