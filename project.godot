@@ -1,0 +1,23 @@
+[gd_project type="project" format=3]
+
+config/name="Filament Fighters"
+config/features=PackedStringArray("4.0")
+run/main_scene="res://Main.tscn"
+config/icon="res://icon.svg"
+
+[autoload]
+EventBus="*res://Systems/EventBus.gd"
+GameState="*res://Core/GameState.gd"
+SaveSystem="*res://Systems/SaveSystem.gd"
+UnitDatabase="*res://Systems/UnitDatabase.gd"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input]
+ui_accept={"deadzone":0.5,"events":[{"type":"InputEventKey","device":-1,"keycode":4194309}]}
+ui_cancel={"deadzone":0.5,"events":[{"type":"InputEventKey","device":-1,"keycode":4194305}]}
+

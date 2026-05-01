@@ -1,0 +1,44 @@
+extends Node
+
+var units_by_id: Dictionary = {}
+var units_array: Array[Dictionary] = []
+
+func load_units(path: String) -> void:
+	units_by_id.clear()
+	units_array.clear()
+	if not FileAccess.file_exists(path):
+		push_error("units.json missing at %s" % path)
+		return
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		push_error("Failed to open %s" % path)
+		return
+	var json := JSON.new()
+	var err := json.parse(f.get_as_text())
+	if err != OK:
+		push_error("Failed parsing units.json: %s" % json.get_error_message())
+		return
+	var data = json.data
+	if typeof(data) != TYPE_ARRAY:
+		push_error("units.json must be an array of unit objects")
+		return
+	for item in data:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var id := str(item.get("id", ""))
+		if id == "":
+			continue
+		units_by_id[id] = item
+		units_array.append(item)
+
+func get_unit(id: String) -> Dictionary:
+	return units_by_id.get(id, {})
+
+func random_units(count: int, rng: RandomNumberGenerator) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if units_array.is_empty():
+		return result
+	for i in count:
+		result.append(units_array[rng.randi_range(0, units_array.size() - 1)])
+	return result
+
