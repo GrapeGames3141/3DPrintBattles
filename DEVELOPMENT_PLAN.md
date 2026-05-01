@@ -1,6 +1,6 @@
 ## 3D Print Battles — DEVELOPMENT_PLAN
 
-**Current phase**: 🟢 STAGE 1 (MVP)
+**Current phase**: 🟢 STAGE 1 (MVP) — playable loop + test harness
 
 ### Progress tracker (microtasks)
 - [x] Create `DEVELOPMENT_PLAN.md`
@@ -16,6 +16,8 @@
 - [x] Post-match: coin payout winner/loser, return to hub
 - [ ] HTML5 export readiness pass (no platform-only APIs, responsive UI containers/anchors)
 - [ ] Linux dev note: AppImage `libfuse2t64` dependency instructions
+- [ ] Testing: add headless unit test runner + run it before each commit
+- [ ] Testing: add smoke test covering title→new game→starter→hub→battle loop
 
 ### Active blockers
 - None

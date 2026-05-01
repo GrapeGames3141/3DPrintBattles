@@ -51,6 +51,10 @@ var _lbl_state: Label
 var _lbl_toast: Label
 var _player_hand_row: HBoxContainer
 var _grid_root: HBoxContainer
+var _results_panel: PanelContainer
+var _results_label: Label
+var _results_back: Button
+var _match_over := false
 
 func _ready() -> void:
 	name = "BattleScreen"
@@ -118,9 +122,35 @@ func _ready() -> void:
 	_player_hand_row.add_theme_constant_override("separation", 8)
 	hand_wrap.add_child(_player_hand_row)
 
+	_results_panel = PanelContainer.new()
+	_results_panel.visible = false
+	_results_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_results_panel.add_theme_constant_override("content_margin_left", 14)
+	_results_panel.add_theme_constant_override("content_margin_right", 14)
+	_results_panel.add_theme_constant_override("content_margin_top", 14)
+	_results_panel.add_theme_constant_override("content_margin_bottom", 14)
+	root.add_child(_results_panel)
+
+	var results_v := VBoxContainer.new()
+	results_v.add_theme_constant_override("separation", 10)
+	_results_panel.add_child(results_v)
+
+	_results_label = Label.new()
+	_results_label.text = ""
+	_results_label.add_theme_font_size_override("font_size", 20)
+	_results_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	results_v.add_child(_results_label)
+
+	_results_back = Button.new()
+	_results_back.text = "Return to Hub"
+	_results_back.pressed.connect(func(): exit_to_hub.emit())
+	results_v.add_child(_results_back)
+
 	_coin_flip_and_start()
 
 func _coin_flip_and_start() -> void:
+	_match_over = false
+	_results_panel.visible = false
 	_turn_owner = _rng.randi_range(0, 1)
 	_lbl_toast.text = "Coin flip: %s starts." % (_turn_owner == 0 ? "Player" : "Enemy")
 	_turn = 1
@@ -143,6 +173,9 @@ func _draw_new_hand() -> void:
 		var defn := UnitDatabase.get_unit(id)
 		if not defn.is_empty():
 			_hand.append(defn)
+	if _hand.is_empty():
+		# Safety: allow playtesting even if team is empty.
+		_hand = UnitDatabase.random_units(5, _rng)
 	_refresh_hand_ui()
 
 func _refresh_hand_ui() -> void:
@@ -189,6 +222,8 @@ func _enemy_play() -> void:
 	_on_end_turn_pressed()
 
 func _on_end_turn_pressed() -> void:
+	if _match_over:
+		return
 	_resolve_combat()
 	if _check_end():
 		return
@@ -259,19 +294,47 @@ func _check_end() -> bool:
 	if _player_core_hp <= 0 or _enemy_core_hp <= 0:
 		_finish_match()
 		return true
-	# Exhaustion deadlock prevention: no active units + no playable hand
-	if _no_units(_grid_player) and _hand.is_empty():
+	# Exhaustion deadlock prevention:
+	# Match ends if a player has no active units + no playable hand.
+	if _is_exhausted_player():
+		_finish_match()
+		return true
+	if _is_exhausted_enemy():
 		_finish_match()
 		return true
 	return false
 
 func _finish_match() -> void:
+	_match_over = true
 	var player_won := _enemy_core_hp <= 0 or (_player_core_hp > 0 and _no_units(_grid_enemy))
 	var payout := player_won ? 40 : 15
 	GameState.coins += payout
 	if GameState.active_slot >= 1:
 		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
-	_lbl_toast.text = player_won ? "Victory! +%d coins" % payout : "Defeat. +%d coins" % payout
+	var msg := player_won ? "Victory! +%d coins" % payout : "Defeat. +%d coins" % payout
+	_lbl_toast.text = msg
+	_results_label.text = "%s\n\n(Player Core %d vs Enemy Core %d)" % [msg, _player_core_hp, _enemy_core_hp]
+	_results_panel.visible = true
+
+func _is_exhausted_player() -> bool:
+	return _no_units(_grid_player) and not _has_playable_hand(_hand, _player_filament, _grid_player)
+
+func _is_exhausted_enemy() -> bool:
+	# Enemy "hand" is virtual; if they can't afford any random pick and have no units, treat as exhausted.
+	if not _no_units(_grid_enemy):
+		return false
+	var cheapest := 9999
+	for d in UnitDatabase.units_array:
+		cheapest = min(cheapest, int(d.get("cost", 1)))
+	return _enemy_filament < cheapest
+
+func _has_playable_hand(hand: Array[Dictionary], filament: int, grid: Array) -> bool:
+	if _first_empty_index(grid) < 0:
+		return false
+	for d in hand:
+		if int(d.get("cost", 1)) <= filament:
+			return true
+	return false
 
 func _no_units(grid: Array) -> bool:
 	for u in grid:
