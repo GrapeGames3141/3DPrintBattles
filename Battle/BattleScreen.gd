@@ -117,6 +117,7 @@ func _ready() -> void:
 	_enemy_grid_buttons.clear()
 	_grid_root.add_child(_make_side("Enemy", false))
 	_grid_root.add_child(_make_side("Player", true))
+	_apply_touch_layout()
 
 	root.add_child(_divider())
 
@@ -167,6 +168,23 @@ func _ready() -> void:
 	results_v.add_child(_results_back)
 
 	_coin_flip_and_start()
+
+func _apply_touch_layout() -> void:
+	var s := get_viewport().get_visible_rect().size
+	var short_side := min(s.x, s.y)
+	if short_side < 720:
+		var sz := Vector2(180, 104)
+		for b in _player_grid_buttons:
+			b.custom_minimum_size = sz
+		for b in _enemy_grid_buttons:
+			b.custom_minimum_size = sz
+
+func _apply_hit(attacker: UnitState, defender: UnitState) -> void:
+	if attacker == null or defender == null:
+		return
+	if defender.element == "TPU" and BattleResolver.tpu_dodges(_rng):
+		return
+	defender.hp -= BattleResolver.effective_damage(attacker.element, attacker.atk, defender.element)
 
 func _on_aim_core_pressed() -> void:
 	if _match_over or _turn_owner != 0:
@@ -307,7 +325,7 @@ func _resolve_combat() -> void:
 			continue
 		var target: UnitState = _grid_player[i]
 		if target != null:
-			target.hp -= BattleResolver.effective_damage(u.element, u.atk, target.element)
+			_apply_hit(u, target)
 		else:
 			pending_damage_player_core += u.atk
 
@@ -324,7 +342,7 @@ func _resolve_combat() -> void:
 		if tgt >= 0 and tgt < _grid_enemy.size():
 			var def: UnitState = _grid_enemy[tgt]
 			if def != null:
-				def.hp -= BattleResolver.effective_damage(u2.element, u2.atk, def.element)
+				_apply_hit(u2, def)
 			else:
 				pending_damage_enemy_core += u2.atk
 

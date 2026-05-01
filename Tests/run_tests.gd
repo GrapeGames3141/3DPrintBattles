@@ -17,6 +17,7 @@ func _run_all() -> void:
 	_test_save_roundtrip()
 	_test_starter_rule_does_not_grant_blueprint()
 	_test_battle_resolver_elements()
+	_test_smoke_newgame_to_battle_ready()
 
 func _assert_true(cond: bool, message: String) -> void:
 	if not cond:
@@ -77,4 +78,27 @@ func _test_battle_resolver_elements() -> void:
 	_assert_eq(BattleResolver.effective_damage("Heat", 4, "PLA"), 6, "advantage ~1.5x rounded")
 	_assert_eq(BattleResolver.effective_damage("PLA", 4, "Heat"), 3, "disadvantage 0.75x rounded")
 	_assert_eq(BattleResolver.effective_damage("PLA", 4, "PLA"), 4, "same element neutral")
+
+
+func _test_smoke_newgame_to_battle_ready() -> void:
+	UnitDatabase.load_units("res://Data/units.json")
+	var slot := 2
+	SaveSystem.create_new_slot(slot)
+	var s0 := SaveSystem.load_slot(slot)
+	_assert_true(bool(s0.get("progress", {}).get("starter_chosen", false)) == false, "new slot not starter-complete")
+
+	GameState.active_slot = slot
+	GameState.load_from_save(s0)
+	GameState.progress["starter_chosen"] = true
+	GameState.active_team = ["001"]
+	SaveSystem.write_slot(slot, GameState.to_save())
+
+	var s := SaveSystem.load_slot(slot)
+	_assert_true(bool(s.get("progress", {}).get("starter_chosen", false)), "starter flag saved")
+	var team: Array = s.get("active_team", [])
+	_assert_true(team.size() >= 1, "active team non-empty")
+	var first_id := str(team[0])
+	_assert_true(not UnitDatabase.get_unit(first_id).is_empty(), "team unit loads from json")
+
+	SaveSystem.delete_slot(slot)
 

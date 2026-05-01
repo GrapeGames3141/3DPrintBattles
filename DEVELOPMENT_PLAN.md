@@ -2,6 +2,14 @@
 
 **Current phase**: 🟢 STAGE 1 (MVP) — playable loop + test harness
 
+### Release targets (keep in scope)
+Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no platform-specific APIs in core gameplay — add Steamworks / Play Billing in dedicated wrappers later.
+
+| Target | MVP note | Later |
+|--------|----------|--------|
+| **Steam** | Export **Windows** `.exe` + depots; test clean install | Steamworks (overlay, achievements, cloud), Proton/Linux if desired |
+| **Android** | Portrait/landscape-safe UI (anchors/stretch); touch-sized controls | AAB, Play Console, signing, data safety form, optional IAP |
+
 ### Progress tracker (microtasks)
 - [x] Create `DEVELOPMENT_PLAN.md`
 - [x] Scaffold `res://` folder architecture
@@ -14,11 +22,15 @@
 - [x] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint
 - [x] Battle MVP: 4x2 grid per side, summon units from hand, basic AI, simultaneous resolution
 - [x] Post-match: coin payout winner/loser, return to hub
-- [ ] HTML5 export readiness pass (no platform-only APIs, responsive UI containers/anchors)
-- [ ] Linux dev note: AppImage `libfuse2t64` dependency instructions
-- [x] Testing: add headless unit test runner + run it before each commit
-- [ ] Testing: add smoke test covering title→new game→starter→hub→battle loop
 - [x] Battle: player attack targeting (unit → enemy slot or Core) + shared `BattleResolver` math
+- [x] Battle: TPU dodge (MVP evasion vs direct hits)
+- [x] Mobile MVP: emulate touch-from-mouse for desktop testing; larger grid cells on small viewports
+- [ ] HTML5 export readiness pass (optional; not required for Steam/Android)
+- [x] Linux dev note: AppImage `libfuse2t64` dependency instructions (see `README.md`)
+- [x] Testing: add headless unit test runner + run it before each commit
+- [x] Testing: smoke test (save + starter + battle-ready team data)
+- [ ] Steam: Steamworks integration plan (GDExtension / addon) + depot layout
+- [ ] Android: export preset + release signing + Play internal testing track
 
 ### Active blockers
 - None
@@ -27,4 +39,4 @@
 - Prefer code-driven UI + node trees to minimize fragile `.tscn` spam.
 - Always run even with no art/audio: generate primitive meshes + simple materials.
 - All unit roster must load from JSON: `res://Data/units.json` (no hardcoded roster in scripts).
-
+- **COPPA / kid-safe**: if you add multiplayer or accounts, architect chat-free or heavily moderated flows before Steam/Android social features.

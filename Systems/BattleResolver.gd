@@ -4,6 +4,15 @@ class_name BattleResolver
 const TARGET_UNSET := -2
 const TARGET_CORE := -1
 
+## TPU (Air): chance to avoid a direct unit-vs-unit hit (cores are not dodged).
+const TPU_DODGE_CHANCE := 0.15
+
+
+static func tpu_dodges(rng: RandomNumberGenerator) -> bool:
+	if rng == null:
+		return false
+	return rng.randf() < TPU_DODGE_CHANCE
+
 
 static func is_element_advantage(attacker_element: String, defender_element: String) -> bool:
 	var a := attacker_element
