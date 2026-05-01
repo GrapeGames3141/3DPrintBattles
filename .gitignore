@@ -1,0 +1,5 @@
+# Godot 4+ — editor and cache (regenerated locally)
+.godot/
+
+# Imported assets (Godot regenerates from source)
+*.import

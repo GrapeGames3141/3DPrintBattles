@@ -105,4 +105,3 @@ func _spacer(px: int) -> Control:
 
 func _on_toast(message: String) -> void:
 	_toast.text = message
-

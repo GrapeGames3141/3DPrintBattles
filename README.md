@@ -11,7 +11,7 @@ Kid-safe collectible creature battler inspired by 3D printing + STEM.
 
 Save files are written to `user://Saves/` (Godot maps this to your Windows user app-data location).
 
-If the editor reports a **parser error** such as “Could not preload `TitleScreen.gd`”, open the project with **Godot 4.0+** aligned to `project.godot` → `config/features`. Scripts here use **untyped** `signal` arguments so they parse on Godot **4.0** (typed signals like `signal foo(x: int)` need a newer 4.x).
+If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.0+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for 4.0 compatibility.
 
 ### Headless unit tests (Windows)
 This repo includes a tiny built-in test runner at `res://Tests/run_tests.gd`.

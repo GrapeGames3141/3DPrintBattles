@@ -1,5 +1,7 @@
 extends Node
 
+const TITLE_SCENE := preload("res://UI/TitleScreen.tscn")
+
 var _current: Node = null
 
 func _ready() -> void:
@@ -20,7 +22,7 @@ func _set_screen(screen: Node) -> void:
 	add_child(_current)
 
 func _show_title() -> void:
-	var title := preload("res://UI/Title/TitleScreen.gd").new()
+	var title = TITLE_SCENE.instantiate()
 	title.start_new_game.connect(_on_start_new_game)
 	title.continue_game.connect(_on_continue_game)
 	title.delete_slot.connect(_on_delete_slot)
@@ -89,4 +91,3 @@ func _on_starter_chosen(unit_id: String) -> void:
 	if GameState.active_slot >= 1:
 		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
 	_show_hub()
-
