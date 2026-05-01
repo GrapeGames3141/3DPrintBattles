@@ -10,8 +10,8 @@
 - [x] Title Screen: 3 save slots (New/Continue/Delete) + Settings stub
 - [x] Save data model: coins, owned blueprints, active team, upgrades, progress, settings
 - [x] Hub room MVP: Shop terminal, Battle terminal, Team manager, Slicer upgrade (filament cap)
-- [ ] Shop MVP: 5 random blueprints per launch (seeded) + purchase flow
-- [ ] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint
+- [x] Shop MVP: 5 random blueprints per launch (seeded) + purchase flow
+- [x] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint
 - [x] Battle MVP: 4x2 grid per side, summon units from hand, basic AI, simultaneous resolution
 - [x] Post-match: coin payout winner/loser, return to hub
 - [ ] HTML5 export readiness pass (no platform-only APIs, responsive UI containers/anchors)
