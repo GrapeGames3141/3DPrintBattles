@@ -16,13 +16,14 @@ Saves use **`user://Saves/`** (Godot maps this under your Windows user app-data)
 If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.3+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for compatibility across patch releases.
 
 ### Headless unit tests (Windows)
-This repo includes a built-in test runner at `res://Tests/run_tests.gd` (economy rules, saves, battle math, smoke flow). **Add or extend a test for every new gameplay rule or balance knob**, then run:
-
-From PowerShell, run (replace the path to your Godot executable as needed):
+Tests live in `res://Tests/unit_tests.gd` ([member UnitTests.run_all]) and run through **`res://Tests/TestRunner.tscn`** so autoloads (`SaveSystem`, `GameState`, …) exist (running `--script` alone skips normal project boot and breaks those globals). **Add or extend a test for every new gameplay rule or balance knob**, then run:
 
 ```powershell
-& "C:\Path\To\Godot_v4.x-stable_win64.exe" --headless --quit --script "res://Tests/run_tests.gd"
+Set-Location "D:\dev\3DPrintBattles"   # or your clone path
+& "C:\Godot\Godot_v4.6.2-stable_win64_console.exe" --path "D:\dev\3DPrintBattles" --headless --quit-after 120 "res://Tests/TestRunner.tscn"
 ```
+
+Use the `*_console.exe` build on Windows for readable output. Adjust the Godot folder if yours differs.
 
 ### Build/export on Windows (optional)
 - In Godot: **Project → Export…**

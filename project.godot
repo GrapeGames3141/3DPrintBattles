@@ -1,20 +1,22 @@
-[application]
-config/version="0.1.0"
+; Engine.config_version = 5 (Godot 4.x)
 
-[gd_project type="project" format=3]
+[application]
 
 config/name="3D Print Battles"
+config/version="0.1.0"
 config/features=PackedStringArray("4.3")
 run/main_scene="res://Main.tscn"
 config/icon="res://icon.svg"
 
 [autoload]
+
 EventBus="*res://Systems/EventBus.gd"
 GameState="*res://Core/GameState.gd"
 SaveSystem="*res://Systems/SaveSystem.gd"
 UnitDatabase="*res://Systems/UnitDatabase.gd"
 
 [display]
+
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
@@ -25,6 +27,6 @@ window/stretch/aspect="expand"
 pointing/emulate_touch_from_mouse=true
 
 [input]
+
 ui_accept={"deadzone":0.5,"events":[{"type":"InputEventKey","device":-1,"keycode":4194309}]}
 ui_cancel={"deadzone":0.5,"events":[{"type":"InputEventKey","device":-1,"keycode":4194305}]}
-

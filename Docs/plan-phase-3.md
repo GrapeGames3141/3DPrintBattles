@@ -50,7 +50,7 @@ Match ends when either:
 
 ## Checklist
 
-- [ ] Any new combat rule → extend `run_tests.gd` where practical.
+- [ ] Any new combat rule → extend `Tests/unit_tests.gd` (`TestRunner.tscn`) where practical.
 - [ ] Keep “design doc” (this file) and code in sync when numbers change.
 
 ## Implementation checklist (living)

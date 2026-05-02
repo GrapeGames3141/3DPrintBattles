@@ -83,7 +83,7 @@ The master prompt originally described **three save slots**. **Current product d
 - [x] Starter pick (3 starters) — unit on team, blueprint not auto-granted
 - [x] Battle vs AI: summon, filament, combat resolution, payouts, `battles_won`
 - [x] Roster: **`ACTIVE_ROSTER_CAP` (256)** via JSON + `UnitDatabase` synth ids
-- [ ] Policy: extend `run_tests.gd` for each new economy/combat tweak (ongoing)
+- [ ] Policy: extend `Tests/unit_tests.gd` (via `TestRunner.tscn`) for each new economy/combat tweak (ongoing)
 
 ### Stage 2 — Better
 
@@ -91,7 +91,7 @@ The master prompt originally described **three save slots**. **Current product d
 - [x] **Learning Quests** — addition / subtraction / geometry rewards (`progress.quests_claimed`; legacy `quest_math_bonus_claimed` for add)
 - [x] 24h shop refresh + save-backed offers
 - [ ] Deeper slicer forge / armor (beyond filament cap)
-- [x] **Overworld** hub entry — **stub screen** (boss routes TBD)
+- [x] **Overworld** hub entry — gated routes + practice duel → battle (mid/boss previews locked by wins)
 - [ ] Summoning shader VFX
 
 ### Stage 3 — Betterest

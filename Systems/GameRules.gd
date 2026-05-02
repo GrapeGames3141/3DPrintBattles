@@ -16,6 +16,21 @@ const FILAMENT_CAP_MAX := 10
 const SLICER_UPGRADE_COST_COINS := 25
 const BATTLE_WIN_COINS := 40
 const BATTLE_LOSS_COINS := 15
+const OVERWORLD_ROUTE_MID_MIN_WINS := 1
+const OVERWORLD_ROUTE_BOSS_MIN_WINS := 3
+
+
+static func overworld_route_unlocked(route_id: String, battles_won: int) -> bool:
+	var w: int = maxi(0, battles_won)
+	match route_id:
+		"practice":
+			return true
+		"mid":
+			return w >= OVERWORLD_ROUTE_MID_MIN_WINS
+		"boss":
+			return w >= OVERWORLD_ROUTE_BOSS_MIN_WINS
+		_:
+			return false
 
 
 static func blueprint_shop_price(tier_level: int, unit_cost: int) -> int:

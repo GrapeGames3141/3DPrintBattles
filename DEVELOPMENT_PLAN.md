@@ -36,7 +36,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] `Systems/GameRules.gd` — shop refresh interval, **ACTIVE_ROSTER_CAP (256)**, quest coins, battle payouts, etc. (with unit tests)
 - [x] **Phase 5 data scale**: `units.json` core roster + `UnitDatabase` synthetic ids **021–256**; `PrintMeshResolver` + `Assets/Prints/` pipeline; `PrintInstructionResource` / `PrintUnitResource` Resource stubs
 - [x] Title audio toggles → **Music / SFX buses** + mute apply (`Systems/AudioSettings.gd`, wired from `Main` + title Options)
-- [ ] **Policy:** each new gameplay/economy feature must add or extend a test in `res://Tests/run_tests.gd` and be run headless before merge
+- [ ] **Policy:** each new gameplay/economy feature must add or extend a test in `res://Tests/unit_tests.gd` (run via `res://Tests/TestRunner.tscn`) and be run headless before merge
 - [ ] Steam: Steamworks integration plan (GDExtension / addon) + depot layout
 - [ ] Android: export preset + release signing + Play internal testing track
 
@@ -55,4 +55,4 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - Unit definitions start from JSON (`res://Data/units.json`); missing ids up to **`GameRules.ACTIVE_ROSTER_CAP`** are generated at load so shop/battle always see a full tiered pool (synth rows marked in `ability` text).
 - **COPPA / kid-safe**: if you add multiplayer or accounts, architect chat-free or heavily moderated flows before Steam/Android social features.
 - **Godot / GDScript**: Project targets **4.3** (`config/features`). Prefer **explicit types** where values come from `Variant` (`Dictionary.get`, `JSON`, `min`/`max`) so strict warnings stay clean. Untyped `signal` args kept for broad compatibility. Avoid C-style `?:`; use plain `if` / `else` blocks (no inline `a if b else c` on older parsers).
-- **Tests:** Run `res://Tests/run_tests.gd` headless (see `README.md`) after logic changes. Put balance rules in `GameRules` / `BattleResolver` when possible so they stay testable without scenes.
+- **Tests:** Run `res://Tests/TestRunner.tscn` headless (see `README.md`) after logic changes. Put balance rules in `GameRules` / `BattleResolver` when possible so they stay testable without scenes.

@@ -39,7 +39,7 @@ Roster text and ability names stay appropriate for kids; no chat tied to trading
 - Data file: `res://Data/units.json`
 - Loader: `Systems/UnitDatabase.gd`
 - Mesh path helper: `Systems/PrintMeshResolver.gd`
-- Tests: `Tests/run_tests.gd`
+- Tests: `Tests/unit_tests.gd` (run `res://Tests/TestRunner.tscn` headless)
 
 ## Full roster source
 

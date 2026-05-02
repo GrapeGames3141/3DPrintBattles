@@ -80,6 +80,7 @@ func _show_quests() -> void:
 func _show_overworld() -> void:
 	var sc: Control = preload("res://Hub/OverworldScreen.gd").new() as Control
 	sc.back.connect(_show_hub)
+	sc.request_practice_battle.connect(_on_overworld_practice_battle)
 	_set_screen(sc)
 
 func _show_trade() -> void:
@@ -133,6 +134,10 @@ func _on_open_shop() -> void:
 
 func _on_open_team() -> void:
 	_show_team()
+
+
+func _on_overworld_practice_battle() -> void:
+	_on_open_battle()
 
 func _on_starter_chosen(unit_id: String) -> void:
 	GameState.progress["starter_chosen"] = true

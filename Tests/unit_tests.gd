@@ -1,16 +1,15 @@
-extends SceneTree
+class_name UnitTests
+extends RefCounted
+
+## Headless assertions for economy, saves, battle math. Run via [member TestRunner].
 
 var _failures := 0
 
-func _init() -> void:
-	print("== 3D Print Battles: unit tests ==")
+
+func run_all() -> int:
+	_failures = 0
 	_run_all()
-	if _failures > 0:
-		push_error("TESTS FAILED: %d" % _failures)
-		quit(1)
-	else:
-		print("ALL TESTS PASSED")
-		quit(0)
+	return _failures
 
 
 func _run_all() -> void:
@@ -24,6 +23,7 @@ func _run_all() -> void:
 	_test_game_rules_can_enter_battle()
 	_test_game_rules_shop_refresh()
 	_test_game_rules_constants_vs_save_defaults()
+	_test_overworld_route_unlocks()
 
 	_test_unit_database_loads()
 	_test_starter_ids_exist_in_database()
@@ -135,6 +135,14 @@ func _test_game_rules_constants_vs_save_defaults() -> void:
 	_assert_eq(GameRules.QUEST_MATH_ADD_COINS, 15, "quest add reward")
 
 
+func _test_overworld_route_unlocks() -> void:
+	_assert_true(GameRules.overworld_route_unlocked("practice", 0), "practice always")
+	_assert_true(not GameRules.overworld_route_unlocked("mid", 0), "mid locked at 0 wins")
+	_assert_true(GameRules.overworld_route_unlocked("mid", 1), "mid at 1 win")
+	_assert_true(not GameRules.overworld_route_unlocked("boss", 2), "boss locked at 2 wins")
+	_assert_true(GameRules.overworld_route_unlocked("boss", 3), "boss at 3 wins")
+
+
 func _test_unit_database_loads() -> void:
 	UnitDatabase.load_units("res://Data/units.json")
 	_assert_true(UnitDatabase.units_array.size() >= 20, "units.json should have >= 20 units")
@@ -185,7 +193,10 @@ func _test_save_single_profile_roundtrip() -> void:
 func _test_migrate_legacy_slot1() -> void:
 	SaveSystem.delete_save()
 	var legacy_path := "user://Saves/slot_1.json"
+	if FileAccess.file_exists(legacy_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(legacy_path))
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://Saves"))
+	_assert_true(not SaveSystem.has_save(), "no profile before legacy migrate")
 	var legacy_data: Dictionary = {
 		"coins": 77,
 		"owned_blueprints": [],
@@ -197,6 +208,9 @@ func _test_migrate_legacy_slot1() -> void:
 	var f: FileAccess = FileAccess.open(legacy_path, FileAccess.WRITE)
 	_assert_true(f != null, "can write legacy file")
 	f.store_string(JSON.stringify(legacy_data))
+	f.flush()
+	f.close()
+	_assert_true(FileAccess.file_exists(legacy_path), "legacy slot file on disk")
 	SaveSystem.migrate_legacy_if_needed()
 	_assert_true(SaveSystem.has_save(), "profile exists after migration")
 	var migrated: Dictionary = SaveSystem.load_save()

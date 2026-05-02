@@ -17,7 +17,7 @@
 | **Repo** | Git initialized; sensible `.gitignore`; meaningful commit messages. |
 | **Godot** | `project.godot` valid; main scene runs; autoloads wired; version in `application/config/version`. |
 | **Plans** | `DEVELOPMENT_PLAN.md` + `Docs/plan-phase-1.md` … `Docs/plan-phase-5.md` kept in sync with shipped behavior. |
-| **Quality** | Headless `res://Tests/run_tests.gd` after logic changes when feasible. |
+| **Quality** | Headless `res://Tests/TestRunner.tscn` after logic changes when feasible. |
 
 ## Out of scope for this phase alone
 
@@ -28,7 +28,7 @@ Phase 1 does not replace gameplay design or architecture rules — those live in
 - [x] Git repo + Godot 4.3 project boots to `Main.tscn`
 - [x] `DEVELOPMENT_PLAN.md` + phase plans (`Docs/plan-phase-*.md`) maintained
 - [x] Core autoloads wired (`EventBus`, `GameState`, `SaveSystem`, `UnitDatabase`)
-- [x] Headless test runner `res://Tests/run_tests.gd`
+- [x] Headless test runner `res://Tests/TestRunner.tscn` + `Tests/unit_tests.gd`
 - [ ] Every merge: run headless tests locally (policy)
 - [ ] Optional: pre-commit hook calling tests
 
