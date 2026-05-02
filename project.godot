@@ -1,3 +1,6 @@
+[application]
+config/version="0.1.0"
+
 [gd_project type="project" format=3]
 
 config/name="3D Print Battles"

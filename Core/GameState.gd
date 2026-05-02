@@ -1,6 +1,7 @@
 extends Node
 
-var active_slot: int = -1
+## True after Continue / New Game until returning to title (session has a loaded profile).
+var session_active: bool = false
 
 var coins: int = 0
 var owned_blueprints: Array[String] = []

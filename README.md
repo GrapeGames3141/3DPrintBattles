@@ -9,7 +9,7 @@ Kid-safe collectible creature battler inspired by 3D printing + STEM.
 - Launch Godot and **Import** this folder (it contains `project.godot`)
 - Press **Play** (main scene: `Main.tscn`)
 
-Save files are written to `user://Saves/` (Godot maps this to your Windows user app-data location).
+Saves use **`user://Saves/`** (Godot maps this under your Windows user app-data). The MVP uses a **single profile** file, **`profile.json`**, plus **`local_settings.json`** for title-screen audio preferences. If you had an old dev build, legacy **`slot_1.json`** is **migrated once** to `profile.json` on first launch and then removed.
 
 If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.3+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for compatibility across patch releases.
 

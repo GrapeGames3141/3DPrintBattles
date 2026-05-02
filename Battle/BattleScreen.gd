@@ -165,7 +165,82 @@ func _ready() -> void:
 	_results_back.pressed.connect(func(): exit_to_hub.emit())
 	results_v.add_child(_results_back)
 
-	_coin_flip_and_start()
+	call_deferred("_begin_coin_flip_sequence")
+
+func _begin_coin_flip_sequence() -> void:
+	_match_over = false
+	_results_panel.visible = false
+	_turn_owner = _rng.randi_range(0, 1)
+
+	var layer := CanvasLayer.new()
+	layer.layer = 80
+	add_child(layer)
+
+	var backdrop := ColorRect.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.color = Color(0.05, 0.07, 0.12, 0.75)
+	layer.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+
+	var panel := PanelContainer.new()
+	center.add_child(panel)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 14)
+	panel.add_child(vb)
+
+	var hdr := Label.new()
+	hdr.text = "Filament coin toss"
+	hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hdr.add_theme_font_size_override("font_size", 22)
+	vb.add_child(hdr)
+
+	var coin := Label.new()
+	coin.text = "◉"
+	coin.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	coin.add_theme_font_size_override("font_size", 64)
+	coin.modulate = Color(1.0, 0.82, 0.28)
+	vb.add_child(coin)
+
+	var sub := Label.new()
+	sub.text = "Heating nozzle… flipping…"
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vb.add_child(sub)
+
+	var tw := create_tween()
+	tw.set_loops(8)
+	tw.tween_property(coin, "scale", Vector2(1.14, 1.14), 0.08)
+	tw.tween_property(coin, "scale", Vector2(1.0, 1.0), 0.08)
+
+	await get_tree().create_timer(0.75).timeout
+	tw.kill()
+	if _turn_owner == 0:
+		sub.text = "You print first."
+	else:
+		sub.text = "Enemy printer goes first."
+	sub.add_theme_font_size_override("font_size", 18)
+
+	await get_tree().create_timer(1.15).timeout
+	layer.queue_free()
+	_apply_match_start_after_coin()
+
+
+func _apply_match_start_after_coin() -> void:
+	_turn = 1
+	_player_filament = 0
+	_enemy_filament = 0
+	_targeting_from_slot = -1
+	var starter := "Enemy"
+	if _turn_owner == 0:
+		starter = "Player"
+	_lbl_toast.text = "%s starts — summon & aim, then End Turn." % starter
+	_draw_new_hand()
+	_start_turn()
 
 func _apply_touch_layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size
@@ -223,21 +298,6 @@ func _on_grid_cell_pressed(is_player_side: bool, index: int) -> void:
 	_targeting_from_slot = -1
 	_refresh_grid_ui()
 
-func _coin_flip_and_start() -> void:
-	_match_over = false
-	_results_panel.visible = false
-	_turn_owner = _rng.randi_range(0, 1)
-	var starter_label := "Enemy"
-	if _turn_owner == 0:
-		starter_label = "Player"
-	_lbl_toast.text = "Coin flip: %s starts." % starter_label
-	_turn = 1
-	_player_filament = 0
-	_enemy_filament = 0
-	_targeting_from_slot = -1
-	_draw_new_hand()
-	_start_turn()
-
 func _start_turn() -> void:
 	_player_filament = mini(_player_filament + 1, _player_filament_max)
 	_enemy_filament = mini(_enemy_filament + 1, _enemy_filament_max)
@@ -261,7 +321,7 @@ func _draw_new_hand() -> void:
 		if not defn.is_empty():
 			_hand.append(defn)
 	if _hand.is_empty():
-		_hand = UnitDatabase.random_units(5, _rng)
+		_hand = UnitDatabase.random_units_from(UnitDatabase.active_roster_for_stage(), 5, _rng)
 	_refresh_hand_ui()
 
 func _refresh_hand_ui() -> void:
@@ -295,7 +355,7 @@ func _try_summon_from_hand(defn: Dictionary) -> void:
 func _enemy_play() -> void:
 	var empty: int = _first_empty_index(_grid_enemy)
 	if empty >= 0:
-		var candidates: Array[Dictionary] = UnitDatabase.random_units(6, _rng)
+		var candidates: Array[Dictionary] = UnitDatabase.random_units_from(UnitDatabase.active_roster_for_stage(), 6, _rng)
 		candidates.sort_custom(func(a, b): return int(a.get("cost", 1)) < int(b.get("cost", 1)))
 		for d in candidates:
 			var cand: Dictionary = d
@@ -383,8 +443,8 @@ func _finish_match() -> void:
 	GameState.coins += payout
 	if player_won:
 		GameState.progress["battles_won"] = int(GameState.progress.get("battles_won", 0)) + 1
-	if GameState.active_slot >= 1:
-		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
+	if GameState.session_active:
+		SaveSystem.write_save(GameState.to_save())
 	var msg := "Defeat. +%d coins" % payout
 	if player_won:
 		msg = "Victory! +%d coins" % payout
@@ -399,7 +459,7 @@ func _is_exhausted_enemy() -> bool:
 	if not _no_units(_grid_enemy):
 		return false
 	var cheapest: int = 9999
-	for d in UnitDatabase.units_array:
+	for d in UnitDatabase.active_roster_for_stage():
 		var ud: Dictionary = d
 		cheapest = mini(cheapest, int(ud.get("cost", 1)))
 	return _enemy_filament < cheapest
@@ -428,12 +488,14 @@ func _refresh_ui() -> void:
 	var turn_label := "Enemy turn"
 	if _turn_owner == 0:
 		turn_label = "Your turn"
-	_lbl_state.text = "Turn %d | Player HP %d | Enemy HP %d | Filament %d/%d | %s" % [
+	_lbl_state.text = "Turn %d | Player HP %d | Enemy HP %d | Your filament %d/%d | Enemy filament %d/%d | %s" % [
 		_turn,
 		_player_core_hp,
 		_enemy_core_hp,
 		_player_filament,
 		_player_filament_max,
+		_enemy_filament,
+		_enemy_filament_max,
 		turn_label
 	]
 	if _btn_end != null:

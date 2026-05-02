@@ -3,6 +3,8 @@ class_name GameRules
 ## Single source for MVP economy / limits so gameplay and unit tests stay aligned.
 
 const SHOP_OFFER_COUNT := 5
+## Stage 1 MVP: only the first N entries in `units.json` participate in shop random offers and enemy pulls (expand in Stage 2).
+const MVP_ACTIVE_UNIT_COUNT := 20
 const TEAM_MAX_UNITS := 3
 const NEW_SAVE_STARTING_COINS := 25
 const DEFAULT_FILAMENT_CAP := 3

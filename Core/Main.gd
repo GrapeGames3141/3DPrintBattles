@@ -6,6 +6,7 @@ var _current: Node = null
 
 func _ready() -> void:
 	_ensure_folders_exist()
+	SaveSystem.migrate_legacy_if_needed()
 	UnitDatabase.load_units("res://Data/units.json")
 	_show_title()
 
@@ -22,10 +23,12 @@ func _set_screen(screen: Node) -> void:
 	add_child(_current)
 
 func _show_title() -> void:
+	GameState.session_active = false
+	AudioSettings.apply_from_local_settings()
 	var title: Control = TITLE_SCENE.instantiate() as Control
-	title.start_new_game.connect(_on_start_new_game)
-	title.continue_game.connect(_on_continue_game)
-	title.delete_slot.connect(_on_delete_slot)
+	title.continue_pressed.connect(_on_continue)
+	title.new_game_confirmed.connect(_on_new_game)
+	title.quit_pressed.connect(_on_quit)
 	_set_screen(title)
 
 func _show_hub() -> void:
@@ -59,20 +62,29 @@ func _show_starter_choice() -> void:
 	starter.starter_chosen.connect(_on_starter_chosen)
 	_set_screen(starter)
 
-func _on_start_new_game(slot: int) -> void:
-	SaveSystem.create_new_slot(slot)
-	GameState.active_slot = slot
-	GameState.load_from_save(SaveSystem.load_slot(slot))
+func _on_continue() -> void:
+	GameState.load_from_save(SaveSystem.load_save())
+	_apply_local_settings_to_game_state()
+	AudioSettings.apply_from_game_state()
+	GameState.session_active = true
 	_show_hub()
 
-func _on_continue_game(slot: int) -> void:
-	GameState.active_slot = slot
-	GameState.load_from_save(SaveSystem.load_slot(slot))
+func _on_new_game() -> void:
+	SaveSystem.create_new_save()
+	GameState.load_from_save(SaveSystem.load_save())
+	_apply_local_settings_to_game_state()
+	AudioSettings.apply_from_game_state()
+	GameState.session_active = true
 	_show_hub()
 
-func _on_delete_slot(slot: int) -> void:
-	SaveSystem.delete_slot(slot)
-	_show_title()
+func _on_quit() -> void:
+	get_tree().quit()
+
+func _apply_local_settings_to_game_state() -> void:
+	var ls: Dictionary = SaveSystem.load_local_settings()
+	for k in ["music", "sfx"]:
+		if ls.has(k):
+			GameState.settings[k] = bool(ls[k])
 
 func _on_open_battle() -> void:
 	_show_battle()
@@ -88,6 +100,6 @@ func _on_starter_chosen(unit_id: String) -> void:
 	if GameState.active_team.is_empty():
 		# Starter rule: grant physical unit to battle, but do NOT grant blueprint.
 		GameState.active_team.append(unit_id)
-	if GameState.active_slot >= 1:
-		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
+	if GameState.session_active:
+		SaveSystem.write_save(GameState.to_save())
 	_show_hub()

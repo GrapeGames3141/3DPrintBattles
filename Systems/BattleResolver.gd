@@ -27,6 +27,9 @@ static func is_element_advantage(attacker_element: String, defender_element: Str
 
 
 static func effective_damage(attacker_element: String, atk: int, defender_element: String) -> int:
+	## Carbon does not participate in the Heat / PLA / Resin triangle (neutral damage multiplier).
+	if attacker_element == "Carbon" or defender_element == "Carbon":
+		return max(1, atk)
 	var mult: float = 1.0
 	if is_element_advantage(attacker_element, defender_element):
 		mult = 1.5

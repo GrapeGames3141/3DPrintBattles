@@ -127,11 +127,11 @@ func _on_upgrade_filament() -> void:
 	EventBus.request_toast.emit("Upgraded filament cap to %d." % (cap + 1))
 
 func _on_save() -> void:
-	if GameState.active_slot < 1:
-		EventBus.request_toast.emit("No active save slot.")
+	if not GameState.session_active:
+		EventBus.request_toast.emit("No active profile session.")
 		return
-	SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
-	EventBus.request_toast.emit("Saved to slot %d." % GameState.active_slot)
+	SaveSystem.write_save(GameState.to_save())
+	EventBus.request_toast.emit("Progress saved.")
 
 func _divider() -> Control:
 	var c := ColorRect.new()

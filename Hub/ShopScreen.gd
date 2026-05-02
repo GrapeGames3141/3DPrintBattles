@@ -62,7 +62,7 @@ func _ready() -> void:
 	_refresh()
 
 func _generate_offers() -> void:
-	_offers = GameRules.pick_shop_offer_unit_ids(_rng, UnitDatabase.units_array, GameRules.SHOP_OFFER_COUNT)
+	_offers = GameRules.pick_shop_offer_unit_ids(_rng, UnitDatabase.active_roster_for_stage(), GameRules.SHOP_OFFER_COUNT)
 
 func _refresh() -> void:
 	_coins.text = "Coins: %d" % GameState.coins
@@ -112,8 +112,8 @@ func _buy(unit_id: String, price: int) -> void:
 	GameState.coins -= price
 	GameState.owned_blueprints.append(unit_id)
 	_toast.text = "Purchased blueprint."
-	if GameState.active_slot >= 1:
-		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
+	if GameState.session_active:
+		SaveSystem.write_save(GameState.to_save())
 	_refresh()
 
 func _panel(content: Control) -> Control:

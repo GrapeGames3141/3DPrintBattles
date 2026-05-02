@@ -23,15 +23,21 @@ func _run_all() -> void:
 	_test_game_rules_constants_vs_save_defaults()
 
 	_test_unit_database_loads()
-	_test_save_roundtrip()
+	_test_local_settings_roundtrip()
+	_test_save_single_profile_roundtrip()
+	_test_migrate_legacy_slot1()
 	_test_starter_rule_does_not_grant_blueprint()
 	_test_battle_resolver_elements()
+	_test_battle_resolver_carbon_neutral()
 	_test_battle_resolver_tpu_constants()
+	_test_active_roster_mvp_count()
+	_test_audio_buses_ensure()
 	_test_smoke_newgame_to_battle_ready()
 
 
 func _reset_game_state_for_tests() -> void:
-	GameState.active_slot = -1
+	SaveSystem.delete_save()
+	GameState.session_active = false
 	GameState.coins = 0
 	GameState.owned_blueprints.clear()
 	GameState.active_team.clear()
@@ -95,6 +101,7 @@ func _test_game_rules_constants_vs_save_defaults() -> void:
 	_assert_eq(GameRules.FILAMENT_CAP_MAX, 10, "max filament cap")
 	_assert_eq(GameRules.BATTLE_WIN_COINS, 40, "win payout")
 	_assert_eq(GameRules.BATTLE_LOSS_COINS, 15, "loss payout")
+	_assert_eq(GameRules.MVP_ACTIVE_UNIT_COUNT, 20, "MVP roster cap")
 
 
 func _test_unit_database_loads() -> void:
@@ -104,15 +111,22 @@ func _test_unit_database_loads() -> void:
 	_assert_true(UnitDatabase.get_unit("nonexistent999").is_empty(), "unknown id is empty dict")
 
 
-func _test_save_roundtrip() -> void:
-	_reset_game_state_for_tests()
-	var slot := 3
-	SaveSystem.create_new_slot(slot)
-	var s: Dictionary = SaveSystem.load_slot(slot)
-	_assert_eq(int(s.get("coins", -1)), GameRules.NEW_SAVE_STARTING_COINS, "new save coins match GameRules")
-	_assert_true(typeof(s) == TYPE_DICTIONARY, "loaded save should be a Dictionary")
+func _test_local_settings_roundtrip() -> void:
+	SaveSystem.write_local_settings({"music": false, "sfx": true})
+	var ls: Dictionary = SaveSystem.load_local_settings()
+	_assert_eq(bool(ls.get("music", true)), false, "music false persisted")
+	_assert_eq(bool(ls.get("sfx", false)), true, "sfx true persisted")
+	SaveSystem.write_local_settings({"music": true, "sfx": true})
 
-	GameState.active_slot = slot
+
+func _test_save_single_profile_roundtrip() -> void:
+	_reset_game_state_for_tests()
+	SaveSystem.create_new_save()
+	var s: Dictionary = SaveSystem.load_save()
+	_assert_eq(int(s.get("coins", -1)), GameRules.NEW_SAVE_STARTING_COINS, "new profile coins")
+	_assert_true(typeof(s) == TYPE_DICTIONARY, "loaded save is Dictionary")
+
+	GameState.session_active = true
 	GameState.load_from_save(s)
 	GameState.coins = 123
 	GameState.owned_blueprints = ["010"]
@@ -120,13 +134,37 @@ func _test_save_roundtrip() -> void:
 	GameState.printer_upgrades["filament_cap"] = 5
 	GameState.progress["starter_chosen"] = true
 
-	SaveSystem.write_slot(slot, GameState.to_save())
-	var s2: Dictionary = SaveSystem.load_slot(slot)
-	_assert_eq(int(s2.get("coins", -1)), 123, "coins should persist")
-	_assert_true(Array(s2.get("owned_blueprints", [])).has("010"), "owned_blueprints should persist")
-	_assert_true(Array(s2.get("active_team", [])).has("001"), "active_team should persist")
-	_assert_eq(int(s2.get("printer_upgrades", {}).get("filament_cap", -1)), 5, "filament_cap should persist")
-	SaveSystem.delete_slot(slot)
+	SaveSystem.write_save(GameState.to_save())
+	var s2: Dictionary = SaveSystem.load_save()
+	_assert_eq(int(s2.get("coins", -1)), 123, "coins persist")
+	_assert_true(Array(s2.get("owned_blueprints", [])).has("010"), "blueprints persist")
+	_assert_true(Array(s2.get("active_team", [])).has("001"), "team persists")
+	_assert_eq(int(s2.get("printer_upgrades", {}).get("filament_cap", -1)), 5, "filament_cap persists")
+	SaveSystem.delete_save()
+
+
+func _test_migrate_legacy_slot1() -> void:
+	SaveSystem.delete_save()
+	var legacy_path := "user://Saves/slot_1.json"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://Saves"))
+	var legacy_data: Dictionary = {
+		"coins": 77,
+		"owned_blueprints": [],
+		"active_team": [],
+		"printer_upgrades": {"filament_cap": 3},
+		"progress": {"starter_chosen": true, "battles_won": 1},
+		"settings": {"music": true, "sfx": true}
+	}
+	var f: FileAccess = FileAccess.open(legacy_path, FileAccess.WRITE)
+	_assert_true(f != null, "can write legacy file")
+	f.store_string(JSON.stringify(legacy_data))
+	SaveSystem.migrate_legacy_if_needed()
+	_assert_true(SaveSystem.has_save(), "profile exists after migration")
+	var migrated: Dictionary = SaveSystem.load_save()
+	_assert_eq(int(migrated.get("coins", 0)), 77, "legacy coins migrated")
+	SaveSystem.delete_save()
+	if FileAccess.file_exists(legacy_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(legacy_path))
 
 
 func _test_starter_rule_does_not_grant_blueprint() -> void:
@@ -141,41 +179,61 @@ func _test_starter_rule_does_not_grant_blueprint() -> void:
 	if GameState.active_team.is_empty():
 		GameState.active_team.append(starter_id)
 
-	_assert_true(GameState.active_team.has("001"), "starter should be granted as a physical unit")
-	_assert_true(not GameState.owned_blueprints.has("001"), "starter blueprint should NOT be granted")
+	_assert_true(GameState.active_team.has("001"), "starter unit on team")
+	_assert_true(not GameState.owned_blueprints.has("001"), "starter blueprint NOT granted")
 
 
 func _test_battle_resolver_elements() -> void:
-	_assert_true(BattleResolver.is_element_advantage("Heat", "PLA"), "Heat should beat PLA")
-	_assert_true(not BattleResolver.is_element_advantage("PLA", "Heat"), "PLA should not beat Heat")
-	_assert_eq(BattleResolver.effective_damage("Heat", 4, "PLA"), 6, "advantage ~1.5x rounded")
-	_assert_eq(BattleResolver.effective_damage("PLA", 4, "Heat"), 3, "disadvantage 0.75x rounded")
-	_assert_eq(BattleResolver.effective_damage("PLA", 4, "PLA"), 4, "same element neutral")
+	_assert_true(BattleResolver.is_element_advantage("Heat", "PLA"), "Heat beats PLA")
+	_assert_true(not BattleResolver.is_element_advantage("PLA", "Heat"), "PLA does not beat Heat")
+	_assert_eq(BattleResolver.effective_damage("Heat", 4, "PLA"), 6, "advantage ~1.5x")
+	_assert_eq(BattleResolver.effective_damage("PLA", 4, "Heat"), 3, "disadvantage 0.75x")
+	_assert_eq(BattleResolver.effective_damage("PLA", 4, "PLA"), 4, "neutral")
+
+
+func _test_battle_resolver_carbon_neutral() -> void:
+	_assert_eq(BattleResolver.effective_damage("Heat", 4, "Carbon"), 4, "Heat vs Carbon: no triangle")
+	_assert_eq(BattleResolver.effective_damage("Carbon", 6, "PLA"), 6, "Carbon atk: no triangle")
+	_assert_eq(BattleResolver.effective_damage("Carbon", 4, "Heat"), 4, "Carbon def: no triangle")
+
+
+func _test_active_roster_mvp_count() -> void:
+	UnitDatabase.load_units("res://Data/units.json")
+	var roster: Array[Dictionary] = UnitDatabase.active_roster_for_stage()
+	var expect_n: int = mini(GameRules.MVP_ACTIVE_UNIT_COUNT, UnitDatabase.units_array.size())
+	_assert_eq(roster.size(), expect_n, "active MVP roster length")
+	_assert_true(roster.size() > 0, "roster non-empty")
+
+
+func _test_audio_buses_ensure() -> void:
+	AudioSettings.ensure_buses()
+	AudioSettings.ensure_buses()
+	_assert_true(AudioServer.get_bus_index("Music") >= 0, "Music bus exists")
+	_assert_true(AudioServer.get_bus_index("SFX") >= 0, "SFX bus exists")
 
 
 func _test_battle_resolver_tpu_constants() -> void:
-	_assert_eq(BattleResolver.TPU_DODGE_CHANCE, 0.15, "TPU dodge chance (gameplay + tuning)")
+	_assert_eq(BattleResolver.TPU_DODGE_CHANCE, 0.15, "TPU dodge chance")
 
 
 func _test_smoke_newgame_to_battle_ready() -> void:
 	_reset_game_state_for_tests()
 	UnitDatabase.load_units("res://Data/units.json")
-	var slot := 2
-	SaveSystem.create_new_slot(slot)
-	var s0: Dictionary = SaveSystem.load_slot(slot)
-	_assert_true(bool(s0.get("progress", {}).get("starter_chosen", false)) == false, "new slot not starter-complete")
+	SaveSystem.create_new_save()
+	var s0: Dictionary = SaveSystem.load_save()
+	_assert_true(bool(s0.get("progress", {}).get("starter_chosen", false)) == false, "new profile needs starter")
 
-	GameState.active_slot = slot
+	GameState.session_active = true
 	GameState.load_from_save(s0)
 	GameState.progress["starter_chosen"] = true
 	GameState.active_team = ["001"]
-	SaveSystem.write_slot(slot, GameState.to_save())
+	SaveSystem.write_save(GameState.to_save())
 
-	var s: Dictionary = SaveSystem.load_slot(slot)
-	_assert_true(bool(s.get("progress", {}).get("starter_chosen", false)), "starter flag saved")
+	var s: Dictionary = SaveSystem.load_save()
+	_assert_true(bool(s.get("progress", {}).get("starter_chosen", false)), "starter saved")
 	var team: Array = s.get("active_team", []) as Array
-	_assert_true(team.size() >= 1, "active team non-empty")
+	_assert_true(team.size() >= 1, "team non-empty")
 	var first_id: String = str(team[0])
-	_assert_true(not UnitDatabase.get_unit(first_id).is_empty(), "team unit loads from json")
+	_assert_true(not UnitDatabase.get_unit(first_id).is_empty(), "unit resolves from json")
 
-	SaveSystem.delete_slot(slot)
+	SaveSystem.delete_save()

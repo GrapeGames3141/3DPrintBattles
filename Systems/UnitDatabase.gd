@@ -36,11 +36,25 @@ func load_units(path: String) -> void:
 func get_unit(id: String) -> Dictionary:
 	return units_by_id.get(id, {})
 
-func random_units(count: int, rng: RandomNumberGenerator) -> Array[Dictionary]:
+
+func active_roster_for_stage() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	if units_array.is_empty():
+	var cap: int = mini(GameRules.MVP_ACTIVE_UNIT_COUNT, units_array.size())
+	for i in cap:
+		result.append(units_array[i])
+	return result
+
+
+func random_units(count: int, rng: RandomNumberGenerator) -> Array[Dictionary]:
+	return random_units_from(active_roster_for_stage(), count, rng)
+
+
+func random_units_from(pool: Array[Dictionary], count: int, rng: RandomNumberGenerator) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if pool.is_empty() or count <= 0:
 		return result
+	var last: int = pool.size() - 1
 	for i in count:
-		result.append(units_array[rng.randi_range(0, units_array.size() - 1)])
+		result.append(pool[rng.randi_range(0, last)])
 	return result
 

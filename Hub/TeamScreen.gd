@@ -153,8 +153,8 @@ func _clear_team() -> void:
 	_refresh()
 
 func _save() -> void:
-	if GameState.active_slot >= 1:
-		SaveSystem.write_slot(GameState.active_slot, GameState.to_save())
+	if GameState.session_active:
+		SaveSystem.write_save(GameState.to_save())
 
 func _panel(content: Control) -> Control:
 	var p := PanelContainer.new()

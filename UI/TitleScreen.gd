@@ -1,13 +1,19 @@
 extends Control
 
-## Title screen: three save slots. Signals use untyped args (broad Godot 4.x compatibility).
+## Industry-standard title flow (offline MVP): one profile file — Continue / New Game / Options / Quit.
 
-signal start_new_game(slot)
-signal continue_game(slot)
-signal delete_slot(slot)
+signal continue_pressed
+signal new_game_confirmed
+signal quit_pressed
 
 var _toast: Label
 var _root: VBoxContainer
+var _btn_continue: Button
+var _confirm_new_game: AcceptDialog
+var _confirm_delete: AcceptDialog
+var _options_panel: PanelContainer
+var _chk_music: CheckBox
+var _chk_sfx: CheckBox
 
 
 func _ready() -> void:
@@ -15,6 +21,7 @@ func _ready() -> void:
 	_build_ui()
 	EventBus.request_toast.connect(_on_toast)
 	call_deferred("_fit_to_viewport")
+	call_deferred("_refresh_continue_button")
 
 
 func _exit_tree() -> void:
@@ -27,11 +34,15 @@ func _notification(what: int) -> void:
 		call_deferred("_fit_to_viewport")
 
 
-## Main is a Node, not a Control — fill the window explicitly.
 func _fit_to_viewport() -> void:
 	var r: Rect2 = get_viewport_rect()
 	set_position(Vector2.ZERO)
 	set_size(r.size)
+
+
+func _refresh_continue_button() -> void:
+	if _btn_continue != null:
+		_btn_continue.disabled = not SaveSystem.has_save()
 
 
 func _build_ui() -> void:
@@ -45,86 +56,144 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "3D PRINT BATTLES"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_font_size_override("font_size", 44)
 	_root.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = "Collect. Print. Battle."
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.modulate = Color(0.85, 0.9, 1.0)
 	subtitle.add_theme_font_size_override("font_size", 18)
 	_root.add_child(subtitle)
 
-	_root.add_child(_spacer(18))
+	var ver := Label.new()
+	ver.text = "v %s" % ProjectSettings.get_setting("application/config/version", "0.1")
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ver.modulate.a = 0.65
+	ver.add_theme_font_size_override("font_size", 14)
+	_root.add_child(ver)
 
-	var slots := HBoxContainer.new()
-	slots.alignment = BoxContainer.ALIGNMENT_CENTER
-	slots.add_theme_constant_override("separation", 16)
-	_root.add_child(slots)
+	_root.add_child(_spacer(28))
 
-	for s in [1, 2, 3]:
-		slots.add_child(_make_slot_panel(s))
+	_btn_continue = Button.new()
+	_btn_continue.text = "Continue"
+	_btn_continue.custom_minimum_size = Vector2(320, 52)
+	_btn_continue.disabled = not SaveSystem.has_save()
+	_btn_continue.pressed.connect(func(): continue_pressed.emit())
+	_root.add_child(_btn_continue)
 
-	_root.add_child(_spacer(10))
+	var btn_play := Button.new()
+	btn_play.text = "New Game"
+	btn_play.custom_minimum_size = Vector2(320, 52)
+	btn_play.pressed.connect(_on_new_game_clicked)
+	_root.add_child(btn_play)
+
+	var btn_opts := Button.new()
+	btn_opts.text = "Options"
+	btn_opts.custom_minimum_size = Vector2(320, 48)
+	btn_opts.pressed.connect(_toggle_options)
+	_root.add_child(btn_opts)
+
+	_options_panel = _build_options_panel()
+	_options_panel.visible = false
+	_root.add_child(_options_panel)
+
+	var btn_quit := Button.new()
+	btn_quit.text = "Quit"
+	btn_quit.custom_minimum_size = Vector2(320, 44)
+	btn_quit.pressed.connect(func(): quit_pressed.emit())
+	_root.add_child(btn_quit)
+
+	_root.add_child(_spacer(14))
 
 	_toast = Label.new()
 	_toast.text = ""
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.modulate.a = 0.85
+	_toast.modulate.a = 0.9
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(_toast)
 
+	_confirm_new_game = AcceptDialog.new()
+	_confirm_new_game.title = "New Game"
+	_confirm_new_game.dialog_text = "Start a new game? Your current progress on this device will be replaced."
+	add_child(_confirm_new_game)
+	_confirm_new_game.confirmed.connect(func(): new_game_confirmed.emit())
 
-func _make_slot_panel(slot: int) -> Control:
+	_confirm_delete = AcceptDialog.new()
+	_confirm_delete.title = "Delete Progress"
+	_confirm_delete.dialog_text = "Erase all saved progress on this device? This cannot be undone."
+	add_child(_confirm_delete)
+	_confirm_delete.confirmed.connect(_on_delete_progress_confirmed)
+
+
+func _build_options_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(280, 220)
+	panel.custom_minimum_size = Vector2(360, 0)
 
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 8)
+	vb.add_theme_constant_override("separation", 10)
 	panel.add_child(vb)
 
-	var header := Label.new()
-	header.text = "Save Slot %d" % slot
-	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 20)
-	vb.add_child(header)
+	var hdr := Label.new()
+	hdr.text = "Options"
+	hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hdr.add_theme_font_size_override("font_size", 20)
+	vb.add_child(hdr)
 
-	var exists := SaveSystem.slot_exists(slot)
-	var status := Label.new()
-	if exists:
-		status.text = "Status: Ready"
-	else:
-		status.text = "Status: Empty"
-	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(status)
+	var ls: Dictionary = SaveSystem.load_local_settings()
+	_chk_music = CheckBox.new()
+	_chk_music.text = "Music"
+	_chk_music.button_pressed = bool(ls.get("music", true))
+	_chk_music.toggled.connect(func(on: bool): _persist_audio("music", on))
+	vb.add_child(_chk_music)
 
-	vb.add_child(_spacer(6))
+	_chk_sfx = CheckBox.new()
+	_chk_sfx.text = "Sound Effects"
+	_chk_sfx.button_pressed = bool(ls.get("sfx", true))
+	_chk_sfx.toggled.connect(func(on: bool): _persist_audio("sfx", on))
+	vb.add_child(_chk_sfx)
 
-	var btn_new := Button.new()
-	if exists:
-		btn_new.text = "New Game (Overwrite)"
-	else:
-		btn_new.text = "New Game"
-	btn_new.pressed.connect(func():
-		start_new_game.emit(slot)
-	)
-	vb.add_child(btn_new)
+	var btn_del := Button.new()
+	btn_del.text = "Delete all progress…"
+	btn_del.pressed.connect(func(): _confirm_delete.popup_centered())
+	vb.add_child(btn_del)
 
-	var btn_continue := Button.new()
-	btn_continue.text = "Continue"
-	btn_continue.disabled = not exists
-	btn_continue.pressed.connect(func():
-		continue_game.emit(slot)
-	)
-	vb.add_child(btn_continue)
-
-	var btn_delete := Button.new()
-	btn_delete.text = "Delete"
-	btn_delete.disabled = not exists
-	btn_delete.pressed.connect(func():
-		delete_slot.emit(slot)
-	)
-	vb.add_child(btn_delete)
+	var btn_close := Button.new()
+	btn_close.text = "Close"
+	btn_close.pressed.connect(func(): _options_panel.visible = false)
+	vb.add_child(btn_close)
 
 	return panel
+
+
+func _toggle_options() -> void:
+	_options_panel.visible = not _options_panel.visible
+	if _options_panel.visible:
+		var ls: Dictionary = SaveSystem.load_local_settings()
+		_chk_music.button_pressed = bool(ls.get("music", true))
+		_chk_sfx.button_pressed = bool(ls.get("sfx", true))
+
+
+func _persist_audio(key: String, on: bool) -> void:
+	var ls: Dictionary = SaveSystem.load_local_settings()
+	ls[key] = on
+	SaveSystem.write_local_settings(ls)
+	AudioSettings.apply_from_local_settings()
+	EventBus.request_toast.emit("Settings saved.")
+
+
+func _on_delete_progress_confirmed() -> void:
+	SaveSystem.delete_save()
+	_refresh_continue_button()
+	EventBus.request_toast.emit("Progress deleted.")
+	_options_panel.visible = false
+
+
+func _on_new_game_clicked() -> void:
+	if SaveSystem.has_save():
+		_confirm_new_game.popup_centered()
+	else:
+		new_game_confirmed.emit()
 
 
 func _spacer(px: int) -> Control:
