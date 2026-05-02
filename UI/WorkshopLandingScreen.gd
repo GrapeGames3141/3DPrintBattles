@@ -34,46 +34,89 @@ func _ready() -> void:
 	add_child(_vp_container)
 
 	_vp = SubViewport.new()
-	_vp.size = Vector2i(1920, 1080)
-	_vp.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+	# With stretch enabled, resolution follows the container — do not hard-code size (avoids warnings + stale physics).
+	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_vp.handle_input_locally = false
 	_vp_container.add_child(_vp)
 
 	var world := _build_workshop_world()
 	_vp.add_child(world)
 
-	var overlay := VBoxContainer.new()
+	var overlay := MarginContainer.new()
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var om: int = int(clampf(get_viewport_rect().size.x * 0.018, 10.0, 28.0))
+	overlay.add_theme_constant_override("margin_left", om)
+	overlay.add_theme_constant_override("margin_top", om)
+	overlay.add_theme_constant_override("margin_right", om)
+	overlay.add_theme_constant_override("margin_bottom", om)
 	add_child(overlay)
 
+	var root_col := VBoxContainer.new()
+	root_col.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root_col.add_theme_constant_override("separation", 0)
+	overlay.add_child(root_col)
+
+	var top_bar := PanelContainer.new()
+	top_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_bar.add_theme_stylebox_override("panel", _stylebox_title_strip())
+	var top_inner := MarginContainer.new()
+	top_inner.add_theme_constant_override("margin_left", 14)
+	top_inner.add_theme_constant_override("margin_top", 10)
+	top_inner.add_theme_constant_override("margin_right", 14)
+	top_inner.add_theme_constant_override("margin_bottom", 10)
+	top_bar.add_child(top_inner)
 	var top_hint := Label.new()
 	top_hint.text = "Filament Fighters — Makers Guild"
 	top_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	top_hint.add_theme_font_size_override("font_size", 24)
-	overlay.add_child(top_hint)
+	top_hint.add_theme_font_size_override("font_size", 26)
+	top_hint.add_theme_color_override("font_color", Color(1.0, 0.97, 0.9))
+	top_hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.88))
+	top_hint.add_theme_constant_override("shadow_offset_x", 3)
+	top_hint.add_theme_constant_override("shadow_offset_y", 3)
+	top_inner.add_child(top_hint)
+	root_col.add_child(top_bar)
 
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(sp)
+	root_col.add_child(sp)
 
-	var bot := Label.new()
-	bot.text = "Click: Door → Menu · Monitor → Team · 3D Printer → Shop"
-	bot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bot.add_theme_font_size_override("font_size", 16)
-	overlay.add_child(bot)
+	var hint := Label.new()
+	hint.text = "Click the workshop — or use the buttons below"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 15)
+	hint.add_theme_color_override("font_color", Color(0.88, 0.92, 1.0))
+	hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	hint.add_theme_constant_override("shadow_offset_x", 2)
+	hint.add_theme_constant_override("shadow_offset_y", 2)
+	root_col.add_child(hint)
+
+	var sp2 := Control.new()
+	sp2.custom_minimum_size = Vector2(0, 8)
+	sp2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root_col.add_child(sp2)
+
+	root_col.add_child(_build_landing_bottom_shelf())
 
 	_toast_line = Label.new()
 	_toast_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast_line.add_theme_font_size_override("font_size", 15)
 	_toast_line.theme_type_variation = &"ToastLabel"
-	overlay.add_child(_toast_line)
+	root_col.add_child(_toast_line)
 
 	if not EventBus.request_toast.is_connected(_on_hub_toast):
 		EventBus.request_toast.connect(_on_hub_toast)
+
+	# SubViewport World3D / physics space may be null until after first frames — warm up picks.
+	await get_tree().process_frame
+	await get_tree().physics_frame
 
 
 func _build_overlay_theme() -> Theme:
@@ -92,6 +135,81 @@ func _build_overlay_theme() -> Theme:
 	t.set_constant("shadow_offset_x", "ToastLabel", 2)
 	t.set_constant("shadow_offset_y", "ToastLabel", 2)
 	return t
+
+
+func _stylebox_title_strip() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.1, 0.07, 0.06, 0.9)
+	s.border_color = Color(0.55, 0.38, 0.24, 0.85)
+	s.set_border_width_all(3)
+	s.corner_radius_top_left = 14
+	s.corner_radius_top_right = 14
+	s.corner_radius_bottom_left = 14
+	s.corner_radius_bottom_right = 14
+	s.shadow_color = Color(0, 0, 0, 0.45)
+	s.shadow_size = 12
+	s.shadow_offset = Vector2(2, 4)
+	return s
+
+
+func _build_landing_bottom_shelf() -> Control:
+	var shelf := PanelContainer.new()
+	shelf.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shelf.mouse_filter = Control.MOUSE_FILTER_STOP
+	shelf.custom_minimum_size = Vector2(0, 100)
+	var sh := StyleBoxFlat.new()
+	sh.bg_color = Color(0.11, 0.075, 0.055, 0.92)
+	sh.border_color = Color(0.48, 0.34, 0.22, 0.8)
+	sh.set_border_width_all(3)
+	sh.corner_radius_top_left = 14
+	sh.corner_radius_top_right = 14
+	sh.corner_radius_bottom_left = 14
+	sh.corner_radius_bottom_right = 14
+	sh.shadow_color = Color(0, 0, 0, 0.42)
+	sh.shadow_size = 10
+	sh.shadow_offset = Vector2(2, 5)
+	sh.content_margin_left = 12
+	sh.content_margin_top = 10
+	sh.content_margin_right = 12
+	sh.content_margin_bottom = 10
+	shelf.add_theme_stylebox_override("panel", sh)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	shelf.add_child(row)
+
+	var ink := Color(0.06, 0.07, 0.1)
+	row.add_child(_make_landing_action_button("Door → Title", Color(0.22, 0.82, 0.78), func(): go_title.emit()))
+
+	row.add_child(_make_landing_action_button("Team Station", Color(0.28, 0.88, 0.52), func(): open_team.emit()))
+
+	row.add_child(_make_landing_action_button("Filament Shop", Color(1.0, 0.42, 0.22), func(): open_shop.emit()))
+
+	return shelf
+
+
+func _make_landing_action_button(label: String, accent: Color, on_press: Callable) -> Button:
+	var ink := Color(0.06, 0.07, 0.1)
+	var b := Button.new()
+	b.text = label
+	b.custom_minimum_size = Vector2(168, 52)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.size_flags_stretch_ratio = 1.0
+	var stacks: Array = UiTheme.pill_styleboxes(
+		accent.lightened(0.06),
+		accent.lightened(0.16),
+		accent.darkened(0.12),
+		ink,
+		20
+	)
+	b.add_theme_stylebox_override("normal", stacks[0])
+	b.add_theme_stylebox_override("hover", stacks[1])
+	b.add_theme_stylebox_override("pressed", stacks[2])
+	b.add_theme_font_size_override("font_size", 17)
+	b.add_theme_color_override("font_color", ink)
+	b.pressed.connect(on_press)
+	return b
 
 
 func _build_workshop_world() -> Node3D:
@@ -430,11 +548,11 @@ func _add_hotspot(parent: Node3D, kind: String, pos: Vector3, box_size: Vector3)
 	parent.add_child(body)
 
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_try_ray_pick(event.global_position)
 	if event is InputEventScreenTouch and event.pressed:
-		_try_ray_pick(event.position)
+		_try_ray_pick(event.global_position)
 
 
 func _exit_tree() -> void:
@@ -454,11 +572,28 @@ func _try_ray_pick(screen_pos: Vector2) -> void:
 	if not gr.has_point(screen_pos):
 		return
 	var local := screen_pos - gr.position
-	var vp_px: Vector2 = local / gr.size * Vector2(_vp.size)
+	var vp_rect := _vp.get_visible_rect()
+	var vp_w: float = maxf(float(vp_rect.size.x), 1.0)
+	var vp_h: float = maxf(float(vp_rect.size.y), 1.0)
+	if vp_w <= 1.0 or vp_h <= 1.0:
+		vp_w = maxf(float(_vp.size.x), 1.0)
+		vp_h = maxf(float(_vp.size.y), 1.0)
+	var vp_px := Vector2(
+		local.x / maxf(gr.size.x, 1.0) * vp_w,
+		local.y / maxf(gr.size.y, 1.0) * vp_h
+	)
 	var from := _camera.project_ray_origin(vp_px)
 	var dir := _camera.project_ray_normal(vp_px)
 	var to := from + dir * 120.0
-	var space := _vp.world_3d.direct_space_state
+	# SubViewport.world_3d is often null until the viewport has run; camera's world is reliable.
+	var w3: World3D = _camera.get_world_3d()
+	if w3 == null:
+		w3 = _vp.world_3d
+	if w3 == null:
+		return
+	var space: PhysicsDirectSpaceState3D = w3.direct_space_state
+	if space == null:
+		return
 	var q := PhysicsRayQueryParameters3D.create(from, to)
 	q.collision_mask = 1
 	q.collide_with_areas = true
