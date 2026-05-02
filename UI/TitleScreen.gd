@@ -1,7 +1,7 @@
 extends Control
 
-## Polished title: 3D printer centerpiece + filament-crack pedestal, pill CTAs, bottom workshop HUD.
-## Signals preserved for Main: continue_pressed, new_game_confirmed, quit_pressed.
+## Title screen: Hearthstone-style spatial layout (central framed menu + bottom shelf) over a 3D workshop desk.
+## Signals: continue_pressed, new_game_confirmed, quit_pressed, open_shop_pressed, open_team_pressed, open_quests_pressed.
 
 signal continue_pressed
 signal new_game_confirmed
@@ -33,6 +33,7 @@ func _ready() -> void:
 	offset_bottom = 0
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	theme = UiTheme.build_title_theme()
+	_apply_overlay_label_theme()
 	_build_ui()
 	EventBus.request_toast.connect(_on_toast)
 	call_deferred("_fit_to_viewport")
@@ -53,8 +54,7 @@ func _fit_to_viewport() -> void:
 	var r: Rect2 = get_viewport_rect()
 	set_position(Vector2.ZERO)
 	set_size(r.size)
-	if _vp != null:
-		_vp.size = Vector2i(maxi(2, int(r.size.x)), maxi(2, int(r.size.y)))
+	# SubViewport resolution follows SubViewportContainer when stretch is enabled — do not assign size manually.
 
 
 func _refresh_continue_button() -> void:
@@ -62,13 +62,18 @@ func _refresh_continue_button() -> void:
 		_btn_continue.disabled = not SaveSystem.has_save()
 
 
+func _apply_overlay_label_theme() -> void:
+	# Strong separation from busy 3D background (kid-safe readability).
+	add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.88))
+	add_theme_constant_override("shadow_offset_x", 3)
+	add_theme_constant_override("shadow_offset_y", 3)
+
+
 func _build_ui() -> void:
+	# Layer 0 — 3D workshop (full viewport).
 	_vp_container = SubViewportContainer.new()
 	_vp_container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_vp_container.offset_left = 0
-	_vp_container.offset_top = 0
-	_vp_container.offset_right = 0
-	_vp_container.offset_bottom = 0
+	_vp_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_vp_container.stretch = true
 	add_child(_vp_container)
 
@@ -80,114 +85,74 @@ func _build_ui() -> void:
 	_vp_container.add_child(_vp)
 	_vp.add_child(_build_title_world())
 
-	var overlay := MarginContainer.new()
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.add_theme_constant_override("margin_left", 20)
-	overlay.add_theme_constant_override("margin_top", 16)
-	overlay.add_theme_constant_override("margin_right", 20)
-	overlay.add_theme_constant_override("margin_bottom", 16)
-	add_child(overlay)
+	# Layer 1 — UI (blocks raycasts; structured like Hearthstone: center frame + bottom shelf).
+	var fg := Control.new()
+	fg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fg.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(fg)
 
-	var main_col := VBoxContainer.new()
-	main_col.set_anchors_preset(Control.PRESET_FULL_RECT)
-	main_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	overlay.add_child(main_col)
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var m: int = int(clampf(get_viewport_rect().size.x * 0.018, 10.0, 28.0))
+	margin.add_theme_constant_override("margin_left", m)
+	margin.add_theme_constant_override("margin_top", m)
+	margin.add_theme_constant_override("margin_right", m)
+	margin.add_theme_constant_override("margin_bottom", m)
+	fg.add_child(margin)
 
-	var top_row := HBoxContainer.new()
-	top_row.alignment = BoxContainer.ALIGNMENT_END
-	top_row.add_theme_constant_override("separation", 10)
-	var ver_left := Label.new()
-	ver_left.text = "v %s" % ProjectSettings.get_setting("application/config/version", "0.1")
-	ver_left.add_theme_font_size_override("font_size", 13)
-	ver_left.modulate.a = 0.7
-	ver_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_row.add_child(ver_left)
+	var root_col := VBoxContainer.new()
+	root_col.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_col.add_theme_constant_override("separation", 0)
+	margin.add_child(root_col)
 
-	var btn_opts := Button.new()
-	btn_opts.text = "Options"
-	btn_opts.custom_minimum_size = Vector2(120, 40)
-	btn_opts.pressed.connect(_toggle_options)
-	_attach_hover_sparks(btn_opts, Color(0.75, 0.95, 1.0))
-	top_row.add_child(btn_opts)
+	var top_spacer := Control.new()
+	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	top_spacer.size_flags_stretch_ratio = 1.15
+	root_col.add_child(top_spacer)
 
-	var btn_quit := Button.new()
-	btn_quit.text = "Quit"
-	btn_quit.custom_minimum_size = Vector2(100, 40)
-	btn_quit.pressed.connect(func(): quit_pressed.emit())
-	_attach_hover_sparks(btn_quit, Color(1.0, 0.55, 0.45))
-	top_row.add_child(btn_quit)
-	main_col.add_child(top_row)
+	var center_row := HBoxContainer.new()
+	center_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center_row.add_theme_constant_override("separation", 0)
+	root_col.add_child(center_row)
 
-	var title := Label.new()
-	title.text = "3D PRINT BATTLES"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 42)
-	title.add_theme_color_override("font_color", Color(0.08, 0.1, 0.16))
-	main_col.add_child(title)
+	var left_pad := Control.new()
+	left_pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_row.add_child(left_pad)
 
-	var subtitle := Label.new()
-	subtitle.text = "Collect · Print · Battle"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.modulate = Color(0.25, 0.42, 0.55)
-	subtitle.add_theme_font_size_override("font_size", 17)
-	main_col.add_child(subtitle)
+	var center_wrap := CenterContainer.new()
+	center_wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center_row.add_child(center_wrap)
 
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 8)
-	main_col.add_child(gap)
+	var main_frame := _build_hearthstone_main_frame()
+	center_wrap.add_child(main_frame)
 
-	var mid_spacer := Control.new()
-	mid_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	mid_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	main_col.add_child(mid_spacer)
+	var right_pad := Control.new()
+	right_pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_row.add_child(right_pad)
 
-	var btn_stack := VBoxContainer.new()
-	btn_stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_stack.add_theme_constant_override("separation", 16)
+	var bot_spacer := Control.new()
+	bot_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bot_spacer.size_flags_stretch_ratio = 0.82
+	root_col.add_child(bot_spacer)
 
-	_btn_continue = Button.new()
-	_btn_continue.text = "Continue"
-	_btn_continue.custom_minimum_size = Vector2(320, 56)
-	_btn_continue.disabled = not SaveSystem.has_save()
-	_btn_continue.pressed.connect(func(): continue_pressed.emit())
-	_attach_hover_sparks(_btn_continue, Color(0.4, 1.0, 0.92))
-	btn_stack.add_child(_btn_continue)
-
-	var btn_new := Button.new()
-	btn_new.text = "New Game"
-	btn_new.custom_minimum_size = Vector2(320, 56)
-	btn_new.pressed.connect(_on_new_game_clicked)
-	var ink := Color(0.12, 0.14, 0.22)
-	var stacks: Array = UiTheme.pill_styleboxes(
-		Color(1.0, 0.48, 0.42),
-		Color(1.0, 0.62, 0.55),
-		Color(0.82, 0.32, 0.28),
-		ink,
-		26
-	)
-	btn_new.add_theme_stylebox_override("normal", stacks[0])
-	btn_new.add_theme_stylebox_override("hover", stacks[1])
-	btn_new.add_theme_stylebox_override("pressed", stacks[2])
-	_attach_hover_sparks(btn_new, Color(1.0, 0.65, 0.45))
-	btn_stack.add_child(btn_new)
-
-	main_col.add_child(btn_stack)
-
-	var mid_spacer2 := Control.new()
-	mid_spacer2.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	mid_spacer2.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	main_col.add_child(mid_spacer2)
-
-	main_col.add_child(_build_bottom_hud())
+	root_col.add_child(_build_hearthstone_bottom_shelf())
 
 	_toast = Label.new()
 	_toast.text = ""
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast.add_theme_font_size_override("font_size", 14)
-	_toast.modulate = Color(0.95, 0.78, 0.45)
-	main_col.add_child(_toast)
+	_toast.add_theme_font_size_override("font_size", 15)
+	_toast.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55))
+	_toast.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	_toast.add_theme_constant_override("shadow_offset_x", 2)
+	_toast.add_theme_constant_override("shadow_offset_y", 2)
+	root_col.add_child(_toast)
 
 	_options_panel = _build_options_panel()
 	_options_panel.visible = false
@@ -211,31 +176,255 @@ func _build_ui() -> void:
 	_confirm_delete.confirmed.connect(_on_delete_progress_confirmed)
 
 
-func _build_bottom_hud() -> Control:
-	var bar := PanelContainer.new()
-	var bar_style := StyleBoxFlat.new()
-	bar_style.bg_color = Color(0.18, 0.12, 0.1, 0.88)
-	bar_style.border_color = Color(0.45, 0.32, 0.22, 0.65)
-	bar_style.set_border_width_all(2)
-	bar_style.corner_radius_top_left = 16
-	bar_style.corner_radius_top_right = 16
-	bar_style.corner_radius_bottom_left = 16
-	bar_style.corner_radius_bottom_right = 16
-	bar_style.shadow_color = Color(0, 0, 0, 0.35)
-	bar_style.shadow_size = 8
-	bar_style.shadow_offset = Vector2(2, 4)
-	bar.add_theme_stylebox_override("panel", bar_style)
+func _build_hearthstone_main_frame() -> Control:
+	var ink := Color(0.08, 0.09, 0.14)
+
+	var outer := PanelContainer.new()
+	outer.mouse_filter = Control.MOUSE_FILTER_STOP
+	outer.custom_minimum_size = Vector2(
+		clampf(get_viewport_rect().size.x * 0.42, 320.0, 540.0),
+		clampf(get_viewport_rect().size.y * 0.62, 420.0, 620.0)
+	)
+	var outer_sb := _stylebox_chunky_frame()
+	outer.add_theme_stylebox_override("panel", outer_sb)
+
+	var inner_col := VBoxContainer.new()
+	inner_col.add_theme_constant_override("separation", 10)
+	outer.add_child(inner_col)
+
+	var title := Label.new()
+	title.text = "3D PRINT BATTLES"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", Color(1.0, 0.97, 0.9))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.92))
+	title.add_theme_constant_override("shadow_offset_x", 3)
+	title.add_theme_constant_override("shadow_offset_y", 3)
+	inner_col.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Collect · Print · Battle"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 17)
+	subtitle.add_theme_color_override("font_color", Color(0.82, 0.94, 1.0))
+	subtitle.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	subtitle.add_theme_constant_override("shadow_offset_x", 2)
+	subtitle.add_theme_constant_override("shadow_offset_y", 2)
+	inner_col.add_child(subtitle)
+
+	var plate := PanelContainer.new()
+	plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plate.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var plate_min: float = clampf(minf(outer.custom_minimum_size.x, outer.custom_minimum_size.y) * 0.92, 280.0, 480.0)
+	plate.custom_minimum_size = Vector2(plate_min, plate_min)
+	var plate_sb := _stylebox_circle_plate()
+	plate.add_theme_stylebox_override("panel", plate_sb)
+
+	var plate_margin := MarginContainer.new()
+	plate_margin.add_theme_constant_override("margin_left", 18)
+	plate_margin.add_theme_constant_override("margin_top", 22)
+	plate_margin.add_theme_constant_override("margin_right", 18)
+	plate_margin.add_theme_constant_override("margin_bottom", 18)
+	plate.add_child(plate_margin)
+
+	var btn_stack := VBoxContainer.new()
+	btn_stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_stack.add_theme_constant_override("separation", 12)
+	plate_margin.add_child(btn_stack)
+
+	var btn_w: float = clampf(plate_min - 52.0, 240.0, 400.0)
+	var btn_h: float = 52.0
+
+	_btn_continue = Button.new()
+	_btn_continue.text = "Continue"
+	_btn_continue.custom_minimum_size = Vector2(btn_w, btn_h)
+	_btn_continue.disabled = not SaveSystem.has_save()
+	_btn_continue.pressed.connect(func(): continue_pressed.emit())
+	_apply_plastic_button(_btn_continue, Color(0.12, 0.82, 0.88), Color(0.2, 0.92, 0.98), Color(0.08, 0.58, 0.62), ink, 22)
+	_attach_hover_sparks(_btn_continue, Color(0.35, 1.0, 0.95))
+	btn_stack.add_child(_btn_continue)
+
+	var btn_new := Button.new()
+	btn_new.text = "New Game"
+	btn_new.custom_minimum_size = Vector2(btn_w, btn_h)
+	btn_new.pressed.connect(_on_new_game_clicked)
+	_apply_plastic_button(btn_new, Color(0.98, 0.35, 0.62), Color(1.0, 0.48, 0.72), Color(0.72, 0.18, 0.42), ink, 22)
+	_attach_hover_sparks(btn_new, Color(1.0, 0.55, 0.75))
+	btn_stack.add_child(btn_new)
+
+	var btn_opts := Button.new()
+	btn_opts.text = "Options"
+	btn_opts.custom_minimum_size = Vector2(btn_w, btn_h)
+	btn_opts.pressed.connect(_toggle_options)
+	_apply_plastic_button(btn_opts, Color(1.0, 0.86, 0.18), Color(1.0, 0.93, 0.38), Color(0.78, 0.62, 0.08), ink, 22)
+	_attach_hover_sparks(btn_opts, Color(1.0, 0.95, 0.45))
+	btn_stack.add_child(btn_opts)
+
+	var btn_quit := Button.new()
+	btn_quit.text = "Quit"
+	btn_quit.custom_minimum_size = Vector2(btn_w, btn_h)
+	btn_quit.pressed.connect(func(): quit_pressed.emit())
+	_apply_plastic_button(btn_quit, Color(0.52, 0.42, 0.78), Color(0.62, 0.52, 0.92), Color(0.35, 0.28, 0.55), ink, 22)
+	_attach_hover_sparks(btn_quit, Color(0.75, 0.55, 1.0))
+	btn_stack.add_child(btn_quit)
+
+	inner_col.add_child(plate)
+
+	return outer
+
+
+func _stylebox_chunky_frame() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.14, 0.09, 0.07, 0.92)
+	s.border_color = Color(0.72, 0.52, 0.28, 0.95)
+	s.set_border_width_all(5)
+	s.corner_radius_top_left = 18
+	s.corner_radius_top_right = 18
+	s.corner_radius_bottom_left = 18
+	s.corner_radius_bottom_right = 18
+	s.shadow_color = Color(0, 0, 0, 0.55)
+	s.shadow_size = 18
+	s.shadow_offset = Vector2(4, 8)
+	s.content_margin_left = 20
+	s.content_margin_top = 18
+	s.content_margin_right = 20
+	s.content_margin_bottom = 18
+	return s
+
+
+func _stylebox_circle_plate() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.05, 0.06, 0.12, 0.72)
+	s.border_color = Color(0.35, 0.85, 0.98, 0.55)
+	s.set_border_width_all(4)
+	var rad := 240
+	s.corner_radius_top_left = rad
+	s.corner_radius_top_right = rad
+	s.corner_radius_bottom_right = rad
+	s.corner_radius_bottom_left = rad
+	s.shadow_color = Color(0.15, 0.55, 0.95, 0.35)
+	s.shadow_size = 14
+	s.shadow_offset = Vector2(0, 4)
+	s.content_margin_left = 12
+	s.content_margin_top = 12
+	s.content_margin_right = 12
+	s.content_margin_bottom = 12
+	return s
+
+
+func _apply_plastic_button(
+	btn: Button,
+	bg: Color,
+	bg_hover: Color,
+	bg_press: Color,
+	ink: Color,
+	pill_r: int
+) -> void:
+	var stacks: Array = UiTheme.pill_styleboxes(bg, bg_hover, bg_press, ink, pill_r)
+	btn.add_theme_stylebox_override("normal", stacks[0])
+	btn.add_theme_stylebox_override("hover", stacks[1])
+	btn.add_theme_stylebox_override("pressed", stacks[2])
+	btn.add_theme_font_size_override("font_size", 20)
+	btn.add_theme_color_override("font_color", ink)
+	btn.add_theme_color_override("font_hover_color", ink)
+	btn.add_theme_color_override("font_pressed_color", ink)
+
+
+func _build_hearthstone_bottom_shelf() -> Control:
+	var shelf := PanelContainer.new()
+	shelf.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shelf.custom_minimum_size = Vector2(0, 108)
+	var sh := StyleBoxFlat.new()
+	sh.bg_color = Color(0.1, 0.07, 0.06, 0.88)
+	sh.border_color = Color(0.5, 0.36, 0.22, 0.75)
+	sh.set_border_width_all(3)
+	sh.corner_radius_top_left = 14
+	sh.corner_radius_top_right = 14
+	sh.corner_radius_bottom_left = 14
+	sh.corner_radius_bottom_right = 14
+	sh.shadow_color = Color(0, 0, 0, 0.45)
+	sh.shadow_size = 12
+	sh.shadow_offset = Vector2(2, 5)
+	sh.content_margin_left = 14
+	sh.content_margin_top = 12
+	sh.content_margin_right = 14
+	sh.content_margin_bottom = 12
+	shelf.add_theme_stylebox_override("panel", sh)
 
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 28)
-	bar.add_child(row)
+	shelf.add_child(row)
 
-	row.add_child(_make_hud_icon_button("Shop", "◉", Color(0.72, 0.38, 1.0), func(): open_shop_pressed.emit()))
-	row.add_child(_make_hud_icon_button("Team", "⚙", Color(0.35, 0.88, 0.52), func(): open_team_pressed.emit()))
-	row.add_child(_make_hud_icon_button("Quests", "✦", Color(1.0, 0.72, 0.28), func(): open_quests_pressed.emit()))
+	# Left — circular shortcuts (match reference: icons on the left).
+	row.add_child(_make_hud_icon_button("Shop", "◉", Color(0.85, 0.45, 1.0), func(): open_shop_pressed.emit()))
+	row.add_child(_make_hud_icon_button("Team", "⚙", Color(0.35, 0.92, 0.55), func(): open_team_pressed.emit()))
 
-	return bar
+	var mid_sp := Control.new()
+	mid_sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mid_sp.custom_minimum_size.x = 8
+	row.add_child(mid_sp)
+
+	# Center — two wide “drawer” buttons (Open Packs / Collection analogue).
+	var wide_a := _make_wide_shelf_button("Filament Shop", Color(0.95, 0.55, 0.22), func(): open_shop_pressed.emit())
+	var wide_b := _make_wide_shelf_button("Team Bench", Color(0.22, 0.78, 0.95), func(): open_team_pressed.emit())
+	row.add_child(wide_a)
+	row.add_child(wide_b)
+
+	var mid_sp2 := Control.new()
+	mid_sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mid_sp2.custom_minimum_size.x = 8
+	row.add_child(mid_sp2)
+
+	row.add_child(_make_hud_icon_button("Quests", "✦", Color(1.0, 0.78, 0.22), func(): open_quests_pressed.emit()))
+
+	var ver_col := VBoxContainer.new()
+	ver_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	var ver := Label.new()
+	ver.text = "v %s" % ProjectSettings.get_setting("application/config/version", "0.1")
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ver.add_theme_font_size_override("font_size", 12)
+	ver.add_theme_color_override("font_color", Color(0.92, 0.88, 0.82))
+	ver.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	ver.add_theme_constant_override("shadow_offset_x", 1)
+	ver.add_theme_constant_override("shadow_offset_y", 1)
+	ver_col.add_child(ver)
+
+	var gear := Button.new()
+	gear.text = "⚙"
+	gear.custom_minimum_size = Vector2(44, 44)
+	gear.flat = false
+	_apply_plastic_button(gear, Color(0.35, 0.38, 0.48), Color(0.45, 0.5, 0.62), Color(0.25, 0.28, 0.36), Color(0.06, 0.07, 0.1), 22)
+	gear.pressed.connect(_toggle_options)
+	_attach_hover_sparks(gear, Color(0.7, 0.85, 1.0))
+	ver_col.add_child(gear)
+	row.add_child(ver_col)
+
+	return shelf
+
+
+func _make_wide_shelf_button(text_str: String, accent: Color, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.text = text_str
+	b.custom_minimum_size = Vector2(168, 56)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.size_flags_stretch_ratio = 0.5
+	var ink := Color(0.06, 0.07, 0.1)
+	var stacks: Array = UiTheme.pill_styleboxes(
+		accent.lightened(0.08),
+		accent.lightened(0.18),
+		accent.darkened(0.12),
+		ink,
+		16
+	)
+	b.add_theme_stylebox_override("normal", stacks[0])
+	b.add_theme_stylebox_override("hover", stacks[1])
+	b.add_theme_stylebox_override("pressed", stacks[2])
+	b.add_theme_font_size_override("font_size", 17)
+	b.add_theme_color_override("font_color", ink)
+	b.pressed.connect(on_press)
+	_attach_hover_sparks(b, accent)
+	return b
 
 
 func _make_hud_icon_button(label: String, glyph: String, accent: Color, on_press: Callable) -> Control:
@@ -244,7 +433,7 @@ func _make_hud_icon_button(label: String, glyph: String, accent: Color, on_press
 	vb.add_theme_constant_override("separation", 6)
 
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(76, 76)
+	btn.custom_minimum_size = Vector2(72, 72)
 	btn.flat = false
 	var ink := Color(0.1, 0.12, 0.18)
 	var pk: Array = UiTheme.pill_styleboxes(
@@ -252,7 +441,7 @@ func _make_hud_icon_button(label: String, glyph: String, accent: Color, on_press
 		Color(accent.r * 0.35 + 0.2, accent.g * 0.35 + 0.2, accent.b * 0.35 + 0.2),
 		Color(accent.r * 0.55, accent.g * 0.55, accent.b * 0.55),
 		ink,
-		38
+		36
 	)
 	btn.add_theme_stylebox_override("normal", pk[0])
 	btn.add_theme_stylebox_override("hover", pk[1])
@@ -263,7 +452,7 @@ func _make_hud_icon_button(label: String, glyph: String, accent: Color, on_press
 	inner.text = glyph
 	inner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	inner.add_theme_font_size_override("font_size", 28)
+	inner.add_theme_font_size_override("font_size", 26)
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(inner)
 	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -279,8 +468,11 @@ func _make_hud_icon_button(label: String, glyph: String, accent: Color, on_press
 	var cap := Label.new()
 	cap.text = label
 	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cap.add_theme_font_size_override("font_size", 13)
-	cap.modulate = Color(0.92, 0.88, 0.82)
+	cap.add_theme_font_size_override("font_size", 12)
+	cap.add_theme_color_override("font_color", Color(0.94, 0.9, 0.85))
+	cap.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	cap.add_theme_constant_override("shadow_offset_x", 1)
+	cap.add_theme_constant_override("shadow_offset_y", 1)
 	vb.add_child(cap)
 
 	return vb
@@ -292,172 +484,175 @@ func _build_title_world() -> Node3D:
 	var we := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.07, 0.06, 0.09)
+	env.background_color = Color(0.06, 0.055, 0.08)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.45, 0.55, 0.75)
-	env.ambient_light_energy = 0.42
+	env.ambient_light_color = Color(0.42, 0.52, 0.72)
+	env.ambient_light_energy = 0.4
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 1.05
+	env.glow_enabled = true
+	env.glow_intensity = 0.38
+	env.glow_strength = 0.8
+	env.glow_mix = 0.07
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	env.glow_hdr_threshold = 0.92
+	env.glow_bloom = 0.06
+	env.ssao_enabled = true
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 2.2
+	env.ssao_power = 1.4
+	env.ssao_light_affect = 0.3
 	we.environment = env
 	root.add_child(we)
 
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-52, 28, 0)
-	sun.light_energy = 1.05
+	sun.rotation_degrees = Vector3(-50, 24, 0)
+	sun.light_energy = 1.15
 	sun.light_color = Color(1.0, 0.94, 0.82)
 	sun.shadow_enabled = true
+	sun.light_angular_distance = 0.4
+	sun.shadow_blur = 1.25
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_blend_splits = true
+	sun.directional_shadow_max_distance = 55.0
 	root.add_child(sun)
 
 	var key := OmniLight3D.new()
-	key.position = Vector3(2.8, 3.2, 4.5)
-	key.light_energy = 2.4
-	key.light_color = Color(1.0, 0.85, 0.58)
+	key.position = Vector3(2.6, 3.0, 4.2)
+	key.light_energy = 2.2
+	key.light_color = Color(1.0, 0.86, 0.55)
 	key.omni_range = 12.0
 	root.add_child(key)
 
 	var fill := OmniLight3D.new()
-	fill.position = Vector3(-3.0, 2.2, 3.0)
-	fill.light_energy = 1.6
-	fill.light_color = Color(0.65, 0.78, 1.0)
+	fill.position = Vector3(-2.8, 2.0, 3.2)
+	fill.light_energy = 1.5
+	fill.light_color = Color(0.6, 0.75, 1.0)
 	fill.omni_range = 11.0
 	root.add_child(fill)
 
 	var cam := Camera3D.new()
-	cam.position = Vector3(0.0, 2.65, 7.8)
-	cam.rotation_degrees = Vector3(-14.0, 0.0, 0.0)
+	cam.position = Vector3(0.0, 2.5, 7.4)
+	cam.rotation_degrees = Vector3(-13.0, 0.0, 0.0)
 	cam.fov = 48.0
 	cam.current = true
 	root.add_child(cam)
 
-	# Pedestal — wood + filament crack shader
+	# Wide desk surface — fills lower frame (workshop hero read).
+	var desk := MeshInstance3D.new()
+	var dmesh := BoxMesh.new()
+	dmesh.size = Vector3(10.0, 0.22, 5.5)
+	desk.mesh = dmesh
+	desk.position = Vector3(0.0, 0.85, 1.2)
+	var desk_m := StandardMaterial3D.new()
+	desk_m.albedo_color = Color(0.32, 0.2, 0.12)
+	desk_m.metallic = 0.04
+	desk_m.roughness = 0.78
+	desk.material_override = desk_m
+	root.add_child(desk)
+
+	# Pedestal / build plate with filament shader (visual anchor behind UI center).
 	var ped := MeshInstance3D.new()
 	var ped_mesh := BoxMesh.new()
-	ped_mesh.size = Vector3(5.2, 1.35, 4.2)
+	ped_mesh.size = Vector3(4.8, 1.15, 3.8)
 	ped.mesh = ped_mesh
-	ped.position = Vector3(0.0, 0.68, 0.0)
+	ped.position = Vector3(0.0, 0.58, -0.6)
 	var crack_mat := ShaderMaterial.new()
 	crack_mat.shader = _CRACK_SHADER
-	crack_mat.set_shader_parameter("wood_albedo", Color(0.32, 0.19, 0.11))
-	crack_mat.set_shader_parameter("crack_scale", 14.0)
-	crack_mat.set_shader_parameter("pulse_speed", 1.25)
-	crack_mat.set_shader_parameter("emission_strength", 3.4)
+	crack_mat.set_shader_parameter("wood_albedo", Color(0.3, 0.18, 0.1))
+	crack_mat.set_shader_parameter("crack_scale", 13.0)
+	crack_mat.set_shader_parameter("pulse_speed", 1.2)
+	crack_mat.set_shader_parameter("emission_strength", 3.0)
 	ped.material_override = crack_mat
 	root.add_child(ped)
 
-	# Printer chassis — glossy PETG-like shell
 	var body := MeshInstance3D.new()
-	var body_m := BoxMesh.new()
-	body_m.size = Vector3(2.35, 1.55, 2.05)
+	var body_m := CylinderMesh.new()
+	body_m.top_radius = 1.05
+	body_m.bottom_radius = 1.05
+	body_m.height = 1.35
 	body.mesh = body_m
-	body.position = Vector3(0.0, 1.68 + 0.78, -0.15)
+	body.position = Vector3(-1.1, 1.55, 0.35)
 	var body_mat := StandardMaterial3D.new()
-	body_mat.albedo_color = Color(0.94, 0.94, 0.96)
-	body_mat.metallic = 0.25
-	body_mat.roughness = 0.35
+	body_mat.albedo_color = Color(0.15, 0.85, 0.95)
+	body_mat.metallic = 0.12
+	body_mat.roughness = 0.24
 	body.material_override = body_mat
 	root.add_child(body)
 
-	var gantry := MeshInstance3D.new()
-	var g_m := BoxMesh.new()
-	g_m.size = Vector3(2.6, 0.14, 0.14)
-	gantry.mesh = g_m
-	gantry.position = Vector3(0.0, 2.55, -0.15)
-	var g_mat := StandardMaterial3D.new()
-	g_mat.albedo_color = Color(0.35, 0.38, 0.42)
-	g_mat.metallic = 0.6
-	g_mat.roughness = 0.28
-	gantry.material_override = g_mat
-	root.add_child(gantry)
+	var body2 := MeshInstance3D.new()
+	var bm2 := CylinderMesh.new()
+	bm2.top_radius = 0.72
+	bm2.bottom_radius = 0.72
+	bm2.height = 1.2
+	body2.mesh = bm2
+	body2.position = Vector3(1.35, 1.48, 0.2)
+	var orange := StandardMaterial3D.new()
+	orange.albedo_color = Color(1.0, 0.42, 0.15)
+	orange.metallic = 0.1
+	orange.roughness = 0.26
+	orange.emission_enabled = true
+	orange.emission = Color(1.0, 0.3, 0.08)
+	orange.emission_energy_multiplier = 0.25
+	body2.material_override = orange
+	root.add_child(body2)
 
-	var toolhead := MeshInstance3D.new()
-	var th := BoxMesh.new()
-	th.size = Vector3(0.55, 0.45, 0.5)
-	toolhead.mesh = th
-	toolhead.position = Vector3(0.65, 2.38, -0.15)
-	var th_mat := StandardMaterial3D.new()
-	th_mat.albedo_color = Color(0.15, 0.16, 0.18)
-	th_mat.metallic = 0.75
-	th_mat.roughness = 0.22
-	toolhead.material_override = th_mat
-	root.add_child(toolhead)
-
-	# Core spool housing — ABS orange + translucent “glass” spool
 	var spool := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = 0.52
-	cyl.bottom_radius = 0.52
-	cyl.height = 0.42
+	cyl.top_radius = 0.48
+	cyl.bottom_radius = 0.48
+	cyl.height = 0.38
 	spool.mesh = cyl
-	spool.position = Vector3(-0.85, 2.95, -0.15)
-	spool.rotation_degrees = Vector3(90, 0, 0)
-	var sp_mat := StandardMaterial3D.new()
-	sp_mat.albedo_color = Color(1.0, 0.48, 0.22)
-	sp_mat.metallic = 0.15
-	sp_mat.roughness = 0.42
-	sp_mat.emission_enabled = true
-	sp_mat.emission = Color(1.0, 0.35, 0.12)
-	sp_mat.emission_energy_multiplier = 0.35
-	spool.material_override = sp_mat
+	spool.position = Vector3(2.2, 2.05, 0.5)
+	spool.rotation_degrees = Vector3(90, 0, 15)
+	var sp_m := StandardMaterial3D.new()
+	sp_m.albedo_color = Color(0.9, 0.92, 0.98)
+	sp_m.metallic = 0.08
+	sp_m.roughness = 0.22
+	spool.material_override = sp_m
 	root.add_child(spool)
-
-	var clear_spool := MeshInstance3D.new()
-	var c2 := CylinderMesh.new()
-	c2.top_radius = 0.38
-	c2.bottom_radius = 0.38
-	c2.height = 0.28
-	clear_spool.mesh = c2
-	clear_spool.position = Vector3(0.95, 2.92, 0.35)
-	clear_spool.rotation_degrees = Vector3(90, 0, 18)
-	var cs_mat := StandardMaterial3D.new()
-	cs_mat.albedo_color = Color(0.85, 0.92, 1.0)
-	cs_mat.metallic = 0.0
-	cs_mat.roughness = 0.12
-	cs_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	cs_mat.albedo_color.a = 0.78
-	clear_spool.material_override = cs_mat
-	root.add_child(clear_spool)
 
 	var bed := MeshInstance3D.new()
 	var plane := BoxMesh.new()
-	plane.size = Vector3(1.8, 0.06, 1.8)
+	plane.size = Vector3(1.6, 0.05, 1.6)
 	bed.mesh = plane
-	bed.position = Vector3(0.0, 1.05, 0.45)
+	bed.position = Vector3(-1.1, 1.02, 0.35)
 	var bed_mat := StandardMaterial3D.new()
-	bed_mat.albedo_color = Color(0.2, 0.55, 0.95)
+	bed_mat.albedo_color = Color(0.18, 0.5, 0.95)
 	bed_mat.emission_enabled = true
-	bed_mat.emission = Color(0.25, 0.55, 1.0)
-	bed_mat.emission_energy_multiplier = 0.25
-	bed_mat.metallic = 0.4
+	bed_mat.emission = Color(0.2, 0.5, 1.0)
+	bed_mat.emission_energy_multiplier = 0.3
+	bed_mat.metallic = 0.35
 	bed_mat.roughness = 0.2
 	bed.material_override = bed_mat
 	root.add_child(bed)
 
-	# Ambient plastic dust
 	var dust := GPUParticles3D.new()
-	dust.amount = 110
+	dust.amount = 90
 	dust.lifetime = 4.0
 	dust.explosiveness = 0.0
 	dust.randomness = 0.45
-	dust.visibility_aabb = AABB(Vector3(-6, -1, -6), Vector3(12, 8, 12))
-	dust.position = Vector3(0.0, 3.0, 1.0)
+	dust.position = Vector3(0.0, 2.8, 1.0)
 	var dpm := ParticleProcessMaterial.new()
 	dpm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	dpm.emission_box_extents = Vector3(3.2, 0.25, 2.4)
-	dpm.direction = Vector3(0.1, 1.0, 0.05)
-	dpm.spread = 28.0
-	dpm.initial_velocity_min = 0.05
-	dpm.initial_velocity_max = 0.35
-	dpm.gravity = Vector3(0, 0.04, 0)
+	dpm.emission_box_extents = Vector3(4.0, 0.2, 2.5)
+	dpm.direction = Vector3(0.05, 1.0, 0.05)
+	dpm.spread = 26.0
+	dpm.initial_velocity_min = 0.04
+	dpm.initial_velocity_max = 0.32
+	dpm.gravity = Vector3(0, 0.035, 0)
 	dpm.scale_min = 0.02
-	dpm.scale_max = 0.07
-	dpm.color = Color(1.0, 0.92, 0.65, 0.55)
+	dpm.scale_max = 0.065
+	dpm.color = Color(1.0, 0.9, 0.6, 0.5)
 	dust.process_material = dpm
 	var dq := QuadMesh.new()
-	dq.size = Vector2(0.09, 0.09)
+	dq.size = Vector2(0.08, 0.08)
 	var dm := StandardMaterial3D.new()
 	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	dm.albedo_color = Color(1.0, 0.95, 0.75, 0.45)
+	dm.albedo_color = Color(1.0, 0.95, 0.75, 0.42)
 	dm.emission_enabled = true
 	dm.emission = Color(1.0, 0.85, 0.45)
-	dm.emission_energy_multiplier = 0.8
+	dm.emission_energy_multiplier = 0.75
 	dm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	dq.material = dm
 	dust.draw_pass_1 = dq
@@ -481,8 +676,8 @@ func _attach_hover_sparks(btn: Button, accent: Color) -> void:
 	gp.z_index = 20
 	gp.emitting = false
 	gp.one_shot = true
-	gp.amount = 32
-	gp.lifetime = 0.42
+	gp.amount = 28
+	gp.lifetime = 0.4
 	gp.explosiveness = 0.88
 	gp.randomness = 0.35
 	gp.visibility_rect = Rect2(-80, -80, 160, 160)
