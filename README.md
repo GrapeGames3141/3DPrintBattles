@@ -15,6 +15,8 @@ Saves use **`user://Saves/`** (Godot maps this under your Windows user app-data)
 
 If the editor reports **Could not resolve script** / preload errors on the title screen, ensure `res://UI/TitleScreen.tscn` and `res://UI/TitleScreen.gd` exist (the game loads the title from the `.tscn`). Also use **Godot 4.3+** per `project.godot` → `config/features`; scripts use **untyped** `signal` args for compatibility across patch releases.
 
+**Unrecognized UID** on a `.tscn`: open the scene once and save (Godot rewrites UIDs), or remove the `uid="..."` attribute from the scene header if it was copied from another machine. **`Could not create child process`** with a path like `...\Godot_....exe\Godot_....exe`: **Editor → Editor Settings** → search **exec** / **custom** and fix or clear any **custom Godot / run executable** so it is a **single** path to `Godot_*_win64.exe` (not a folder with the same name as the exe). Prefer launching the editor from a stable install folder (e.g. `C:\Godot\`) instead of nested Downloads paths.
+
 ### Headless unit tests (Windows)
 Tests live in `res://Tests/unit_tests.gd` ([member UnitTests.run_all]) and run through **`res://Tests/TestRunner.tscn`** so autoloads (`SaveSystem`, `GameState`, …) exist (running `--script` alone skips normal project boot and breaks those globals). **Add or extend a test for every new gameplay rule or balance knob**, then run:
 
