@@ -10,7 +10,7 @@ func _ready() -> void:
 	_ensure_folders_exist()
 	SaveSystem.migrate_legacy_if_needed()
 	UnitDatabase.load_units("res://Data/units.json")
-	_show_title()
+	_show_intro_video()
 
 func _ensure_folders_exist() -> void:
 	for p in [
@@ -26,6 +26,44 @@ func _set_screen(screen: Node) -> void:
 	if screen is Control:
 		(screen as Control).theme = _workshop_theme
 	add_child(_current)
+
+
+func _show_intro_video() -> void:
+	var intro: Control = preload("res://UI/IntroVideoScreen.gd").new() as Control
+	intro.finished_to_landing.connect(_show_workshop_landing, CONNECT_ONE_SHOT)
+	_set_screen(intro)
+
+
+func _show_workshop_landing() -> void:
+	var land: Control = preload("res://UI/WorkshopLandingScreen.gd").new() as Control
+	land.go_title.connect(_show_title)
+	land.open_team.connect(_on_landing_open_team)
+	land.open_shop.connect(_on_landing_open_shop)
+	_set_screen(land)
+
+
+func _on_landing_open_team() -> void:
+	if not SaveSystem.has_save():
+		EventBus.request_toast.emit("Use the door first — Continue or New Game.")
+		return
+	_prep_session_from_disk()
+	_show_team()
+
+
+func _on_landing_open_shop() -> void:
+	if not SaveSystem.has_save():
+		EventBus.request_toast.emit("Use the door first — Continue or New Game.")
+		return
+	_prep_session_from_disk()
+	_show_shop()
+
+
+func _prep_session_from_disk() -> void:
+	GameState.load_from_save(SaveSystem.load_save())
+	_apply_local_settings_to_game_state()
+	AudioSettings.apply_from_game_state()
+	GameState.session_active = true
+
 
 func _show_title() -> void:
 	GameState.session_active = false

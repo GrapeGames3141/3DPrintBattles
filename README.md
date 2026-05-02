@@ -6,6 +6,11 @@ Kid-safe collectible creature battler inspired by 3D printing + STEM.
 
 **Roadmap:** Phases 1–5 are documented under `Docs/plan-phase-1.md`–`plan-phase-5.md`. The game includes a **256-id roster pool** (JSON + synthetic fill), **24h shop rotation**, **Terrarium / Archive / Quests**, and **Overworld / Trade** stubs; deeper shaders, export passes, and Steam/Android are still future work (see `DEVELOPMENT_PLAN.md`).
 
+### Boot sequence (ship build)
+1. **`res://startVideo.mp4`** (or `.webm` / `.ogv` fallbacks) plays in **`UI/IntroVideoScreen.gd`** — skip with click or Esc.  
+2. **`UI/WorkshopLandingScreen.gd`** — 3D workshop landing; click **door** → title menu, **monitor** → team (needs save), **printer** → shop (needs save).  
+Stock Godot often imports **WebM** more reliably than **MP4**; if MP4 does not load, convert or add a supported stream.
+
 ### Run on Windows (recommended for dev)
 - Install **Godot 4.3+** (matches `project.godot` → `config/features`; standard `.exe` build is easiest on Windows)
 - Launch Godot and **Import** this folder (it contains `project.godot`)

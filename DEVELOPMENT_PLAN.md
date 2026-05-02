@@ -5,6 +5,7 @@
 **Production pivot**
 - **Global theme**: `UiTheme.build_workshop_theme()` assigned to each root screen `Control.theme` in `Main._set_screen` (inherits to all child controls; no `ThemeDB.set_project_theme` in shipping Godot APIs).
 - **Battle arena**: `BattleScreen` renders units as **CapsuleMesh / BoxMesh / SphereMesh** in a **SubViewport** + camera/light/floor; element-driven **StandardMaterial3D** colors; grid **Buttons** remain a translucent HUD for input.
+- **Boot flow**: `startVideo.*` → **`IntroVideoScreen`** → **`WorkshopLandingScreen`** (3D guild hall, ray pick hotspots) → **Title** via door; monitor/shop require an existing save or toast.
 
 **Active dev / test OS:** **Windows** only for now (editor + F5 play). Cross-platform and store work stay planned; don’t block day-to-day iteration on them.
 
