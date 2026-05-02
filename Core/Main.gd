@@ -5,6 +5,7 @@ const TITLE_SCENE := preload("res://UI/TitleScreen.tscn")
 var _current: Node = null
 
 func _ready() -> void:
+	ThemeDB.set_project_theme(UiTheme.build_workshop_theme())
 	_ensure_folders_exist()
 	SaveSystem.migrate_legacy_if_needed()
 	UnitDatabase.load_units("res://Data/units.json")

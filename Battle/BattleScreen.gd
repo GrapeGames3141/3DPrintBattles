@@ -62,6 +62,10 @@ var _enemy_grid_buttons: Array[Button] = []
 var _targeting_from_slot := -1
 var _btn_end: Button
 
+var _arena_world: Node3D
+var _arena_player_meshes: Array[MeshInstance3D] = []
+var _arena_enemy_meshes: Array[MeshInstance3D] = []
+
 func _ready() -> void:
 	name = "BattleScreen"
 	anchor_right = 1
@@ -75,11 +79,7 @@ func _ready() -> void:
 	_grid_player.resize(COLS * ROWS)
 	_grid_enemy.resize(COLS * ROWS)
 
-	var arena_bg := ColorRect.new()
-	arena_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	arena_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	arena_bg.color = Color.from_hsv(_rng.randf(), 0.22, 0.13)
-	add_child(arena_bg)
+	_setup_battle_arena_3d()
 
 	var root := VBoxContainer.new()
 	root.anchor_right = 1
@@ -87,6 +87,7 @@ func _ready() -> void:
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_theme_constant_override("separation", 10)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(root)
 
 	var top := HBoxContainer.new()
@@ -578,10 +579,10 @@ func _make_side(title: String, is_player_team: bool) -> Control:
 
 	for i in COLS * ROWS:
 		var btn := Button.new()
-		btn.flat = true
 		btn.custom_minimum_size = Vector2(160, 90)
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.text = "Empty"
+		_style_grid_hud_button(btn)
 		var idx := i
 		var player_side := is_player_team
 		btn.pressed.connect(func(): _on_grid_cell_pressed(player_side, idx))
@@ -597,6 +598,7 @@ func _refresh_grid_ui() -> void:
 	for i in COLS * ROWS:
 		_set_cell_button(_enemy_grid_buttons[i], _grid_enemy[i], false, i)
 		_set_cell_button(_player_grid_buttons[i], _grid_player[i], true, i)
+	_sync_arena_meshes()
 
 func _set_cell_button(btn: Button, u: UnitState, is_player_unit: bool, slot: int) -> void:
 	if u == null:
@@ -612,6 +614,174 @@ func _set_cell_button(btn: Button, u: UnitState, is_player_unit: bool, slot: int
 
 func _divider() -> Control:
 	var c := ColorRect.new()
-	c.color = Color(1, 1, 1, 0.15)
+	c.color = Color(1, 1, 1, 0.28)
 	c.custom_minimum_size = Vector2(0, 2)
 	return c
+
+
+func _setup_battle_arena_3d() -> void:
+	var vp_c := SubViewportContainer.new()
+	vp_c.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vp_c.offset_right = 0
+	vp_c.offset_bottom = 0
+	vp_c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp_c.stretch = true
+	add_child(vp_c)
+
+	var vp := SubViewport.new()
+	vp.size = Vector2i(1920, 1080)
+	vp.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+	vp.handle_input_locally = false
+	vp.add_child(_create_arena_scene_root())
+	vp_c.add_child(vp)
+
+
+func _create_arena_scene_root() -> Node3D:
+	_arena_world = Node3D.new()
+
+	var we := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.52, 0.74, 0.96)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.95, 0.97, 1.0)
+	env.ambient_light_energy = 0.5
+	we.environment = env
+	_arena_world.add_child(we)
+
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-52, 38, 0)
+	sun.light_energy = 1.35
+	sun.shadow_enabled = true
+	sun.light_color = Color(1.0, 0.98, 0.92)
+	_arena_world.add_child(sun)
+
+	var cam := Camera3D.new()
+	cam.position = Vector3(0, 12.0, 16.5)
+	cam.look_at(Vector3(0, 0.35, 0), Vector3.UP)
+	cam.fov = 56.0
+	cam.current = true
+	_arena_world.add_child(cam)
+
+	var floor_mi := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(24, 15)
+	floor_mi.mesh = plane
+	floor_mi.position = Vector3(0, -0.02, 0)
+	var floor_mat := StandardMaterial3D.new()
+	floor_mat.albedo_color = Color(0.86, 0.93, 0.98)
+	floor_mat.roughness = 0.78
+	floor_mi.material_override = floor_mat
+	_arena_world.add_child(floor_mi)
+
+	_arena_player_meshes.resize(COLS * ROWS)
+	_arena_enemy_meshes.resize(COLS * ROWS)
+	for i in COLS * ROWS:
+		var pm := _make_placeholder_unit_mesh(i, true)
+		var em := _make_placeholder_unit_mesh(i, false)
+		_arena_player_meshes[i] = pm
+		_arena_enemy_meshes[i] = em
+		_arena_world.add_child(pm)
+		_arena_world.add_child(em)
+	_sync_arena_meshes()
+	return _arena_world
+
+
+func _arena_slot_world_pos(is_player_side: bool, slot_index: int) -> Vector3:
+	var row := slot_index / COLS
+	var col := slot_index % COLS
+	var spread_x := 2.75
+	var spread_z := 2.05
+	var x: float = (float(col) - 1.5) * spread_x
+	var z_player_base := 5.3
+	var z_enemy_base := -5.3
+	var z_row := float(row) * spread_z
+	if is_player_side:
+		return Vector3(x, 0.62, z_player_base - z_row)
+	return Vector3(x, 0.62, z_enemy_base + z_row)
+
+
+func _make_placeholder_unit_mesh(slot_index: int, is_player_side: bool) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var kind: int = slot_index % 3
+	if kind == 0:
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.46
+		cap.height = 1.22
+		mi.mesh = cap
+	elif kind == 1:
+		var box := BoxMesh.new()
+		box.size = Vector3(0.88, 1.1, 0.88)
+		mi.mesh = box
+	else:
+		var sph := SphereMesh.new()
+		sph.radius = 0.52
+		mi.mesh = sph
+	mi.position = _arena_slot_world_pos(is_player_side, slot_index)
+	var mat := StandardMaterial3D.new()
+	mat.metallic = 0.38
+	mat.roughness = 0.42
+	mat.albedo_color = Color(0.82, 0.85, 0.88)
+	mi.material_override = mat
+	mi.visible = false
+	return mi
+
+
+func _element_albedo(element: String) -> Color:
+	match element:
+		"Heat":
+			return Color(1.0, 0.34, 0.26)
+		"PLA":
+			return Color(0.32, 0.88, 0.46)
+		"Resin":
+			return Color(0.32, 0.52, 1.0)
+		"TPU":
+			return Color(0.96, 0.82, 0.22)
+		"Carbon":
+			return Color(0.52, 0.56, 0.62)
+		_:
+			return Color(0.76, 0.78, 0.86)
+
+
+func _sync_arena_meshes() -> void:
+	if _arena_player_meshes.size() != COLS * ROWS:
+		return
+	for i in COLS * ROWS:
+		_sync_one_unit_mesh(_arena_player_meshes[i], _grid_player[i])
+		_sync_one_unit_mesh(_arena_enemy_meshes[i], _grid_enemy[i])
+
+
+func _sync_one_unit_mesh(mi: MeshInstance3D, u: UnitState) -> void:
+	if u == null:
+		mi.visible = false
+		return
+	mi.visible = true
+	var mat: StandardMaterial3D = mi.material_override as StandardMaterial3D
+	if mat != null:
+		mat.albedo_color = _element_albedo(u.element)
+
+
+func _style_grid_hud_button(btn: Button) -> void:
+	var base := StyleBoxFlat.new()
+	base.bg_color = Color(1, 1, 1, 0.12)
+	base.border_width_left = 2
+	base.border_width_top = 2
+	base.border_width_right = 2
+	base.border_width_bottom = 2
+	base.border_color = Color(0.25, 0.55, 0.85, 0.35)
+	base.corner_radius_top_left = 14
+	base.corner_radius_top_right = 14
+	base.corner_radius_bottom_left = 14
+	base.corner_radius_bottom_right = 14
+	var hover := base.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(1, 1, 1, 0.26)
+	hover.border_color = Color(0.95, 0.55, 0.35, 0.55)
+	var pressed := base.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color(0.75, 0.92, 1.0, 0.38)
+	btn.add_theme_stylebox_override("normal", base)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("focus", hover)
+	btn.add_theme_color_override("font_color", Color(0.1, 0.14, 0.22))
+	btn.add_theme_color_override("font_hover_color", Color(0.06, 0.1, 0.18))
+	btn.add_theme_color_override("font_pressed_color", Color(0.05, 0.08, 0.14))
