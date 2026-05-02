@@ -17,7 +17,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Scaffold `res://` folder architecture
 - [x] Initialize Godot 4 project bootstrap (`project.godot`, main scene)
 - [x] Add core autoloads: `EventBus`, `GameState`, `SaveSystem`, `UnitDatabase`
-- [x] Title Screen: 3 save slots (New/Continue/Delete) + Settings stub
+- [x] Title Screen: **single local profile** (Hearthstone-style: **Continue / New Game / Options / Quit** — no multi-slot columns). Continue disabled until `profile.json` exists; New Game confirms overwrite if a save exists; Options = audio toggles + optional wipe-all-progress (still uses `local_settings.json` for prefs readable before loading adventure).
 - [x] Save data model: coins, owned blueprints, active team, upgrades, progress, settings
 - [x] Hub room MVP: Shop terminal, Battle terminal, Team manager, Slicer upgrade (filament cap)
 - [x] Shop MVP: 5 random blueprints per launch (seeded) + purchase flow
@@ -31,7 +31,8 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Linux dev note: AppImage `libfuse2t64` dependency instructions (see `README.md`)
 - [x] Testing: add headless unit test runner + run it before each commit
 - [x] Testing: smoke test (save + starter + battle-ready team data)
-- [x] `Systems/GameRules.gd` — single source for shop price, offer count, team cap, battle payouts, upgrade costs (with unit tests)
+- [x] `Systems/GameRules.gd` — single source for shop price, offer count, team cap, battle payouts, upgrade costs, **MVP roster size** (first N units in JSON for shop/AI) (with unit tests)
+- [x] Title audio toggles → **Music / SFX buses** + mute apply (`Systems/AudioSettings.gd`, wired from `Main` + title Options)
 - [ ] **Policy:** each new gameplay/economy feature must add or extend a test in `res://Tests/run_tests.gd` and be run headless before merge
 - [ ] Steam: Steamworks integration plan (GDExtension / addon) + depot layout
 - [ ] Android: export preset + release signing + Play internal testing track
@@ -39,7 +40,13 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 ### Active blockers
 - None
 
+### Title / first-run UX (MVP design)
+- **One adventure per device** for the MVP: `user://Saves/profile.json` is the only campaign save. **Legacy** `slot_1.json` is **migrated once** on boot if `profile.json` is missing, then removed.
+- **Hearthstone-like** main menu: vertical primary actions, no “pick slot 1/2/3” grid. **Game version** from `ProjectSettings` → `application/config/version` (see `project.godot`).
+- **Options** on the title are **local** (music/SFX) and apply on Continue / New Game; New Game seeds the in-save `settings` from the same local prefs so a fresh run matches what the player chose on the title.
+
 ### Notes / constraints
+- **Master-prompt phase plans** (agent workflow, architecture, combat contract, staged roadmap, data schema): `Docs/plan-phase-1.md` through `Docs/plan-phase-5.md`.
 - Prefer code-driven UI + node trees to minimize fragile `.tscn` spam.
 - Always run even with no art/audio: generate primitive meshes + simple materials.
 - All unit roster must load from JSON: `res://Data/units.json` (no hardcoded roster in scripts).
