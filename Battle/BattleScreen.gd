@@ -355,19 +355,31 @@ func _try_summon_from_hand(defn: Dictionary) -> void:
 	_lbl_toast.text = "Summoned %s." % str(defn.get("name", "Unit"))
 	_refresh_ui()
 
+func _enemy_best_summon_for_filament(filament: int) -> Dictionary:
+	var pool: Array[Dictionary] = UnitDatabase.active_roster_for_stage()
+	var best: Dictionary = {}
+	var best_score: int = -1
+	for cand in pool:
+		var c: int = int(cand.get("cost", 1))
+		if c > filament:
+			continue
+		var atk: int = int(cand.get("atk", 1))
+		var score: int = atk * 100 - c
+		if score > best_score:
+			best_score = score
+			best = cand
+	return best
+
+
 func _enemy_play() -> void:
 	var empty: int = _first_empty_index(_grid_enemy)
 	if empty >= 0:
-		var candidates: Array[Dictionary] = UnitDatabase.random_units_from(UnitDatabase.active_roster_for_stage(), 6, _rng)
-		candidates.sort_custom(func(a, b): return int(a.get("cost", 1)) < int(b.get("cost", 1)))
-		for d in candidates:
-			var cand: Dictionary = d
+		var cand: Dictionary = _enemy_best_summon_for_filament(_enemy_filament)
+		if not cand.is_empty():
 			var c: int = int(cand.get("cost", 1))
-			if c <= _enemy_filament:
-				_enemy_filament -= c
-				_grid_enemy[empty] = UnitState.new(cand, 1, empty)
-				_lbl_toast.text = "Enemy printed %s." % str(cand.get("name", "Unit"))
-				break
+			_enemy_filament -= c
+			_grid_enemy[empty] = UnitState.new(cand, 1, empty)
+			_lbl_toast.text = "Enemy printed %s." % str(cand.get("name", "Unit"))
 	_refresh_ui()
 	_on_end_turn_pressed()
 

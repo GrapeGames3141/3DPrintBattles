@@ -32,6 +32,7 @@ The master prompt originally described **three save slots**. **Current product d
 ### Combat
 
 - **One arena**, AI opponent, summon/spend filament/attack, win/lose, return to hub.
+- Battle terminal only opens if **starter chosen** and **active team has ≥1 unit** (`GameRules.can_enter_battle`).
 
 ### Database (Stage 1 scope)
 

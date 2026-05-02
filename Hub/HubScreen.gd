@@ -9,6 +9,7 @@ var _toast: Label
 var _coins: Label
 var _filament: Label
 var _battles: Label
+var _team: Label
 
 func _ready() -> void:
 	name = "HubScreen"
@@ -36,9 +37,11 @@ func _ready() -> void:
 	_coins = Label.new()
 	_filament = Label.new()
 	_battles = Label.new()
+	_team = Label.new()
 	top.add_child(_coins)
 	top.add_child(_filament)
 	top.add_child(_battles)
+	top.add_child(_team)
 	_refresh_stats()
 
 	var body := HBoxContainer.new()
@@ -112,6 +115,7 @@ func _refresh_stats() -> void:
 	_coins.text = "Coins: %d" % GameState.coins
 	_filament.text = "Filament Cap: %d" % int(GameState.printer_upgrades.get("filament_cap", 3))
 	_battles.text = "Battles won: %d" % int(GameState.progress.get("battles_won", 0))
+	_team.text = "Team: %d/%d" % [GameState.active_team.size(), GameRules.TEAM_MAX_UNITS]
 
 func _on_upgrade_filament() -> void:
 	var cap := int(GameState.printer_upgrades.get("filament_cap", 3))
@@ -125,6 +129,8 @@ func _on_upgrade_filament() -> void:
 	GameState.printer_upgrades["filament_cap"] = cap + 1
 	_refresh_stats()
 	EventBus.request_toast.emit("Upgraded filament cap to %d." % (cap + 1))
+	if GameState.session_active:
+		SaveSystem.write_save(GameState.to_save())
 
 func _on_save() -> void:
 	if not GameState.session_active:

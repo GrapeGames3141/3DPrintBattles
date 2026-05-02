@@ -36,3 +36,7 @@ static func pick_shop_offer_unit_ids(rng: RandomNumberGenerator, roster: Array[D
 
 static func can_add_team_member(team_size: int) -> bool:
 	return team_size >= 0 and team_size < TEAM_MAX_UNITS
+
+
+static func can_enter_battle(starter_chosen: bool, active_team_count: int) -> bool:
+	return starter_chosen and active_team_count > 0

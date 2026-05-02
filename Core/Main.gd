@@ -87,6 +87,14 @@ func _apply_local_settings_to_game_state() -> void:
 			GameState.settings[k] = bool(ls[k])
 
 func _on_open_battle() -> void:
+	var starter_ok: bool = bool(GameState.progress.get("starter_chosen", false))
+	var team_n: int = GameState.active_team.size()
+	if not GameRules.can_enter_battle(starter_ok, team_n):
+		if not starter_ok:
+			EventBus.request_toast.emit("Choose your starter first.")
+		else:
+			EventBus.request_toast.emit("Your team is empty — open Team Manager and add at least one unit.")
+		return
 	_show_battle()
 
 func _on_open_shop() -> void:

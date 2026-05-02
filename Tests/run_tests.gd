@@ -20,6 +20,7 @@ func _run_all() -> void:
 	_test_game_rules_shop_pick_unique()
 	_test_game_rules_shop_pick_small_pool()
 	_test_game_rules_team_limits()
+	_test_game_rules_can_enter_battle()
 	_test_game_rules_constants_vs_save_defaults()
 
 	_test_unit_database_loads()
@@ -94,6 +95,12 @@ func _test_game_rules_team_limits() -> void:
 	_assert_true(GameRules.can_add_team_member(0), "can add at 0")
 	_assert_true(GameRules.can_add_team_member(GameRules.TEAM_MAX_UNITS - 1), "can add below max")
 	_assert_true(not GameRules.can_add_team_member(GameRules.TEAM_MAX_UNITS), "cannot add at max")
+
+
+func _test_game_rules_can_enter_battle() -> void:
+	_assert_true(not GameRules.can_enter_battle(false, 1), "no starter -> no battle")
+	_assert_true(not GameRules.can_enter_battle(true, 0), "empty team -> no battle")
+	_assert_true(GameRules.can_enter_battle(true, 1), "starter + unit -> battle ok")
 
 
 func _test_game_rules_constants_vs_save_defaults() -> void:

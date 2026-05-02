@@ -19,7 +19,8 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Add core autoloads: `EventBus`, `GameState`, `SaveSystem`, `UnitDatabase`
 - [x] Title Screen: **single local profile** (Hearthstone-style: **Continue / New Game / Options / Quit** — no multi-slot columns). Continue disabled until `profile.json` exists; New Game confirms overwrite if a save exists; Options = audio toggles + optional wipe-all-progress (still uses `local_settings.json` for prefs readable before loading adventure).
 - [x] Save data model: coins, owned blueprints, active team, upgrades, progress, settings
-- [x] Hub room MVP: Shop terminal, Battle terminal, Team manager (stats on roster rows), Slicer upgrade (filament cap)
+- [x] Hub room MVP: Shop terminal, Battle terminal, Team manager (stats on roster rows), Slicer upgrade (filament cap), hub stats show team size
+- [x] Battle terminal gated: require starter + ≥1 unit on active team (`GameRules.can_enter_battle`)
 - [x] Shop MVP: 5 random blueprints per launch (seeded) + purchase flow
 - [x] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint — cards load stats from `units.json`
 - [x] Battle MVP: 4x2 grid per side, summon units from hand, basic AI, simultaneous resolution
