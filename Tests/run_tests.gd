@@ -23,6 +23,7 @@ func _run_all() -> void:
 	_test_game_rules_constants_vs_save_defaults()
 
 	_test_unit_database_loads()
+	_test_starter_ids_exist_in_database()
 	_test_local_settings_roundtrip()
 	_test_save_single_profile_roundtrip()
 	_test_migrate_legacy_slot1()
@@ -109,6 +110,14 @@ func _test_unit_database_loads() -> void:
 	_assert_true(UnitDatabase.units_array.size() >= 20, "units.json should have >= 20 units")
 	_assert_true(not UnitDatabase.get_unit("001").is_empty(), "unit 001 should exist")
 	_assert_true(UnitDatabase.get_unit("nonexistent999").is_empty(), "unknown id is empty dict")
+
+
+func _test_starter_ids_exist_in_database() -> void:
+	UnitDatabase.load_units("res://Data/units.json")
+	for sid in ["001", "002", "003"]:
+		var u: Dictionary = UnitDatabase.get_unit(sid)
+		_assert_true(not u.is_empty(), "starter id %s must exist in units.json" % sid)
+		_assert_true(str(u.get("name", "")).length() > 0, "starter %s has name" % sid)
 
 
 func _test_local_settings_roundtrip() -> void:

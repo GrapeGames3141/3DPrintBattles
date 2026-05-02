@@ -256,8 +256,10 @@ func _apply_hit(attacker: UnitState, defender: UnitState) -> void:
 	if attacker == null or defender == null:
 		return
 	if defender.element == "TPU" and BattleResolver.tpu_dodges(_rng):
+		_lbl_toast.text = "%s dodged %s's attack!" % [defender.name, attacker.name]
 		return
-	defender.hp -= BattleResolver.effective_damage(attacker.element, attacker.atk, defender.element)
+	var dmg: int = BattleResolver.effective_damage(attacker.element, attacker.atk, defender.element)
+	defender.hp -= dmg
 
 func _on_aim_core_pressed() -> void:
 	if _match_over or _turn_owner != 0:
@@ -331,7 +333,8 @@ func _refresh_hand_ui() -> void:
 		var row: Dictionary = defn
 		var b := Button.new()
 		var cost: int = int(row.get("cost", 1))
-		b.text = "%s (C%d)" % [str(row.get("name", "Unit")), cost]
+		var elem: String = str(row.get("element", "?"))
+		b.text = "%s (C%d) · %s" % [str(row.get("name", "Unit")), cost, elem]
 		b.pressed.connect(_try_summon_from_hand.bind(row))
 		_player_hand_row.add_child(b)
 

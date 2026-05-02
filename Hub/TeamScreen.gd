@@ -99,15 +99,26 @@ func _refresh() -> void:
 	for id in GameState.owned_blueprints:
 		_owned_box.add_child(_owned_row(id))
 
+func _unit_summary(defn: Dictionary, fallback_id: String) -> String:
+	if defn.is_empty():
+		return fallback_id
+	return "%s · %s · HP%d ATK%d · C%d" % [
+		str(defn.get("name", fallback_id)),
+		str(defn.get("element", "?")),
+		int(defn.get("hp", 0)),
+		int(defn.get("atk", 0)),
+		int(defn.get("cost", 1))
+	]
+
 func _team_row(unit_id: String) -> Control:
 	var defn: Dictionary = UnitDatabase.get_unit(unit_id)
-	var display_name: String = str(defn.get("name", unit_id))
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 
 	var lbl := Label.new()
-	lbl.text = display_name
+	lbl.text = _unit_summary(defn, unit_id)
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 
@@ -124,13 +135,13 @@ func _team_row(unit_id: String) -> Control:
 
 func _owned_row(unit_id: String) -> Control:
 	var defn: Dictionary = UnitDatabase.get_unit(unit_id)
-	var display_name: String = str(defn.get("name", unit_id))
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 
 	var lbl := Label.new()
-	lbl.text = display_name
+	lbl.text = _unit_summary(defn, unit_id)
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 

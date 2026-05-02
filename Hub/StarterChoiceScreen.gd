@@ -3,11 +3,8 @@ extends Control
 signal starter_chosen(unit_id)
 signal back
 
-const STARTERS := [
-	{"id": "001", "name": "Arcade Unicorn"},
-	{"id": "002", "name": "Spectral Pup"},
-	{"id": "003", "name": "Cookie Cat"}
-]
+## Data-driven: must match first three entries in `res://Data/units.json` (starters).
+const STARTER_IDS: Array[String] = ["001", "002", "003"]
 
 var _toast: Label
 
@@ -32,7 +29,7 @@ func _ready() -> void:
 	root.add_child(title)
 
 	var rule := Label.new()
-	rule.text = "You receive the physical unit for battle, but NOT its blueprint instruction."
+	rule.text = "You receive the physical unit for battle, but NOT its blueprint instruction. Buy the blueprint in the shop later."
 	rule.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(rule)
@@ -44,11 +41,22 @@ func _ready() -> void:
 	row.add_theme_constant_override("separation", 14)
 	root.add_child(row)
 
-	for s in STARTERS:
+	for starter_id in STARTER_IDS:
+		var defn: Dictionary = UnitDatabase.get_unit(starter_id)
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(260, 90)
-		b.text = "%s" % s["name"]
-		b.pressed.connect(_choose.bind(String(s["id"])))
+		b.custom_minimum_size = Vector2(280, 108)
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if defn.is_empty():
+			b.text = "Missing unit %s (check units.json)" % starter_id
+			b.disabled = true
+		else:
+			var nm: String = str(defn.get("name", starter_id))
+			var elem: String = str(defn.get("element", "?"))
+			var hp: int = int(defn.get("hp", 0))
+			var atk: int = int(defn.get("atk", 0))
+			var cost: int = int(defn.get("cost", 1))
+			b.text = "%s\n%s · HP %d  ATK %d  · Summon C%d" % [nm, elem, hp, atk, cost]
+			b.pressed.connect(_choose.bind(starter_id))
 		row.add_child(b)
 
 	root.add_child(_spacer(8))
@@ -72,4 +80,3 @@ func _spacer(px: int) -> Control:
 	var s := Control.new()
 	s.custom_minimum_size = Vector2(0, px)
 	return s
-

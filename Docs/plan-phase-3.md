@@ -58,7 +58,7 @@ Match ends when either:
 - [x] 4×2 grid per side + Core HP (`Battle/BattleScreen.gd`, `CORE_HP_START`)
 - [x] Filament cap / gain tied to slicer upgrade + turn flow (`GameRules`, battle screen)
 - [x] Heat / PLA / Resin triangle + **Carbon neutral** damage (`BattleResolver.effective_damage`)
-- [x] TPU dodge chance on direct hits (`BattleResolver.tpu_dodges`)
+- [x] TPU dodge chance on direct hits (`BattleResolver.tpu_dodges`) + toast when a dodge happens
 - [x] Player targeting (slot / Core) + simultaneous resolution pass
 - [x] Enemy filament shown in battle status bar
 - [x] Coin-flip intro overlay (toss animation + who goes first) before first turn
