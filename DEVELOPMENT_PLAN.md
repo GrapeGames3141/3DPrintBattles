@@ -4,6 +4,7 @@
 
 **Production pivot**
 - **Global theme**: `UiTheme.build_workshop_theme()` assigned to each root screen `Control.theme` in `Main._set_screen` (inherits to all child controls; no `ThemeDB.set_project_theme` in shipping Godot APIs).
+- **Title screen (ship-quality layer)**: `TitleScreen.gd` builds a **SubViewport + SubViewportContainer** 3D backdrop (printer assembly, PETG-style chassis, pedestal with **`Shaders/title_filament_cracks.gdshader`** neon filament pulse), **pill-shaped** actions (`UiTheme.build_title_theme()` + coral **New Game** overrides), **bottom HUD** icon row (Shop / Team / Quests → signals → `Main` with save gate), **GPUParticles2D** sparks on hover, and ambient **GPUParticles3D** workshop dust — primary flows unchanged (`continue_pressed`, `new_game_confirmed`, `quit_pressed`).
 - **Battle arena**: `BattleScreen` renders units as **CapsuleMesh / BoxMesh / SphereMesh** in a **SubViewport** + camera/light/floor; element-driven **StandardMaterial3D** colors; grid **Buttons** remain a translucent HUD for input.
 - **Boot flow**: `startVideo.*` → **`IntroVideoScreen`** → **`WorkshopLandingScreen`** (3D guild hall, ray pick hotspots) → **Title** via door; monitor/shop require an existing save or toast.
 

@@ -58,6 +58,22 @@ func _on_landing_open_shop() -> void:
 	_show_shop()
 
 
+func _on_title_open_shop() -> void:
+	_on_landing_open_shop()
+
+
+func _on_title_open_team() -> void:
+	_on_landing_open_team()
+
+
+func _on_title_open_quests() -> void:
+	if not SaveSystem.has_save():
+		EventBus.request_toast.emit("Continue or New Game first.")
+		return
+	_prep_session_from_disk()
+	_show_quests()
+
+
 func _prep_session_from_disk() -> void:
 	GameState.load_from_save(SaveSystem.load_save())
 	_apply_local_settings_to_game_state()
@@ -72,6 +88,9 @@ func _show_title() -> void:
 	title.continue_pressed.connect(_on_continue)
 	title.new_game_confirmed.connect(_on_new_game)
 	title.quit_pressed.connect(_on_quit)
+	title.open_shop_pressed.connect(_on_title_open_shop)
+	title.open_team_pressed.connect(_on_title_open_team)
+	title.open_quests_pressed.connect(_on_title_open_quests)
 	_set_screen(title)
 
 func _show_hub() -> void:
