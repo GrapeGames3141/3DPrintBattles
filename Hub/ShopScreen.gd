@@ -44,7 +44,7 @@ func _ready() -> void:
 	top.add_child(_coins)
 
 	_toast = Label.new()
-	_toast.text = "Offers rotate every 24 hours (real time). Same deals until then."
+	_toast.text = "Six rotating blueprints per day (lower tiers appear more often). Real-time clock — same deals until the next refresh."
 	_toast.modulate.a = 0.85
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_toaster_panel(_toast))

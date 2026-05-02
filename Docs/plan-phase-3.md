@@ -30,9 +30,9 @@ Match ends when either:
 
 ## Elemental triangle (MVP)
 
-- **Heat > PLA > Resin > Heat**  
+- **Heat > PLA > Resin > Heat** — advantage **2×** damage, disadvantage **0.5×** (see `BattleResolver.ELEMENT_*_MULT`).  
 - **TPU** — Dodge/evasion emphasis (not triangle material).  
-- **Carbon** — Neutral / separate rule layer for mythic units.
+- **Carbon** — Neutral to the triangle (no elemental mult; see `BattleResolver.effective_damage`).
 
 ## Physics & defeat (presentation + rules)
 

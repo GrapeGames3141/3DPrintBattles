@@ -79,7 +79,7 @@ The master prompt originally described **three save slots**. **Current product d
 
 - [x] Single-profile save (`profile.json`) + title **Continue / New Game / Options / Quit**
 - [x] Hub: Shop, Battle, Team, Slicer filament-cap upgrade
-- [x] Shop: 5 offers, prices from `GameRules.blueprint_shop_price`, **24h refresh + persisted offers**
+- [x] Shop: **6** tier-weighted offers, prices from `GameRules.blueprint_shop_price`, **24h refresh + persisted offers**
 - [x] Starter pick (3 starters) — unit on team, blueprint not auto-granted
 - [x] Battle vs AI: summon, filament, combat resolution, payouts, `battles_won`
 - [x] Roster: **`ACTIVE_ROSTER_CAP` (256)** via JSON + `UnitDatabase` synth ids
@@ -88,7 +88,7 @@ The master prompt originally described **three save slots**. **Current product d
 ### Stage 2 — Better
 
 - [x] **Terrarium** (owned collection view), **Archive** (full roster; unowned darkened)
-- [x] **Learning Quests** — one-time math bonus (`progress.quest_math_bonus_claimed`)
+- [x] **Learning Quests** — addition / subtraction / geometry rewards (`progress.quests_claimed`; legacy `quest_math_bonus_claimed` for add)
 - [x] 24h shop refresh + save-backed offers
 - [ ] Deeper slicer forge / armor (beyond filament cap)
 - [x] **Overworld** hub entry — **stub screen** (boss routes TBD)

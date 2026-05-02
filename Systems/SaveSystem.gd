@@ -37,7 +37,12 @@ func create_new_save() -> void:
 		"owned_blueprints": [],
 		"active_team": [],
 		"printer_upgrades": {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP},
-		"progress": {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false},
+		"progress": {
+			"starter_chosen": false,
+			"battles_won": 0,
+			"quest_math_bonus_claimed": false,
+			"quests_claimed": {"add": false, "sub": false, "geo": false}
+		},
 		"settings": {
 			"music": bool(ls.get("music", true)),
 			"sfx": bool(ls.get("sfx", true))

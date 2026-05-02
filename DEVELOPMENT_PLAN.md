@@ -21,7 +21,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Save data model: coins, owned blueprints, active team, upgrades, progress, settings
 - [x] Hub: Shop (24h real-time offer rotation + persisted deals), Battle, Team, Slicer, **Terrarium**, **Archive** (silhouette-style unowned), **Learning Quests** (math bonus), **Overworld** / **Offline Trade** stubs, hub stats show team size
 - [x] Battle terminal gated: require starter + ≥1 unit on active team (`GameRules.can_enter_battle`)
-- [x] Shop MVP: 5 random blueprints per launch (seeded) + purchase flow
+- [x] Shop MVP: **6** tier-weighted random blueprints per day (seeded rotation) + purchase flow
 - [x] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint — cards load stats from `units.json`
 - [x] Battle MVP: 4x2 grid per side, summon units from hand, basic AI, simultaneous resolution
 - [x] Post-match: coin payout winner/loser, return to hub

@@ -7,7 +7,12 @@ var coins: int = 0
 var owned_blueprints: Array[String] = []
 var active_team: Array[String] = []
 var printer_upgrades: Dictionary = {"filament_cap": 3}
-var progress: Dictionary = {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false}
+var progress: Dictionary = {
+	"starter_chosen": false,
+	"battles_won": 0,
+	"quest_math_bonus_claimed": false,
+	"quests_claimed": {"add": false, "sub": false, "geo": false}
+}
 var settings: Dictionary = {"music": true, "sfx": true}
 ## Unix time of last shop reroll; offers stored in [member shop_offer_ids].
 var shop_last_refresh_unix: int = 0
@@ -18,11 +23,21 @@ func load_from_save(save: Dictionary) -> void:
 	owned_blueprints = Array(save.get("owned_blueprints", []), TYPE_STRING, "", null)
 	active_team = Array(save.get("active_team", []), TYPE_STRING, "", null)
 	printer_upgrades = save.get("printer_upgrades", {"filament_cap": 3}) as Dictionary
-	progress = save.get("progress", {"starter_chosen": false, "battles_won": 0}) as Dictionary
+	progress = save.get("progress", {}) as Dictionary
 	if not progress.has("battles_won"):
 		progress["battles_won"] = 0
 	if not progress.has("quest_math_bonus_claimed"):
 		progress["quest_math_bonus_claimed"] = false
+	if not progress.has("quests_claimed"):
+		var qc: Dictionary = {"add": false, "sub": false, "geo": false}
+		if bool(progress.get("quest_math_bonus_claimed", false)):
+			qc["add"] = true
+		progress["quests_claimed"] = qc
+	else:
+		var qcx: Dictionary = progress["quests_claimed"] as Dictionary
+		for k in ["add", "sub", "geo"]:
+			if not qcx.has(k):
+				qcx[k] = false
 	settings = save.get("settings", {"music": true, "sfx": true}) as Dictionary
 	shop_last_refresh_unix = int(save.get("shop_last_refresh_unix", 0))
 	shop_offer_ids = Array(save.get("shop_offer_ids", []), TYPE_STRING, "", null)

@@ -50,6 +50,6 @@ The complete tier-by-tier roster (256 entries) lives in the **master AI generati
 - [x] `res://Data/units.json` array schema + `UnitDatabase.load_units`
 - [x] Stable string `id` per unit; lookups via `get_unit`
 - [x] Full activation slice **`GameRules.ACTIVE_ROSTER_CAP` (256)** via `_finalize_sorted_roster`
-- [ ] Tier/rarity fields used for UI badges + weighted shop (Stage 2+ polish)
+- [x] Tier fields drive **weighted shop** (`GameRules.shop_tier_weight` / `pick_shop_offer_unit_ids`); UI badges (Archive, etc.) still light
 - [ ] Scripted abilities beyond MVP placeholders (`ability` column → resolver hooks)
 - [x] Synthetic generation covers ids **021–256** until a bulk CSV replaces synth rows

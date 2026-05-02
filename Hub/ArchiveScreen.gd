@@ -42,8 +42,9 @@ func _ready() -> void:
 		var owned: bool = GameState.owned_blueprints.has(id)
 		var lbl := Label.new()
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		lbl.text = "%s · %s · %s · C%d" % [
+		lbl.text = "%s · T%d · %s · %s · C%d" % [
 			id,
+			int(row.get("tier_level", 1)),
 			str(row.get("name", "?")),
 			str(row.get("element", "?")),
 			int(row.get("cost", 1))

@@ -33,6 +33,25 @@ func load_units(path: String) -> void:
 			continue
 		units_by_id[id] = item
 	_finalize_sorted_roster(GameRules.ACTIVE_ROSTER_CAP)
+	refresh_asset_paths_from_disk()
+
+
+func refresh_asset_paths_from_disk() -> void:
+	var base: String = "res://Assets/Prints"
+	var da: DirAccess = DirAccess.open(base)
+	if da == null:
+		return
+	if da.list_dir_begin() != OK:
+		return
+	var fn: String = da.get_next()
+	while fn != "":
+		if da.current_is_dir() and fn != "." and fn != "..":
+			var gltf_path: String = base + "/" + fn + "/model.gltf"
+			if FileAccess.file_exists(gltf_path) and units_by_id.has(fn):
+				var u: Dictionary = units_by_id[fn]
+				u["model_path"] = gltf_path
+		fn = da.get_next()
+	da.list_dir_end()
 
 
 func _synthetic_unit_dict(seq: int) -> Dictionary:

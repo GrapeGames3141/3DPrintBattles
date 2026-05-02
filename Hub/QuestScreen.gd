@@ -1,11 +1,8 @@
 extends Control
 
-## Kid-safe math bonus (once per profile).
+## Educational quests: addition, subtraction, geometry (kid-safe). Rewards once each per profile.
 
 signal back
-
-var _answer: LineEdit
-var _submit_btn: Button
 
 func _ready() -> void:
 	name = "QuestScreen"
@@ -14,7 +11,7 @@ func _ready() -> void:
 
 	var root := VBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 12)
+	root.add_theme_constant_override("separation", 10)
 	add_child(root)
 
 	var top := HBoxContainer.new()
@@ -29,44 +26,102 @@ func _ready() -> void:
 	hdr.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(hdr)
 
-	var info := Label.new()
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info.text = "Solve a quick addition problem to earn bonus coins (one-time reward per save)."
-	root.add_child(info)
+	var intro := Label.new()
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.text = "Earn coins for correct answers. Each quest pays once per save file."
+	root.add_child(intro)
 
-	if bool(GameState.progress.get("quest_math_bonus_claimed", false)):
-		var done := Label.new()
-		done.text = "You already claimed this quest bonus. Fight battles for more coins!"
-		root.add_child(done)
-		return
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.add_child(scroll)
+
+	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.add_theme_constant_override("separation", 16)
+	scroll.add_child(vb)
+
+	var qc: Dictionary = GameState.progress.get("quests_claimed", {}) as Dictionary
+
+	vb.add_child(_make_math_panel(
+		"Addition",
+		"What is 3 + 4?",
+		7,
+		GameRules.QUEST_MATH_ADD_COINS,
+		"add",
+		bool(qc.get("add", false))
+	))
+
+	vb.add_child(_make_math_panel(
+		"Subtraction",
+		"What is 10 − 3?",
+		7,
+		GameRules.QUEST_MATH_SUB_COINS,
+		"sub",
+		bool(qc.get("sub", false))
+	))
+
+	vb.add_child(_make_math_panel(
+		"Geometry",
+		"A triangle has 3 sides. How many sides does a square have?",
+		4,
+		GameRules.QUEST_GEOMETRY_COINS,
+		"geo",
+		bool(qc.get("geo", false))
+	))
+
+
+func _make_math_panel(title: String, question: String, answer: int, reward: int, quest_key: String, claimed: bool) -> Control:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 8)
+	panel.add_child(inner)
+
+	var hdr := Label.new()
+	hdr.text = title
+	hdr.add_theme_font_size_override("font_size", 18)
+	inner.add_child(hdr)
 
 	var q := Label.new()
-	q.text = "What is 3 + 4?"
-	q.add_theme_font_size_override("font_size", 18)
-	root.add_child(q)
+	q.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	q.text = question
+	inner.add_child(q)
 
-	_answer = LineEdit.new()
-	_answer.placeholder_text = "Answer"
-	_answer.custom_minimum_size.x = 140
-	root.add_child(_answer)
+	if claimed:
+		var done := Label.new()
+		done.text = "Completed — reward claimed."
+		done.modulate.a = 0.85
+		inner.add_child(done)
+		return panel
 
-	_submit_btn = Button.new()
-	_submit_btn.text = "Submit"
-	_submit_btn.pressed.connect(_on_submit)
-	root.add_child(_submit_btn)
+	var entry := LineEdit.new()
+	entry.placeholder_text = "Your answer"
+	entry.custom_minimum_size.x = 160
+	inner.add_child(entry)
+
+	var btn := Button.new()
+	btn.text = "Submit (+ %d coins)" % reward
+	btn.pressed.connect(func(): _submit_quest(quest_key, answer, reward, entry, btn))
+	inner.add_child(btn)
+
+	return panel
 
 
-func _on_submit() -> void:
-	if bool(GameState.progress.get("quest_math_bonus_claimed", false)):
+func _submit_quest(quest_key: String, expected: int, reward: int, entry: LineEdit, btn: Button) -> void:
+	var qc: Dictionary = GameState.progress.get("quests_claimed", {}) as Dictionary
+	if bool(qc.get(quest_key, false)):
 		return
-	var v := int(_answer.text.strip_edges())
-	if v != 7:
+	var v := int(entry.text.strip_edges())
+	if v != expected:
 		EventBus.request_toast.emit("Not quite — try again!")
 		return
-	GameState.progress["quest_math_bonus_claimed"] = true
-	GameState.coins += GameRules.QUEST_MATH_BONUS_COINS
+	qc[quest_key] = true
+	GameState.progress["quests_claimed"] = qc
+	GameState.progress["quest_math_bonus_claimed"] = bool(GameState.progress.get("quest_math_bonus_claimed", false)) or (quest_key == "add")
+	GameState.coins += reward
 	if GameState.session_active:
 		SaveSystem.write_save(GameState.to_save())
-	EventBus.request_toast.emit("Correct! +%d coins." % GameRules.QUEST_MATH_BONUS_COINS)
-	_submit_btn.disabled = true
-	_answer.editable = false
+	EventBus.request_toast.emit("Correct! +%d coins." % reward)
+	btn.disabled = true
+	entry.editable = false

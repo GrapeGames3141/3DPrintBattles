@@ -19,6 +19,7 @@ func _run_all() -> void:
 	_test_game_rules_blueprint_shop_price()
 	_test_game_rules_shop_pick_unique()
 	_test_game_rules_shop_pick_small_pool()
+	_test_game_rules_shop_tier_weight_curve()
 	_test_game_rules_team_limits()
 	_test_game_rules_can_enter_battle()
 	_test_game_rules_shop_refresh()
@@ -46,7 +47,12 @@ func _reset_game_state_for_tests() -> void:
 	GameState.owned_blueprints.clear()
 	GameState.active_team.clear()
 	GameState.printer_upgrades = {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP}
-	GameState.progress = {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false}
+	GameState.progress = {
+		"starter_chosen": false,
+		"battles_won": 0,
+		"quest_math_bonus_claimed": false,
+		"quests_claimed": {"add": false, "sub": false, "geo": false}
+	}
 	GameState.settings = {"music": true, "sfx": true}
 	GameState.shop_last_refresh_unix = 0
 	GameState.shop_offer_ids.clear()
@@ -74,9 +80,9 @@ func _test_game_rules_shop_pick_unique() -> void:
 	rng.seed = 42
 	var pool: Array[Dictionary] = []
 	for i in range(10):
-		pool.append({"id": "%03d" % (i + 1), "name": "U"})
+		pool.append({"id": "%03d" % (i + 1), "name": "U", "tier_level": 1})
 	var ids: Array[String] = GameRules.pick_shop_offer_unit_ids(rng, pool, GameRules.SHOP_OFFER_COUNT)
-	_assert_eq(ids.size(), GameRules.SHOP_OFFER_COUNT, "full pool yields 5 offers")
+	_assert_eq(ids.size(), GameRules.SHOP_OFFER_COUNT, "full pool yields offer count")
 	var seen: Dictionary = {}
 	for id in ids:
 		_assert_true(not seen.has(id), "no duplicate offer ids")
@@ -87,8 +93,8 @@ func _test_game_rules_shop_pick_small_pool() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	var pool: Array[Dictionary] = [
-		{"id": "001", "name": "A"},
-		{"id": "002", "name": "B"}
+		{"id": "001", "name": "A", "tier_level": 1},
+		{"id": "002", "name": "B", "tier_level": 1}
 	]
 	var ids: Array[String] = GameRules.pick_shop_offer_unit_ids(rng, pool, GameRules.SHOP_OFFER_COUNT)
 	_assert_eq(ids.size(), 2, "only two unique ids possible")
@@ -107,6 +113,10 @@ func _test_game_rules_can_enter_battle() -> void:
 	_assert_true(GameRules.can_enter_battle(true, 1), "starter + unit -> battle ok")
 
 
+func _test_game_rules_shop_tier_weight_curve() -> void:
+	_assert_true(GameRules.shop_tier_weight(1) > GameRules.shop_tier_weight(8), "low tier shop-biased")
+
+
 func _test_game_rules_shop_refresh() -> void:
 	_assert_true(GameRules.shop_refresh_due(0, 100), "first shop visit refreshes")
 	_assert_true(not GameRules.shop_refresh_due(100, 500), "same day")
@@ -121,6 +131,8 @@ func _test_game_rules_constants_vs_save_defaults() -> void:
 	_assert_eq(GameRules.BATTLE_LOSS_COINS, 15, "loss payout")
 	_assert_eq(GameRules.ACTIVE_ROSTER_CAP, 256, "full phase roster cap")
 	_assert_eq(GameRules.SHOP_REFRESH_SECONDS, 86400, "24h shop refresh")
+	_assert_eq(GameRules.SHOP_OFFER_COUNT, 6, "shop slots")
+	_assert_eq(GameRules.QUEST_MATH_ADD_COINS, 15, "quest add reward")
 
 
 func _test_unit_database_loads() -> void:
@@ -199,7 +211,12 @@ func _test_starter_rule_does_not_grant_blueprint() -> void:
 	GameState.coins = 0
 	GameState.owned_blueprints = []
 	GameState.active_team = []
-	GameState.progress = {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false}
+	GameState.progress = {
+		"starter_chosen": false,
+		"battles_won": 0,
+		"quest_math_bonus_claimed": false,
+		"quests_claimed": {"add": false, "sub": false, "geo": false}
+	}
 
 	var starter_id := "001"
 	GameState.progress["starter_chosen"] = true
@@ -213,8 +230,8 @@ func _test_starter_rule_does_not_grant_blueprint() -> void:
 func _test_battle_resolver_elements() -> void:
 	_assert_true(BattleResolver.is_element_advantage("Heat", "PLA"), "Heat beats PLA")
 	_assert_true(not BattleResolver.is_element_advantage("PLA", "Heat"), "PLA does not beat Heat")
-	_assert_eq(BattleResolver.effective_damage("Heat", 4, "PLA"), 6, "advantage ~1.5x")
-	_assert_eq(BattleResolver.effective_damage("PLA", 4, "Heat"), 3, "disadvantage 0.75x")
+	_assert_eq(BattleResolver.effective_damage("Heat", 4, "PLA"), 8, "advantage 2x")
+	_assert_eq(BattleResolver.effective_damage("PLA", 4, "Heat"), 2, "disadvantage 0.5x")
 	_assert_eq(BattleResolver.effective_damage("PLA", 4, "PLA"), 4, "neutral")
 
 
