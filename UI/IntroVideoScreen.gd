@@ -24,7 +24,8 @@ func _ready() -> void:
 	_player.offset_top = 0
 	_player.offset_right = 0
 	_player.offset_bottom = 0
-	_player.expand_mode = VideoStreamPlayer.EXPAND_FIT_WIDTH_PROPORTIONAL
+	# VideoStreamPlayer uses bool expand (not TextureRect-style expand_mode enums).
+	_player.expand = true
 	_player.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_player)
 
