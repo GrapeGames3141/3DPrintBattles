@@ -6,7 +6,7 @@ var session_active: bool = false
 var coins: int = 0
 var owned_blueprints: Array[String] = []
 var active_team: Array[String] = []
-var printer_upgrades: Dictionary = {"filament_cap": 3}
+var printer_upgrades: Dictionary = {"filament_cap": 3, "core_armor": 0}
 var progress: Dictionary = {
 	"starter_chosen": false,
 	"battles_won": 0,
@@ -23,6 +23,10 @@ func load_from_save(save: Dictionary) -> void:
 	owned_blueprints = Array(save.get("owned_blueprints", []), TYPE_STRING, "", null)
 	active_team = Array(save.get("active_team", []), TYPE_STRING, "", null)
 	printer_upgrades = save.get("printer_upgrades", {"filament_cap": 3}) as Dictionary
+	if not printer_upgrades.has("filament_cap"):
+		printer_upgrades["filament_cap"] = GameRules.DEFAULT_FILAMENT_CAP
+	if not printer_upgrades.has("core_armor"):
+		printer_upgrades["core_armor"] = 0
 	progress = save.get("progress", {}) as Dictionary
 	if not progress.has("battles_won"):
 		progress["battles_won"] = 0

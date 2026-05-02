@@ -3,9 +3,6 @@ extends Control
 signal starter_chosen(unit_id)
 signal back
 
-## Data-driven: must match first three entries in `res://Data/units.json` (starters).
-const STARTER_IDS: Array[String] = ["001", "002", "003"]
-
 var _toast: Label
 
 func _ready() -> void:
@@ -41,7 +38,10 @@ func _ready() -> void:
 	row.add_theme_constant_override("separation", 14)
 	root.add_child(row)
 
-	for starter_id in STARTER_IDS:
+	var starter_ids: Array[String] = UnitDatabase.starter_unit_ids()
+	if starter_ids.is_empty():
+		starter_ids = ["001", "002", "003"]
+	for starter_id in starter_ids:
 		var defn: Dictionary = UnitDatabase.get_unit(starter_id)
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(280, 108)

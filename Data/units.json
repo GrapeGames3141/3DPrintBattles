@@ -1,7 +1,7 @@
 [
-  { "id": "001", "name": "Arcade Unicorn", "tier_name": "Standard PLA", "tier_level": 2, "cost": 3, "element": "PLA", "hp": 7, "atk": 3, "ability": "None (MVP)" },
-  { "id": "002", "name": "Spectral Pup", "tier_name": "Silk / PETG", "tier_level": 3, "cost": 4, "element": "Resin", "hp": 6, "atk": 4, "ability": "None (MVP)" },
-  { "id": "003", "name": "Cookie Cat", "tier_name": "Standard PLA", "tier_level": 2, "cost": 2, "element": "PLA", "hp": 5, "atk": 2, "ability": "None (MVP)" },
+  { "id": "001", "name": "Arcade Unicorn", "tier_name": "Standard PLA", "tier_level": 2, "cost": 3, "element": "PLA", "hp": 7, "atk": 3, "ability": "None (MVP)", "starter": true },
+  { "id": "002", "name": "Spectral Pup", "tier_name": "Silk / PETG", "tier_level": 3, "cost": 4, "element": "Resin", "hp": 6, "atk": 4, "ability": "None (MVP)", "starter": true },
+  { "id": "003", "name": "Cookie Cat", "tier_name": "Standard PLA", "tier_level": 2, "cost": 2, "element": "PLA", "hp": 5, "atk": 2, "ability": "None (MVP)", "starter": true },
 
   { "id": "004", "name": "Heat Wisp", "tier_name": "Draft", "tier_level": 1, "cost": 1, "element": "Heat", "hp": 3, "atk": 1, "ability": "None (MVP)" },
   { "id": "005", "name": "Resin Minnow", "tier_name": "Draft", "tier_level": 1, "cost": 1, "element": "Resin", "hp": 2, "atk": 2, "ability": "None (MVP)" },
@@ -22,6 +22,5 @@
   { "id": "017", "name": "Aqua Drone", "tier_name": "Silk / PETG", "tier_level": 3, "cost": 4, "element": "Resin", "hp": 5, "atk": 5, "ability": "None (MVP)" },
   { "id": "018", "name": "Garden Bot", "tier_name": "Standard PLA", "tier_level": 2, "cost": 2, "element": "PLA", "hp": 5, "atk": 2, "ability": "None (MVP)" },
   { "id": "019", "name": "Bouncy Blimp", "tier_name": "Flexible TPU", "tier_level": 5, "cost": 5, "element": "TPU", "hp": 9, "atk": 3, "ability": "None (MVP)" },
-  { "id": "020", "name": "Peek Falcon", "tier_name": "Aerospace PEEK", "tier_level": 8, "cost": 9, "element": "Carbon", "hp": 13, "atk": 7, "ability": "None (MVP)" }
+  { "id": "020", "name": "Peek Falcon", "tier_name": "Aerospace PEEK", "tier_level": 8, "cost": 9, "element": "Carbon", "hp": 13, "atk": 7, "ability": "None (MVP)", "boss": true }
 ]
-

@@ -23,7 +23,7 @@ The master prompt originally described **three save slots**. **Current product d
 
 ### Shop
 
-- **5 random blueprint offers**; **24h real-time** refresh (`GameRules.shop_refresh_due`, `GameState.shop_last_refresh_unix`).
+- **6 tier-weighted blueprint offers**; **24h real-time** refresh (`GameRules.shop_refresh_due`, `GameState.shop_last_refresh_unix`).
 
 ### Starter choice
 
@@ -90,7 +90,7 @@ The master prompt originally described **three save slots**. **Current product d
 - [x] **Terrarium** (owned collection view), **Archive** (full roster; unowned darkened)
 - [x] **Learning Quests** — addition / subtraction / geometry rewards (`progress.quests_claimed`; legacy `quest_math_bonus_claimed` for add)
 - [x] 24h shop refresh + save-backed offers
-- [ ] Deeper slicer forge / armor (beyond filament cap)
+- [x] **Slicer forge** — filament cap upgrades + **core armor slabs** (+player Core HP in battles, `GameRules.player_core_hp_bonus`)
 - [x] **Overworld** hub entry — gated routes + practice duel → battle (mid/boss previews locked by wins)
 - [ ] Summoning shader VFX
 

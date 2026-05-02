@@ -109,6 +109,11 @@ func _ready() -> void:
 	btn_upgrade.pressed.connect(_on_upgrade_filament)
 	left.add_child(btn_upgrade)
 
+	var btn_armor := Button.new()
+	btn_armor.text = "Slicer Station: +1 Core Armor slab (Cost %d)" % GameRules.SLICER_CORE_ARMOR_COST_COINS
+	btn_armor.pressed.connect(_on_upgrade_core_armor)
+	left.add_child(btn_armor)
+
 	left.add_child(_divider())
 
 	var btn_save := Button.new()
@@ -145,7 +150,14 @@ func _ready() -> void:
 
 func _refresh_stats() -> void:
 	_coins.text = "Coins: %d" % GameState.coins
-	_filament.text = "Filament Cap: %d" % int(GameState.printer_upgrades.get("filament_cap", 3))
+	var armor: int = int(GameState.printer_upgrades.get("core_armor", 0))
+	var bonus_hp: int = GameRules.player_core_hp_bonus(armor)
+	_filament.text = "Filament cap: %d · Core armor: %d/%d (+%d HP in duels)" % [
+		int(GameState.printer_upgrades.get("filament_cap", 3)),
+		armor,
+		GameRules.CORE_ARMOR_SLABS_MAX,
+		bonus_hp
+	]
 	_battles.text = "Battles won: %d" % int(GameState.progress.get("battles_won", 0))
 	_team.text = "Team: %d/%d" % [GameState.active_team.size(), GameRules.TEAM_MAX_UNITS]
 
@@ -161,6 +173,22 @@ func _on_upgrade_filament() -> void:
 	GameState.printer_upgrades["filament_cap"] = cap + 1
 	_refresh_stats()
 	EventBus.request_toast.emit("Upgraded filament cap to %d." % (cap + 1))
+	if GameState.session_active:
+		SaveSystem.write_save(GameState.to_save())
+
+
+func _on_upgrade_core_armor() -> void:
+	var slabs := int(GameState.printer_upgrades.get("core_armor", 0))
+	if slabs >= GameRules.CORE_ARMOR_SLABS_MAX:
+		EventBus.request_toast.emit("Core armor already maxed (%d slabs)." % GameRules.CORE_ARMOR_SLABS_MAX)
+		return
+	if GameState.coins < GameRules.SLICER_CORE_ARMOR_COST_COINS:
+		EventBus.request_toast.emit("Not enough coins.")
+		return
+	GameState.coins -= GameRules.SLICER_CORE_ARMOR_COST_COINS
+	GameState.printer_upgrades["core_armor"] = slabs + 1
+	_refresh_stats()
+	EventBus.request_toast.emit("Reinforced core shell — +%d total HP in battles." % GameRules.player_core_hp_bonus(slabs + 1))
 	if GameState.session_active:
 		SaveSystem.write_save(GameState.to_save())
 

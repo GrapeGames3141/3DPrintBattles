@@ -16,14 +16,14 @@ Minimum useful columns per unit (exact names follow `units.json`):
 
 | Field group | Examples |
 |-------------|----------|
-| Identity | `id`, `display_name`, `tier`, `material`, `element` |
+| Identity | `id`, `name`, `tier_*`, `element`, optional **`starter`** / **`boss`** booleans |
 | Combat | `cost`, `hp`, `atk`, tags (`starter`, `boss`) |
 | Ability | `ability_id` or text hook for future scripting |
 | Assets | optional `model_path`; else `PrintMeshResolver` + `Assets/Prints/<id>/model.gltf` |
 
 ## Boss / starter flags
 
-Units marked **[STARTER]** or **[BOSS]** in the master list must have explicit flags in data so hub/battle/quests can branch without string matching on names.
+Units marked **[STARTER]** or **[BOSS]** in the master list must have explicit flags in data so hub/battle/quests can branch without string matching on names. Implemented as optional JSON booleans `starter` / `boss`; **Starter Choice** uses `UnitDatabase.starter_unit_ids()` (fallback `001–003`).
 
 ## Generation workflow
 
@@ -51,5 +51,6 @@ The complete tier-by-tier roster (256 entries) lives in the **master AI generati
 - [x] Stable string `id` per unit; lookups via `get_unit`
 - [x] Full activation slice **`GameRules.ACTIVE_ROSTER_CAP` (256)** via `_finalize_sorted_roster`
 - [x] Tier fields drive **weighted shop** (`GameRules.shop_tier_weight` / `pick_shop_offer_unit_ids`); UI badges (Archive, etc.) still light
+- [x] **`starter` / `boss`** flags in JSON + synth defaults; Archive shows `[Starter]` / `[Boss]`
 - [ ] Scripted abilities beyond MVP placeholders (`ability` column → resolver hooks)
 - [x] Synthetic generation covers ids **021–256** until a bulk CSV replaces synth rows

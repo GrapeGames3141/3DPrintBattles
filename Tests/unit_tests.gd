@@ -24,8 +24,10 @@ func _run_all() -> void:
 	_test_game_rules_shop_refresh()
 	_test_game_rules_constants_vs_save_defaults()
 	_test_overworld_route_unlocks()
+	_test_game_rules_core_armor()
 
 	_test_unit_database_loads()
+	_test_starter_boss_flags_in_data()
 	_test_starter_ids_exist_in_database()
 	_test_local_settings_roundtrip()
 	_test_save_single_profile_roundtrip()
@@ -46,7 +48,7 @@ func _reset_game_state_for_tests() -> void:
 	GameState.coins = 0
 	GameState.owned_blueprints.clear()
 	GameState.active_team.clear()
-	GameState.printer_upgrades = {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP}
+	GameState.printer_upgrades = {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP, "core_armor": 0}
 	GameState.progress = {
 		"starter_chosen": false,
 		"battles_won": 0,
@@ -133,6 +135,14 @@ func _test_game_rules_constants_vs_save_defaults() -> void:
 	_assert_eq(GameRules.SHOP_REFRESH_SECONDS, 86400, "24h shop refresh")
 	_assert_eq(GameRules.SHOP_OFFER_COUNT, 6, "shop slots")
 	_assert_eq(GameRules.QUEST_MATH_ADD_COINS, 15, "quest add reward")
+	_assert_eq(GameRules.CORE_ARMOR_SLABS_MAX, 5, "core armor slabs cap")
+	_assert_eq(GameRules.CORE_HP_PER_ARMOR_SLAB, 2, "HP per slab")
+
+
+func _test_game_rules_core_armor() -> void:
+	_assert_eq(GameRules.player_core_hp_bonus(0), 0, "no slabs")
+	_assert_eq(GameRules.player_core_hp_bonus(2), 4, "two slabs")
+	_assert_eq(GameRules.player_core_hp_bonus(99), GameRules.CORE_ARMOR_SLABS_MAX * GameRules.CORE_HP_PER_ARMOR_SLAB, "clamp max slabs")
 
 
 func _test_overworld_route_unlocks() -> void:
@@ -158,6 +168,14 @@ func _test_starter_ids_exist_in_database() -> void:
 		_assert_true(str(u.get("name", "")).length() > 0, "starter %s has name" % sid)
 
 
+func _test_starter_boss_flags_in_data() -> void:
+	UnitDatabase.load_units("res://Data/units.json")
+	var starters: Array[String] = UnitDatabase.starter_unit_ids()
+	_assert_eq(starters.size(), 3, "three starter flags")
+	_assert_true(starters.has("001") and starters.has("002") and starters.has("003"), "expected starter ids")
+	_assert_true(bool(UnitDatabase.get_unit("020").get("boss", false)), "Peek Falcon boss flag")
+
+
 func _test_local_settings_roundtrip() -> void:
 	SaveSystem.write_local_settings({"music": false, "sfx": true})
 	var ls: Dictionary = SaveSystem.load_local_settings()
@@ -179,6 +197,7 @@ func _test_save_single_profile_roundtrip() -> void:
 	GameState.owned_blueprints = ["010"]
 	GameState.active_team = ["001"]
 	GameState.printer_upgrades["filament_cap"] = 5
+	GameState.printer_upgrades["core_armor"] = 2
 	GameState.progress["starter_chosen"] = true
 
 	SaveSystem.write_save(GameState.to_save())
@@ -187,6 +206,7 @@ func _test_save_single_profile_roundtrip() -> void:
 	_assert_true(Array(s2.get("owned_blueprints", [])).has("010"), "blueprints persist")
 	_assert_true(Array(s2.get("active_team", [])).has("001"), "team persists")
 	_assert_eq(int(s2.get("printer_upgrades", {}).get("filament_cap", -1)), 5, "filament_cap persists")
+	_assert_eq(int(s2.get("printer_upgrades", {}).get("core_armor", -1)), 2, "core_armor persists")
 	SaveSystem.delete_save()
 
 
@@ -215,6 +235,9 @@ func _test_migrate_legacy_slot1() -> void:
 	_assert_true(SaveSystem.has_save(), "profile exists after migration")
 	var migrated: Dictionary = SaveSystem.load_save()
 	_assert_eq(int(migrated.get("coins", 0)), 77, "legacy coins migrated")
+	GameState.session_active = true
+	GameState.load_from_save(migrated)
+	_assert_eq(int(GameState.printer_upgrades.get("core_armor", -1)), 0, "legacy profile gains core_armor default")
 	SaveSystem.delete_save()
 	if FileAccess.file_exists(legacy_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(legacy_path))

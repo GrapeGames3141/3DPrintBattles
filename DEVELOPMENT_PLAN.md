@@ -19,7 +19,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Add core autoloads: `EventBus`, `GameState`, `SaveSystem`, `UnitDatabase`
 - [x] Title Screen: **single local profile** (Hearthstone-style: **Continue / New Game / Options / Quit** — no multi-slot columns). Continue disabled until `profile.json` exists; New Game confirms overwrite if a save exists; Options = audio toggles + optional wipe-all-progress (still uses `local_settings.json` for prefs readable before loading adventure).
 - [x] Save data model: coins, owned blueprints, active team, upgrades, progress, settings
-- [x] Hub: Shop (24h real-time offer rotation + persisted deals), Battle, Team, Slicer, **Terrarium**, **Archive** (silhouette-style unowned), **Learning Quests** (math bonus), **Overworld** / **Offline Trade** stubs, hub stats show team size
+- [x] Hub: Shop (24h real-time offer rotation + persisted deals), Battle, Team, **Slicer** (filament cap + **core armor** → bonus Core HP in battles), **Terrarium**, **Archive** (silhouette-style unowned + starter/boss tags), **Learning Quests**, **Overworld** / **Offline Trade** stubs, hub stats show team size
 - [x] Battle terminal gated: require starter + ≥1 unit on active team (`GameRules.can_enter_battle`)
 - [x] Shop MVP: **6** tier-weighted random blueprints per day (seeded rotation) + purchase flow
 - [x] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint — cards load stats from `units.json`

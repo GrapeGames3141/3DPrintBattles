@@ -64,7 +64,7 @@ Match ends when either:
 - [x] Coin-flip intro overlay (toss animation + who goes first) before first turn
 - [x] **Procedural arena tint** — random dark `ColorRect` backdrop per match (`BattleScreen`)
 - [ ] Full stamina / knockback presentation passes
-- [ ] Full exhaustion rules vs master prompt (verify vs `BattleResolver` / `_check_end`)
+- [x] Exhaustion MVP (`BattleScreen._is_exhausted_*` / `_has_playable_hand`) — full stamina presentation still open
 
 ## References
 

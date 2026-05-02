@@ -36,7 +36,7 @@ func create_new_save() -> void:
 		"coins": GameRules.NEW_SAVE_STARTING_COINS,
 		"owned_blueprints": [],
 		"active_team": [],
-		"printer_upgrades": {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP},
+		"printer_upgrades": {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP, "core_armor": 0},
 		"progress": {
 			"starter_chosen": false,
 			"battles_won": 0,

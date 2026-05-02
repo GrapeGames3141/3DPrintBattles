@@ -70,6 +70,7 @@ func _ready() -> void:
 
 	_player_filament_max = int(GameState.printer_upgrades.get("filament_cap", 3))
 	_enemy_filament_max = 3
+	_player_core_hp = CORE_HP_START + GameRules.player_core_hp_bonus(int(GameState.printer_upgrades.get("core_armor", 0)))
 
 	_grid_player.resize(COLS * ROWS)
 	_grid_enemy.resize(COLS * ROWS)

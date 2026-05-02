@@ -23,7 +23,7 @@ The master prompt targets **Ubuntu 24.04 + HTML5** for lab workflows. **This pro
 ## Checklist (incremental)
 
 - [x] Document folder conventions under `res://Assets/Prints/` (`README.txt` + optional `model.gltf` per id)
-- [ ] When splitting blueprint vs unit, add tests for load/save and shop grants (resources exist; wiring deferred)
+- [x] Printer upgrades persist **`filament_cap`** + **`core_armor`** (save tests); formal blueprint resources still deferred
 - [ ] Revisit HTML5 export preset when gameplay is stable enough to justify web QA
 
 ## Implementation checklist (living)

@@ -14,6 +14,10 @@ const NEW_SAVE_STARTING_COINS := 25
 const DEFAULT_FILAMENT_CAP := 3
 const FILAMENT_CAP_MAX := 10
 const SLICER_UPGRADE_COST_COINS := 25
+## Second slicer track: reinforce the player’s **Core Printer** shell (+HP in battle only).
+const SLICER_CORE_ARMOR_COST_COINS := 30
+const CORE_ARMOR_SLABS_MAX := 5
+const CORE_HP_PER_ARMOR_SLAB := 2
 const BATTLE_WIN_COINS := 40
 const BATTLE_LOSS_COINS := 15
 const OVERWORLD_ROUTE_MID_MIN_WINS := 1
@@ -31,6 +35,11 @@ static func overworld_route_unlocked(route_id: String, battles_won: int) -> bool
 			return w >= OVERWORLD_ROUTE_BOSS_MIN_WINS
 		_:
 			return false
+
+
+static func player_core_hp_bonus(core_armor_slabs: int) -> int:
+	var s: int = clampi(core_armor_slabs, 0, CORE_ARMOR_SLABS_MAX)
+	return s * CORE_HP_PER_ARMOR_SLAB
 
 
 static func blueprint_shop_price(tier_level: int, unit_cost: int) -> int:

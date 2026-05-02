@@ -70,7 +70,9 @@ func _synthetic_unit_dict(seq: int) -> Dictionary:
 		"element": e,
 		"hp": hp,
 		"atk": atk,
-		"ability": "Synth roster pad (Phase 5)"
+		"ability": "Synth roster pad (Phase 5)",
+		"starter": false,
+		"boss": false
 	}
 
 
@@ -86,6 +88,17 @@ func _finalize_sorted_roster(cap: int) -> void:
 
 func get_unit(id: String) -> Dictionary:
 	return units_by_id.get(id, {})
+
+
+func starter_unit_ids() -> Array[String]:
+	var out: Array[String] = []
+	for u in units_array:
+		if bool(u.get("starter", false)):
+			var sid: String = str(u.get("id", ""))
+			if sid != "":
+				out.append(sid)
+	out.sort()
+	return out
 
 
 func active_roster_for_stage() -> Array[Dictionary]:
