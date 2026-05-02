@@ -37,11 +37,13 @@ func create_new_save() -> void:
 		"owned_blueprints": [],
 		"active_team": [],
 		"printer_upgrades": {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP},
-		"progress": {"starter_chosen": false, "battles_won": 0},
+		"progress": {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false},
 		"settings": {
 			"music": bool(ls.get("music", true)),
 			"sfx": bool(ls.get("sfx", true))
-		}
+		},
+		"shop_last_refresh_unix": 0,
+		"shop_offer_ids": []
 	}
 	write_save(save)
 

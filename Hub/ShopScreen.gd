@@ -15,7 +15,7 @@ func _ready() -> void:
 	anchor_bottom = 1
 
 	_rng.randomize()
-	_generate_offers()
+	_sync_shop_offers_from_clock()
 
 	var root := VBoxContainer.new()
 	root.anchor_right = 1
@@ -44,7 +44,7 @@ func _ready() -> void:
 	top.add_child(_coins)
 
 	_toast = Label.new()
-	_toast.text = "Offers refresh every launch (MVP)."
+	_toast.text = "Offers rotate every 24 hours (real time). Same deals until then."
 	_toast.modulate.a = 0.85
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_toaster_panel(_toast))
@@ -60,6 +60,30 @@ func _ready() -> void:
 	scroll.add_child(_list)
 
 	_refresh()
+
+func _sync_shop_offers_from_clock() -> void:
+	var now := int(Time.get_unix_time_from_system())
+	if GameRules.shop_refresh_due(GameState.shop_last_refresh_unix, now):
+		GameState.shop_last_refresh_unix = now
+		_generate_offers()
+		_persist_offers_to_game_state()
+		if GameState.session_active:
+			SaveSystem.write_save(GameState.to_save())
+	else:
+		if not GameState.shop_offer_ids.is_empty():
+			_offers = GameState.shop_offer_ids.duplicate()
+		else:
+			_generate_offers()
+			_persist_offers_to_game_state()
+			if GameState.session_active:
+				SaveSystem.write_save(GameState.to_save())
+
+
+func _persist_offers_to_game_state() -> void:
+	GameState.shop_offer_ids.clear()
+	for id in _offers:
+		GameState.shop_offer_ids.append(id)
+
 
 func _generate_offers() -> void:
 	_offers = GameRules.pick_shop_offer_unit_ids(_rng, UnitDatabase.active_roster_for_stage(), GameRules.SHOP_OFFER_COUNT)

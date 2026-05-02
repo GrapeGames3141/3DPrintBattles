@@ -74,6 +74,12 @@ func _ready() -> void:
 	_grid_player.resize(COLS * ROWS)
 	_grid_enemy.resize(COLS * ROWS)
 
+	var arena_bg := ColorRect.new()
+	arena_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	arena_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arena_bg.color = Color.from_hsv(_rng.randf(), 0.22, 0.13)
+	add_child(arena_bg)
+
 	var root := VBoxContainer.new()
 	root.anchor_right = 1
 	root.anchor_bottom = 1

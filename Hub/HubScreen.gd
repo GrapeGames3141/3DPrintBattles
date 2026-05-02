@@ -3,6 +3,11 @@ extends Control
 signal open_shop
 signal open_battle
 signal open_team
+signal open_terrarium
+signal open_archive
+signal open_quests
+signal open_overworld
+signal open_trade
 signal back_to_title
 
 var _toast: Label
@@ -70,6 +75,33 @@ func _ready() -> void:
 	btn_battle.pressed.connect(func(): open_battle.emit())
 	left.add_child(btn_battle)
 
+	var btn_terr := Button.new()
+	btn_terr.text = "Terrarium"
+	btn_terr.pressed.connect(func(): open_terrarium.emit())
+	left.add_child(btn_terr)
+
+	var btn_arch := Button.new()
+	btn_arch.text = "Archive"
+	btn_arch.pressed.connect(func(): open_archive.emit())
+	left.add_child(btn_arch)
+
+	var btn_quest := Button.new()
+	btn_quest.text = "Learning Quests"
+	btn_quest.pressed.connect(func(): open_quests.emit())
+	left.add_child(btn_quest)
+
+	left.add_child(_divider())
+
+	var btn_world := Button.new()
+	btn_world.text = "Overworld (Bosses)"
+	btn_world.pressed.connect(func(): open_overworld.emit())
+	left.add_child(btn_world)
+
+	var btn_trade := Button.new()
+	btn_trade.text = "Offline Trade"
+	btn_trade.pressed.connect(func(): open_trade.emit())
+	left.add_child(btn_trade)
+
 	left.add_child(_divider())
 
 	var btn_upgrade := Button.new()
@@ -99,7 +131,7 @@ func _ready() -> void:
 	right.add_child(info)
 
 	var lore := Label.new()
-	lore.text = "Welcome! Print units from filament and battle rival printers."
+	lore.text = "Welcome! Shop for blueprints, build a team, try Learning Quests, and battle from the terminal. Terrarium and Archive show your collection vs the full roster."
 	lore.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(lore)
 

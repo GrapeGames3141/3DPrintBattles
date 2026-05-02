@@ -4,6 +4,8 @@ Kid-safe collectible creature battler inspired by 3D printing + STEM.
 
 **Current focus:** development and playtesting are **Windows-only** for now (Godot editor + run from `Main.tscn`). Android / Steam / Linux notes below stay as **future** shipping reference, not what we validate every change against.
 
+**Roadmap:** Phases 1–5 are documented under `Docs/plan-phase-1.md`–`plan-phase-5.md`. The game includes a **256-id roster pool** (JSON + synthetic fill), **24h shop rotation**, **Terrarium / Archive / Quests**, and **Overworld / Trade** stubs; deeper shaders, export passes, and Steam/Android are still future work (see `DEVELOPMENT_PLAN.md`).
+
 ### Run on Windows (recommended for dev)
 - Install **Godot 4.3+** (matches `project.godot` → `config/features`; standard `.exe` build is easiest on Windows)
 - Launch Godot and **Import** this folder (it contains `project.godot`)

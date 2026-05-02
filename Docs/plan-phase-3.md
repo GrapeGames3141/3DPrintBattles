@@ -62,5 +62,10 @@ Match ends when either:
 - [x] Player targeting (slot / Core) + simultaneous resolution pass
 - [x] Enemy filament shown in battle status bar
 - [x] Coin-flip intro overlay (toss animation + who goes first) before first turn
+- [x] **Procedural arena tint** — random dark `ColorRect` backdrop per match (`BattleScreen`)
+- [ ] Full stamina / knockback presentation passes
 - [ ] Full exhaustion rules vs master prompt (verify vs `BattleResolver` / `_check_end`)
-- [ ] Knockback / shatter presentation passes
+
+## References
+
+- `Systems/GameRules.gd`, `Systems/BattleResolver.gd`, `Battle/BattleScreen.gd`

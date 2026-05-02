@@ -1,6 +1,6 @@
 ## 3D Print Battles — DEVELOPMENT_PLAN
 
-**Current phase**: 🟢 STAGE 1 (MVP) — playable loop + test harness
+**Current phase**: 🟢 **Roadmap phases 1–5 implemented** — Stage 1–2 features playable; Stage 3 delivery items are **stubs or lightweight** (see `Docs/plan-phase-4.md`). Roster pool **`ACTIVE_ROSTER_CAP` = 256** via JSON + synthetic fill.
 
 **Active dev / test OS:** **Windows** only for now (editor + F5 play). Cross-platform and store work stay planned; don’t block day-to-day iteration on them.
 
@@ -19,7 +19,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Add core autoloads: `EventBus`, `GameState`, `SaveSystem`, `UnitDatabase`
 - [x] Title Screen: **single local profile** (Hearthstone-style: **Continue / New Game / Options / Quit** — no multi-slot columns). Continue disabled until `profile.json` exists; New Game confirms overwrite if a save exists; Options = audio toggles + optional wipe-all-progress (still uses `local_settings.json` for prefs readable before loading adventure).
 - [x] Save data model: coins, owned blueprints, active team, upgrades, progress, settings
-- [x] Hub room MVP: Shop terminal, Battle terminal, Team manager (stats on roster rows), Slicer upgrade (filament cap), hub stats show team size
+- [x] Hub: Shop (24h real-time offer rotation + persisted deals), Battle, Team, Slicer, **Terrarium**, **Archive** (silhouette-style unowned), **Learning Quests** (math bonus), **Overworld** / **Offline Trade** stubs, hub stats show team size
 - [x] Battle terminal gated: require starter + ≥1 unit on active team (`GameRules.can_enter_battle`)
 - [x] Shop MVP: 5 random blueprints per launch (seeded) + purchase flow
 - [x] Starter choice: pick 1 unit (Arcade Unicorn / Spectral Pup / Cookie Cat) without granting blueprint — cards load stats from `units.json`
@@ -33,7 +33,8 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Linux dev note: AppImage `libfuse2t64` dependency instructions (see `README.md`)
 - [x] Testing: add headless unit test runner + run it before each commit
 - [x] Testing: smoke test (save + starter + battle-ready team data)
-- [x] `Systems/GameRules.gd` — single source for shop price, offer count, team cap, battle payouts, upgrade costs, **MVP roster size** (first N units in JSON for shop/AI) (with unit tests)
+- [x] `Systems/GameRules.gd` — shop refresh interval, **ACTIVE_ROSTER_CAP (256)**, quest coins, battle payouts, etc. (with unit tests)
+- [x] **Phase 5 data scale**: `units.json` core roster + `UnitDatabase` synthetic ids **021–256**; `PrintMeshResolver` + `Assets/Prints/` pipeline; `PrintInstructionResource` / `PrintUnitResource` Resource stubs
 - [x] Title audio toggles → **Music / SFX buses** + mute apply (`Systems/AudioSettings.gd`, wired from `Main` + title Options)
 - [ ] **Policy:** each new gameplay/economy feature must add or extend a test in `res://Tests/run_tests.gd` and be run headless before merge
 - [ ] Steam: Steamworks integration plan (GDExtension / addon) + depot layout
@@ -51,7 +52,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - **Master-prompt phase plans** (agent workflow, architecture, combat contract, staged roadmap, data schema): `Docs/plan-phase-1.md` through `Docs/plan-phase-5.md`.
 - Prefer code-driven UI + node trees to minimize fragile `.tscn` spam.
 - Always run even with no art/audio: generate primitive meshes + simple materials.
-- All unit roster must load from JSON: `res://Data/units.json` (no hardcoded roster in scripts).
+- Unit definitions start from JSON (`res://Data/units.json`); missing ids up to **`GameRules.ACTIVE_ROSTER_CAP`** are generated at load so shop/battle always see a full tiered pool (synth rows marked in `ability` text).
 - **COPPA / kid-safe**: if you add multiplayer or accounts, architect chat-free or heavily moderated flows before Steam/Android social features.
 - **Godot / GDScript**: Project targets **4.3** (`config/features`). Prefer **explicit types** where values come from `Variant` (`Dictionary.get`, `JSON`, `min`/`max`) so strict warnings stay clean. Untyped `signal` args kept for broad compatibility. Avoid C-style `?:`; use plain `if` / `else` blocks (no inline `a if b else c` on older parsers).
 - **Tests:** Run `res://Tests/run_tests.gd` headless (see `README.md`) after logic changes. Put balance rules in `GameRules` / `BattleResolver` when possible so they stay testable without scenes.

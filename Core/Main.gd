@@ -15,6 +15,7 @@ func _ensure_folders_exist() -> void:
 		"user://Saves",
 	]:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(p))
+	# res://Assets/Prints/<unit_id>/ is documented in Assets/Prints/README.txt — folders created when adding art.
 
 func _set_screen(screen: Node) -> void:
 	if _current != null:
@@ -36,6 +37,11 @@ func _show_hub() -> void:
 	hub.open_battle.connect(_on_open_battle)
 	hub.open_shop.connect(_on_open_shop)
 	hub.open_team.connect(_on_open_team)
+	hub.open_terrarium.connect(_show_terrarium)
+	hub.open_archive.connect(_show_archive)
+	hub.open_quests.connect(_show_quests)
+	hub.open_overworld.connect(_show_overworld)
+	hub.open_trade.connect(_show_trade)
 	hub.back_to_title.connect(_show_title)
 	_set_screen(hub)
 	if not bool(GameState.progress.get("starter_chosen", false)):
@@ -55,6 +61,31 @@ func _show_team() -> void:
 	var team: Control = preload("res://Hub/TeamScreen.gd").new() as Control
 	team.back.connect(_show_hub)
 	_set_screen(team)
+
+func _show_terrarium() -> void:
+	var sc: Control = preload("res://Hub/TerrariumScreen.gd").new() as Control
+	sc.back.connect(_show_hub)
+	_set_screen(sc)
+
+func _show_archive() -> void:
+	var sc: Control = preload("res://Hub/ArchiveScreen.gd").new() as Control
+	sc.back.connect(_show_hub)
+	_set_screen(sc)
+
+func _show_quests() -> void:
+	var sc: Control = preload("res://Hub/QuestScreen.gd").new() as Control
+	sc.back.connect(_show_hub)
+	_set_screen(sc)
+
+func _show_overworld() -> void:
+	var sc: Control = preload("res://Hub/OverworldScreen.gd").new() as Control
+	sc.back.connect(_show_hub)
+	_set_screen(sc)
+
+func _show_trade() -> void:
+	var sc: Control = preload("res://Hub/TradeScreen.gd").new() as Control
+	sc.back.connect(_show_hub)
+	_set_screen(sc)
 
 func _show_starter_choice() -> void:
 	var starter: Control = preload("res://Hub/StarterChoiceScreen.gd").new() as Control

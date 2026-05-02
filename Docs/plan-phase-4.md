@@ -15,15 +15,15 @@ The master prompt originally described **three save slots**. **Current product d
 | Deliverable | Notes |
 |-------------|--------|
 | Title | Continue (disabled if no save), New Game (overwrite confirm), Options, Quit |
-| Persist | Coins, owned blueprints, active team, printer upgrades, progress flags, settings |
+| Persist | Coins, owned blueprints, active team, printer upgrades, progress flags, settings, shop timestamp + offer ids |
 
 ### Hub
 
-- Workshop with **Shop**, **Battle**, **Team** (and **Slicer**/filament cap upgrade as implemented).
+- Workshop with **Shop**, **Battle**, **Team**, **Slicer**/filament cap, plus Stage 2 terminals (below).
 
 ### Shop
 
-- **5 random blueprint offers** per session (MVP refresh each launch / seeded run).
+- **5 random blueprint offers**; **24h real-time** refresh (`GameRules.shop_refresh_due`, `GameState.shop_last_refresh_unix`).
 
 ### Starter choice
 
@@ -36,7 +36,7 @@ The master prompt originally described **three save slots**. **Current product d
 
 ### Database (Stage 1 scope)
 
-- JSON loader active for **first 20 creatures** in the roster file for MVP tuning (expand in Stage 2+).
+- JSON base roster + **synthetic fill** to **`ACTIVE_ROSTER_CAP` (256)** for shop + enemy RNG (`UnitDatabase`).
 
 ### Exit criteria (Stage 1)
 
@@ -44,12 +44,12 @@ The master prompt originally described **three save slots**. **Current product d
 
 ---
 
-## Stage 2 — Better (do not start until Stage 1 exit criteria met)
+## Stage 2 — Better
 
 **Goal:** Replayability and breadth.
 
 - Hub: **Terrarium**, **Archive**, **Slicer forge** (deeper armor/upgrades).  
-- **~80** active units from JSON.  
+- **~80** active units from JSON — **superseded by full 256 pool** in this repo (JSON + synth).  
 - Economy: **24h real-time** shop refresh; **boss battles** on an **overworld** map.  
 - **Educational quests:** math mini-games for coins (kid-safe).  
 - Visuals: summoning VFX (e.g. bottom-to-top shader mask).
@@ -79,19 +79,25 @@ The master prompt originally described **three save slots**. **Current product d
 
 - [x] Single-profile save (`profile.json`) + title **Continue / New Game / Options / Quit**
 - [x] Hub: Shop, Battle, Team, Slicer filament-cap upgrade
-- [x] Shop: 5 offers / launch, prices from `GameRules.blueprint_shop_price`
+- [x] Shop: 5 offers, prices from `GameRules.blueprint_shop_price`, **24h refresh + persisted offers**
 - [x] Starter pick (3 starters) — unit on team, blueprint not auto-granted
 - [x] Battle vs AI: summon, filament, combat resolution, payouts, `battles_won`
-- [x] JSON units; **first `MVP_ACTIVE_UNIT_COUNT` (20)** rows drive shop + enemy RNG (`UnitDatabase.active_roster_for_stage`)
-- [ ] Policy: extend `run_tests.gd` for each new economy/combat tweak
+- [x] Roster: **`ACTIVE_ROSTER_CAP` (256)** via JSON + `UnitDatabase` synth ids
+- [ ] Policy: extend `run_tests.gd` for each new economy/combat tweak (ongoing)
 
 ### Stage 2 — Better
 
-- [ ] Terrarium, Archive, deeper slicer forge
-- [ ] ~80 roster activation + data pass
-- [ ] 24h shop refresh + overworld + bosses
-- [ ] Educational coin quests + summoning shader polish
+- [x] **Terrarium** (owned collection view), **Archive** (full roster; unowned darkened)
+- [x] **Learning Quests** — one-time math bonus (`progress.quest_math_bonus_claimed`)
+- [x] 24h shop refresh + save-backed offers
+- [ ] Deeper slicer forge / armor (beyond filament cap)
+- [x] **Overworld** hub entry — **stub screen** (boss routes TBD)
+- [ ] Summoning shader VFX
 
 ### Stage 3 — Betterest
 
-- [ ] Full 256 units + dynamic asset import + silhouette shaders + procedural arenas + offline NPC trade
+- [x] **256** unit rows in pool (synthetic generation for ids without JSON)
+- [x] **Dynamic import hook** — `PrintMeshResolver.try_model_path` + `Assets/Prints/<id>/model.gltf`
+- [x] **Archive “silhouette”** — unowned labels modulated dark (shader deferred)
+- [x] **Procedural arena** — random battle backdrop tint
+- [x] **Offline Trade** — stub panel (COPPA-safe copy; no chat)

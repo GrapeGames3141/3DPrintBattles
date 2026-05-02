@@ -8,7 +8,7 @@
 2. **Stable IDs** — Each unit has a machine-safe `id` string used in saves, shop grants, and teams.
 3. **Tier taxonomy** — Align with design tiers (Draft → … → Aerospace PEEK / Boss tags). Store tier/rarity as fields for UI filtering and pack weights later.
 4. **Stats justification** — Poly-count / complexity fields (or narrative “cost reason”) feed **shop cost**, **ATK/HP**, and balance discussions; keep derivations documented in `GameRules` or data schema comments.
-5. **Progressive activation** — Stage 1: first **20** IDs active in rotation/MVP. Stage 2: **~80**. Stage 3: full **256**.
+5. **Progressive activation** — Stage 1: first **20** hand-authored entries in JSON. **Full pool:** ids **001–256** via JSON + **runtime synthetic fill** for missing ids (`GameRules.ACTIVE_ROSTER_CAP`).
 
 ## Schema direction (fields)
 
@@ -19,7 +19,7 @@ Minimum useful columns per unit (exact names follow `units.json`):
 | Identity | `id`, `display_name`, `tier`, `material`, `element` |
 | Combat | `cost`, `hp`, `atk`, tags (`starter`, `boss`) |
 | Ability | `ability_id` or text hook for future scripting |
-| Assets | `model_path` optional; empty → primitive fallback in code |
+| Assets | optional `model_path`; else `PrintMeshResolver` + `Assets/Prints/<id>/model.gltf` |
 
 ## Boss / starter flags
 
@@ -28,7 +28,7 @@ Units marked **[STARTER]** or **[BOSS]** in the master list must have explicit f
 ## Generation workflow
 
 - **Authoritative list:** Master prompt enumerates 256 creatures with tier and ability blurbs.  
-- **Implementation:** Prefer generating/regenerating `Data/units.json` from a script or spreadsheet export so balance passes don’t require hand-editing 256 rows for bulk changes.
+- **Implementation:** Hand-authored JSON for core set; **synthetic dictionary** for gaps (`UnitDatabase._synthetic_unit_dict`) until a CSV/export pipeline replaces it.
 
 ## COPPA / kid-safe content
 
@@ -38,17 +38,18 @@ Roster text and ability names stay appropriate for kids; no chat tied to trading
 
 - Data file: `res://Data/units.json`
 - Loader: `Systems/UnitDatabase.gd`
-- Tests: assert parse counts / sample IDs in `Tests/run_tests.gd` as stages expand
+- Mesh path helper: `Systems/PrintMeshResolver.gd`
+- Tests: `Tests/run_tests.gd`
 
 ## Full roster source
 
-The complete tier-by-tier roster (256 entries) lives in the **master AI generation prompt** / design archive; this repo stores the **subset actually shipped** in JSON. When expanding stages, add IDs in order and update activation filters in code or data flags.
+The complete tier-by-tier roster (256 entries) lives in the **master AI generation prompt** / design archive; this repo ships **JSON + synthetic padding** to **`ACTIVE_ROSTER_CAP`**.
 
 ## Implementation checklist (living)
 
 - [x] `res://Data/units.json` array schema + `UnitDatabase.load_units`
 - [x] Stable string `id` per unit; lookups via `get_unit`
-- [x] Stage 1 activation: **first N** rows only (`GameRules.MVP_ACTIVE_UNIT_COUNT`, `active_roster_for_stage`)
-- [ ] Tier/rarity fields used for UI badges + weighted shop (Stage 2+)
+- [x] Full activation slice **`GameRules.ACTIVE_ROSTER_CAP` (256)** via `_finalize_sorted_roster`
+- [ ] Tier/rarity fields used for UI badges + weighted shop (Stage 2+ polish)
 - [ ] Scripted abilities beyond MVP placeholders (`ability` column → resolver hooks)
-- [ ] Generator script or CSV export when expanding toward 80 / 256 rows
+- [x] Synthetic generation covers ids **021–256** until a bulk CSV replaces synth rows

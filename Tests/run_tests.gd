@@ -21,6 +21,7 @@ func _run_all() -> void:
 	_test_game_rules_shop_pick_small_pool()
 	_test_game_rules_team_limits()
 	_test_game_rules_can_enter_battle()
+	_test_game_rules_shop_refresh()
 	_test_game_rules_constants_vs_save_defaults()
 
 	_test_unit_database_loads()
@@ -32,7 +33,8 @@ func _run_all() -> void:
 	_test_battle_resolver_elements()
 	_test_battle_resolver_carbon_neutral()
 	_test_battle_resolver_tpu_constants()
-	_test_active_roster_mvp_count()
+	_test_active_roster_full_cap()
+	_test_print_mesh_resolver_stub()
 	_test_audio_buses_ensure()
 	_test_smoke_newgame_to_battle_ready()
 
@@ -44,8 +46,10 @@ func _reset_game_state_for_tests() -> void:
 	GameState.owned_blueprints.clear()
 	GameState.active_team.clear()
 	GameState.printer_upgrades = {"filament_cap": GameRules.DEFAULT_FILAMENT_CAP}
-	GameState.progress = {"starter_chosen": false, "battles_won": 0}
+	GameState.progress = {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false}
 	GameState.settings = {"music": true, "sfx": true}
+	GameState.shop_last_refresh_unix = 0
+	GameState.shop_offer_ids.clear()
 
 
 func _assert_true(cond: bool, message: String) -> void:
@@ -103,13 +107,20 @@ func _test_game_rules_can_enter_battle() -> void:
 	_assert_true(GameRules.can_enter_battle(true, 1), "starter + unit -> battle ok")
 
 
+func _test_game_rules_shop_refresh() -> void:
+	_assert_true(GameRules.shop_refresh_due(0, 100), "first shop visit refreshes")
+	_assert_true(not GameRules.shop_refresh_due(100, 500), "same day")
+	_assert_true(GameRules.shop_refresh_due(100, 100 + GameRules.SHOP_REFRESH_SECONDS), "next day")
+
+
 func _test_game_rules_constants_vs_save_defaults() -> void:
 	_assert_eq(GameRules.NEW_SAVE_STARTING_COINS, 25, "doc: starter coins")
 	_assert_eq(GameRules.DEFAULT_FILAMENT_CAP, 3, "default filament cap")
 	_assert_eq(GameRules.FILAMENT_CAP_MAX, 10, "max filament cap")
 	_assert_eq(GameRules.BATTLE_WIN_COINS, 40, "win payout")
 	_assert_eq(GameRules.BATTLE_LOSS_COINS, 15, "loss payout")
-	_assert_eq(GameRules.MVP_ACTIVE_UNIT_COUNT, 20, "MVP roster cap")
+	_assert_eq(GameRules.ACTIVE_ROSTER_CAP, 256, "full phase roster cap")
+	_assert_eq(GameRules.SHOP_REFRESH_SECONDS, 86400, "24h shop refresh")
 
 
 func _test_unit_database_loads() -> void:
@@ -188,7 +199,7 @@ func _test_starter_rule_does_not_grant_blueprint() -> void:
 	GameState.coins = 0
 	GameState.owned_blueprints = []
 	GameState.active_team = []
-	GameState.progress = {"starter_chosen": false}
+	GameState.progress = {"starter_chosen": false, "battles_won": 0, "quest_math_bonus_claimed": false}
 
 	var starter_id := "001"
 	GameState.progress["starter_chosen"] = true
@@ -213,12 +224,16 @@ func _test_battle_resolver_carbon_neutral() -> void:
 	_assert_eq(BattleResolver.effective_damage("Carbon", 4, "Heat"), 4, "Carbon def: no triangle")
 
 
-func _test_active_roster_mvp_count() -> void:
+func _test_active_roster_full_cap() -> void:
 	UnitDatabase.load_units("res://Data/units.json")
 	var roster: Array[Dictionary] = UnitDatabase.active_roster_for_stage()
-	var expect_n: int = mini(GameRules.MVP_ACTIVE_UNIT_COUNT, UnitDatabase.units_array.size())
-	_assert_eq(roster.size(), expect_n, "active MVP roster length")
-	_assert_true(roster.size() > 0, "roster non-empty")
+	_assert_eq(roster.size(), GameRules.ACTIVE_ROSTER_CAP, "active roster equals cap")
+	_assert_eq(UnitDatabase.units_array.size(), GameRules.ACTIVE_ROSTER_CAP, "units_array padded")
+
+
+func _test_print_mesh_resolver_stub() -> void:
+	var p: String = PrintMeshResolver.try_model_path("999")
+	_assert_eq(p, "", "missing gltf returns empty")
 
 
 func _test_audio_buses_ensure() -> void:

@@ -3,8 +3,10 @@ class_name GameRules
 ## Single source for MVP economy / limits so gameplay and unit tests stay aligned.
 
 const SHOP_OFFER_COUNT := 5
-## Stage 1 MVP: only the first N entries in `units.json` participate in shop random offers and enemy pulls (expand in Stage 2).
-const MVP_ACTIVE_UNIT_COUNT := 20
+## Roster entries 001…N participate in shop draws and AI summons (`UnitDatabase` pads missing ids to this cap).
+const ACTIVE_ROSTER_CAP := 256
+const SHOP_REFRESH_SECONDS := 86400
+const QUEST_MATH_BONUS_COINS := 15
 const TEAM_MAX_UNITS := 3
 const NEW_SAVE_STARTING_COINS := 25
 const DEFAULT_FILAMENT_CAP := 3
@@ -40,3 +42,9 @@ static func can_add_team_member(team_size: int) -> bool:
 
 static func can_enter_battle(starter_chosen: bool, active_team_count: int) -> bool:
 	return starter_chosen and active_team_count > 0
+
+
+static func shop_refresh_due(last_refresh_unix: int, now_unix: int) -> bool:
+	if last_refresh_unix <= 0:
+		return true
+	return (now_unix - last_refresh_unix) >= SHOP_REFRESH_SECONDS

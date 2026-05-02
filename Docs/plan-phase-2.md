@@ -22,9 +22,9 @@ The master prompt targets **Ubuntu 24.04 + HTML5** for lab workflows. **This pro
 
 ## Checklist (incremental)
 
-- [ ] Document folder conventions under `res://Assets/` when art pipeline stabilizes.
-- [ ] When splitting blueprint vs unit, add tests for load/save and shop grants.
-- [ ] Revisit HTML5 export preset when gameplay is stable enough to justify web QA.
+- [x] Document folder conventions under `res://Assets/Prints/` (`README.txt` + optional `model.gltf` per id)
+- [ ] When splitting blueprint vs unit, add tests for load/save and shop grants (resources exist; wiring deferred)
+- [ ] Revisit HTML5 export preset when gameplay is stable enough to justify web QA
 
 ## Implementation checklist (living)
 
@@ -32,8 +32,8 @@ The master prompt targets **Ubuntu 24.04 + HTML5** for lab workflows. **This pro
 - [x] Signals for screen flow (`HubScreen`, `BattleScreen`, `TitleScreen`, `Main`)
 - [x] Title Options persist audio prefs; runtime **Music** / **SFX** buses (`Systems/AudioSettings.gd`) + mute apply on title / session load
 - [x] Touch emulation enabled in project for mobile-shaped UI testing
-- [ ] Dedicated `res://Assets/Prints/` conventions doc + sample folder layout
-- [ ] `PrintInstructionResource` / `PrintUnitResource` split (Stage 2+)
+- [x] `res://Assets/Prints/` conventions (`README.txt`, `.gitkeep`) + `PrintMeshResolver.try_model_path`
+- [x] `PrintInstructionResource` / `PrintUnitResource` Resource classes (`Resources/*.gd`) — ready for inventory/battle formalization
 - [ ] Gamepad focus neighbors on title/hub (accessibility)
 
 ## References
