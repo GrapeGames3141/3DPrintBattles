@@ -25,6 +25,7 @@ func _ready() -> void:
 	offset_right = 0
 	offset_bottom = 0
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	theme = _build_overlay_theme()
 
 	_vp_container = SubViewportContainer.new()
 	_vp_container.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -49,8 +50,7 @@ func _ready() -> void:
 	var top_hint := Label.new()
 	top_hint.text = "Filament Fighters — Makers Guild"
 	top_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	top_hint.add_theme_font_size_override("font_size", 22)
-	top_hint.modulate = Color(0.95, 0.92, 0.85)
+	top_hint.add_theme_font_size_override("font_size", 24)
 	overlay.add_child(top_hint)
 
 	var sp := Control.new()
@@ -62,19 +62,36 @@ func _ready() -> void:
 	bot.text = "Click: Door → Menu · Monitor → Team · 3D Printer → Shop"
 	bot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bot.add_theme_font_size_override("font_size", 15)
-	bot.modulate.a = 0.9
+	bot.add_theme_font_size_override("font_size", 16)
 	overlay.add_child(bot)
 
 	_toast_line = Label.new()
 	_toast_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast_line.add_theme_font_size_override("font_size", 14)
-	_toast_line.modulate = Color(1.0, 0.82, 0.55)
+	_toast_line.add_theme_font_size_override("font_size", 15)
+	_toast_line.theme_type_variation = &"ToastLabel"
 	overlay.add_child(_toast_line)
 
 	if not EventBus.request_toast.is_connected(_on_hub_toast):
 		EventBus.request_toast.connect(_on_hub_toast)
+
+
+func _build_overlay_theme() -> Theme:
+	var t := Theme.new()
+	var cream := Color(0.97, 0.94, 0.88)
+	var shadow := Color(0, 0, 0, 0.72)
+	t.set_color("font_color", "Label", cream)
+	t.set_color("font_shadow_color", "Label", shadow)
+	t.set_constant("shadow_offset_x", "Label", 2)
+	t.set_constant("shadow_offset_y", "Label", 2)
+	t.set_font_size("font_size", "Label", 16)
+	# Toast line: warm amber, still readable on shadow
+	t.set_type_variation("ToastLabel", "Label")
+	t.set_color("font_color", "ToastLabel", Color(1.0, 0.84, 0.52))
+	t.set_color("font_shadow_color", "ToastLabel", Color(0, 0, 0, 0.85))
+	t.set_constant("shadow_offset_x", "ToastLabel", 2)
+	t.set_constant("shadow_offset_y", "ToastLabel", 2)
+	return t
 
 
 func _build_workshop_world() -> Node3D:
@@ -83,18 +100,43 @@ func _build_workshop_world() -> Node3D:
 	var we := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.12, 0.1, 0.14)
+	env.background_color = Color(0.08, 0.065, 0.09)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.55, 0.62, 0.85)
-	env.ambient_light_energy = 0.35
+	env.ambient_light_color = Color(0.48, 0.52, 0.72)
+	env.ambient_light_energy = 0.38
+	# ACES (“ACES Fitted” in Godot 3 naming) — vivid highlights without clipping.
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 1.05
+	env.tonemap_white = 1.05
+	# Subtle bloom on emissive / neon props.
+	env.glow_enabled = true
+	env.glow_intensity = 0.42
+	env.glow_strength = 0.85
+	env.glow_mix = 0.075
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	env.glow_hdr_threshold = 0.92
+	env.glow_hdr_scale = 1.15
+	env.glow_bloom = 0.08
+	# Contact shadows in corners / under benches.
+	env.ssao_enabled = true
+	env.ssao_radius = 1.35
+	env.ssao_intensity = 2.5
+	env.ssao_power = 1.45
+	env.ssao_detail = 0.55
+	env.ssao_light_affect = 0.35
 	we.environment = env
 	root.add_child(we)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-58, 32, 0)
-	sun.light_energy = 1.15
+	sun.light_energy = 1.2
 	sun.light_color = Color(1.0, 0.93, 0.78)
 	sun.shadow_enabled = true
+	sun.light_angular_distance = 0.45
+	sun.shadow_blur = 1.35
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_blend_splits = true
+	sun.directional_shadow_max_distance = 48.0
 	root.add_child(sun)
 
 	var warm1 := OmniLight3D.new()
@@ -124,10 +166,7 @@ func _build_workshop_world() -> Node3D:
 	plane.size = Vector2(22, 14)
 	floor_mi.mesh = plane
 	floor_mi.position = Vector3(0, 0, 0)
-	var floor_mat := StandardMaterial3D.new()
-	floor_mat.albedo_color = Color(0.35, 0.22, 0.14)
-	floor_mat.roughness = 0.88
-	floor_mi.material_override = floor_mat
+	floor_mi.material_override = _mat_wood_floor()
 	root.add_child(floor_mi)
 
 	var floor_body := StaticBody3D.new()
@@ -153,23 +192,26 @@ func _build_workshop_world() -> Node3D:
 	door_glow.mesh = dq
 	door_glow.position = Vector3(0, 2.4, -6.85)
 	door_glow.rotation_degrees = Vector3(0, 180, 0)
-	var dg_mat := StandardMaterial3D.new()
-	dg_mat.albedo_color = Color(0.45, 0.62, 0.95)
-	dg_mat.emission_enabled = true
-	dg_mat.emission = Color(0.35, 0.55, 0.95)
-	dg_mat.emission_energy_multiplier = 0.55
+	var dg_mat: StandardMaterial3D = _mat_plastic(
+		Color(0.42, 0.58, 0.98),
+		Color(0.38, 0.62, 1.0),
+		0.65
+	)
+	dg_mat.metallic = 0.12
+	dg_mat.roughness = 0.28
 	door_glow.material_override = dg_mat
 	root.add_child(door_glow)
 
-	# Guild sign (Label3D)
+	# Guild sign (Label3D) — billboard faces the camera (fixes mirrored / backwards text).
 	var sign := Label3D.new()
 	sign.text = "FILAMENT FIGHTERS — MAKERS GUILD"
-	sign.position = Vector3(0, 3.35, -6.55)
-	sign.rotation_degrees = Vector3(0, 180, 0)
+	sign.position = Vector3(0, 3.35, -6.52)
+	sign.rotation_degrees = Vector3.ZERO
+	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.font_size = 48
-	sign.modulate = Color(0.92, 0.82, 0.62)
-	sign.outline_size = 12
-	sign.outline_modulate = Color(0, 0, 0, 0.65)
+	sign.modulate = Color(0.95, 0.86, 0.65)
+	sign.outline_size = 14
+	sign.outline_modulate = Color(0, 0, 0, 0.75)
 	root.add_child(sign)
 
 	# Left bench + printer + wireframe wolf glow
@@ -196,10 +238,7 @@ func _add_wall_box(parent: Node3D, pos: Vector3, size: Vector3) -> void:
 	box.size = size
 	mi.mesh = box
 	mi.position = pos
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.28, 0.17, 0.11)
-	mat.roughness = 0.92
-	mi.material_override = mat
+	mi.material_override = _mat_wood_wall()
 	parent.add_child(mi)
 
 
@@ -209,61 +248,120 @@ func _add_bench_cluster(parent: Node3D, base: Vector3, is_printer_side: bool) ->
 	bm.size = Vector3(5.0, 0.35, 2.4)
 	bench.mesh = bm
 	bench.position = base + Vector3(0, 0.5, 0)
-	var bmat := StandardMaterial3D.new()
-	bmat.albedo_color = Color(0.42, 0.28, 0.16)
-	bmat.roughness = 0.75
-	bench.material_override = bmat
+	bench.material_override = _mat_wood_bench()
 	parent.add_child(bench)
 
 	if is_printer_side:
-		var pr := MeshInstance3D.new()
-		var pm := BoxMesh.new()
-		pm.size = Vector3(1.8, 1.6, 1.8)
-		pr.mesh = pm
-		pr.position = base + Vector3(0.3, 1.35, 0)
-		var pm_mat := StandardMaterial3D.new()
-		pm_mat.albedo_color = Color(0.12, 0.12, 0.14)
-		pm_mat.metallic = 0.55
-		pm_mat.roughness = 0.45
-		pr.material_override = pm_mat
-		parent.add_child(pr)
+		# 3D printer stack — warm orange “PETG” cylinder chassis + glossy accents (not a grey cube).
+		var pr_body := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.82
+		cyl.bottom_radius = 0.82
+		cyl.height = 1.52
+		pr_body.mesh = cyl
+		pr_body.position = base + Vector3(0.28, 1.38, 0.0)
+		var orange := Color(1.0, 0.38, 0.1)
+		var pr_mat: StandardMaterial3D = _mat_plastic(orange, Color(1.0, 0.28, 0.05), 0.0)
+		pr_mat.metallic = 0.12
+		pr_mat.roughness = 0.24
+		pr_body.material_override = pr_mat
+		parent.add_child(pr_body)
+
+		var pr_cap := MeshInstance3D.new()
+		var cap := CylinderMesh.new()
+		cap.top_radius = 0.86
+		cap.bottom_radius = 0.86
+		cap.height = 0.12
+		pr_cap.mesh = cap
+		pr_cap.position = base + Vector3(0.28, 2.14, 0.0)
+		var cap_mat: StandardMaterial3D = _mat_plastic(Color(0.18, 0.18, 0.2), Color.BLACK, 0.0)
+		cap_mat.metallic = 0.35
+		cap_mat.roughness = 0.22
+		pr_cap.material_override = cap_mat
+		parent.add_child(pr_cap)
+
+		var feed_spool := MeshInstance3D.new()
+		var sm := CylinderMesh.new()
+		sm.top_radius = 0.34
+		sm.bottom_radius = 0.34
+		sm.height = 0.22
+		feed_spool.mesh = sm
+		feed_spool.position = base + Vector3(-0.55, 2.05, 0.35)
+		feed_spool.rotation_degrees = Vector3(90, 0, 12)
+		var sp := _mat_plastic(Color(0.92, 0.92, 0.95), Color.BLACK, 0.0)
+		sp.roughness = 0.22
+		feed_spool.material_override = sp
+		parent.add_child(feed_spool)
 
 		var wolf := MeshInstance3D.new()
 		var wm := CapsuleMesh.new()
 		wm.radius = 0.35
 		wm.height = 0.85
 		wolf.mesh = wm
-		wolf.position = base + Vector3(0.35, 1.65, 0.15)
+		wolf.position = base + Vector3(0.42, 1.72, 0.22)
 		wolf.rotation_degrees = Vector3(0, 25, 0)
 		var wire := StandardMaterial3D.new()
-		wire.albedo_color = Color(0.25, 0.55, 1.0)
+		wire.albedo_color = Color(0.25, 0.55, 1.0, 0.88)
+		wire.metallic = 0.08
+		wire.roughness = 0.22
 		wire.emission_enabled = true
 		wire.emission = Color(0.25, 0.65, 1.0)
-		wire.emission_energy_multiplier = 1.65
+		wire.emission_energy_multiplier = 1.85
 		wire.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		wire.albedo_color.a = 0.85
 		wolf.material_override = wire
 		parent.add_child(wolf)
 	else:
+		# Extruder Forge station — bright cyan plastic frame + emissive “UI” slab.
+		var stand := MeshInstance3D.new()
+		var st := CylinderMesh.new()
+		st.top_radius = 0.14
+		st.bottom_radius = 0.16
+		st.height = 0.55
+		stand.mesh = st
+		stand.position = base + Vector3(0.45, 0.92, 1.05)
+		var cyan_frame := Color(0.05, 0.72, 0.88)
+		var st_mat: StandardMaterial3D = _mat_plastic(cyan_frame, Color(0.0, 0.45, 0.55), 0.0)
+		st_mat.metallic = 0.14
+		st_mat.roughness = 0.26
+		stand.material_override = st_mat
+		parent.add_child(stand)
+
 		var mon := MeshInstance3D.new()
 		var mm := BoxMesh.new()
-		mm.size = Vector3(1.5, 1.05, 0.08)
+		mm.size = Vector3(1.45, 0.98, 0.07)
 		mon.mesh = mm
-		mon.position = base + Vector3(-0.2, 1.55, 1.15)
+		mon.position = base + Vector3(-0.15, 1.58, 1.12)
 		var scr := StandardMaterial3D.new()
-		scr.albedo_color = Color(0.15, 0.18, 0.22)
+		scr.albedo_color = Color(0.04, 0.08, 0.12)
+		scr.metallic = 0.18
+		scr.roughness = 0.22
 		scr.emission_enabled = true
-		scr.emission = Color(0.35, 0.55, 0.95)
-		scr.emission_energy_multiplier = 0.35
+		scr.emission = Color(0.15, 0.78, 1.0)
+		scr.emission_energy_multiplier = 0.55
 		mon.material_override = scr
 		parent.add_child(mon)
 
+		var bezel := MeshInstance3D.new()
+		var tor := CylinderMesh.new()
+		tor.top_radius = 0.06
+		tor.bottom_radius = 0.06
+		tor.height = 1.02
+		bezel.mesh = tor
+		bezel.position = base + Vector3(0.62, 1.58, 1.12)
+		bezel.rotation_degrees = Vector3(0, 0, 90)
+		var bz_mat: StandardMaterial3D = _mat_plastic(Color(0.02, 0.55, 0.68), Color(0.0, 0.85, 0.95), 0.15)
+		bezel.material_override = bz_mat
+		parent.add_child(bezel)
+
 		var lbl := Label3D.new()
 		lbl.text = "Extruder Forge"
-		lbl.position = base + Vector3(-0.2, 2.35, 1.15)
-		lbl.rotation_degrees = Vector3(-12, -35, 0)
+		lbl.position = base + Vector3(-0.2, 2.42, 1.18)
+		lbl.rotation_degrees = Vector3.ZERO
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		lbl.font_size = 38
-		lbl.modulate = Color(0.85, 0.92, 1.0)
+		lbl.modulate = Color(0.55, 0.95, 1.0)
+		lbl.outline_size = 10
+		lbl.outline_modulate = Color(0, 0, 0, 0.55)
 		parent.add_child(lbl)
 
 
@@ -276,11 +374,46 @@ func _add_spool(parent: Node3D, pos: Vector3, col: Color) -> void:
 	mi.mesh = tm
 	mi.position = pos
 	mi.rotation_degrees = Vector3(90, 0, 0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = col
-	mat.roughness = 0.55
+	var mat: StandardMaterial3D = _mat_plastic(col, Color.BLACK, 0.0)
+	mat.roughness = 0.27
 	mi.material_override = mat
 	parent.add_child(mi)
+
+
+func _mat_plastic(albedo: Color, emission: Color, emission_energy: float) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = albedo
+	m.metallic = 0.1
+	m.roughness = 0.26
+	if emission_energy > 0.001:
+		m.emission_enabled = true
+		m.emission = emission
+		m.emission_energy_multiplier = emission_energy
+	return m
+
+
+func _mat_wood_floor() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.38, 0.23, 0.13)
+	m.metallic = 0.02
+	m.roughness = 0.84
+	return m
+
+
+func _mat_wood_wall() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.28, 0.17, 0.1)
+	m.metallic = 0.02
+	m.roughness = 0.88
+	return m
+
+
+func _mat_wood_bench() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.4, 0.26, 0.14)
+	m.metallic = 0.03
+	m.roughness = 0.68
+	return m
 
 
 func _add_hotspot(parent: Node3D, kind: String, pos: Vector3, box_size: Vector3) -> void:
