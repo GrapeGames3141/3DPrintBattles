@@ -1,11 +1,11 @@
 extends Control
 
-## Progress-gated routes; practice duel uses the same AI battle flow as the Battle Terminal.
+## Progress-gated routes: practice / Midtown / Boss spire duels (battle modes on `GameState`).
 
 signal back
 signal request_practice_battle
-
-var _toast: Label
+signal request_mid_battle
+signal request_boss_battle
 
 func _ready() -> void:
 	name = "OverworldScreen"
@@ -23,13 +23,6 @@ func _ready() -> void:
 	btn_back.text = "Back"
 	btn_back.pressed.connect(func(): back.emit())
 	top.add_child(btn_back)
-
-	_toast = Label.new()
-	_toast.text = ""
-	_toast.modulate.a = 0.88
-	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(_toast)
 
 	var hdr := Label.new()
 	hdr.text = "Overworld — printer routes"
@@ -65,24 +58,20 @@ func _ready() -> void:
 	var mid_ok := GameRules.overworld_route_unlocked("mid", wins)
 	list.add_child(_route_panel(
 		"Midtown circuit",
-		"Rotate rivals and map props — gated until your first win.",
-		"Locked — win %d duel" % GameRules.OVERWORLD_ROUTE_MID_MIN_WINS if not mid_ok else "Preview (soon)",
+		"Rival slicers run hotter filament and draft sharper prints (tier ≥ 2 pool).",
+		"Locked — win %d duel" % GameRules.OVERWORLD_ROUTE_MID_MIN_WINS if not mid_ok else "Start Midtown duel",
 		not mid_ok,
-		func(): _show_route_hint("Midtown circuit maps are still on the print bed.")
+		func(): request_mid_battle.emit()
 	))
 
 	var boss_ok := GameRules.overworld_route_unlocked("boss", wins)
 	list.add_child(_route_panel(
 		"Boss spire",
-		"Reserved for pilots with several victories.",
-		"Locked — win %d duels" % GameRules.OVERWORLD_ROUTE_BOSS_MIN_WINS if not boss_ok else "Preview (soon)",
+		"Elite filament budget + high-tier summon pool (tier ≥ 4).",
+		"Locked — win %d duels" % GameRules.OVERWORLD_ROUTE_BOSS_MIN_WINS if not boss_ok else "Enter Boss spire",
 		not boss_ok,
-		func(): _show_route_hint("Boss encounters will tie into story milestones later.")
+		func(): request_boss_battle.emit()
 	))
-
-
-func _show_route_hint(message: String) -> void:
-	_toast.text = message
 
 
 func _route_panel(title: String, blurb: String, button_text: String, disabled: bool, on_pressed: Callable) -> PanelContainer:

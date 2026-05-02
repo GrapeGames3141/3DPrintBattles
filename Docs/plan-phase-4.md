@@ -91,7 +91,7 @@ The master prompt originally described **three save slots**. **Current product d
 - [x] **Learning Quests** — addition / subtraction / geometry rewards (`progress.quests_claimed`; legacy `quest_math_bonus_claimed` for add)
 - [x] 24h shop refresh + save-backed offers
 - [x] **Slicer forge** — filament cap upgrades + **core armor slabs** (+player Core HP in battles, `GameRules.player_core_hp_bonus`)
-- [x] **Overworld** hub entry — gated routes + practice duel → battle (mid/boss previews locked by wins)
+- [x] **Overworld** — gated routes; practice = standard duel; **Midtown** / **Boss spire** use `GameState.battle_mode` (enemy filament + summon tier band)
 - [ ] Summoning shader VFX
 
 ### Stage 3 — Betterest
@@ -100,4 +100,4 @@ The master prompt originally described **three save slots**. **Current product d
 - [x] **Dynamic import hook** — `PrintMeshResolver.try_model_path` + `Assets/Prints/<id>/model.gltf`
 - [x] **Archive “silhouette”** — unowned labels modulated dark (shader deferred)
 - [x] **Procedural arena** — random battle backdrop tint
-- [x] **Offline Trade** — stub panel (COPPA-safe copy; no chat)
+- [x] **Offline Trade** — **draft blueprint voucher** (random tier-1 unowned id, `GameRules.TRADE_DRAFT_BLUEPRINT_COINS`); COPPA-safe copy, no chat

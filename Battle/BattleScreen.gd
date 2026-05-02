@@ -69,7 +69,7 @@ func _ready() -> void:
 	_rng.randomize()
 
 	_player_filament_max = int(GameState.printer_upgrades.get("filament_cap", 3))
-	_enemy_filament_max = 3
+	_enemy_filament_max = GameRules.enemy_filament_max_for_battle_mode(GameState.battle_mode)
 	_player_core_hp = CORE_HP_START + GameRules.player_core_hp_bonus(int(GameState.printer_upgrades.get("core_armor", 0)))
 
 	_grid_player.resize(COLS * ROWS)
@@ -131,7 +131,13 @@ func _ready() -> void:
 	root.add_child(hand_wrap)
 
 	var hand_title := Label.new()
-	hand_title.text = "Summon from hand, then tap your unit → enemy cell (or Core) to aim attacks. End Turn resolves both sides."
+	var mode_hint := ""
+	match GameState.battle_mode:
+		GameRules.BATTLE_MODE_MID:
+			mode_hint = "[Midtown — rival +1 filament cap, sharper prints] "
+		GameRules.BATTLE_MODE_BOSS:
+			mode_hint = "[Boss spire — rival +2 filament, elite summons] "
+	hand_title.text = "%sSummon from hand, then tap your unit → enemy cell (or Core) to aim attacks. End Turn resolves both sides." % mode_hint
 	hand_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hand_wrap.add_child(hand_title)
 
@@ -362,8 +368,31 @@ func _try_summon_from_hand(defn: Dictionary) -> void:
 	_lbl_toast.text = "Summoned %s." % str(defn.get("name", "Unit"))
 	_refresh_ui()
 
-func _enemy_best_summon_for_filament(filament: int) -> Dictionary:
+func _enemy_roster_pool() -> Array[Dictionary]:
 	var pool: Array[Dictionary] = UnitDatabase.active_roster_for_stage()
+	match GameState.battle_mode:
+		GameRules.BATTLE_MODE_MID:
+			var mid: Array[Dictionary] = []
+			for u in pool:
+				if int(u.get("tier_level", 1)) >= 2:
+					mid.append(u)
+			if not mid.is_empty():
+				return mid
+			return pool
+		GameRules.BATTLE_MODE_BOSS:
+			var hi: Array[Dictionary] = []
+			for u in pool:
+				if int(u.get("tier_level", 1)) >= 4:
+					hi.append(u)
+			if not hi.is_empty():
+				return hi
+			return pool
+		_:
+			return pool
+
+
+func _enemy_best_summon_for_filament(filament: int) -> Dictionary:
+	var pool: Array[Dictionary] = _enemy_roster_pool()
 	var best: Dictionary = {}
 	var best_score: int = -1
 	for cand in pool:
@@ -481,7 +510,7 @@ func _is_exhausted_enemy() -> bool:
 	if not _no_units(_grid_enemy):
 		return false
 	var cheapest: int = 9999
-	for d in UnitDatabase.active_roster_for_stage():
+	for d in _enemy_roster_pool():
 		var ud: Dictionary = d
 		cheapest = mini(cheapest, int(ud.get("cost", 1)))
 	return _enemy_filament < cheapest

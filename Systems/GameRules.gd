@@ -22,6 +22,12 @@ const BATTLE_WIN_COINS := 40
 const BATTLE_LOSS_COINS := 15
 const OVERWORLD_ROUTE_MID_MIN_WINS := 1
 const OVERWORLD_ROUTE_BOSS_MIN_WINS := 3
+## Battle difficulty presets (enemy filament cap + summon pool filter on `BattleScreen`).
+const BATTLE_MODE_STANDARD := "standard"
+const BATTLE_MODE_MID := "mid"
+const BATTLE_MODE_BOSS := "boss"
+## Offline NPC: random **tier 1** blueprint you do not own yet (no chat).
+const TRADE_DRAFT_BLUEPRINT_COINS := 35
 
 
 static func overworld_route_unlocked(route_id: String, battles_won: int) -> bool:
@@ -40,6 +46,30 @@ static func overworld_route_unlocked(route_id: String, battles_won: int) -> bool
 static func player_core_hp_bonus(core_armor_slabs: int) -> int:
 	var s: int = clampi(core_armor_slabs, 0, CORE_ARMOR_SLABS_MAX)
 	return s * CORE_HP_PER_ARMOR_SLAB
+
+
+static func enemy_filament_max_for_battle_mode(mode: String) -> int:
+	match mode:
+		BATTLE_MODE_MID:
+			return mini(FILAMENT_CAP_MAX, DEFAULT_FILAMENT_CAP + 1)
+		BATTLE_MODE_BOSS:
+			return mini(FILAMENT_CAP_MAX, DEFAULT_FILAMENT_CAP + 2)
+		_:
+			return DEFAULT_FILAMENT_CAP
+
+
+## Tier-1 ids not yet owned (for spare blueprint trade).
+static func trade_draft_blueprint_pool(roster: Array[Dictionary], owned_ids: Array[String]) -> Array[String]:
+	var out: Array[String] = []
+	for u in roster:
+		if int(u.get("tier_level", 99)) != 1:
+			continue
+		var id: String = str(u.get("id", ""))
+		if id == "" or owned_ids.has(id):
+			continue
+		out.append(id)
+	out.sort()
+	return out
 
 
 static func blueprint_shop_price(tier_level: int, unit_cost: int) -> int:

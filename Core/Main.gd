@@ -49,8 +49,13 @@ func _show_hub() -> void:
 
 func _show_battle() -> void:
 	var battle: Control = preload("res://Battle/BattleScreen.gd").new() as Control
-	battle.exit_to_hub.connect(_show_hub)
+	battle.exit_to_hub.connect(_on_exit_battle_to_hub)
 	_set_screen(battle)
+
+
+func _on_exit_battle_to_hub() -> void:
+	GameState.battle_mode = GameRules.BATTLE_MODE_STANDARD
+	_show_hub()
 
 func _show_shop() -> void:
 	var shop: Control = preload("res://Hub/ShopScreen.gd").new() as Control
@@ -81,6 +86,8 @@ func _show_overworld() -> void:
 	var sc: Control = preload("res://Hub/OverworldScreen.gd").new() as Control
 	sc.back.connect(_show_hub)
 	sc.request_practice_battle.connect(_on_overworld_practice_battle)
+	sc.request_mid_battle.connect(_on_overworld_mid_battle)
+	sc.request_boss_battle.connect(_on_overworld_boss_battle)
 	_set_screen(sc)
 
 func _show_trade() -> void:
@@ -119,14 +126,9 @@ func _apply_local_settings_to_game_state() -> void:
 			GameState.settings[k] = bool(ls[k])
 
 func _on_open_battle() -> void:
-	var starter_ok: bool = bool(GameState.progress.get("starter_chosen", false))
-	var team_n: int = GameState.active_team.size()
-	if not GameRules.can_enter_battle(starter_ok, team_n):
-		if not starter_ok:
-			EventBus.request_toast.emit("Choose your starter first.")
-		else:
-			EventBus.request_toast.emit("Your team is empty — open Team Manager and add at least one unit.")
+	if not _can_start_battle_or_toast():
 		return
+	GameState.battle_mode = GameRules.BATTLE_MODE_STANDARD
 	_show_battle()
 
 func _on_open_shop() -> void:
@@ -138,6 +140,32 @@ func _on_open_team() -> void:
 
 func _on_overworld_practice_battle() -> void:
 	_on_open_battle()
+
+
+func _on_overworld_mid_battle() -> void:
+	if not _can_start_battle_or_toast():
+		return
+	GameState.battle_mode = GameRules.BATTLE_MODE_MID
+	_show_battle()
+
+
+func _on_overworld_boss_battle() -> void:
+	if not _can_start_battle_or_toast():
+		return
+	GameState.battle_mode = GameRules.BATTLE_MODE_BOSS
+	_show_battle()
+
+
+func _can_start_battle_or_toast() -> bool:
+	var starter_ok: bool = bool(GameState.progress.get("starter_chosen", false))
+	var team_n: int = GameState.active_team.size()
+	if GameRules.can_enter_battle(starter_ok, team_n):
+		return true
+	if not starter_ok:
+		EventBus.request_toast.emit("Choose your starter first.")
+	else:
+		EventBus.request_toast.emit("Your team is empty — open Team Manager and add at least one unit.")
+	return false
 
 func _on_starter_chosen(unit_id: String) -> void:
 	GameState.progress["starter_chosen"] = true

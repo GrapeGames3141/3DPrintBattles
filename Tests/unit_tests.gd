@@ -25,6 +25,8 @@ func _run_all() -> void:
 	_test_game_rules_constants_vs_save_defaults()
 	_test_overworld_route_unlocks()
 	_test_game_rules_core_armor()
+	_test_battle_mode_enemy_filament()
+	_test_trade_draft_pool()
 
 	_test_unit_database_loads()
 	_test_starter_boss_flags_in_data()
@@ -58,6 +60,7 @@ func _reset_game_state_for_tests() -> void:
 	GameState.settings = {"music": true, "sfx": true}
 	GameState.shop_last_refresh_unix = 0
 	GameState.shop_offer_ids.clear()
+	GameState.battle_mode = GameRules.BATTLE_MODE_STANDARD
 
 
 func _assert_true(cond: bool, message: String) -> void:
@@ -137,12 +140,31 @@ func _test_game_rules_constants_vs_save_defaults() -> void:
 	_assert_eq(GameRules.QUEST_MATH_ADD_COINS, 15, "quest add reward")
 	_assert_eq(GameRules.CORE_ARMOR_SLABS_MAX, 5, "core armor slabs cap")
 	_assert_eq(GameRules.CORE_HP_PER_ARMOR_SLAB, 2, "HP per slab")
+	_assert_eq(GameRules.TRADE_DRAFT_BLUEPRINT_COINS, 35, "trade draft cost")
 
 
 func _test_game_rules_core_armor() -> void:
 	_assert_eq(GameRules.player_core_hp_bonus(0), 0, "no slabs")
 	_assert_eq(GameRules.player_core_hp_bonus(2), 4, "two slabs")
 	_assert_eq(GameRules.player_core_hp_bonus(99), GameRules.CORE_ARMOR_SLABS_MAX * GameRules.CORE_HP_PER_ARMOR_SLAB, "clamp max slabs")
+
+
+func _test_battle_mode_enemy_filament() -> void:
+	_assert_eq(GameRules.enemy_filament_max_for_battle_mode(GameRules.BATTLE_MODE_STANDARD), GameRules.DEFAULT_FILAMENT_CAP, "standard enemy cap")
+	_assert_eq(GameRules.enemy_filament_max_for_battle_mode(GameRules.BATTLE_MODE_MID), GameRules.DEFAULT_FILAMENT_CAP + 1, "mid enemy cap")
+	_assert_eq(GameRules.enemy_filament_max_for_battle_mode(GameRules.BATTLE_MODE_BOSS), GameRules.DEFAULT_FILAMENT_CAP + 2, "boss enemy cap")
+
+
+func _test_trade_draft_pool() -> void:
+	var roster: Array[Dictionary] = [
+		{"id": "004", "tier_level": 1},
+		{"id": "099", "tier_level": 2},
+		{"id": "005", "tier_level": 1}
+	]
+	var owned: Array[String] = ["005"]
+	var pool: Array[String] = GameRules.trade_draft_blueprint_pool(roster, owned)
+	_assert_eq(pool.size(), 1, "one tier-1 unowned")
+	_assert_true(pool.has("004"), "004 available")
 
 
 func _test_overworld_route_unlocks() -> void:

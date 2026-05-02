@@ -17,6 +17,8 @@ var settings: Dictionary = {"music": true, "sfx": true}
 ## Unix time of last shop reroll; offers stored in [member shop_offer_ids].
 var shop_last_refresh_unix: int = 0
 var shop_offer_ids: Array[String] = []
+## Session-only; cleared when returning from battle (`GameRules.BATTLE_MODE_*`).
+var battle_mode: String = "standard"
 
 func load_from_save(save: Dictionary) -> void:
 	coins = int(save.get("coins", 0))
@@ -45,6 +47,7 @@ func load_from_save(save: Dictionary) -> void:
 	settings = save.get("settings", {"music": true, "sfx": true}) as Dictionary
 	shop_last_refresh_unix = int(save.get("shop_last_refresh_unix", 0))
 	shop_offer_ids = Array(save.get("shop_offer_ids", []), TYPE_STRING, "", null)
+	battle_mode = GameRules.BATTLE_MODE_STANDARD
 
 func to_save() -> Dictionary:
 	return {
