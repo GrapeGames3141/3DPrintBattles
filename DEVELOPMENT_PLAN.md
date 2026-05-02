@@ -3,7 +3,7 @@
 **Current phase**: **Visual polish & 3D presentation** — gameplay loops and greybox UI are **frozen**: **do not add new hub terminals, quests, or mechanics** until art passes stabilize. Work prioritizes **global UI theming**, **3D battle readability**, shaders/audio polish, and export smoke tests — not feature creep.
 
 **Production pivot**
-- **Global theme**: `UiTheme.build_workshop_theme()` applied via `ThemeDB.set_project_theme` in `Main.gd` — kid-friendly workshop palette (rounded `StyleBoxFlat`, shadows, hover/pressed states).
+- **Global theme**: `UiTheme.build_workshop_theme()` assigned to each root screen `Control.theme` in `Main._set_screen` (inherits to all child controls; no `ThemeDB.set_project_theme` in shipping Godot APIs).
 - **Battle arena**: `BattleScreen` renders units as **CapsuleMesh / BoxMesh / SphereMesh** in a **SubViewport** + camera/light/floor; element-driven **StandardMaterial3D** colors; grid **Buttons** remain a translucent HUD for input.
 
 **Active dev / test OS:** **Windows** only for now (editor + F5 play). Cross-platform and store work stay planned; don’t block day-to-day iteration on them.

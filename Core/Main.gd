@@ -3,9 +3,10 @@ extends Node
 const TITLE_SCENE := preload("res://UI/TitleScreen.tscn")
 
 var _current: Node = null
+var _workshop_theme: Theme
 
 func _ready() -> void:
-	ThemeDB.set_project_theme(UiTheme.build_workshop_theme())
+	_workshop_theme = UiTheme.build_workshop_theme()
 	_ensure_folders_exist()
 	SaveSystem.migrate_legacy_if_needed()
 	UnitDatabase.load_units("res://Data/units.json")
@@ -22,6 +23,8 @@ func _set_screen(screen: Node) -> void:
 	if _current != null:
 		_current.queue_free()
 	_current = screen
+	if screen is Control:
+		(screen as Control).theme = _workshop_theme
 	add_child(_current)
 
 func _show_title() -> void:
