@@ -78,6 +78,7 @@ func _make_offer_row(unit_id: String) -> Control:
 	var unit_name: String = str(defn.get("name", "Unknown"))
 	var tier_level: int = int(defn.get("tier_level", 1))
 	var cost: int = int(defn.get("cost", 1))
+	var elem: String = str(defn.get("element", "?"))
 	var price: int = GameRules.blueprint_shop_price(tier_level, cost)
 	var owned: bool = GameState.owned_blueprints.has(unit_id)
 
@@ -85,7 +86,7 @@ func _make_offer_row(unit_id: String) -> Control:
 	row.add_theme_constant_override("separation", 10)
 
 	var lbl := Label.new()
-	lbl.text = "%s  (Blueprint)  Tier %d  Price %d" % [unit_name, tier_level, price]
+	lbl.text = "%s · %s · Tier %d · Summon C%d · %d coins" % [unit_name, elem, tier_level, cost, price]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 

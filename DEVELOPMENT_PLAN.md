@@ -26,6 +26,7 @@ Ship on **Steam (PC)** and **Google Play (Android)**. Engine is Godot 4.x; no pl
 - [x] Post-match: coin payout winner/loser, return to hub
 - [x] Battle: player attack targeting (unit → enemy slot or Core) + shared `BattleResolver` math
 - [x] Battle: TPU dodge (MVP evasion vs direct hits)
+- [x] Battle: coin-toss intro overlay (first player) before turn 1
 - [x] Mobile MVP: emulate touch-from-mouse for desktop testing; larger grid cells on small viewports
 - [ ] HTML5 export readiness pass (optional; not required for Steam/Android)
 - [x] Linux dev note: AppImage `libfuse2t64` dependency instructions (see `README.md`)
