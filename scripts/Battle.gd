@@ -72,10 +72,10 @@ extends Node2D
 # ── State ──
 var _player_hand: Array = []     # Array of card_ids currently in hand
 var _timer_tween: Tween
-var _is_player_turn := false
+var _is_player_turn = false
 
-const TURN_SECONDS := 15.0
-const CARD_POOL := ["raw_filament", "heated_spool", "reinforced_layer",
+const TURN_SECONDS = 15.0
+const CARD_POOL = ["raw_filament", "heated_spool", "reinforced_layer",
 					"emergency_print", "arcane_filament"]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -176,8 +176,8 @@ func _on_timer_expired() -> void:
 # ATTACKS & ABILITIES
 # ─────────────────────────────────────────────────────────────────────────────
 func _on_attack_landed(attacker_side: String, damage: int, is_super: bool, is_not: bool) -> void:
-	var attacker_name := _get_active_name(attacker_side)
-	var effectiveness := ""
+	var attacker_name = _get_active_name(attacker_side)
+	var effectiveness = ""
 	if is_super:
 		effectiveness = " [Super effective!]"
 	elif is_not:
@@ -186,13 +186,13 @@ func _on_attack_landed(attacker_side: String, damage: int, is_super: bool, is_no
 	_animate_hit(attacker_side)
 
 func _on_ability_used(user_side: String, ability_id: String, _result: Dictionary) -> void:
-	var ability := GameData.ABILITIES[ability_id]
-	var name := _get_active_name(user_side)
+	var ability = GameData.ABILITIES[ability_id]
+	var name = _get_active_name(user_side)
 	_log("%s uses %s! %s" % [name, ability["name"], ability["description"]])
 	_update_ability_btn()
 
 func _on_card_played(card_id: String, result: Dictionary) -> void:
-	var card := GameData.FILAMENT_CARDS[card_id]
+	var card = GameData.FILAMENT_CARDS[card_id]
 	_log("Card played: %s — %s" % [card["name"], card["description"]])
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -220,12 +220,12 @@ func _on_forge_changed(side: String, new_value: float) -> void:
 # PRINT DEFEATED / SUMMONED
 # ─────────────────────────────────────────────────────────────────────────────
 func _on_print_defeated(side: String, creature_id: String) -> void:
-	var name := GameData.CREATURES[creature_id]["name"]
+	var name = GameData.CREATURES[creature_id]["name"]
 	_log("%s has been defeated! The printer breaks apart!" % name)
 	_play_defeat_animation(side)
 
 func _on_print_summoned(side: String, print_data: Dictionary) -> void:
-	var creature := GameData.CREATURES[print_data["creature_id"]]
+	var creature = GameData.CREATURES[print_data["creature_id"]]
 	_log("%s summons %s!" % [
 		"You" if side == "player" else BattleManager.current_trainer["name"],
 		creature["name"]
@@ -251,10 +251,10 @@ func _on_battle_ended(player_won: bool, rewards: Dictionary) -> void:
 
 	if player_won:
 		result_label.text = "⚙ Victory! ⚙"
-		var drop_text := ""
+		var drop_text = ""
 		if rewards.get("drop", "") != "":
 			var drop_id: String = rewards["drop"]
-			var drop_name := ""
+			var drop_name = ""
 			if drop_id in GameData.CREATURES:
 				drop_name = GameData.CREATURES[drop_id]["name"]
 			elif drop_id in GameData.EQUIPMENT:
@@ -289,14 +289,14 @@ func _set_player_buttons_enabled(enabled: bool) -> void:
 		card_btn.disabled = not enabled
 
 func _update_ability_btn() -> void:
-	var print_inst := BattleManager.get_player_active_print()
+	var print_inst = BattleManager.get_player_active_print()
 	if print_inst == null or print_inst.is_empty():
 		ability_btn.text = "No Active Print"
 		ability_btn.disabled = true
 		return
-	var creature := GameData.CREATURES[print_inst["creature_id"]]
+	var creature = GameData.CREATURES[print_inst["creature_id"]]
 	var ability_id: String = creature["ability"]
-	var ability := GameData.ABILITIES[ability_id]
+	var ability = GameData.ABILITIES[ability_id]
 	var cd: int = BattleManager.player_ability_cooldowns.get(ability_id, 0)
 	if cd > 0:
 		ability_btn.text = "%s (CD: %d)" % [ability["name"], cd]
@@ -312,7 +312,7 @@ func _deal_card() -> void:
 	if _player_hand.size() >= 4:
 		return
 	# Pick random card from pool
-	var card_id := CARD_POOL[randi() % CARD_POOL.size()]
+	var card_id = CARD_POOL[randi() % CARD_POOL.size()]
 	_player_hand.append(card_id)
 	_rebuild_card_hand()
 
@@ -321,8 +321,8 @@ func _rebuild_card_hand() -> void:
 		child.queue_free()
 	for i in range(_player_hand.size()):
 		var cid: String = _player_hand[i]
-		var card := GameData.FILAMENT_CARDS[cid]
-		var btn := Button.new()
+		var card = GameData.FILAMENT_CARDS[cid]
+		var btn = Button.new()
 		btn.text = "%s\n%s" % [card["name"], card["description"]]
 		btn.custom_minimum_size = Vector2(160, 80)
 		btn.pressed.connect(_on_card_btn_pressed.bind(i))
@@ -331,7 +331,7 @@ func _rebuild_card_hand() -> void:
 func _on_card_btn_pressed(index: int) -> void:
 	if index >= _player_hand.size():
 		return
-	var card_id := _player_hand[index]
+	var card_id = _player_hand[index]
 	BattleManager.player_play_card(card_id)
 	_player_hand.remove_at(index)
 	_rebuild_card_hand()
@@ -346,16 +346,16 @@ func _build_bench(player_team: Array, ai_team: Array) -> void:
 		child.queue_free()
 
 	for inst in player_team:
-		var creature := GameData.CREATURES[inst["creature_id"]]
-		var swatch := ColorRect.new()
+		var creature = GameData.CREATURES[inst["creature_id"]]
+		var swatch = ColorRect.new()
 		swatch.custom_minimum_size = Vector2(48, 48)
 		swatch.color = creature["placeholder_color"]
 		swatch.tooltip_text = creature["name"]
 		bench_panel.add_child(swatch)
 
 	for inst in ai_team:
-		var creature := GameData.CREATURES[inst["creature_id"]]
-		var swatch := ColorRect.new()
+		var creature = GameData.CREATURES[inst["creature_id"]]
+		var swatch = ColorRect.new()
 		swatch.custom_minimum_size = Vector2(48, 48)
 		swatch.color = creature["placeholder_color"]
 		swatch.tooltip_text = "???"
@@ -371,7 +371,7 @@ func _build_bench(player_team: Array, ai_team: Array) -> void:
 # SPRITE UPDATES
 # ─────────────────────────────────────────────────────────────────────────────
 func _update_active_sprite(side: String, print_data: Dictionary) -> void:
-	var creature := GameData.CREATURES[print_data["creature_id"]]
+	var creature = GameData.CREATURES[print_data["creature_id"]]
 	if side == "player":
 		player_sprite.color = creature["placeholder_color"]
 		player_name_lbl.text = creature["name"]
@@ -389,9 +389,9 @@ func _update_active_sprite(side: String, print_data: Dictionary) -> void:
 
 func _animate_hit(attacker_side: String) -> void:
 	# Simple shake tween on the defender sprite
-	var target_sprite := ai_sprite if attacker_side == "player" else player_sprite
-	var original_pos := target_sprite.position
-	var tween := create_tween()
+	var target_sprite = ai_sprite if attacker_side == "player" else player_sprite
+	var original_pos = target_sprite.position
+	var tween = create_tween()
 	tween.tween_property(target_sprite, "position",
 		original_pos + Vector2(8, 0), 0.05)
 	tween.tween_property(target_sprite, "position",
@@ -402,8 +402,8 @@ func _animate_hit(attacker_side: String) -> void:
 		original_pos, 0.04)
 
 func _play_defeat_animation(side: String) -> void:
-	var sprite := player_sprite if side == "player" else ai_sprite
-	var tween := create_tween()
+	var sprite = player_sprite if side == "player" else ai_sprite
+	var tween = create_tween()
 	tween.tween_property(sprite, "modulate",
 		Color(1, 1, 1, 0), 0.6)
 	tween.tween_callback(func(): sprite.modulate = Color(1, 1, 1, 1))
@@ -412,7 +412,7 @@ func _play_defeat_animation(side: String) -> void:
 # UTILITIES
 # ─────────────────────────────────────────────────────────────────────────────
 func _get_active_name(side: String) -> String:
-	var inst := BattleManager.get_player_active_print() if side == "player" \
+	var inst = BattleManager.get_player_active_print() if side == "player" \
 		else BattleManager.get_ai_active_print()
 	if inst == null or inst.is_empty():
 		return "???"

@@ -60,7 +60,7 @@ func _check_starter() -> void:
 # DAILY LOGIN
 # ─────────────────────────────────────────────────────────────────────────────
 func _check_daily_login() -> void:
-	var reward := SaveManager.claim_daily_login()
+	var reward = SaveManager.claim_daily_login()
 	if reward > 0:
 		daily_popup.visible = true
 		var popup_label: Label = daily_popup.get_node("Label")

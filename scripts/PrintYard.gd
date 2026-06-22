@@ -23,10 +23,10 @@
 
 extends Node2D
 
-const YARD_BOUNDS := Rect2(90, 100, 1100, 500)  # Where prints can roam
-const WANDER_SPEED := 40.0                        # Pixels per second
-const BEHAVIOR_CHANGE_MIN := 2.0                  # Seconds before new behavior
-const BEHAVIOR_CHANGE_MAX := 5.0
+const YARD_BOUNDS = Rect2(90, 100, 1100, 500)  # Where prints can roam
+const WANDER_SPEED = 40.0                        # Pixels per second
+const BEHAVIOR_CHANGE_MIN = 2.0                  # Seconds before new behavior
+const BEHAVIOR_CHANGE_MAX = 5.0
 
 # Behaviors a print can have in the yard
 enum YardBehavior { WANDER, IDLE, SLEEP, INTERACT }
@@ -63,23 +63,23 @@ func _ready() -> void:
 # SPAWN ALL OWNED PRINTS
 # ─────────────────────────────────────────────────────────────────────────────
 func _spawn_prints() -> void:
-	var prints := SaveManager.get_prints()
+	var prints = SaveManager.get_prints()
 	for inst in prints:
 		if inst["hp_current"] <= 0:
 			continue  # Don't show defeated prints
 		_spawn_single_print(inst)
 
 func _spawn_single_print(inst: Dictionary) -> void:
-	var creature := GameData.CREATURES[inst["creature_id"]]
+	var creature = GameData.CREATURES[inst["creature_id"]]
 
-	var yp := YardPrint.new()
+	var yp = YardPrint.new()
 	yp.instance_id = inst["instance_id"]
 	yp.creature_id = inst["creature_id"]
 
 	# Try real sprite first, fall back to colored rect
-	var sprite_path := "res://assets/sprites/%s" % creature["sprite"]
+	var sprite_path = "res://assets/sprites/%s" % creature["sprite"]
 	if ResourceLoader.exists(sprite_path):
-		var tex_rect := TextureRect.new()
+		var tex_rect = TextureRect.new()
 		tex_rect.texture = load(sprite_path)
 		tex_rect.custom_minimum_size = Vector2(64, 64)
 		tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
@@ -89,7 +89,7 @@ func _spawn_single_print(inst: Dictionary) -> void:
 		add_child(tex_rect)
 		yp.node = tex_rect
 	else:
-		var rect := ColorRect.new()
+		var rect = ColorRect.new()
 		rect.custom_minimum_size = Vector2(56, 56)
 		rect.color = creature["placeholder_color"]
 		rect.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -129,17 +129,17 @@ func _update_print_movement(yp: YardPrint, delta: float) -> void:
 			yp.node.rotation = sin(Time.get_unix_time_from_system() * 2.0 + float(yp.instance_id.hash())) * 0.04
 		YardBehavior.IDLE:
 			# Gentle breathing scale
-			var scale_pulse := 1.0 + sin(Time.get_unix_time_from_system() * 1.5) * 0.03
+			var scale_pulse = 1.0 + sin(Time.get_unix_time_from_system() * 1.5) * 0.03
 			yp.node.scale = Vector2(scale_pulse, scale_pulse)
 		YardBehavior.SLEEP:
 			# Nearly still, slight bob
 			yp.node.position.y += sin(Time.get_unix_time_from_system() * 0.5) * 0.2
 		YardBehavior.INTERACT:
 			# Move toward interact target
-			var target := _find_yard_print(yp.interact_target_id)
+			var target = _find_yard_print(yp.interact_target_id)
 			if target != null:
-				var dir := (target.node.position - yp.node.position).normalized()
-				var dist := yp.node.position.distance_to(target.node.position)
+				var dir = (target.node.position - yp.node.position).normalized()
+				var dist = yp.node.position.distance_to(target.node.position)
 				if dist > 80:
 					yp.node.position += dir * WANDER_SPEED * 0.5 * delta
 			else:
@@ -166,10 +166,10 @@ func _pick_new_behavior(yp: YardPrint) -> void:
 	yp.behavior_timer = randf_range(BEHAVIOR_CHANGE_MIN, BEHAVIOR_CHANGE_MAX)
 
 	# Weight: 50% wander, 20% idle, 15% sleep, 15% interact
-	var roll := randf()
+	var roll = randf()
 	if roll < 0.50:
 		yp.behavior = YardBehavior.WANDER
-		var angle := randf() * TAU
+		var angle = randf() * TAU
 		yp.velocity = Vector2(cos(angle), sin(angle)) * WANDER_SPEED
 	elif roll < 0.70:
 		yp.behavior = YardBehavior.IDLE
@@ -180,7 +180,7 @@ func _pick_new_behavior(yp: YardPrint) -> void:
 		yp.behavior_timer = randf_range(4.0, 8.0)  # Sleep longer
 	else:
 		# Try to interact with another print
-		var others := yard_prints.filter(func(p): return p.instance_id != yp.instance_id)
+		var others = yard_prints.filter(func(p): return p.instance_id != yp.instance_id)
 		if others.size() > 0:
 			var partner: YardPrint = others[randi() % others.size()]
 			yp.behavior = YardBehavior.INTERACT
@@ -188,7 +188,7 @@ func _pick_new_behavior(yp: YardPrint) -> void:
 			yp.velocity = Vector2.ZERO
 		else:
 			yp.behavior = YardBehavior.WANDER
-			var angle := randf() * TAU
+			var angle = randf() * TAU
 			yp.velocity = Vector2(cos(angle), sin(angle)) * WANDER_SPEED
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -197,14 +197,14 @@ func _pick_new_behavior(yp: YardPrint) -> void:
 func _on_print_clicked(event: InputEvent, instance_id: String) -> void:
 	if not (event is InputEventMouseButton and event.pressed):
 		return
-	var inst := SaveManager.get_print_by_instance_id(instance_id)
+	var inst = SaveManager.get_print_by_instance_id(instance_id)
 	if inst.is_empty():
 		return
 	_show_stat_popup(inst)
 
 func _show_stat_popup(inst: Dictionary) -> void:
-	var creature := GameData.CREATURES[inst["creature_id"]]
-	var ability := GameData.ABILITIES[creature["ability"]]
+	var creature = GameData.CREATURES[inst["creature_id"]]
+	var ability = GameData.ABILITIES[creature["ability"]]
 
 	popup_sprite.color = creature["placeholder_color"]
 	popup_name.text = creature["name"]

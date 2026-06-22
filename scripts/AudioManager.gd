@@ -12,13 +12,13 @@ extends Node
 # AUDIO TRACK DEFINITIONS
 # Add file to assets/audio/ then reference the key here.
 # ─────────────────────────────────────────────────────────────────────────────
-const MUSIC_TRACKS := {
+const MUSIC_TRACKS = {
 	"workshop":  "res://assets/audio/music_workshop.ogg",
 	"battle":    "res://assets/audio/music_battle.ogg",
 	"academy":   "res://assets/audio/music_academy.ogg",
 }
 
-const SFX_TRACKS := {
+const SFX_TRACKS = {
 	"hit":       "res://assets/audio/sfx_hit.ogg",
 	"summon":    "res://assets/audio/sfx_summon.ogg",
 	"victory":   "res://assets/audio/sfx_victory.ogg",
@@ -37,13 +37,13 @@ const SFX_TRACKS := {
 var _music_player: AudioStreamPlayer
 var _sfx_player: AudioStreamPlayer    # For short one-shot effects
 var _sfx_pool: Array[AudioStreamPlayer] = []  # Pool of 6 for overlapping SFX
-const SFX_POOL_SIZE := 6
+const SFX_POOL_SIZE = 6
 
-var _current_music_key := ""
-var _music_volume := 0.8
-var _sfx_volume := 1.0
-var _music_enabled := true
-var _sfx_enabled := true
+var _current_music_key = ""
+var _music_volume = 0.8
+var _sfx_volume = 1.0
+var _music_enabled = true
+var _sfx_enabled = true
 
 func _ready() -> void:
 	# Music player — looping, persistent
@@ -53,7 +53,7 @@ func _ready() -> void:
 
 	# SFX pool — for overlapping sound effects
 	for i in range(SFX_POOL_SIZE):
-		var p := AudioStreamPlayer.new()
+		var p = AudioStreamPlayer.new()
 		p.bus = "SFX"
 		add_child(p)
 		_sfx_pool.append(p)
@@ -72,7 +72,7 @@ func play_music(key: String) -> void:
 		push_warning("[AudioManager] Unknown music key: %s" % key)
 		return
 
-	var path := MUSIC_TRACKS[key]
+	var path = MUSIC_TRACKS[key]
 	if not ResourceLoader.exists(path):
 		push_warning("[AudioManager] Music file not found: %s" % path)
 		return
@@ -83,7 +83,7 @@ func play_music(key: String) -> void:
 
 	# Fade in new track
 	_music_player.play()
-	var tween := create_tween()
+	var tween = create_tween()
 	_music_player.volume_db = -60.0
 	tween.tween_property(_music_player, "volume_db",
 		linear_to_db(_music_volume), 1.0)
@@ -91,7 +91,7 @@ func play_music(key: String) -> void:
 func stop_music(fade_seconds: float = 1.0) -> void:
 	if not _music_player.playing:
 		return
-	var tween := create_tween()
+	var tween = create_tween()
 	tween.tween_property(_music_player, "volume_db", -60.0, fade_seconds)
 	tween.tween_callback(_music_player.stop)
 	_current_music_key = ""
@@ -117,13 +117,13 @@ func play_sfx(key: String) -> void:
 		push_warning("[AudioManager] Unknown SFX key: %s" % key)
 		return
 
-	var path := SFX_TRACKS[key]
+	var path = SFX_TRACKS[key]
 	if not ResourceLoader.exists(path):
 		# Silent fail — SFX files may not exist during development
 		return
 
 	# Find a free player from the pool
-	var player := _get_free_sfx_player()
+	var player = _get_free_sfx_player()
 	if player == null:
 		return
 
@@ -166,7 +166,7 @@ func play_for_scene(scene_name: String) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 func _load_settings_from_save() -> void:
 	if SaveManager.data.has("settings"):
-		var s := SaveManager.data["settings"]
+		var s = SaveManager.data["settings"]
 		_music_volume = s.get("music_volume", 0.8)
 		_sfx_volume   = s.get("sfx_volume", 1.0)
 		_music_enabled = s.get("music_enabled", true)

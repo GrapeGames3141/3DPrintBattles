@@ -29,7 +29,7 @@
 
 extends Node2D
 
-var _current_tab := "creatures"  # "creatures" | "equipment"
+var _current_tab = "creatures"  # "creatures" | "equipment"
 var _selected_slot: Dictionary = {}
 
 @onready var coin_label: Label          = $UI/TopBar/CoinLabel
@@ -70,21 +70,21 @@ func _build_shop_grid() -> void:
 		if _current_tab == "equipment" and kind != "equipment":
 			continue
 
-		var card := _make_shop_card(item_id, kind)
+		var card = _make_shop_card(item_id, kind)
 		shop_grid.add_child(card)
 
 func _make_shop_card(item_id: String, kind: String) -> Panel:
-	var card := Panel.new()
+	var card = Panel.new()
 	card.custom_minimum_size = Vector2(180, 220)
 
-	var vbox := VBoxContainer.new()
+	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card.add_child(vbox)
 
-	var data := {}
-	var rarity := 1
-	var bp_cost := 0
-	var placeholder_color := Color.WHITE
+	var data = {}
+	var rarity = 1
+	var bp_cost = 0
+	var placeholder_color = Color.WHITE
 
 	if kind == "creature" and item_id in GameData.CREATURES:
 		data = GameData.CREATURES[item_id]
@@ -98,38 +98,38 @@ func _make_shop_card(item_id: String, kind: String) -> Panel:
 		placeholder_color = data["placeholder_color"]
 
 	# Color swatch
-	var swatch := ColorRect.new()
+	var swatch = ColorRect.new()
 	swatch.custom_minimum_size = Vector2(120, 120)
 	swatch.color = placeholder_color
 	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vbox.add_child(swatch)
 
-	var name_lbl := Label.new()
+	var name_lbl = Label.new()
 	name_lbl.text = data.get("name", item_id)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(name_lbl)
 
-	var rarity_lbl := Label.new()
+	var rarity_lbl = Label.new()
 	rarity_lbl.text = GameData.RARITY_NAMES.get(rarity, "Common")
 	rarity_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rarity_lbl.add_theme_color_override("font_color", GameData.RARITY_COLORS.get(rarity, Color.WHITE))
 	vbox.add_child(rarity_lbl)
 
-	var cost_lbl := Label.new()
+	var cost_lbl = Label.new()
 	cost_lbl.text = "Blueprint: %d 🪙" % bp_cost
 	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(cost_lbl)
 
 	# Owned badge
 	if SaveManager.has_blueprint(item_id):
-		var owned := Label.new()
+		var owned = Label.new()
 		owned.text = "✓ Owned"
 		owned.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		owned.add_theme_color_override("font_color", Color(0.22, 0.88, 0.22))
 		vbox.add_child(owned)
 
 	# Select button
-	var select_btn := Button.new()
+	var select_btn = Button.new()
 	select_btn.text = "View"
 	select_btn.pressed.connect(_on_slot_selected.bind(item_id, kind))
 	vbox.add_child(select_btn)
@@ -143,7 +143,7 @@ func _on_slot_selected(item_id: String, kind: String) -> void:
 	_selected_slot = {"id": item_id, "kind": kind}
 	detail_panel.visible = true
 
-	var data := {}
+	var data = {}
 	if kind == "creature" and item_id in GameData.CREATURES:
 		data = GameData.CREATURES[item_id]
 		detail_stats.text = "Element: %s\nBend Score: %d\nHP: %d\nForge Cost: %d" % [
@@ -169,7 +169,7 @@ func _on_slot_selected(item_id: String, kind: String) -> void:
 	blueprint_cost_lbl.text = "Blueprint Cost: %d 🪙" % data.get("blueprint_cost", 0)
 	print_cost_lbl.text = "Print Cost: %d 🪙" % data.get("print_cost", 0)
 
-	var has_bp := SaveManager.has_blueprint(item_id)
+	var has_bp = SaveManager.has_blueprint(item_id)
 	owned_label.visible = has_bp
 	buy_blueprint_btn.visible = not has_bp
 	print_btn.visible = has_bp
@@ -180,7 +180,7 @@ func _on_buy_blueprint_btn_pressed() -> void:
 	var item_id: String = _selected_slot.get("id", "")
 	if item_id == "":
 		return
-	var success := SaveManager.buy_blueprint(item_id)
+	var success = SaveManager.buy_blueprint(item_id)
 	if success:
 		_refresh_coin_label()
 		_build_shop_grid()
@@ -197,7 +197,7 @@ func _on_print_btn_pressed() -> void:
 	if item_id == "":
 		return
 
-	var success := false
+	var success = false
 	if kind == "creature":
 		success = SaveManager.print_creature(item_id)
 	elif kind == "equipment":
@@ -226,11 +226,11 @@ func _on_equipment_tab_pressed() -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 func _update_refresh_timer() -> void:
 	var last: float = SaveManager.data["shop_state"]["refresh_timestamp"]
-	var next_refresh := last + 86400.0
-	var now := Time.get_unix_time_from_system()
-	var secs_remaining := max(0, int(next_refresh - now))
-	var hours := secs_remaining / 3600
-	var mins := (secs_remaining % 3600) / 60
+	var next_refresh = last + 86400.0
+	var now = Time.get_unix_time_from_system()
+	var secs_remaining = max(0, int(next_refresh - now))
+	var hours = secs_remaining / 3600
+	var mins = (secs_remaining % 3600) / 60
 	refresh_label.text = "Shop refreshes in: %dh %dm" % [hours, mins]
 
 # ─────────────────────────────────────────────────────────────────────────────

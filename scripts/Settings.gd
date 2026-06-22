@@ -80,7 +80,7 @@ func _on_fullscreen_toggle_toggled(toggled_on: bool) -> void:
 
 func _on_reset_btn_pressed() -> void:
 	# Show confirmation dialog before wiping save
-	var dialog := AcceptDialog.new()
+	var dialog = AcceptDialog.new()
 	dialog.title = "Reset Save Data"
 	dialog.dialog_text = "This will permanently delete ALL progress.\nYour prints, coins, XP, and blueprints will be lost.\n\nAre you absolutely sure?"
 	dialog.add_button("Cancel", true, "cancel")

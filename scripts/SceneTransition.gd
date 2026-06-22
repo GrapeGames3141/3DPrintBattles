@@ -5,8 +5,8 @@
 
 extends CanvasLayer
 
-var _pending_scene := ""
-var _pending_data := {}
+var _pending_scene = ""
+var _pending_data = {}
 var _overlay: ColorRect
 
 func _ready() -> void:
@@ -24,7 +24,7 @@ func go_to(scene_path: String, data: Dictionary = {}) -> void:
 	_fade_out()
 
 func _fade_out() -> void:
-	var tween := create_tween()
+	var tween = create_tween()
 	tween.tween_property(_overlay, "color", Color(0, 0, 0, 1), 0.35)
 	tween.tween_callback(_change_scene)
 
@@ -38,5 +38,5 @@ func _change_scene() -> void:
 	_fade_in()
 
 func _fade_in() -> void:
-	var tween := create_tween()
+	var tween = create_tween()
 	tween.tween_property(_overlay, "color", Color(0, 0, 0, 0), 0.35)

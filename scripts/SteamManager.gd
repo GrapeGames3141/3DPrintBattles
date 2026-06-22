@@ -18,7 +18,7 @@ extends Node
 # These must match EXACTLY what you create in Steamworks dashboard
 # Steamworks > Your App > Achievements > Create New Achievement
 # ─────────────────────────────────────────────────────────────────────────────
-const ACHIEVEMENTS := {
+const ACHIEVEMENTS = {
 	# Battle achievements
 	"FIRST_WIN":          "Win your first battle",
 	"BATTLES_10":         "Win 10 battles",
@@ -52,7 +52,7 @@ const ACHIEVEMENTS := {
 	"FORGEDEX_FULL":      "Discover all 15 launch creatures",
 }
 
-var _steam_initialized := false
+var _steam_initialized = false
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INIT
@@ -108,12 +108,12 @@ func on_battle_won(total_wins: int, trainer_id: String) -> void:
 		unlock("BEAT_FORGE_MASTER")
 
 func on_blueprint_acquired(blueprint_id: String) -> void:
-	var total := SaveManager.data["blueprints_owned"].size()
+	var total = SaveManager.data["blueprints_owned"].size()
 	if total == 1:
 		unlock("FIRST_BLUEPRINT")
 
 	# Check rarity
-	var rarity := 0
+	var rarity = 0
 	if blueprint_id in GameData.CREATURES:
 		rarity = GameData.CREATURES[blueprint_id]["rarity"]
 	elif blueprint_id in GameData.EQUIPMENT:
@@ -126,7 +126,7 @@ func on_blueprint_acquired(blueprint_id: String) -> void:
 
 func on_print_created() -> void:
 	unlock("FIRST_PRINT")
-	var count := SaveManager.get_prints().size()
+	var count = SaveManager.get_prints().size()
 	if count >= 5:   unlock("COLLECTION_5")
 	if count >= 10:  unlock("COLLECTION_10")
 	if count >= 15:  unlock("COLLECTION_15")
@@ -135,7 +135,7 @@ func on_equipment_equipped() -> void:
 	unlock("FIRST_EQUIPMENT")
 	# Check for full loadout
 	for inst in SaveManager.get_prints():
-		var eq := inst["equipment"]
+		var eq = inst["equipment"]
 		if eq["armor"] != "" and eq["weapon"] != "" and eq["accessory"] != "":
 			unlock("FULL_LOADOUT")
 			break
@@ -145,7 +145,7 @@ func on_academy_quest_completed(quest_type: String, stars: int) -> void:
 	if stars == 3:
 		unlock("THREE_STARS")
 	# Check if all quest types attempted
-	var progress := SaveManager.data["academy_progress"]
+	var progress = SaveManager.data["academy_progress"]
 	if progress.size() >= 4:
 		unlock("ACADEMY_ALL")
 
@@ -159,9 +159,9 @@ func on_battle_drop(drop_id: String) -> void:
 		unlock("FIRST_DROP")
 
 func on_forgedex_update() -> void:
-	var discovered := 0
+	var discovered = 0
 	for cid in GameData.CREATURES:
-		var s := SaveManager.get_forgedex_status(cid)
+		var s = SaveManager.get_forgedex_status(cid)
 		if s == "owned" or s == "seen":
 			discovered += 1
 	if discovered >= 8:   unlock("FORGEDEX_HALF")

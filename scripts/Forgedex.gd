@@ -23,7 +23,7 @@
 
 extends Node2D
 
-var _element_filter := "all"
+var _element_filter = "all"
 
 @onready var count_label: Label        = $UI/TopBar/CountLabel
 @onready var entry_grid: GridContainer = $UI/EntryGrid
@@ -48,28 +48,28 @@ func _build_grid() -> void:
 	for child in entry_grid.get_children():
 		child.queue_free()
 
-	var idx := 1
+	var idx = 1
 	for cid in GameData.CREATURES:
-		var creature := GameData.CREATURES[cid]
+		var creature = GameData.CREATURES[cid]
 		if _element_filter != "all" and creature["element"] != _element_filter:
 			idx += 1
 			continue
 
-		var status := SaveManager.get_forgedex_status(cid)
-		var card := _make_entry_card(cid, creature, status, idx)
+		var status = SaveManager.get_forgedex_status(cid)
+		var card = _make_entry_card(cid, creature, status, idx)
 		entry_grid.add_child(card)
 		idx += 1
 
 func _make_entry_card(cid: String, creature: Dictionary, status: String, _idx: int) -> Panel:
-	var card := Panel.new()
+	var card = Panel.new()
 	card.custom_minimum_size = Vector2(120, 160)
 
-	var vbox := VBoxContainer.new()
+	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card.add_child(vbox)
 
 	# Sprite or silhouette
-	var swatch := ColorRect.new()
+	var swatch = ColorRect.new()
 	swatch.custom_minimum_size = Vector2(80, 80)
 	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
@@ -83,7 +83,7 @@ func _make_entry_card(cid: String, creature: Dictionary, status: String, _idx: i
 
 	vbox.add_child(swatch)
 
-	var name_lbl := Label.new()
+	var name_lbl = Label.new()
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	match status:
@@ -99,7 +99,7 @@ func _make_entry_card(cid: String, creature: Dictionary, status: String, _idx: i
 	vbox.add_child(name_lbl)
 
 	if status == "owned":
-		var rarity_lbl := Label.new()
+		var rarity_lbl = Label.new()
 		rarity_lbl.text = GameData.RARITY_NAMES.get(creature["rarity"], "")
 		rarity_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		rarity_lbl.add_theme_color_override("font_color",
@@ -118,7 +118,7 @@ func _on_card_input(event: InputEvent, cid: String, status: String) -> void:
 
 func _show_detail(cid: String, status: String) -> void:
 	detail_panel.visible = true
-	var creature := GameData.CREATURES[cid]
+	var creature = GameData.CREATURES[cid]
 
 	if status == "owned":
 		detail_sprite.color = creature["placeholder_color"]
@@ -128,7 +128,7 @@ func _show_detail(cid: String, status: String) -> void:
 		detail_rarity.add_theme_color_override("font_color",
 			GameData.RARITY_COLORS.get(creature["rarity"], Color.WHITE))
 		detail_bend.text = "Bend Score: %d  |  HP: %d" % [creature["bend_score"], creature["hp_base"]]
-		var ability := GameData.ABILITIES[creature["ability"]]
+		var ability = GameData.ABILITIES[creature["ability"]]
 		detail_ability.text = "Ability: %s — %s" % [ability["name"], ability["description"]]
 		detail_lore.text = creature["lore"]
 	else:
@@ -142,9 +142,9 @@ func _show_detail(cid: String, status: String) -> void:
 		detail_lore.text = ""
 
 func _update_count() -> void:
-	var discovered := 0
+	var discovered = 0
 	for cid in GameData.CREATURES:
-		var s := SaveManager.get_forgedex_status(cid)
+		var s = SaveManager.get_forgedex_status(cid)
 		if s == "owned" or s == "seen":
 			discovered += 1
 	count_label.text = "Discovered: %d of ???" % discovered

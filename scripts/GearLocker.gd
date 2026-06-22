@@ -35,8 +35,8 @@
 
 extends Node2D
 
-var _selected_print_iid := ""   # Currently selected print instance ID
-var _picker_slot := ""           # "armor" | "weapon" | "accessory"
+var _selected_print_iid = ""   # Currently selected print instance ID
+var _picker_slot = ""           # "armor" | "weapon" | "accessory"
 
 @onready var print_list: VBoxContainer     = $UI/PrintList
 @onready var equip_title: Label            = $UI/EquipPanel/EquipTitle
@@ -60,54 +60,54 @@ func _build_print_list() -> void:
 	for child in print_list.get_children():
 		child.queue_free()
 
-	var prints := SaveManager.get_prints()
+	var prints = SaveManager.get_prints()
 	if prints.is_empty():
-		var lbl := Label.new()
+		var lbl = Label.new()
 		lbl.text = "No prints yet.\nVisit the Filament Market!"
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		print_list.add_child(lbl)
 		return
 
 	for inst in prints:
-		var creature := GameData.CREATURES[inst["creature_id"]]
-		var card := Panel.new()
+		var creature = GameData.CREATURES[inst["creature_id"]]
+		var card = Panel.new()
 		card.custom_minimum_size = Vector2(340, 70)
 
-		var hbox := HBoxContainer.new()
+		var hbox = HBoxContainer.new()
 		hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 		hbox.add_theme_constant_override("separation", 10)
 		card.add_child(hbox)
 
-		var swatch := ColorRect.new()
+		var swatch = ColorRect.new()
 		swatch.custom_minimum_size = Vector2(56, 56)
 		swatch.color = creature["placeholder_color"]
 		hbox.add_child(swatch)
 
-		var vbox := VBoxContainer.new()
+		var vbox = VBoxContainer.new()
 		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(vbox)
 
-		var name_lbl := Label.new()
+		var name_lbl = Label.new()
 		name_lbl.text = creature["name"]
 		name_lbl.add_theme_font_size_override("font_size", 20)
 		vbox.add_child(name_lbl)
 
 		# Show equipped items summary
-		var eq := inst["equipment"]
-		var eq_text := []
+		var eq = inst["equipment"]
+		var eq_text = []
 		if eq["armor"] != "":
 			eq_text.append("🛡 " + GameData.EQUIPMENT[eq["armor"]]["name"])
 		if eq["weapon"] != "":
 			eq_text.append("⚔ " + GameData.EQUIPMENT[eq["weapon"]]["name"])
 		if eq["accessory"] != "":
 			eq_text.append("💍 " + GameData.EQUIPMENT[eq["accessory"]]["name"])
-		var summary_lbl := Label.new()
+		var summary_lbl = Label.new()
 		summary_lbl.text = ", ".join(eq_text) if eq_text.size() > 0 else "No equipment"
 		summary_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		summary_lbl.add_theme_font_size_override("font_size", 14)
 		vbox.add_child(summary_lbl)
 
-		var select_btn := Button.new()
+		var select_btn = Button.new()
 		select_btn.text = "Manage"
 		select_btn.custom_minimum_size = Vector2(90, 40)
 		select_btn.pressed.connect(_on_print_selected.bind(inst["instance_id"]))
@@ -123,12 +123,12 @@ func _on_print_selected(instance_id: String) -> void:
 	_refresh_equip_panel()
 
 func _refresh_equip_panel() -> void:
-	var inst := SaveManager.get_print_by_instance_id(_selected_print_iid)
+	var inst = SaveManager.get_print_by_instance_id(_selected_print_iid)
 	if inst.is_empty():
 		_clear_equip_panel()
 		return
 
-	var creature := GameData.CREATURES[inst["creature_id"]]
+	var creature = GameData.CREATURES[inst["creature_id"]]
 	equip_title.text = creature["name"]
 	print_preview.color = creature["placeholder_color"]
 
@@ -176,11 +176,11 @@ func _build_picker_grid(slot: String) -> void:
 		child.queue_free()
 
 	# Show all owned equipment of this type that is unattached
-	var owned := SaveManager.get_equipment_owned()
-	var found := false
+	var owned = SaveManager.get_equipment_owned()
+	var found = false
 
 	for eq_inst in owned:
-		var eq_data := GameData.EQUIPMENT[eq_inst["equipment_id"]]
+		var eq_data = GameData.EQUIPMENT[eq_inst["equipment_id"]]
 		if eq_data["type"] != slot:
 			continue
 		# Skip if attached to a different print
@@ -188,7 +188,7 @@ func _build_picker_grid(slot: String) -> void:
 			continue
 
 		found = true
-		var btn := Button.new()
+		var btn = Button.new()
 		btn.custom_minimum_size = Vector2(160, 80)
 		btn.text = "%s\n%s" % [eq_data["name"], eq_data["description"]]
 		if eq_inst["attached_to"] == _selected_print_iid:
@@ -197,7 +197,7 @@ func _build_picker_grid(slot: String) -> void:
 		picker_grid.add_child(btn)
 
 	if not found:
-		var lbl := Label.new()
+		var lbl = Label.new()
 		lbl.text = "No %s equipment available.\nVisit the Filament Market!" % slot
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		picker_grid.add_child(lbl)
@@ -210,7 +210,7 @@ func _on_equipment_picked(eq_instance_id: String) -> void:
 
 func _on_unequip_btn_pressed() -> void:
 	# Remove whatever is in the current slot
-	var inst := SaveManager.get_print_by_instance_id(_selected_print_iid)
+	var inst = SaveManager.get_print_by_instance_id(_selected_print_iid)
 	if inst.is_empty():
 		return
 	var slot_iid: String = inst["equipment"][_picker_slot]
@@ -218,7 +218,7 @@ func _on_unequip_btn_pressed() -> void:
 		equipment_picker.visible = false
 		return
 	# Detach by equipping nothing — find the instance and clear attached_to
-	var eq_owned := SaveManager.get_equipment_owned()
+	var eq_owned = SaveManager.get_equipment_owned()
 	for eq_inst in eq_owned:
 		if eq_inst["instance_id"] == slot_iid:
 			eq_inst["attached_to"] = ""

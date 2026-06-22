@@ -6,14 +6,14 @@
 
 extends Node
 
-const SAVE_PATH := "user://save_data.json"
-const SAVE_VERSION := 1  # Increment when save format changes to handle migration
+const SAVE_PATH = "user://save_data.json"
+const SAVE_VERSION = 1  # Increment when save format changes to handle migration
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DEFAULT SAVE STRUCTURE
 # This is what a brand-new save file looks like.
 # ─────────────────────────────────────────────────────────────────────────────
-var _defaults := {
+var _defaults = {
 	"version": SAVE_VERSION,
 	"player": {
 		"spool_level": 1,
@@ -45,7 +45,7 @@ var _defaults := {
 }
 
 # Live data — populated on load
-var data := {}
+var data = {}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LIFECYCLE
@@ -64,17 +64,17 @@ func load_game() -> void:
 		save_game()
 		return
 
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if file == null:
 		push_error("[SaveManager] Could not open save file. Using defaults.")
 		data = _defaults.duplicate(true)
 		return
 
-	var json_string := file.get_as_text()
+	var json_string = file.get_as_text()
 	file.close()
 
-	var json := JSON.new()
-	var err := json.parse(json_string)
+	var json = JSON.new()
+	var err = json.parse(json_string)
 	if err != OK:
 		push_error("[SaveManager] Save file corrupted. Using defaults.")
 		data = _defaults.duplicate(true)
@@ -92,7 +92,7 @@ func load_game() -> void:
 # SAVE
 # ─────────────────────────────────────────────────────────────────────────────
 func save_game() -> void:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("[SaveManager] Could not write save file!")
 		return
@@ -114,7 +114,7 @@ func _migrate_save() -> void:
 # DAILY LOGIN
 # ─────────────────────────────────────────────────────────────────────────────
 func _handle_daily_login() -> void:
-	var today := Time.get_date_string_from_system()
+	var today = Time.get_date_string_from_system()
 	if data["player"]["last_login_date"] != today:
 		data["player"]["last_login_date"] = today
 		data["player"]["daily_login_claimed"] = false
@@ -126,7 +126,7 @@ func _handle_daily_login() -> void:
 func claim_daily_login() -> int:
 	if data["player"]["daily_login_claimed"]:
 		return 0
-	var reward := 10
+	var reward = 10
 	add_coins(reward)
 	data["player"]["daily_login_claimed"] = true
 	save_game()
@@ -161,13 +161,13 @@ func get_level() -> int:
 	return data["player"]["spool_level"]
 
 # XP thresholds per level (level = index)
-const XP_THRESHOLDS := [
+const XP_THRESHOLDS = [
 	0, 100, 250, 500, 800, 1200, 1800, 2600, 3600, 5000,
 	7000, 9500, 12500, 16000, 20000, 25000, 31000, 38000, 46000, 55000
 ]
 
 func get_xp_for_next_level() -> int:
-	var lvl := get_level()
+	var lvl = get_level()
 	if lvl >= XP_THRESHOLDS.size():
 		return 999999
 	return XP_THRESHOLDS[lvl]
@@ -188,7 +188,7 @@ func choose_starter(creature_id: String) -> void:
 	data["player"]["starter_chosen"] = true
 	# Give the player the blueprint and one printed copy
 	add_blueprint(creature_id)
-	var print_inst := _make_print_instance(creature_id)
+	var print_inst = _make_print_instance(creature_id)
 	data["prints_owned"].append(print_inst)
 	# Mark in forgedex
 	data["forgedex"][creature_id] = "owned"
@@ -230,7 +230,7 @@ func buy_blueprint(id: String) -> bool:
 # PRINTS (creature instances)
 # ─────────────────────────────────────────────────────────────────────────────
 func _make_print_instance(creature_id: String) -> Dictionary:
-	var creature := GameData.CREATURES[creature_id]
+	var creature = GameData.CREATURES[creature_id]
 	return {
 		"instance_id": _generate_id(),
 		"creature_id": creature_id,
@@ -249,7 +249,7 @@ func print_creature(creature_id: String) -> bool:
 	var cost: int = GameData.CREATURES[creature_id]["print_cost"]
 	if not spend_coins(cost):
 		return false
-	var inst := _make_print_instance(creature_id)
+	var inst = _make_print_instance(creature_id)
 	data["prints_owned"].append(inst)
 	save_game()
 	return true
@@ -291,25 +291,25 @@ func print_equipment(equipment_id: String) -> bool:
 	var cost: int = GameData.EQUIPMENT[equipment_id]["print_cost"]
 	if not spend_coins(cost):
 		return false
-	var inst := _make_equipment_instance(equipment_id)
+	var inst = _make_equipment_instance(equipment_id)
 	data["equipment_owned"].append(inst)
 	save_game()
 	return true
 
 func equip_item(equipment_instance_id: String, print_instance_id: String) -> bool:
-	var eq_inst := _get_equipment_instance(equipment_instance_id)
+	var eq_inst = _get_equipment_instance(equipment_instance_id)
 	if eq_inst.is_empty():
 		return false
-	var print_inst := get_print_by_instance_id(print_instance_id)
+	var print_inst = get_print_by_instance_id(print_instance_id)
 	if print_inst.is_empty():
 		return false
 
-	var eq_data := GameData.EQUIPMENT[eq_inst["equipment_id"]]
+	var eq_data = GameData.EQUIPMENT[eq_inst["equipment_id"]]
 	var slot: String = eq_data["type"]  # "armor" | "weapon" | "accessory"
 
 	# Unequip whatever is in that slot already
 	if print_inst["equipment"][slot] != "":
-		var old_eq := _get_equipment_instance_by_equip_id_on_print(slot, print_instance_id)
+		var old_eq = _get_equipment_instance_by_equip_id_on_print(slot, print_instance_id)
 		if not old_eq.is_empty():
 			old_eq["attached_to"] = ""
 
@@ -325,7 +325,7 @@ func _get_equipment_instance(instance_id: String) -> Dictionary:
 	return {}
 
 func _get_equipment_instance_by_equip_id_on_print(slot: String, print_instance_id: String) -> Dictionary:
-	var print_inst := get_print_by_instance_id(print_instance_id)
+	var print_inst = get_print_by_instance_id(print_instance_id)
 	if print_inst.is_empty():
 		return {}
 	var eq_iid: String = print_inst["equipment"][slot]
@@ -352,7 +352,7 @@ func record_battle(trainer_id: String, won: bool, xp: int, coins: int, drop_id: 
 	if won:
 		data["player"]["total_wins"] += 1
 
-	var entry := {
+	var entry = {
 		"trainer_id": trainer_id,
 		"result": "win" if won else "loss",
 		"xp_earned": xp,
@@ -373,31 +373,31 @@ func get_shop_slots() -> Array:
 	return data["shop_state"]["slots"]
 
 func _refresh_shop_if_needed() -> void:
-	var now := Time.get_unix_time_from_system()
-	var last := data["shop_state"]["refresh_timestamp"]
-	var seconds_in_day := 86400
+	var now = Time.get_unix_time_from_system()
+	var last = data["shop_state"]["refresh_timestamp"]
+	var seconds_in_day = 86400
 	if now - last >= seconds_in_day or data["shop_state"]["slots"].is_empty():
 		_generate_shop_rotation()
 
 func _generate_shop_rotation() -> void:
-	var player_level := get_level()
-	var pool := []
+	var player_level = get_level()
+	var pool = []
 
 	# Build pool of available blueprints by player level
 	for cid in GameData.CREATURES:
-		var c := GameData.CREATURES[cid]
+		var c = GameData.CREATURES[cid]
 		if c["is_starter"]:
 			continue
 		if c["rarity"] <= _max_rarity_for_level(player_level):
 			pool.append({"id": cid, "kind": "creature"})
 
 	for eid in GameData.EQUIPMENT:
-		var e := GameData.EQUIPMENT[eid]
+		var e = GameData.EQUIPMENT[eid]
 		if e["rarity"] <= _max_rarity_for_level(player_level):
 			pool.append({"id": eid, "kind": "equipment"})
 
 	pool.shuffle()
-	var slots := []
+	var slots = []
 	for i in range(min(12, pool.size())):
 		slots.append(pool[i])
 
@@ -416,11 +416,11 @@ func _max_rarity_for_level(level: int) -> int:
 # ACADEMY PROGRESS
 # ─────────────────────────────────────────────────────────────────────────────
 func record_academy_quest(quest_type: String, stars: int, coins_earned: int) -> void:
-	var today := Time.get_date_string_from_system()
+	var today = Time.get_date_string_from_system()
 	if not data["academy_progress"].has(quest_type):
 		data["academy_progress"][quest_type] = {"best_stars": 0, "plays_today": 0, "last_played": ""}
 
-	var p := data["academy_progress"][quest_type]
+	var p = data["academy_progress"][quest_type]
 	if p["last_played"] != today:
 		p["plays_today"] = 0
 		p["last_played"] = today
@@ -430,7 +430,7 @@ func record_academy_quest(quest_type: String, stars: int, coins_earned: int) -> 
 		p["best_stars"] = stars
 
 	# Diminishing returns after 3 replays
-	var actual_coins := coins_earned
+	var actual_coins = coins_earned
 	if p["plays_today"] > 3:
 		actual_coins = int(coins_earned * 0.25)
 

@@ -19,7 +19,7 @@ extends Node2D
 
 var selected_trainer: Dictionary = {}
 var selected_prints: Array = []   # Array of print instance_ids
-const TEAM_SIZE := 3
+const TEAM_SIZE = 3
 
 @onready var trainer_list: VBoxContainer = $UI/TrainerList
 @onready var team_panel: Panel = $UI/TeamSelectPanel
@@ -40,18 +40,18 @@ func _build_trainer_list() -> void:
 		child.queue_free()
 
 	for trainer in GameData.AI_TRAINERS:
-		var hbox := HBoxContainer.new()
+		var hbox = HBoxContainer.new()
 
-		var name_lbl := Label.new()
+		var name_lbl = Label.new()
 		name_lbl.text = "%s  (Difficulty %d)" % [trainer["name"], trainer["difficulty"]]
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(name_lbl)
 
-		var reward_lbl := Label.new()
+		var reward_lbl = Label.new()
 		reward_lbl.text = "+%d coins  +%d XP" % [trainer["reward_coins"], trainer["reward_xp"]]
 		hbox.add_child(reward_lbl)
 
-		var fight_btn_t := Button.new()
+		var fight_btn_t = Button.new()
 		fight_btn_t.text = "Challenge"
 		fight_btn_t.pressed.connect(_on_trainer_selected.bind(trainer))
 		hbox.add_child(fight_btn_t)
@@ -72,9 +72,9 @@ func _build_print_list() -> void:
 	for child in print_list.get_children():
 		child.queue_free()
 
-	var prints := SaveManager.get_prints()
+	var prints = SaveManager.get_prints()
 	if prints.is_empty():
-		var lbl := Label.new()
+		var lbl = Label.new()
 		lbl.text = "You have no printed creatures! Go to the Filament Market first."
 		print_list.add_child(lbl)
 		return
@@ -82,16 +82,16 @@ func _build_print_list() -> void:
 	for inst in prints:
 		if inst["hp_current"] <= 0:
 			continue
-		var creature := GameData.CREATURES[inst["creature_id"]]
-		var hbox := HBoxContainer.new()
+		var creature = GameData.CREATURES[inst["creature_id"]]
+		var hbox = HBoxContainer.new()
 
 		# Placeholder color swatch
-		var swatch := ColorRect.new()
+		var swatch = ColorRect.new()
 		swatch.custom_minimum_size = Vector2(32, 32)
 		swatch.color = creature["placeholder_color"]
 		hbox.add_child(swatch)
 
-		var lbl := Label.new()
+		var lbl = Label.new()
 		lbl.text = "%s  [%s]  HP: %d/%d" % [
 			creature["name"],
 			creature["element"].capitalize(),
@@ -101,7 +101,7 @@ func _build_print_list() -> void:
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(lbl)
 
-		var toggle := CheckBox.new()
+		var toggle = CheckBox.new()
 		toggle.text = "Select"
 		toggle.toggled.connect(_on_print_toggled.bind(inst["instance_id"]))
 		hbox.add_child(toggle)
@@ -132,9 +132,9 @@ func _on_fight_btn_pressed() -> void:
 		return
 
 	# Gather full print instance dicts for the selected IDs
-	var team := []
+	var team = []
 	for iid in selected_prints:
-		var inst := SaveManager.get_print_by_instance_id(iid)
+		var inst = SaveManager.get_print_by_instance_id(iid)
 		if not inst.is_empty():
 			team.append(inst)
 
