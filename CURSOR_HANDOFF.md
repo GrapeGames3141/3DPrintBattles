@@ -31,8 +31,7 @@ Phase 0 (environment) — partial:
 - [x] Node.js installed (v20)
 - [x] Godot 4.7 installed and project runs
 - [x] git repo on branch `phase1-build` at `git@github.com:PatGuettler/3DPrintBattles.git`
-- [ ] `PIXELLAB_API_KEY` set ← **next human action** (Phase 2 art)
-- [ ] MCP PixelLab connected in Cursor (after key is set)
+- [ ] PixelLab MCP connected in Cursor (HTTP — see pixellab.ai MCP setup) ← **next human action**
 - [ ] Other API keys (AutoSprite, Scenario, ElevenLabs) — later phases
 
 Phase 1 (core loop, placeholder art) — **complete** (user approved moving on):
@@ -327,27 +326,45 @@ VERIFY in Cursor's terminal:
 
 ```
 ==========================================================
-STEP 6 — CONNECT ART TOOLS TO CURSOR
+STEP 6 — CONNECT PIXELLAB TO CURSOR (HTTP MCP — preferred)
 ==========================================================
-Now connect all art generation tools so Cursor can call them
-directly during development.
+PixelLab now uses a hosted HTTP MCP server (simpler than npx).
 
-1. In Cursor, press Ctrl+Shift+P (Cmd+Shift+P on Mac)
-2. Type "Open MCP Settings" and press Enter
-   (or go to: Settings gear → MCP)
-3. You will see a JSON config area
-4. REPLACE whatever is there with this entire block:
+OPTION A — Cursor MCP Settings UI (easiest):
+1. Go to https://pixellab.ai → API → copy your key
+2. In Cursor: Ctrl+Shift+P → "Open MCP Settings"
+3. Click "Add Custom MCP" (or edit JSON)
+4. Add this block (paste YOUR key where shown):
 
 {
   "mcpServers": {
     "pixellab": {
-      "command": "npx",
-      "args": ["-y", "pixellab-mcp"],
-      "env": {
-        "PIXELLAB_API_KEY": "${PIXELLAB_API_KEY}"
+      "url": "https://api.pixellab.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_PIXELLAB_KEY_HERE"
       }
-    },
-    "autosprite": {
+    }
+  }
+}
+
+5. Save, fully quit and reopen Cursor
+6. MCP settings should show a green dot next to "pixellab"
+
+OPTION B — Project file (already gitignored):
+  Copy mcp.json.example → .cursor/mcp.json in this project folder.
+  Set PIXELLAB_API_KEY in ~/.bashrc and use ${PIXELLAB_API_KEY} in the Bearer header,
+  OR paste your key directly into .cursor/mcp.json (never commit it).
+
+Docs: https://api.pixellab.ai/mcp/docs
+
+✅ Reply "mcp connected" when you see the green dot
+==========================================================
+```
+
+Later phases add AutoSprite, Scenario, ElevenLabs the same way (HTTP + Bearer token).
+Old npx pixellab-mcp method is deprecated — use the HTTP URL above instead.
+
+⏸ LEGACY — full multi-tool MCP block (Phase 2+ only needs PixelLab first):
       "type": "http",
       "url": "https://www.autosprite.io/api/mcp",
       "headers": {
