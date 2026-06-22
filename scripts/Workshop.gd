@@ -24,10 +24,10 @@
 
 extends Node2D
 
-@onready var level_label: Label = $UI/TopBar/LevelLabel
-@onready var xp_bar: ProgressBar = $UI/TopBar/XPBar
-@onready var coin_label: Label = $UI/TopBar/CoinLabel
-@onready var daily_popup: Panel = $UI/DailyLoginPopup
+@onready var level_label: Label = $UI/Root/TopBarPanel/TopBar/LevelLabel
+@onready var xp_bar: ProgressBar = $UI/Root/TopBarPanel/TopBar/XPBar
+@onready var coin_label: Label = $UI/Root/TopBarPanel/TopBar/CoinLabel
+@onready var daily_popup: Panel = $UI/Root/DailyLoginPopup
 
 func _ready() -> void:
 	_refresh_hud()

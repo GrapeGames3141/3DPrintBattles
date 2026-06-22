@@ -5,93 +5,167 @@
 [node name="Workshop" type="Node2D"]
 script = ExtResource("1_workshop")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0.102, 0.102, 0.18, 1)
-
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="TopBar" type="HBoxContainer" parent="UI"]
+[node name="Root" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="GlowAmber" type="ColorRect" parent="UI/Root"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 80.0
+offset_right = 1080.0
+offset_bottom = 520.0
+mouse_filter = 2
+color = Color(0.91, 0.627, 0.125, 0.05)
+
+[node name="GlowPurple" type="ColorRect" parent="UI/Root"]
+layout_mode = 0
+offset_left = 720.0
+offset_top = 360.0
 offset_right = 1280.0
-offset_bottom = 60.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.482, 0.184, 0.745, 0.08)
+
+[node name="TopBarPanel" type="Panel" parent="UI/Root"]
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 64.0
+
+[node name="TopBar" type="HBoxContainer" parent="UI/Root/TopBarPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 8.0
+offset_right = -24.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="SpoolIcon" type="Label" parent="UI/TopBar"]
+[node name="SpoolIcon" type="Label" parent="UI/Root/TopBarPanel/TopBar"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "🧵"
 
-[node name="LevelLabel" type="Label" parent="UI/TopBar"]
+[node name="LevelLabel" type="Label" parent="UI/Root/TopBarPanel/TopBar"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "Lv. 1"
 vertical_alignment = 1
 
-[node name="XPBar" type="ProgressBar" parent="UI/TopBar"]
-custom_minimum_size = Vector2(220, 20)
+[node name="XPBar" type="ProgressBar" parent="UI/Root/TopBarPanel/TopBar"]
+custom_minimum_size = Vector2(260, 22)
 layout_mode = 2
 size_flags_vertical = 4
+show_percentage = false
 
-[node name="CoinIcon" type="Label" parent="UI/TopBar"]
+[node name="CoinIcon" type="Label" parent="UI/Root/TopBarPanel/TopBar"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "🪙"
 
-[node name="CoinLabel" type="Label" parent="UI/TopBar"]
+[node name="CoinLabel" type="Label" parent="UI/Root/TopBarPanel/TopBar"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
 theme_override_font_sizes/font_size = 22
 text = "100"
 vertical_alignment = 1
 
-[node name="LocationButtons" type="VBoxContainer" parent="UI"]
-offset_left = 500.0
-offset_top = 180.0
-offset_right = 780.0
-offset_bottom = 580.0
-theme_override_constants/separation = 16
-alignment = 1
+[node name="HubTitle" type="Label" parent="UI/Root"]
+layout_mode = 0
+offset_top = 80.0
+offset_right = 1280.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
+theme_override_font_sizes/font_size = 36
+text = "⚙ The Workshop"
+horizontal_alignment = 1
 
-[node name="BattleBtn" type="Button" parent="UI/LocationButtons"]
-custom_minimum_size = Vector2(280, 55)
+[node name="HubSubtitle" type="Label" parent="UI/Root"]
+layout_mode = 0
+offset_top = 132.0
+offset_right = 1280.0
+offset_bottom = 162.0
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_font_sizes/font_size = 16
+text = "Forgeholm — your home base"
+horizontal_alignment = 1
+
+[node name="LocationButtons" type="GridContainer" parent="UI/Root"]
+layout_mode = 0
+offset_left = 340.0
+offset_top = 200.0
+offset_right = 940.0
+offset_bottom = 620.0
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 16
+columns = 2
+
+[node name="BattleBtn" type="Button" parent="UI/Root/LocationButtons"]
+custom_minimum_size = Vector2(280, 72)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "⚔ Proving Grounds"
+text = "⚔  Proving Grounds
+Battle AI trainers"
 
-[node name="ShopBtn" type="Button" parent="UI/LocationButtons"]
-custom_minimum_size = Vector2(280, 55)
+[node name="ShopBtn" type="Button" parent="UI/Root/LocationButtons"]
+custom_minimum_size = Vector2(280, 72)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "🛒 Filament Market"
+text = "🛒  Filament Market
+Buy blueprints"
 
-[node name="AcademyBtn" type="Button" parent="UI/LocationButtons"]
-custom_minimum_size = Vector2(280, 55)
+[node name="AcademyBtn" type="Button" parent="UI/Root/LocationButtons"]
+custom_minimum_size = Vector2(280, 72)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "🎓 The Academy"
+text = "🎓  The Academy
+Earn coins with math"
 
-[node name="ForgedexBtn" type="Button" parent="UI/LocationButtons"]
-custom_minimum_size = Vector2(280, 55)
+[node name="ForgedexBtn" type="Button" parent="UI/Root/LocationButtons"]
+custom_minimum_size = Vector2(280, 72)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "📖 Forgedex"
+text = "📖  Forgedex
+Creature discovery log"
 
-[node name="PrintYardBtn" type="Button" parent="UI/LocationButtons"]
-custom_minimum_size = Vector2(280, 55)
+[node name="PrintYardBtn" type="Button" parent="UI/Root/LocationButtons"]
+custom_minimum_size = Vector2(280, 72)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "🐾 Print Yard"
+text = "🐾  Print Yard
+Watch your prints roam"
 
-[node name="DailyLoginPopup" type="Panel" parent="UI"]
+[node name="DailyLoginPopup" type="Panel" parent="UI/Root"]
 visible = false
+layout_mode = 0
 offset_left = 440.0
 offset_top = 260.0
 offset_right = 840.0
 offset_bottom = 460.0
 
-[node name="Label" type="Label" parent="UI/DailyLoginPopup"]
+[node name="Label" type="Label" parent="UI/Root/DailyLoginPopup"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 30.0
 offset_right = 380.0
@@ -102,16 +176,17 @@ text = "Daily Login Bonus!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CloseBtn" type="Button" parent="UI/DailyLoginPopup"]
+[node name="CloseBtn" type="Button" parent="UI/Root/DailyLoginPopup"]
+layout_mode = 0
 offset_left = 120.0
 offset_top = 140.0
 offset_right = 280.0
 offset_bottom = 184.0
 text = "Collect!"
 
-[connection signal="pressed" from="UI/LocationButtons/BattleBtn" to="." method="_on_battle_btn_pressed"]
-[connection signal="pressed" from="UI/LocationButtons/ShopBtn" to="." method="_on_shop_btn_pressed"]
-[connection signal="pressed" from="UI/LocationButtons/AcademyBtn" to="." method="_on_academy_btn_pressed"]
-[connection signal="pressed" from="UI/LocationButtons/ForgedexBtn" to="." method="_on_forgedex_btn_pressed"]
-[connection signal="pressed" from="UI/LocationButtons/PrintYardBtn" to="." method="_on_print_yard_btn_pressed"]
-[connection signal="pressed" from="UI/DailyLoginPopup/CloseBtn" to="." method="_on_daily_popup_close_pressed"]
+[connection signal="pressed" from="UI/Root/LocationButtons/BattleBtn" to="." method="_on_battle_btn_pressed"]
+[connection signal="pressed" from="UI/Root/LocationButtons/ShopBtn" to="." method="_on_shop_btn_pressed"]
+[connection signal="pressed" from="UI/Root/LocationButtons/AcademyBtn" to="." method="_on_academy_btn_pressed"]
+[connection signal="pressed" from="UI/Root/LocationButtons/ForgedexBtn" to="." method="_on_forgedex_btn_pressed"]
+[connection signal="pressed" from="UI/Root/LocationButtons/PrintYardBtn" to="." method="_on_print_yard_btn_pressed"]
+[connection signal="pressed" from="UI/Root/DailyLoginPopup/CloseBtn" to="." method="_on_daily_popup_close_pressed"]

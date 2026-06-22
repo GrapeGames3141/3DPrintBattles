@@ -16,11 +16,9 @@ Build instructions / phase plan: `CURSOR_HANDOFF.md`
 
 ## Current Status
 
-**Phase 1 — Core Game Loop: scenes built, awaiting in-engine test.**
+**Phase 1 complete** — core game loop playable with polished placeholder UI.
 
-All gameplay logic (GDScript) was pre-written. Phase 1 work is wiring up the Godot
-scene (`.tscn`) files to match those scripts. Those scenes now exist and use
-placeholder colored rectangles for all art (no art generation has happened yet).
+**Phase 2 in progress** — generating real starter creature sprites (needs PixelLab API key).
 
 See `CURSOR_HANDOFF.md` → **CURRENT BUILD STATUS** for the live progress log.
 
@@ -72,9 +70,9 @@ assets/
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 0 | Environment setup (tools, keys, MCP, GitHub) | partial — see plan |
-| 1 | Core game loop, placeholder art | scenes built, test pending |
-| 2 | Starter sprites + blueprint art (PixelLab/Scenario) | not started |
+| 0 | Environment setup (tools, keys, MCP, GitHub) | partial — PixelLab key next |
+| 1 | Core game loop, placeholder art | **complete** |
+| 2 | Starter sprites + blueprint art (PixelLab/Scenario) | **in progress** |
 | 3 | All 15 creatures, equipment, Print Yard, full content | not started |
 | 4 | Audio (ElevenLabs), Steam integration, store page, QA | not started |
 | 5 | Post-launch: multiplayer, trading, mobile | future |

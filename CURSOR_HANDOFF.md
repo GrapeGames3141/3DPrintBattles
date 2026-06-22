@@ -24,27 +24,29 @@ You (the developer) should:
 ## ▶ CURRENT BUILD STATUS
 _Last updated by Cursor. This section is the live progress log — keep it current._
 
-**Active phase: Phase 1 — Core Game Loop (scenes built, awaiting first in-engine test)**
+**Active phase: Phase 2 — Art Generation (starter sprites)**
 
 Phase 0 (environment) — partial:
 - [x] `.gitignore` and `.github/workflows/build.yml` present
 - [x] Node.js installed (v20)
-- [ ] Godot 4 installed locally (needed to run/test) ← **next human action**
-- [x] git repo initialized + pushed — branch `phase1-build` on `git@github.com:PatGuettler/3DPrintBattles.git` (fresh history, intended to supersede main)
-- [ ] API keys / MCP tools (only needed starting Phase 2)
+- [x] Godot 4.7 installed and project runs
+- [x] git repo on branch `phase1-build` at `git@github.com:PatGuettler/3DPrintBattles.git`
+- [ ] `PIXELLAB_API_KEY` set ← **next human action** (Phase 2 art)
+- [ ] MCP PixelLab connected in Cursor (after key is set)
+- [ ] Other API keys (AutoSprite, Scenario, ElevenLabs) — later phases
 
-Phase 1 (core loop, placeholder art) — code complete, test pending:
-- [x] Global theme `assets/ui/PrintForgeTheme.tres` + wired project-wide (`gui/theme/custom`)
-- [x] `scenes/Main.tscn`            (Task 1.1)
-- [x] `scenes/StarterSelection.tscn` (Task 1.2)
-- [x] `scenes/Workshop.tscn`        (Task 1.3)
-- [x] `scenes/TrainerSelect.tscn`   (Task 1.4)
-- [x] `scenes/Battle.tscn`          (Task 1.5 — built to match Battle.gd node paths)
-- [x] `scenes/Shop.tscn`            (Task 1.6)
-- [x] `scenes/Academy.tscn`         (Task 1.7)
-- [x] `scenes/Forgedex.tscn`        (Task 1.8)
-- [x] `scenes/PrintYard.tscn`       (bonus — makes the 5th Workshop nav button work)
-- [ ] Run Phase 1 TEST CHECKLIST in Godot (Task 1.10)
+Phase 1 (core loop, placeholder art) — **complete** (user approved moving on):
+- [x] All core scenes + PrintYard + global theme
+- [x] Godot 4.7 parse-error fixes (`:=` → `=`)
+- [x] SceneTransition null-scene crash fix
+- [x] UI polish pass (UIStyle.gd, starter cards, workshop hub)
+- [x] Playable through starter selection (user tested)
+
+Phase 2 (starter art) — not started:
+- [ ] Generate 3 starter idle sprites (PixelLab)
+- [ ] Generate blueprint scroll art (Scenario — needs key later)
+- [ ] Generate hit animations (AutoSprite — needs key later)
+- [ ] Wire sprites into StarterSelection + Battle scenes
 
 Notes / decisions made by Cursor:
 - The theme is applied globally via `project.godot` (`gui/theme/custom`) instead of

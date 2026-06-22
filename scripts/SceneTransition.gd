@@ -29,12 +29,33 @@ func _fade_out() -> void:
 	tween.tween_callback(_change_scene)
 
 func _change_scene() -> void:
-	get_tree().change_scene_to_file(_pending_scene)
-	# Give the scene one frame to initialize, then pass data
-	await get_tree().process_frame
-	var root_scene = get_tree().current_scene
-	if root_scene.has_method("receive_data"):
+	var tree = get_tree()
+
+	if not ResourceLoader.exists(_pending_scene):
+		push_error("[SceneTransition] Scene not found: %s" % _pending_scene)
+		_fade_in()
+		return
+
+	var err = tree.change_scene_to_file(_pending_scene)
+	if err != OK:
+		push_error("[SceneTransition] Failed to change scene: %s (error %d)" % [_pending_scene, err])
+		_fade_in()
+		return
+
+	# current_scene can be null for a frame after change_scene_to_file (esp. on boot)
+	var root_scene = tree.current_scene
+	if root_scene == null:
+		await tree.scene_changed
+		root_scene = tree.current_scene
+	if root_scene == null:
+		await tree.process_frame
+		root_scene = tree.current_scene
+
+	if root_scene != null and root_scene.has_method("receive_data"):
 		root_scene.receive_data(_pending_data)
+	elif root_scene == null:
+		push_error("[SceneTransition] current_scene is null after loading: %s" % _pending_scene)
+
 	_fade_in()
 
 func _fade_in() -> void:

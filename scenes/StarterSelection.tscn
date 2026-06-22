@@ -5,53 +5,103 @@
 [node name="StarterSelection" type="Node2D"]
 script = ExtResource("1_starter")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0.102, 0.102, 0.18, 1)
-
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="TitleLabel" type="Label" parent="UI"]
+[node name="Root" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="GlowAmber" type="ColorRect" parent="UI/Root"]
+layout_mode = 0
+offset_left = -60.0
+offset_top = -40.0
+offset_right = 440.0
+offset_bottom = 320.0
+mouse_filter = 2
+color = Color(0.91, 0.627, 0.125, 0.07)
+
+[node name="GlowPurple" type="ColorRect" parent="UI/Root"]
+layout_mode = 0
+offset_left = 860.0
+offset_top = 400.0
+offset_right = 1340.0
+offset_bottom = 760.0
+mouse_filter = 2
+color = Color(0.482, 0.184, 0.745, 0.1)
+
+[node name="Layout" type="VBoxContainer" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = 24.0
-offset_right = 1280.0
-offset_bottom = 70.0
+offset_right = -40.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="BrandLabel" type="Label" parent="UI/Root/Layout"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 14
+text = "⚙ PRINTFORGE LEGENDS"
+horizontal_alignment = 1
+
+[node name="TitleLabel" type="Label" parent="UI/Root/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
+theme_override_font_sizes/font_size = 34
 text = "Choose Your First Print"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="UI"]
-offset_top = 74.0
-offset_right = 1280.0
-offset_bottom = 104.0
+[node name="SubtitleLabel" type="Label" parent="UI/Root/Layout"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
 theme_override_font_sizes/font_size = 18
 text = "Your starter stays with you forever."
 horizontal_alignment = 1
 
-[node name="StarterCards" type="HBoxContainer" parent="UI"]
-offset_left = 130.0
-offset_top = 140.0
-offset_right = 1150.0
-offset_bottom = 560.0
-theme_override_constants/separation = 40
+[node name="CardsRow" type="HBoxContainer" parent="UI/Root/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 28
 alignment = 1
 
-[node name="SelectedLabel" type="Label" parent="UI"]
-offset_top = 575.0
-offset_right = 1280.0
-offset_bottom = 610.0
+[node name="Footer" type="VBoxContainer" parent="UI/Root/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="SelectedLabel" type="Label" parent="UI/Root/Layout/Footer"]
+visible = false
+layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "You chose:"
 horizontal_alignment = 1
 
-[node name="ConfirmBtn" type="Button" parent="UI"]
-offset_left = 540.0
-offset_top = 625.0
-offset_right = 740.0
-offset_bottom = 685.0
+[node name="ConfirmBtn" type="Button" parent="UI/Root/Layout/Footer"]
+visible = false
+custom_minimum_size = Vector2(260, 56)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
 theme_override_font_sizes/font_size = 22
 text = "Begin Forging!"
 
-[connection signal="pressed" from="UI/ConfirmBtn" to="." method="_on_confirm_btn_pressed"]
+[connection signal="pressed" from="UI/Root/Layout/Footer/ConfirmBtn" to="." method="_on_confirm_btn_pressed"]
