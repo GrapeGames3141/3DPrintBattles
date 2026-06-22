@@ -30,7 +30,7 @@ Phase 0 (environment) — partial:
 - [x] `.gitignore` and `.github/workflows/build.yml` present
 - [x] Node.js installed (v20)
 - [ ] Godot 4 installed locally (needed to run/test) ← **next human action**
-- [ ] git repo initialized + pushed to GitHub (not done yet; do when ready)
+- [x] git repo initialized + pushed — branch `phase1-build` on `git@github.com:PatGuettler/3DPrintBattles.git` (fresh history, intended to supersede main)
 - [ ] API keys / MCP tools (only needed starting Phase 2)
 
 Phase 1 (core loop, placeholder art) — code complete, test pending:
