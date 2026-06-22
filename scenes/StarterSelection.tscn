@@ -1,0 +1,57 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/StarterSelection.gd" id="1_starter"]
+
+[node name="StarterSelection" type="Node2D"]
+script = ExtResource("1_starter")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TitleLabel" type="Label" parent="UI"]
+offset_top = 24.0
+offset_right = 1280.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
+theme_override_font_sizes/font_size = 32
+text = "Choose Your First Print"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="UI"]
+offset_top = 74.0
+offset_right = 1280.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_font_sizes/font_size = 18
+text = "Your starter stays with you forever."
+horizontal_alignment = 1
+
+[node name="StarterCards" type="HBoxContainer" parent="UI"]
+offset_left = 130.0
+offset_top = 140.0
+offset_right = 1150.0
+offset_bottom = 560.0
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="SelectedLabel" type="Label" parent="UI"]
+offset_top = 575.0
+offset_right = 1280.0
+offset_bottom = 610.0
+theme_override_font_sizes/font_size = 22
+text = "You chose:"
+horizontal_alignment = 1
+
+[node name="ConfirmBtn" type="Button" parent="UI"]
+offset_left = 540.0
+offset_top = 625.0
+offset_right = 740.0
+offset_bottom = 685.0
+theme_override_font_sizes/font_size = 22
+text = "Begin Forging!"
+
+[connection signal="pressed" from="UI/ConfirmBtn" to="." method="_on_confirm_btn_pressed"]

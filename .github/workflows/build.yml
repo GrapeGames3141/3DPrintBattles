@@ -1,0 +1,94 @@
+# .github/workflows/build.yml
+# Automated Godot 4 build pipeline for PrintForge Legends
+# Triggers on every push to main branch
+# Exports a Windows .exe and uploads it as a build artifact
+# In Phase 4: add Steam upload step using SteamCMD
+
+name: Build PrintForge Legends
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:   # Allow manual trigger from GitHub Actions tab
+
+env:
+  GODOT_VERSION: "4.3"
+  EXPORT_NAME: "PrintForgeLegends"
+  PROJECT_PATH: "."
+
+jobs:
+  # ── WINDOWS BUILD ──────────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows (Steam)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Setup Godot ${{ env.GODOT_VERSION }}
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Create export directories
+        run: |
+          mkdir -p builds/windows
+          mkdir -p builds/linux
+
+      - name: Import Godot project (generates .godot/ cache)
+        run: |
+          godot --headless --path ${{ env.PROJECT_PATH }} --import 2>&1 | tail -5
+
+      - name: Export Windows build
+        run: |
+          godot --headless --path ${{ env.PROJECT_PATH }} \
+            --export-release "Windows Desktop" \
+            "builds/windows/${{ env.EXPORT_NAME }}.exe"
+
+      - name: Verify build output
+        run: |
+          ls -lh builds/windows/
+          if [ ! -f "builds/windows/${{ env.EXPORT_NAME }}.exe" ]; then
+            echo "ERROR: Windows build not found!"
+            exit 1
+          fi
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-Windows-${{ github.sha }}
+          path: builds/windows/
+          retention-days: 30
+
+  # ── LINT / SCRIPT CHECK ────────────────────────────────────────────────────
+  check-scripts:
+    name: Check GDScript syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot ${{ env.GODOT_VERSION }}
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: false
+
+      - name: Run GDScript type check
+        run: |
+          godot --headless --path ${{ env.PROJECT_PATH }} \
+            --check-only --script res://data/GameData.gd 2>&1
+          godot --headless --path ${{ env.PROJECT_PATH }} \
+            --check-only --script res://scripts/SaveManager.gd 2>&1
+          godot --headless --path ${{ env.PROJECT_PATH }} \
+            --check-only --script res://scripts/BattleManager.gd 2>&1
+        continue-on-error: true   # Don't fail CI on type warnings, only errors

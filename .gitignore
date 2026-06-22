@@ -1,0 +1,49 @@
+# PrintForge Legends — .gitignore
+
+# ── SECRETS — Never commit these ──────────────────────────────────────────
+.env
+*.env
+.env.local
+.env.*.local
+steam_appid.txt        # Contains your real Steam App ID — keep local only
+
+# ── GODOT AUTO-GENERATED ──────────────────────────────────────────────────
+.godot/
+*.translation
+*.import
+
+# ── BUILD OUTPUT ──────────────────────────────────────────────────────────
+builds/
+export/
+*.exe
+*.pck
+*.zip
+
+# ── OS FILES ──────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── EDITOR FILES ──────────────────────────────────────────────────────────
+.vscode/
+.cursor/
+*.swp
+*.swo
+*~
+
+# ── LOGS ──────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── PYTHON (sprite generation scripts) ───────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/

@@ -1,0 +1,148 @@
+# PrintForge Legends — Steam Store Page Copy
+# Use this text when filling out your Steamworks store page.
+# Paste each section into the corresponding field on Steamworks.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SHORT DESCRIPTION (30 words max — shown in search results)
+# ─────────────────────────────────────────────────────────────────────────────
+
+Collect magical 3D-printed creatures, battle AI trainers, and grow your Forge
+in this unique creature collector with educational mini-games built right in.
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LONG DESCRIPTION (shown on store page — supports basic HTML)
+# ─────────────────────────────────────────────────────────────────────────────
+
+<h2>Welcome to Forgeholm</h2>
+
+In a world where ancient arcane energy powers enormous 3D printing machines,
+you are a <strong>Forge Apprentice</strong> — a collector, a builder, and a
+battler. PrintForge Legends is a creature-collecting battle game unlike any
+other, set in a futuristic magical workshop where every creature you own is
+one you built yourself.
+
+<h2>Collect. Print. Battle.</h2>
+
+<ul>
+<li><strong>Discover blueprints</strong> in the rotating Filament Market, earn
+them through educational mini-games, or find them as rare battle drops.</li>
+<li><strong>Print your creatures</strong> using your in-game Forge — the more
+complex the design, the more powerful the Print.</li>
+<li><strong>Equip armor, weapons, and accessories</strong> to customize your
+team's stats and abilities before battle.</li>
+<li><strong>Battle AI trainers</strong> in turn-based combat — from the
+beginner-friendly Tutorial Trainer to the fearsome Forge Master.</li>
+</ul>
+
+<h2>The Bend Score System</h2>
+
+Every creature's power is determined by its <strong>Bend Score</strong> — the
+number of geometric bends in its 3D model. Simple creatures are fast and cheap
+to print. Complex legendary creatures with intricate designs have massive power.
+Bigger really does mean stronger.
+
+<h2>8 Elements. Deep Strategy.</h2>
+
+Fire beats Nature. Water beats Fire. Lightning beats Water. Combine creature
+types, abilities, and equipment to build a team with real strategic depth. Every
+battle rewards smart play over grinding.
+
+<h2>Learn While You Play</h2>
+
+The Academy offers math mini-games from basic addition all the way to
+pre-algebra. Complete quests to earn <strong>Forge Coins</strong> — the
+currency you need to buy blueprint instructions and print new creatures. The
+better you do, the more you earn.
+
+<h2>Your Workshop, Your World</h2>
+
+Every player has a personal Workshop hub — a living space where your printed
+creatures roam free in the Print Yard, your trophy wall displays your victories,
+and your Filament Spool grows larger and more elaborate as you level up.
+
+<h2>The Forgedex</h2>
+
+Discover, collect, and track all 15 launch creatures in your Forgedex. Spot a
+creature in battle? It appears as a silhouette — a mystery waiting to be
+unlocked. The full roster is never revealed. Some prints are so rare that almost
+nobody has seen them.
+
+<h2>Features</h2>
+
+<ul>
+<li>15 unique creatures across 5 rarity tiers at launch</li>
+<li>Full equipment system — armor, weapons, and accessories</li>
+<li>5 AI trainers with escalating difficulty</li>
+<li>4 educational math quest types</li>
+<li>8-element type chart with strategic matchups</li>
+<li>Local save — no internet required, no account needed</li>
+<li>Steam Cloud Save support</li>
+<li>Steam achievements</li>
+</ul>
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEAM TAGS (select these on your store page)
+# ─────────────────────────────────────────────────────────────────────────────
+
+Card Game
+Turn-Based
+Creature Collector
+Singleplayer
+Family Friendly
+2D
+Colorful
+Casual
+Strategy
+Educational
+Fantasy
+RPG
+Anime
+Cute
+Pixel Graphics
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONTENT SURVEY ANSWERS (Steamworks > Store Page > Content Survey)
+# ─────────────────────────────────────────────────────────────────────────────
+
+Does your game include violence or gore?
+→ YES — but very mild. Creatures are 3D plastic figurines that shatter
+  when defeated. No blood, no realistic violence.
+
+Does your game include adult-only content?
+→ NO
+
+Does your game include content that could be considered offensive?
+→ NO
+
+Suggested age rating: E for Everyone (ESRB) / 3+ (PEGI)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SYSTEM REQUIREMENTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+MINIMUM:
+  OS: Windows 10 64-bit
+  Processor: Intel Core i3 or AMD equivalent
+  Memory: 2 GB RAM
+  Graphics: Any GPU with OpenGL 3.3 support
+  Storage: 500 MB available space
+
+RECOMMENDED:
+  OS: Windows 10/11 64-bit
+  Processor: Intel Core i5 or AMD Ryzen 5
+  Memory: 4 GB RAM
+  Graphics: Dedicated GPU (GTX 750 Ti or equivalent)
+  Storage: 500 MB available space
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRICE
+# ─────────────────────────────────────────────────────────────────────────────
+
+USD: $9.99
+(Steamworks will auto-convert to regional pricing)
+Consider a 10% launch discount for the first 7 days.
