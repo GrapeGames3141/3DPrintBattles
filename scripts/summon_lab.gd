@@ -5,7 +5,18 @@ const BASE_RESOURCE_PATH := "res://assets/models/relic_bases_mobile.glb"
 const LAYER_SHADER := preload("res://shaders/layer_print.gdshader")
 
 const MODELS := [
-	{"label": "Ironbound Goblin Warrior", "resource": CREATURE_RESOURCE_PATH},
+	{
+		"label": "Ironbound Goblin Warrior",
+		"resource": CREATURE_RESOURCE_PATH,
+		"stats": {
+			"health": 24,
+			"defense": 6,
+			"offense": 8,
+			"range": 0,
+			"cost": 3,
+			"attack_types": ["Melee"],
+		},
+	},
 ]
 
 const BASE_Y := 0.14
@@ -14,6 +25,14 @@ const CREATURE_FOOT_Y := 0.29
 const REVEAL_TOP_Y := 2.35
 const SUMMON_DELAY := 0.65
 const SUMMON_DURATION := 2.35
+const DEFAULT_DISPLAY_POSITION := Vector3(1.35, 0.0, 0.0)
+const DEFAULT_ORBIT_Y := -0.18
+const DEFAULT_ORBIT_PITCH := -0.04
+const DEFAULT_CAMERA_FOV := 38.0
+const MIN_CAMERA_FOV := 24.0
+const MAX_CAMERA_FOV := 58.0
+const BASE_INSPECT_LIFT := Vector3(0.0, 0.78, 0.0)
+const BASE_INSPECT_ANGLE := 3.9269908
 
 const LOOPING_ANIMATIONS := ["Run", "Walk", "WalkBackward"]
 
@@ -43,6 +62,7 @@ const STRENGTHS := [
 ]
 
 var display_root: Node3D
+var base_flip_root: Node3D
 var base_anchor: Node3D
 var creature_anchor: Node3D
 var badge_anchor: Node3D
@@ -57,18 +77,26 @@ var scan_ring: MeshInstance3D
 var spark_particles: GPUParticles3D
 var rank_chevron_pairs := []
 var current_tween: Tween
+var view_tween: Tween
 var summon_generation := 0
+var stats_viewport: SubViewport
+var stats_sprite: Sprite3D
+var camera: Camera3D
+var is_inspecting_base := false
+var active_touches := {}
+var pinch_distance := -1.0
 
 var model_option: OptionButton
 var rarity_option: OptionButton
 var strength_option: OptionButton
 var animation_option: OptionButton
 var play_button: Button
+var reset_button: Button
 var status_label: Label
 var accent_bar: ColorRect
 
-var orbit_y := -0.18
-var orbit_pitch := -0.04
+var orbit_y := DEFAULT_ORBIT_Y
+var orbit_pitch := DEFAULT_ORBIT_PITCH
 
 
 func _ready() -> void:
@@ -90,12 +118,17 @@ func _ready() -> void:
 	else:
 		var capture_path := ""
 		var capture_clip := ""
+		var capture_base_path := ""
 		for arg in args:
 			if arg.begins_with("--capture="):
 				capture_path = arg.trim_prefix("--capture=")
 			elif arg.begins_with("--capture-clip="):
 				capture_clip = arg.trim_prefix("--capture-clip=")
-		if not capture_path.is_empty():
+			elif arg.begins_with("--capture-base="):
+				capture_base_path = arg.trim_prefix("--capture-base=")
+		if not capture_base_path.is_empty():
+			call_deferred("_run_base_capture", capture_base_path)
+		elif not capture_path.is_empty():
 			if capture_clip.is_empty():
 				call_deferred("_run_capture", capture_path)
 			else:
@@ -108,14 +141,36 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventScreenDrag:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			active_touches[event.index] = event.position
+		else:
+			active_touches.erase(event.index)
+		pinch_distance = _current_pinch_distance()
+	elif event is InputEventScreenDrag:
+		active_touches[event.index] = event.position
+		if active_touches.size() >= 2:
+			var next_distance := _current_pinch_distance()
+			if pinch_distance > 0.0 and next_distance > 0.0:
+				_set_camera_fov(camera.fov - (next_distance - pinch_distance) * 0.035)
+			pinch_distance = next_distance
+			return
+		if is_inspecting_base:
+			return
 		orbit_y -= event.relative.x * 0.009
 		orbit_pitch = clamp(orbit_pitch - event.relative.y * 0.004, -0.18, 0.16)
 		_apply_orbit()
-	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not is_inspecting_base:
 		orbit_y -= event.relative.x * 0.009
 		orbit_pitch = clamp(orbit_pitch - event.relative.y * 0.004, -0.18, 0.16)
 		_apply_orbit()
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_set_camera_fov(camera.fov - 2.0)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_set_camera_fov(camera.fov + 2.0)
+	elif event is InputEventMagnifyGesture:
+		_set_camera_fov(camera.fov / maxf(event.factor, 0.1))
 
 
 func _build_world() -> void:
@@ -123,9 +178,13 @@ func _build_world() -> void:
 	display_root.name = "DisplayRoot"
 	add_child(display_root)
 
+	base_flip_root = Node3D.new()
+	base_flip_root.name = "BaseFlipRoot"
+	display_root.add_child(base_flip_root)
+
 	base_anchor = Node3D.new()
 	base_anchor.name = "BaseAnchor"
-	display_root.add_child(base_anchor)
+	base_flip_root.add_child(base_anchor)
 
 	creature_anchor = Node3D.new()
 	creature_anchor.name = "CreatureAnchor"
@@ -134,7 +193,7 @@ func _build_world() -> void:
 
 	badge_anchor = Node3D.new()
 	badge_anchor.name = "RankBadgeAnchor"
-	display_root.add_child(badge_anchor)
+	base_flip_root.add_child(badge_anchor)
 
 	var world_environment := WorldEnvironment.new()
 	world_environment.name = "WorldEnvironment"
@@ -172,9 +231,9 @@ func _build_world() -> void:
 	rim_light.omni_range = 5.0
 	add_child(rim_light)
 
-	var camera := Camera3D.new()
+	camera = Camera3D.new()
 	camera.name = "Camera3D"
-	camera.fov = 38.0
+	camera.fov = DEFAULT_CAMERA_FOV
 	camera.position = Vector3(3.05, 2.45, 5.15)
 	add_child(camera)
 	camera.look_at(Vector3(0.0, 0.92, 0.0), Vector3.UP)
@@ -211,6 +270,7 @@ func _build_assets() -> void:
 			mesh.position.y = BASE_Y
 			mesh.visible = false
 			base_meshes[mesh.name] = mesh
+	_build_stats_label()
 
 	var creature_resource := load(CREATURE_RESOURCE_PATH) as PackedScene
 	if creature_resource == null:
@@ -246,7 +306,7 @@ func _build_ui() -> void:
 	panel.offset_left = 20.0
 	panel.offset_top = 18.0
 	panel.offset_right = 470.0
-	panel.offset_bottom = 374.0
+	panel.offset_bottom = 382.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.035, 0.065, 0.105, 0.94)
 	panel_style.border_color = Color("#31516e")
@@ -303,12 +363,24 @@ func _build_ui() -> void:
 
 	animation_option = _add_selector_row(grid, "Animation")
 
+	var button_row := HBoxContainer.new()
+	button_row.add_theme_constant_override("separation", 10)
+	content.add_child(button_row)
+
 	play_button = Button.new()
 	play_button.text = "PRINT / PLAY"
 	play_button.custom_minimum_size.y = 54.0
+	play_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play_button.add_theme_font_size_override("font_size", 18)
 	play_button.pressed.connect(_play_selected_animation)
-	content.add_child(play_button)
+	button_row.add_child(play_button)
+
+	reset_button = Button.new()
+	reset_button.text = "RESET"
+	reset_button.custom_minimum_size = Vector2(112.0, 54.0)
+	reset_button.add_theme_font_size_override("font_size", 16)
+	reset_button.pressed.connect(_reset_all)
+	button_row.add_child(reset_button)
 
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -318,7 +390,7 @@ func _build_ui() -> void:
 	content.add_child(status_label)
 
 	var hint := Label.new()
-	hint.text = "Drag the creature to rotate • Base and badge stay visible before printing"
+	hint.text = "Drag to rotate  •  Pinch or wheel to zoom  •  Reset restores the view"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -330,7 +402,7 @@ func _build_ui() -> void:
 	hint.add_theme_color_override("font_color", Color("#91afc5"))
 	safe_root.add_child(hint)
 
-	display_root.position.x = 1.35
+	display_root.position = DEFAULT_DISPLAY_POSITION
 
 
 func _add_selector_row(grid: GridContainer, label_text: String) -> OptionButton:
@@ -350,7 +422,7 @@ func _add_selector_row(grid: GridContainer, label_text: String) -> OptionButton:
 func _setup_rank_badge(mesh: MeshInstance3D) -> void:
 	mesh.reparent(badge_anchor)
 	mesh.name = "RankBadgeShield"
-	badge_anchor.position = Vector3(0.0, 0.205, 0.72)
+	badge_anchor.position = Vector3(0.0, 0.265, 0.72)
 	badge_anchor.rotation_degrees = Vector3.ZERO
 	mesh.position = Vector3.ZERO
 	mesh.rotation_degrees = Vector3.ZERO
@@ -375,6 +447,116 @@ func _setup_rank_badge(mesh: MeshInstance3D) -> void:
 			badge_anchor.add_child(segment)
 			pair.append(segment)
 		rank_chevron_pairs.append(pair)
+
+
+func _build_stats_label() -> void:
+	stats_viewport = SubViewport.new()
+	stats_viewport.name = "UnitStatsLabelViewport"
+	stats_viewport.size = Vector2i(768, 420)
+	stats_viewport.transparent_bg = true
+	stats_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(stats_viewport)
+
+	var paper_root := Control.new()
+	paper_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stats_viewport.add_child(paper_root)
+
+	var shadow := Panel.new()
+	shadow.position = Vector2(28.0, 30.0)
+	shadow.size = Vector2(720.0, 370.0)
+	var shadow_style := StyleBoxFlat.new()
+	shadow_style.bg_color = Color(0.10, 0.055, 0.025, 0.55)
+	shadow_style.corner_radius_top_left = 26
+	shadow_style.corner_radius_top_right = 18
+	shadow_style.corner_radius_bottom_left = 18
+	shadow_style.corner_radius_bottom_right = 28
+	shadow.add_theme_stylebox_override("panel", shadow_style)
+	paper_root.add_child(shadow)
+
+	var panel := PanelContainer.new()
+	panel.position = Vector2(18.0, 18.0)
+	panel.size = Vector2(720.0, 370.0)
+	var paper_style := StyleBoxFlat.new()
+	paper_style.bg_color = Color("#d6b674")
+	paper_style.border_color = Color("#57371f")
+	paper_style.set_border_width_all(7)
+	paper_style.corner_radius_top_left = 26
+	paper_style.corner_radius_top_right = 18
+	paper_style.corner_radius_bottom_left = 18
+	paper_style.corner_radius_bottom_right = 28
+	panel.add_theme_stylebox_override("panel", paper_style)
+	paper_root.add_child(panel)
+
+	var inset := MarginContainer.new()
+	inset.add_theme_constant_override("margin_left", 28)
+	inset.add_theme_constant_override("margin_right", 28)
+	inset.add_theme_constant_override("margin_top", 18)
+	inset.add_theme_constant_override("margin_bottom", 18)
+	panel.add_child(inset)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 7)
+	inset.add_child(column)
+
+	var title := Label.new()
+	title.text = "IRONBOUND GOBLIN WARRIOR"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_color_override("font_color", Color("#3f2819"))
+	column.add_child(title)
+
+	var ledger := Label.new()
+	ledger.text = "—  UNIT LEDGER  —"
+	ledger.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ledger.add_theme_font_size_override("font_size", 22)
+	ledger.add_theme_color_override("font_color", Color("#6d4425"))
+	column.add_child(ledger)
+
+	var rule := ColorRect.new()
+	rule.color = Color("#6b4326")
+	rule.custom_minimum_size.y = 3.0
+	column.add_child(rule)
+
+	var stats: Dictionary = MODELS[0]["stats"]
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 20)
+	grid.add_theme_constant_override("v_separation", 5)
+	column.add_child(grid)
+	_add_stat_cell(grid, "HEALTH", str(stats["health"]))
+	_add_stat_cell(grid, "DEFENSE", str(stats["defense"]))
+	_add_stat_cell(grid, "OFFENSE", str(stats["offense"]))
+	_add_stat_cell(grid, "RANGE", str(stats["range"]))
+	_add_stat_cell(grid, "COST", str(stats["cost"]))
+	var attack_types: Array = stats["attack_types"]
+	_add_stat_cell(grid, "ATTACK TYPE", ", ".join(attack_types).to_upper())
+
+	stats_sprite = Sprite3D.new()
+	stats_sprite.name = "ParchmentStatsSticker"
+	stats_sprite.texture = stats_viewport.get_texture()
+	stats_sprite.pixel_size = 0.00182
+	stats_sprite.position = Vector3(0.0, -0.028, 0.0)
+	stats_sprite.rotation_degrees = Vector3(90.0, 0.0, 0.0)
+	stats_sprite.double_sided = true
+	stats_sprite.shaded = false
+	stats_sprite.visible = false
+	base_flip_root.add_child(stats_sprite)
+
+
+func _add_stat_cell(grid: GridContainer, stat_name: String, value: String) -> void:
+	var name_label := Label.new()
+	name_label.text = stat_name
+	name_label.custom_minimum_size.x = 132.0
+	name_label.add_theme_font_size_override("font_size", 23)
+	name_label.add_theme_color_override("font_color", Color("#704727"))
+	grid.add_child(name_label)
+	var value_label := Label.new()
+	value_label.text = value
+	value_label.custom_minimum_size.x = 110.0
+	value_label.add_theme_font_size_override("font_size", 31)
+	value_label.add_theme_color_override("font_color", Color("#352116"))
+	grid.add_child(value_label)
 
 
 func _build_scan_effect() -> void:
@@ -472,6 +654,8 @@ func _populate_animation_selector() -> void:
 	animation_option.set_item_metadata(0, {"kind": "summon"})
 	animation_option.add_item("Static Showcase")
 	animation_option.set_item_metadata(1, {"kind": "static"})
+	animation_option.add_item("Show Base — Unit Stats")
+	animation_option.set_item_metadata(2, {"kind": "inspect_base"})
 	embedded_animations.clear()
 	if animation_player != null:
 		for library_name in animation_player.get_animation_library_list():
@@ -542,6 +726,8 @@ func _play_selected_animation() -> void:
 		"static":
 			_show_creature_immediately()
 			_update_status("Static showcase — drag to inspect the current model.")
+		"inspect_base":
+			_play_base_inspect()
 		"embedded":
 			_show_creature_immediately()
 			if animation_player != null and animation_player.has_animation(metadata["name"]):
@@ -552,6 +738,7 @@ func _play_selected_animation() -> void:
 func _play_layer_summon() -> void:
 	summon_generation += 1
 	var generation := summon_generation
+	_restore_base_pose()
 	if current_tween != null and current_tween.is_valid():
 		current_tween.kill()
 	if animation_player != null:
@@ -583,14 +770,71 @@ func _play_layer_summon() -> void:
 	)
 
 
+func _play_base_inspect() -> void:
+	summon_generation += 1
+	if current_tween != null and current_tween.is_valid():
+		current_tween.kill()
+	if animation_player != null:
+		animation_player.stop()
+	_restore_base_pose()
+	is_inspecting_base = true
+	creature_scene_instance.visible = false
+	stats_sprite.visible = true
+	scan_ring.visible = false
+	spark_particles.emitting = false
+	_update_status("Turning the base over to reveal the unit ledger…")
+	view_tween = create_tween().set_parallel(true)
+	view_tween.set_trans(Tween.TRANS_CUBIC)
+	view_tween.set_ease(Tween.EASE_IN_OUT)
+	view_tween.tween_property(base_flip_root, "rotation", Vector3(BASE_INSPECT_ANGLE, 0.0, 0.0), 0.9)
+	view_tween.tween_property(base_flip_root, "position", BASE_INSPECT_LIFT, 0.9)
+	view_tween.finished.connect(func() -> void:
+		var stats: Dictionary = MODELS[model_option.selected]["stats"]
+		var attacks: Array = stats["attack_types"]
+		_update_status("Unit ledger • HP %s • DEF %s • OFF %s • RNG %s • COST %s • %s" % [stats["health"], stats["defense"], stats["offense"], stats["range"], stats["cost"], ", ".join(attacks)])
+	)
+
+
 func _show_creature_immediately() -> void:
 	summon_generation += 1
 	if current_tween != null and current_tween.is_valid():
 		current_tween.kill()
+	_restore_base_pose()
 	creature_scene_instance.visible = true
 	_set_reveal_height(100.0)
 	scan_ring.visible = false
 	spark_particles.emitting = false
+
+
+func _restore_base_pose() -> void:
+	if view_tween != null and view_tween.is_valid():
+		view_tween.kill()
+	is_inspecting_base = false
+	base_flip_root.position = Vector3.ZERO
+	base_flip_root.rotation = Vector3.ZERO
+	if stats_sprite != null:
+		stats_sprite.visible = false
+
+
+func _reset_all() -> void:
+	_show_creature_immediately()
+	if animation_player != null:
+		animation_player.stop()
+	model_option.select(0)
+	rarity_option.select(0)
+	strength_option.select(0)
+	animation_option.select(0)
+	_apply_model(0)
+	_apply_rarity(0)
+	_apply_strength(0)
+	orbit_y = DEFAULT_ORBIT_Y
+	orbit_pitch = DEFAULT_ORBIT_PITCH
+	display_root.position = DEFAULT_DISPLAY_POSITION
+	_apply_orbit()
+	_set_camera_fov(DEFAULT_CAMERA_FOV)
+	active_touches.clear()
+	pinch_distance = -1.0
+	_update_status("Reset complete — default model, base, rank, animation, rotation, and zoom restored.")
 
 
 func _set_reveal_height(value: float) -> void:
@@ -604,6 +848,18 @@ func _set_reveal_height(value: float) -> void:
 
 func _apply_orbit() -> void:
 	display_root.rotation = Vector3(orbit_pitch, orbit_y, 0.0)
+
+
+func _set_camera_fov(value: float) -> void:
+	if camera != null:
+		camera.fov = clampf(value, MIN_CAMERA_FOV, MAX_CAMERA_FOV)
+
+
+func _current_pinch_distance() -> float:
+	if active_touches.size() < 2:
+		return -1.0
+	var positions: Array = active_touches.values()
+	return (positions[0] as Vector2).distance_to(positions[1] as Vector2)
 
 
 func _update_status(message := "") -> void:
@@ -631,14 +887,22 @@ func _run_smoke_test() -> void:
 	assert(base_meshes.size() == 6, "Expected six selectable bases")
 	assert(model_option.item_count == 1, "Expected the initial goblin model entry")
 	assert(model_option.get_item_text(0) == MODELS[0]["label"], "Unexpected initial model label")
+	var goblin_stats: Dictionary = MODELS[0]["stats"]
+	assert(goblin_stats["health"] == 24 and goblin_stats["defense"] == 6, "Unexpected goblin durability stats")
+	assert(goblin_stats["offense"] == 8 and goblin_stats["range"] == 0 and goblin_stats["cost"] == 3, "Unexpected goblin combat stats")
+	assert((goblin_stats["attack_types"] as Array).has("Melee"), "Expected melee attack type")
 	assert(creature_meshes.size() > 0, "Expected a creature mesh")
 	assert(summon_materials.size() > 0, "Expected summon shader materials")
 	assert(rank_chevron_pairs.size() == 3, "Expected three rank chevrons")
+	assert(stats_sprite != null, "Expected a parchment stats sticker")
 	var orbit_before := orbit_y
 	var synthetic_drag := InputEventScreenDrag.new()
 	synthetic_drag.relative = Vector2(24.0, 0.0)
 	_unhandled_input(synthetic_drag)
 	assert(not is_equal_approx(orbit_before, orbit_y), "Expected drag input to rotate the display")
+	var fov_before := camera.fov
+	_set_camera_fov(fov_before - 5.0)
+	assert(camera.fov < fov_before, "Expected zoom input to change the camera FOV")
 	for rarity_index in range(RARITIES.size()):
 		rarity_option.select(rarity_index)
 		_apply_rarity(rarity_index)
@@ -657,6 +921,14 @@ func _run_smoke_test() -> void:
 	_apply_strength(2)
 	_play_layer_summon()
 	await get_tree().create_timer(SUMMON_DELAY + SUMMON_DURATION + 0.4).timeout
+	_play_base_inspect()
+	await get_tree().create_timer(1.05).timeout
+	assert(stats_sprite.visible, "Expected the underside stats label during base inspection")
+	assert(is_equal_approx(base_flip_root.rotation.x, BASE_INSPECT_ANGLE), "Expected the base to flip toward the camera")
+	_reset_all()
+	assert(not stats_sprite.visible and creature_scene_instance.visible, "Expected reset to restore the creature view")
+	assert(is_equal_approx(camera.fov, DEFAULT_CAMERA_FOV), "Expected reset to restore zoom")
+	assert(is_equal_approx(orbit_y, DEFAULT_ORBIT_Y) and is_equal_approx(orbit_pitch, DEFAULT_ORBIT_PITCH), "Expected reset to restore orientation")
 	print("SUMMON_LAB_SMOKE_TEST_OK bases=%d creature_meshes=%d materials=%d embedded_animations=%d" % [base_meshes.size(), creature_meshes.size(), summon_materials.size(), embedded_animations.size()])
 	get_tree().quit(0)
 
@@ -690,4 +962,15 @@ func _run_animation_capture(path: String, clip_name: String) -> void:
 	var image := get_viewport().get_texture().get_image()
 	var error := image.save_png(path)
 	print("SUMMON_LAB_ANIMATION_CAPTURE clip=%s path=%s error=%d" % [clip_name, path, error])
+	get_tree().quit(0 if error == OK else 2)
+
+
+func _run_base_capture(path: String) -> void:
+	await get_tree().process_frame
+	_play_base_inspect()
+	await get_tree().create_timer(1.05).timeout
+	await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	var error := image.save_png(path)
+	print("SUMMON_LAB_BASE_CAPTURE path=%s error=%d" % [path, error])
 	get_tree().quit(0 if error == OK else 2)

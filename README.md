@@ -7,13 +7,16 @@ Windows-first Godot prototype for reviewing a creature, its rarity base, strengt
 - **Model:** selects the active creature. The initial build contains Ironbound Goblin Warrior; additional model resources can be added to `MODELS` in `scripts/summon_lab.gd`.
 - **Rarity / base:** selects one of six extracted base materials.
 - **Strength:** lights one, two, or three chevrons on the separate shield badge.
-- **Animation:** plays the layer-print summon, shows the model immediately, or plays one of the seven embedded goblin animations.
+- **Animation:** plays the layer-print summon, shows the model immediately, flips the base to its unit ledger, or plays one of the seven embedded goblin animations.
 - **Print / Play:** runs the selected mode.
-- Drag the 3D area to rotate the display.
+- **Reset:** restores the default model, rarity, strength, animation, orientation, and zoom.
+- Drag the 3D area to rotate the display. Pinch on a touchscreen or use the mouse wheel to zoom.
+
+The bottom of every base can carry a parchment-style unit ledger. The initial Ironbound Goblin Warrior is a low-cost melee unit with Health 24, Defense 6, Offense 8, Range 0, and Cost 3. Attack types are stored as a list so future units can combine Melee, Ranged, Magic, Healer, and Support roles.
 
 The summon begins with the empty selected base and rank badge. After a short pause, the goblin is revealed from its feet upward using a world-height shader, a bright filament scan ring, cooling horizontal layer lines, and mobile-safe sparks.
 
-The rank badge is deliberately rim-height and tilted 12 degrees backward so it reads as a small physical marker instead of obscuring the miniature. The goblin's round shield is rigid-bound to its left hand during asset preparation to prevent auto-weight deformation in action clips.
+The rank badge is deliberately small, flat at the front edge, and raised just above the rim so it reads as a physical marker without obscuring the miniature. The goblin's round shield is rigid-bound to its left hand during asset preparation to prevent auto-weight deformation in action clips.
 
 ## Replacing the goblin GLB
 
@@ -43,7 +46,7 @@ Godot_v4.7.1-stable_win64_console.exe --headless --editor --path . --quit-after 
 Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --smoke-test
 ```
 
-The smoke test exercises all six rarity bases, all three strength ranks, the summon shader, and animation discovery. Success prints `SUMMON_LAB_SMOKE_TEST_OK`.
+The smoke test exercises all six rarity bases, all three strength ranks, the summon shader, animation discovery, the underside unit ledger, zoom, and full reset. Success prints `SUMMON_LAB_SMOKE_TEST_OK`.
 
 The release was also exercised on a Pixel 9 Pro: full-width landscape rendering, selector input, summon playback, and touch-drag rotation were confirmed on-device.
 
@@ -52,6 +55,6 @@ The release was also exercised on a Pixel 9 Pro: full-width landscape rendering,
 The repository contains a Windows Desktop preset as the primary target and an arm64 Android demo preset targeting SDK 35.
 
 ```powershell
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Summon-Lab-0.1.1.exe
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Demo" builds/android/PrintForge-Summon-Lab-0.1.1-arm64.apk
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Summon-Lab-0.2.0.exe
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Demo" builds/android/PrintForge-Summon-Lab-0.2.0-arm64.apk
 ```

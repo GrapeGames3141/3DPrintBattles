@@ -1,8 +1,8 @@
 .godot/
+*.import
 builds/
 *.apk
 *.aab
 *.keystore
 *.jks
 previews/capture-*.png
-
