@@ -4,6 +4,7 @@ Windows-first Godot prototype for reviewing a creature, its rarity base, strengt
 
 ## Current controls
 
+- **Model:** selects the active creature. The initial build contains Ironbound Goblin Warrior; additional model resources can be added to `MODELS` in `scripts/summon_lab.gd`.
 - **Rarity / base:** selects one of six extracted base materials.
 - **Strength:** lights one, two, or three chevrons on the separate shield badge.
 - **Animation:** plays the layer-print summon, shows the model immediately, or plays one of the seven embedded goblin animations.
@@ -51,6 +52,6 @@ The release was also exercised on a Pixel 9 Pro: full-width landscape rendering,
 The repository contains a Windows Desktop preset as the primary target and an arm64 Android demo preset targeting SDK 35.
 
 ```powershell
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Summon-Lab-0.1.0.exe
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Demo" builds/android/PrintForge-Summon-Lab-0.1.0-arm64.apk
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Summon-Lab-0.1.1.exe
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Demo" builds/android/PrintForge-Summon-Lab-0.1.1-arm64.apk
 ```

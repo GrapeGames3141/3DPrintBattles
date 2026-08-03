@@ -4,6 +4,10 @@ const CREATURE_RESOURCE_PATH := "res://assets/models/ironbound_goblin_animated_v
 const BASE_RESOURCE_PATH := "res://assets/models/relic_bases_mobile.glb"
 const LAYER_SHADER := preload("res://shaders/layer_print.gdshader")
 
+const MODELS := [
+	{"label": "Ironbound Goblin Warrior", "resource": CREATURE_RESOURCE_PATH},
+]
+
 const BASE_Y := 0.14
 const BASE_SCALE := Vector3(3.4, 1.8, 3.4)
 const CREATURE_FOOT_Y := 0.29
@@ -55,6 +59,7 @@ var rank_chevron_pairs := []
 var current_tween: Tween
 var summon_generation := 0
 
+var model_option: OptionButton
 var rarity_option: OptionButton
 var strength_option: OptionButton
 var animation_option: OptionButton
@@ -241,7 +246,7 @@ func _build_ui() -> void:
 	panel.offset_left = 20.0
 	panel.offset_top = 18.0
 	panel.offset_right = 470.0
-	panel.offset_bottom = 328.0
+	panel.offset_bottom = 374.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.035, 0.065, 0.105, 0.94)
 	panel_style.border_color = Color("#31516e")
@@ -280,6 +285,11 @@ func _build_ui() -> void:
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 8)
 	content.add_child(grid)
+
+	model_option = _add_selector_row(grid, "Model")
+	for model in MODELS:
+		model_option.add_item(model["label"])
+	model_option.item_selected.connect(_apply_model)
 
 	rarity_option = _add_selector_row(grid, "Rarity / base")
 	for rarity in RARITIES:
@@ -340,10 +350,10 @@ func _add_selector_row(grid: GridContainer, label_text: String) -> OptionButton:
 func _setup_rank_badge(mesh: MeshInstance3D) -> void:
 	mesh.reparent(badge_anchor)
 	mesh.name = "RankBadgeShield"
-	badge_anchor.position = Vector3(0.0, 0.21, 0.82)
-	badge_anchor.rotation_degrees.x = -12.0
+	badge_anchor.position = Vector3(0.0, 0.205, 0.72)
+	badge_anchor.rotation_degrees = Vector3.ZERO
 	mesh.position = Vector3.ZERO
-	mesh.rotation_degrees = Vector3(90.0, 0.0, 0.0)
+	mesh.rotation_degrees = Vector3.ZERO
 	mesh.scale = Vector3.ONE * 0.9
 	var badge_material := StandardMaterial3D.new()
 	badge_material.albedo_color = Color("#182431")
@@ -353,15 +363,15 @@ func _setup_rank_badge(mesh: MeshInstance3D) -> void:
 
 	for rank_index in range(3):
 		var pair := []
-		var center_y := 0.05 - float(rank_index) * 0.05
+		var center_z := 0.05 - float(rank_index) * 0.05
 		for side in [-1, 1]:
 			var segment := MeshInstance3D.new()
 			segment.name = "RankChevron_%d_%s" % [rank_index + 1, "L" if side == -1 else "R"]
 			var bar := BoxMesh.new()
-			bar.size = Vector3(0.058, 0.016, 0.014)
+			bar.size = Vector3(0.058, 0.014, 0.016)
 			segment.mesh = bar
-			segment.position = Vector3(float(side) * 0.023, center_y, 0.108)
-			segment.rotation_degrees.z = float(side) * 29.0
+			segment.position = Vector3(float(side) * 0.023, 0.108, -center_z)
+			segment.rotation_degrees.y = -float(side) * 29.0
 			badge_anchor.add_child(segment)
 			pair.append(segment)
 		rank_chevron_pairs.append(pair)
@@ -493,6 +503,11 @@ func _apply_rarity(index: int) -> void:
 	_update_status()
 
 
+func _apply_model(index: int) -> void:
+	model_option.select(clampi(index, 0, MODELS.size() - 1))
+	_update_status()
+
+
 func _apply_strength(index: int) -> void:
 	index = clampi(index, 0, STRENGTHS.size() - 1)
 	for chevron_index in range(rank_chevron_pairs.size()):
@@ -614,6 +629,8 @@ func _collect_mesh_instances(root: Node) -> Array:
 func _run_smoke_test() -> void:
 	await get_tree().process_frame
 	assert(base_meshes.size() == 6, "Expected six selectable bases")
+	assert(model_option.item_count == 1, "Expected the initial goblin model entry")
+	assert(model_option.get_item_text(0) == MODELS[0]["label"], "Unexpected initial model label")
 	assert(creature_meshes.size() > 0, "Expected a creature mesh")
 	assert(summon_materials.size() > 0, "Expected summon shader materials")
 	assert(rank_chevron_pairs.size() == 3, "Expected three rank chevrons")
