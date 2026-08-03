@@ -1,0 +1,192 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\ironbound_goblin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.763716,
+        -0.596201,
+        -0.950625
+      ],
+      "max": [
+        0.763158,
+        0.597521,
+        0.9482
+      ],
+      "size": [
+        1.526874,
+        1.193722,
+        1.898825
+      ],
+      "center": [
+        -0.000279,
+        0.00066,
+        -0.001213
+      ]
+    },
+    "objects": [
+      {
+        "name": "mesh_node",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 494769,
+        "polygons": 952776,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\relic_discs_and_crest.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.950546,
+        -0.948702,
+        -0.151111
+      ],
+      "max": [
+        0.948714,
+        0.950638,
+        0.151415
+      ],
+      "size": [
+        1.89926,
+        1.89934,
+        0.302526
+      ],
+      "center": [
+        -0.000916,
+        0.000968,
+        0.000152
+      ]
+    },
+    "objects": [
+      {
+        "name": "mesh_node",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 304534,
+        "polygons": 565558,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  }
+]

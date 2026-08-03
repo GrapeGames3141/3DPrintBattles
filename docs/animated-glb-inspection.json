@@ -1,0 +1,1050 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_falling_down_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.399777
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.399777
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.199888
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|falling_down|baselayer",
+        "frame_range": [
+          0.8,
+          55.199997
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_Right_Hand_Sword_Slash_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.280142
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.280142
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.140071
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|Right_Hand_Sword_Slash|baselayer",
+        "frame_range": [
+          0.8,
+          36.799999
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_Running_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.39645
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.39645
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.198225
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|running|baselayer",
+        "frame_range": [
+          0.8,
+          16.0
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_Stand_Up7_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.0
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.0
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|Stand_Up7|baselayer",
+        "frame_range": [
+          0.8,
+          66.400002
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_Sword_and_Shield_Alert_Turn_Left_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.258961
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.258961
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.12948
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|Sword_and_Shield_Alert_Turn_Left|baselayer",
+        "frame_range": [
+          0.8,
+          32.799999
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_Walk_Backward_with_Sword_inplace_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.344345
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.344345
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.172173
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|Walk_Backward_with_Sword_inplace|baselayer",
+        "frame_range": [
+          0.8,
+          33.599998
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Animation_Walking_withSkin.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.406794
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.406794
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.203397
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|walking_man|baselayer",
+        "frame_range": [
+          0.8,
+          25.600002
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Character_output.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.4
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.4
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.2
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104226,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|clip0|baselayer",
+        "frame_range": [
+          0.8,
+          0.8
+        ],
+        "channels": 240
+      }
+    ]
+  }
+]

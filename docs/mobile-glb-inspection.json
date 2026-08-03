@@ -1,0 +1,342 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\ironbound_goblin_mobile.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.763598,
+        -0.596914,
+        0.0
+      ],
+      "max": [
+        0.763598,
+        0.596914,
+        1.899342
+      ],
+      "size": [
+        1.527196,
+        1.193828,
+        1.899342
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.949671
+      ]
+    },
+    "objects": [
+      {
+        "name": "IronboundGoblin",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 56739,
+        "polygons": 84999,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\relic_bases_mobile.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.247049,
+        -0.248168,
+        -0.15144
+      ],
+      "max": [
+        0.246985,
+        0.248136,
+        0.151146
+      ],
+      "size": [
+        0.494034,
+        0.496304,
+        0.302586
+      ],
+      "center": [
+        -3.2e-05,
+        -1.6e-05,
+        -0.000147
+      ]
+    },
+    "objects": [
+      {
+        "name": "BaseWood",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 12175,
+        "polygons": 17999,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BaseSteel",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 12000,
+        "polygons": 18000,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BaseStone",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 12485,
+        "polygons": 17999,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BaseCarbon",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 12209,
+        "polygons": 18000,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "SourceCrest",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 5347,
+        "polygons": 10000,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BaseBronze",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 11461,
+        "polygons": 17999,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BaseCrystal",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 12120,
+        "polygons": 17999,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  }
+]

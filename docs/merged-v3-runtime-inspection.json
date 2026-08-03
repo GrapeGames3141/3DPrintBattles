@@ -1,0 +1,201 @@
+[
+  {
+    "path": ".\\staging\\3dprint\\assets\\models\\ironbound_goblin_animated_v3.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.235036
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.235036
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.117518
+      ]
+    },
+    "objects": [
+      {
+        "name": "IronboundGoblinAnimated",
+        "type": "EMPTY",
+        "parent": null,
+        "location": [
+          0.05626,
+          -0.003356,
+          -0.024045
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "name": "IronboundGoblinRig",
+        "type": "ARMATURE",
+        "parent": "IronboundGoblinAnimated",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "IronboundGoblinSkinnedMesh",
+        "type": "MESH",
+        "parent": "IronboundGoblinRig",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 93587,
+        "polygons": 90000,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0.001",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "AlertTurnLeft",
+        "frame_range": [
+          0.0,
+          32.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Fall",
+        "frame_range": [
+          0.0,
+          54.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Run",
+        "frame_range": [
+          0.0,
+          15.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "StandUp",
+        "frame_range": [
+          0.0,
+          65.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "SwordSlash",
+        "frame_range": [
+          0.0,
+          36.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Walk",
+        "frame_range": [
+          0.0,
+          24.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "WalkBackward",
+        "frame_range": [
+          0.0,
+          32.0
+        ],
+        "channels": 240
+      }
+    ]
+  }
+]

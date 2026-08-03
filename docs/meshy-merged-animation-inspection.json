@@ -1,0 +1,181 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\tmp\\animated-goblin-v3\\Meshy_AI_Ironbound_Goblin_biped\\Meshy_AI_Ironbound_Goblin_biped_Meshy_AI_Meshy_Merged_Animations.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.282221
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.282221
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.141111
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 104634,
+        "polygons": 111553,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0.001",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "falling_down",
+        "frame_range": [
+          0.0,
+          54.400002
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Right_Hand_Sword_Slash",
+        "frame_range": [
+          0.0,
+          36.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Running",
+        "frame_range": [
+          0.0,
+          15.2
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Stand_Up7",
+        "frame_range": [
+          0.0,
+          65.599998
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Sword_and_Shield_Alert_Turn_Left",
+        "frame_range": [
+          0.0,
+          32.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Walk_Backward_with_Sword_inplace",
+        "frame_range": [
+          0.0,
+          32.799999
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Walking",
+        "frame_range": [
+          0.0,
+          24.799999
+        ],
+        "channels": 240
+      }
+    ]
+  }
+]
