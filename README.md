@@ -21,6 +21,12 @@ Turns resolve by Initiative. A unit may move and then use one basic attack, abil
 - Use **Reset View** (or Home) to restore the default tactical framing.
 - Escape cancels targeting and restores movement highlights.
 
+### Battle modes and ENet
+
+The launch screen offers **Solo vs AI**, **Host ENet**, and **Join ENet**. Solo continues to the faction picker. A network host plays Elves and waits for one Goblin opponent on UDP port `7000`; Join accepts an IP address, hostname, or `host:port`. LAN play works directly. Internet hosting requires UDP port forwarding or a VPN/relay because this first ENet implementation does not provide NAT traversal.
+
+The host is authoritative. Clients send serial-numbered deploy, move, attack, ability, and wait commands. The host validates faction ownership, phase, active unit, reserves, filament, and legal grid targets before executing a command. It then sends a complete serializable snapshot; each client reconciles models and plays presentation locally. Simulation dictionaries contain no scene nodes.
+
 ### Phone combat controls
 
 - Tap a highlighted grid square to move or choose a target.
@@ -50,7 +56,7 @@ The animated Ironbound Goblin, Verdant Alchemist (used for Bogbrew Stitchdoc), a
 
 The supplied enchanted terrain kit has been separated into nine complete assets and integrated into combat. The runtime library reduces the 1,122,784-polygon source to 74,497 polygons with shared 1024px textures, corrects the atlas's 45-degree presentation rotation, and provides exact grid-aligned roads, stream, bridge, trees, boulders, stump, and hills. Trees and boulders retain authoritative grid blocking plus lightweight primitive collision. Full preparation and validation details are in `docs/terrain-kit-status.md`.
 
-The combat code is divided into focused camera, grid, rules, state, AI, unit-view, HUD, and data modules, with `combat_main.gd` serving as the match-flow coordinator. See `docs/architecture.md` for module ownership, runtime flow, and the recommended worktree boundaries for concurrent tasks.
+The combat code is divided into focused camera, grid, rules, state, command-validation, ENet-session, AI, unit-view, HUD, and data modules, with `combat_main.gd` serving as the match-flow coordinator. See `docs/architecture.md` for module ownership, runtime flow, and the recommended worktree boundaries for concurrent tasks.
 
 ## Android model inspector
 
@@ -64,6 +70,10 @@ Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --combat-smoke-test
 
 # Existing Android inspector smoke test (launch its scene explicitly)
 Godot_v4.7.1-stable_win64_console.exe --headless --path . res://main.tscn -- --smoke-test
+
+# ENet transport smoke test: start --host, then run the client in a second terminal
+Godot_v4.7.1-stable_win64_console.exe --headless --path . -s res://tests/enet_smoke.gd -- --host
+Godot_v4.7.1-stable_win64_console.exe --headless --path . -s res://tests/enet_smoke.gd
 
 # Builds
 Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.5.exe

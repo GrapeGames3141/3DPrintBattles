@@ -96,6 +96,33 @@ func build(owner: Node, callbacks: Dictionary) -> Dictionary:
 	refs["skip_spawn_button"].pressed.connect(callbacks["skip_spawn"])
 	refs["action_panel"].add_child(refs["skip_spawn_button"])
 
+	refs["session_overlay"] = _build_modal(canvas, "CHOOSE BATTLE MODE", "Solo keeps the tactical AI. ENet hosts and joins a direct two-player match on UDP port 7000.")
+	var session_panel: PanelContainer = refs["session_overlay"].get_node("Panel")
+	session_panel.position = Vector2(-285.0, -175.0)
+	session_panel.size = Vector2(570.0, 350.0)
+	var session_column: VBoxContainer = refs["session_overlay"].get_node("Panel/Margin/Column")
+	refs["address_input"] = LineEdit.new()
+	refs["address_input"].placeholder_text = "Host address, for example 192.168.1.25"
+	refs["address_input"].text = "127.0.0.1"
+	refs["address_input"].custom_minimum_size = Vector2(450.0, 40.0)
+	session_column.add_child(refs["address_input"])
+	session_column.move_child(refs["address_input"], session_column.get_node("Buttons").get_index())
+	refs["session_status"] = _label("", 14, Color("#ffb49c"))
+	refs["session_status"].horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	refs["session_status"].autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	session_column.add_child(refs["session_status"])
+	session_column.move_child(refs["session_status"], session_column.get_node("Buttons").get_index())
+	var session_buttons: HBoxContainer = refs["session_overlay"].get_node("Panel/Margin/Column/Buttons")
+	var solo_button := action_button("SOLO VS AI")
+	solo_button.pressed.connect(callbacks["solo"])
+	session_buttons.add_child(solo_button)
+	var host_button := action_button("HOST ENET")
+	host_button.pressed.connect(callbacks["host"])
+	session_buttons.add_child(host_button)
+	var join_button := action_button("JOIN ENET")
+	join_button.pressed.connect(func() -> void: callbacks["join"].call(refs["address_input"].text))
+	session_buttons.add_child(join_button)
+
 	refs["faction_overlay"] = _build_modal(canvas, "CHOOSE YOUR ARMY", "The other army is controlled by the tactical AI.")
 	var modal_buttons: HBoxContainer = refs["faction_overlay"].get_node("Panel/Margin/Column/Buttons")
 	var elves_button := action_button("PLAY ELVES")
@@ -104,6 +131,7 @@ func build(owner: Node, callbacks: Dictionary) -> Dictionary:
 	var goblins_button := action_button("PLAY GOBLINS")
 	goblins_button.pressed.connect(callbacks["choose_faction"].bind("goblins"))
 	modal_buttons.add_child(goblins_button)
+	refs["faction_overlay"].visible = false
 
 	refs["winner_overlay"] = _build_modal(canvas, "BATTLE COMPLETE", "")
 	refs["winner_label"] = refs["winner_overlay"].get_node("Panel/Margin/Column/Body")

@@ -3,8 +3,10 @@ extends Node3D
 const CombatDataScript := preload("res://scripts/combat_data.gd")
 const CombatAIScript := preload("res://scripts/combat_ai.gd")
 const CombatCameraScript := preload("res://scripts/combat_camera.gd")
+const CombatCommandsScript := preload("res://scripts/combat_commands.gd")
 const CombatGridScript := preload("res://scripts/combat_grid.gd")
 const CombatHudScript := preload("res://scripts/combat_hud.gd")
+const CombatNetworkScript := preload("res://scripts/combat_network.gd")
 const CombatRulesScript := preload("res://scripts/combat_rules.gd")
 const CombatStateScript := preload("res://scripts/combat_state.gd")
 const CombatUnitViewScript := preload("res://scripts/combat_unit_view.gd")
@@ -57,6 +59,8 @@ var units := {}
 var cell_occupants := {}
 var printers := {}
 var faction_state := {}
+var unit_nodes := {}
+var printer_nodes := {}
 
 var player_faction := PLAYER_DEFAULT_FACTION
 var ai_faction := "goblins"
@@ -76,6 +80,11 @@ var capture_mode := false
 var capture_path := ""
 var autoplay_both := false
 var rng := RandomNumberGenerator.new()
+var session_mode := "solo"
+var remote_peer_id := 0
+var command_sequence := 0
+var last_remote_sequence := 0
+var next_unit_serial := 1
 
 var camera_rig: Node3D
 var camera: Camera3D
@@ -84,6 +93,8 @@ var grid_navigation
 var combat_rules
 var combat_ai
 var combat_state
+var command_validator
+var network_session
 var unit_view
 var hud_builder
 var world_root: Node3D
@@ -107,6 +118,9 @@ var attack_button: Button
 var wait_button: Button
 var skip_spawn_button: Button
 var faction_overlay: Control
+var session_overlay: Control
+var session_status: Label
+var address_input: LineEdit
 var winner_overlay: Control
 var winner_label: Label
 
@@ -120,6 +134,17 @@ func _ready() -> void:
 	CombatDataScript.validate()
 	combat_ai = CombatAIScript.new()
 	combat_state = CombatStateScript.new()
+	command_validator = CombatCommandsScript.new()
+	network_session = CombatNetworkScript.new()
+	network_session.name = "CombatNetwork"
+	add_child(network_session)
+	network_session.peer_joined.connect(_on_network_peer_joined)
+	network_session.peer_left.connect(_on_network_peer_left)
+	network_session.connected_to_server.connect(_on_network_connected)
+	network_session.connection_failed.connect(_on_network_failed)
+	network_session.command_received.connect(_on_network_command_received)
+	network_session.snapshot_received.connect(_on_network_snapshot_received)
+	network_session.command_rejected.connect(_on_network_command_rejected)
 	unit_view = CombatUnitViewScript.new()
 	hud_builder = CombatHudScript.new()
 	combat_rules = CombatRulesScript.new()
@@ -133,7 +158,7 @@ func _ready() -> void:
 	if smoke_mode or capture_mode:
 		call_deferred("_begin_match", PLAYER_DEFAULT_FACTION)
 	else:
-		_show_faction_choice()
+		_show_launch_screen()
 
 
 func _parse_command_line() -> void:
@@ -471,7 +496,8 @@ func _create_printer(faction: String, cells: Array) -> void:
 	spool.material_override = _emissive_material(faction_color, 1.5)
 	root.add_child(spool)
 
-	printers[faction] = {"hp": PRINTER_HP, "max_hp": PRINTER_HP, "defense": PRINTER_DEFENSE, "cells": cells, "node": root}
+	printers[faction] = combat_state.create_printer_entry(PRINTER_HP, PRINTER_DEFENSE, cells)
+	printer_nodes[faction] = root
 	for cell in cells:
 		printer_cells[cell] = faction
 
@@ -507,6 +533,9 @@ func _build_ui() -> void:
 		"ability": _on_ability_pressed,
 		"wait": _on_wait_pressed,
 		"skip_spawn": _on_skip_spawn_pressed,
+		"solo": _choose_solo_mode,
+		"host": _host_network_match,
+		"join": _join_network_match,
 		"choose_faction": _begin_match,
 		"reload": _reload_scene,
 	})
@@ -524,6 +553,9 @@ func _build_ui() -> void:
 	ability_button = refs["ability_button"] as Button
 	wait_button = refs["wait_button"] as Button
 	skip_spawn_button = refs["skip_spawn_button"] as Button
+	session_overlay = refs["session_overlay"] as Control
+	session_status = refs["session_status"] as Label
+	address_input = refs["address_input"] as LineEdit
 	faction_overlay = refs["faction_overlay"] as Control
 	winner_overlay = refs["winner_overlay"] as Control
 	winner_label = refs["winner_label"] as Label
@@ -538,9 +570,66 @@ func _action_button(text_value: String) -> Button:
 	return hud_builder.action_button(text_value)
 
 
+func _show_launch_screen() -> void:
+	phase = "setup"
+	session_overlay.visible = true
+	faction_overlay.visible = false
+	session_status.text = ""
+
+
+func _choose_solo_mode() -> void:
+	session_mode = "solo"
+	network_session.close()
+	session_overlay.visible = false
+	_show_faction_choice()
+
+
 func _show_faction_choice() -> void:
 	phase = "setup"
 	faction_overlay.visible = true
+
+
+func _host_network_match() -> void:
+	session_mode = "host"
+	var result: Error = network_session.host(CombatNetworkScript.DEFAULT_PORT)
+	if result == OK:
+		var addresses := _local_ipv4_addresses()
+		var address_hint := "Local IP: %s" % ", ".join(addresses) if not addresses.is_empty() else "Use this computer's IPv4 address"
+		session_status.text = "Hosting on UDP %d. %s. Waiting for one opponent..." % [CombatNetworkScript.DEFAULT_PORT, address_hint]
+		top_status.text = "ENET HOST // WAITING FOR OPPONENT"
+
+
+func _join_network_match(address_text: String) -> void:
+	var endpoint := _parse_endpoint(address_text)
+	if endpoint["address"] == "":
+		session_status.text = "Enter a host IP address or hostname."
+		return
+	session_mode = "client"
+	var result: Error = network_session.join(endpoint["address"], endpoint["port"])
+	if result == OK:
+		session_status.text = "Connecting to %s:%d..." % [endpoint["address"], endpoint["port"]]
+		top_status.text = "ENET CLIENT // CONNECTING"
+
+
+func _parse_endpoint(value: String) -> Dictionary:
+	var cleaned := value.strip_edges()
+	var port := CombatNetworkScript.DEFAULT_PORT
+	var address := cleaned
+	if cleaned.count(":") == 1:
+		var parts := cleaned.split(":", false, 1)
+		address = parts[0].strip_edges()
+		if parts.size() > 1 and parts[1].is_valid_int():
+			port = clampi(int(parts[1]), 1, 65535)
+	return {"address": address, "port": port}
+
+
+func _local_ipv4_addresses() -> Array[String]:
+	var result: Array[String] = []
+	for address in IP.get_local_addresses():
+		if address.contains(":") or address.begins_with("127.") or address == "0.0.0.0":
+			continue
+		result.append(address)
+	return result
 
 
 func _reload_scene() -> void:
@@ -551,7 +640,11 @@ func _begin_match(chosen_faction: String) -> void:
 	player_faction = chosen_faction
 	ai_faction = CombatDataScript.enemy_faction(player_faction)
 	faction_overlay.visible = false
+	session_overlay.visible = false
 	first_faction = CombatDataScript.FACTION_ELVES if rng.randi_range(0, 1) == 0 else CombatDataScript.FACTION_GOBLINS
+	next_unit_serial = 1
+	command_sequence = 0
+	last_remote_sequence = 0
 	faction_state.clear()
 	faction_state.assign(combat_state.create_faction_state(CombatDataScript.ROSTERS, STARTING_FILAMENT))
 	phase = "spawn"
@@ -577,6 +670,12 @@ func _start_spawn_phase() -> void:
 	if autoplay_both:
 		_ai_spawn(first_faction)
 		_ai_spawn(CombatDataScript.enemy_faction(first_faction))
+	elif session_mode == "host":
+		if not _has_affordable_reserve(player_faction):
+			_complete_spawn(player_faction)
+		_broadcast_snapshot({"type": "phase", "phase": "spawn"})
+	elif session_mode == "client":
+		pass
 	else:
 		_ai_spawn(ai_faction)
 		if not _has_affordable_reserve(player_faction):
@@ -611,11 +710,7 @@ func _build_roster_cards() -> void:
 func _request_player_spawn(unit_key: String) -> void:
 	if phase != "spawn" or bool(faction_state[player_faction]["spawned"]):
 		return
-	var cell := _first_free_spawn_cell(player_faction)
-	if cell.x < 0:
-		return
-	_spawn_unit(player_faction, unit_key, cell, not smoke_mode)
-	_complete_spawn(player_faction)
+	_submit_player_command(CombatCommandsScript.SPAWN, Vector2i(-1, -1), unit_key)
 
 
 func _ai_spawn(faction: String) -> void:
@@ -663,12 +758,14 @@ func _spawn_unit(faction: String, unit_key: String, cell: Vector2i, animate: boo
 	var data: Dictionary = CombatDataScript.UNITS[unit_key]
 	if int(faction_state[faction]["filament"]) < int(data["cost"]):
 		return ""
-	var id := "%s_%s_%02d" % [faction, unit_key, units.size() + 1]
+	var id := "%s_%s_%02d" % [faction, unit_key, next_unit_serial]
+	next_unit_serial += 1
 	var node := _build_unit_figure(id, data, faction)
 	node.position = _cell_to_world(cell)
 	unit_root.add_child(node)
-	var entry: Dictionary = combat_state.create_unit_entry(id, unit_key, faction, cell, int(data["hp"]), node)
+	var entry: Dictionary = combat_state.create_unit_entry(id, unit_key, faction, cell, int(data["hp"]))
 	units[id] = entry
+	unit_nodes[id] = node
 	cell_occupants[cell] = id
 	faction_state[faction]["filament"] = int(faction_state[faction]["filament"]) - int(data["cost"])
 	var reserve: Array = faction_state[faction]["reserve"]
@@ -682,15 +779,15 @@ func _build_unit_figure(id: String, data: Dictionary, faction: String) -> Node3D
 	return unit_view.build_unit_figure(id, data, faction, not smoke_mode)
 
 func _play_unit_animation(id: String, preferred: Array[String]) -> void:
-	if not units.has(id):
+	if not unit_nodes.has(id):
 		return
-	unit_view.play_animation(units[id]["node"] as Node, preferred)
+	unit_view.play_animation(unit_nodes[id] as Node, preferred)
 
 
 func _resume_unit_idle(id: String) -> void:
-	if not units.has(id):
+	if not unit_nodes.has(id):
 		return
-	unit_view.resume_idle(units[id]["node"] as Node)
+	unit_view.resume_idle(unit_nodes[id] as Node)
 func _play_print_animation(node: Node3D, color: Color) -> void:
 	unit_view.play_print_animation(node, color)
 
@@ -745,7 +842,11 @@ func _begin_activation(id: String) -> void:
 	if statuses.has("regen"):
 		_heal_unit(id, int(statuses["regen"]["amount"]))
 	_show_unit_in_inspector(id)
-	if autoplay_both or str(unit["faction"]) == ai_faction:
+	if session_mode == "host" and str(unit["faction"]) != player_faction:
+		input_mode = "busy"
+		_update_ui()
+		_broadcast_snapshot({"type": "activation", "actor_id": id})
+	elif autoplay_both or (session_mode == "solo" and str(unit["faction"]) == ai_faction):
 		input_mode = "busy"
 		_update_ui()
 		call_deferred("_run_ai_activation", id)
@@ -754,6 +855,7 @@ func _begin_activation(id: String) -> void:
 		reachable_cache = _reachable_cells(id)
 		_show_cells(reachable_cache.keys(), Color("#4cb7ff66"), 0.045)
 		_update_ui()
+		_broadcast_snapshot({"type": "activation", "actor_id": id})
 
 
 func _end_activation() -> void:
@@ -773,6 +875,7 @@ func _end_activation() -> void:
 	active_unit_id = ""
 	input_mode = "busy"
 	_update_ui()
+	_broadcast_snapshot({"type": "activation_complete"})
 	call_deferred("_next_activation")
 
 
@@ -787,7 +890,7 @@ func _end_round() -> void:
 
 func _on_skip_spawn_pressed() -> void:
 	if phase == "spawn" and faction_state.has(player_faction):
-		_complete_spawn(player_faction)
+		_submit_player_command(CombatCommandsScript.SKIP_SPAWN)
 
 
 func _on_attack_pressed() -> void:
@@ -807,12 +910,17 @@ func _on_ability_pressed() -> void:
 	if int(unit["cooldown"]) > 0:
 		_set_notice("Ability is cooling down for %d more activation(s)." % int(unit["cooldown"]))
 		return
-	_begin_ability(active_unit_id)
+	var ability_id := str(_unit_data(active_unit_id)["ability_id"])
+	var cells := _ability_target_cells(active_unit_id)
+	if ability_id in ["brace", "bloodlust", "hold_line", "forest_shield"]:
+		_submit_player_command(CombatCommandsScript.ABILITY)
+	else:
+		_start_targeted_ability(cells, Color("#55f0a488") if ability_id in ["stitch", "renew"] else Color("#c96dff88"))
 
 
 func _on_wait_pressed() -> void:
 	if _player_can_act():
-		_end_activation()
+		_submit_player_command(CombatCommandsScript.WAIT)
 
 
 func _player_can_act() -> bool:
@@ -846,6 +954,15 @@ func _begin_ability(id: String) -> void:
 			_start_targeted_ability(_ally_cells_in_range(id, int(_unit_data(id)["range"]), true), Color("#55f0a488"))
 		_:
 			_start_targeted_ability(_valid_attack_cells(id), Color("#c96dff88"))
+
+
+func _ability_target_cells(id: String) -> Array[Vector2i]:
+	var ability_id := str(_unit_data(id)["ability_id"])
+	if ability_id in ["stitch", "renew"]:
+		return _ally_cells_in_range(id, int(_unit_data(id)["range"]), true)
+	if ability_id in ["brace", "bloodlust", "hold_line", "forest_shield"]:
+		return []
+	return _valid_attack_cells(id)
 
 
 func _start_targeted_ability(cells: Array[Vector2i], color: Color) -> void:
@@ -924,7 +1041,8 @@ func _deal_damage(attacker_id: String, target_id: String, ignore_defense: bool) 
 	var amount := int(result["amount"])
 	if amount <= 0:
 		return 0
-	_flash_figure(units[target_id]["node"], Color("#ff4a4a"))
+	if unit_nodes.has(target_id):
+		_flash_figure(unit_nodes[target_id], Color("#ff4a4a"))
 	if bool(result["killed"]):
 		_remove_unit(target_id)
 	_check_victory()
@@ -936,7 +1054,8 @@ func _deal_printer_damage(attacker_id: String, target_faction: String) -> int:
 		return 0
 	var amount: int = combat_rules.printer_damage_amount(attacker_id, PRINTER_DEFENSE)
 	printers[target_faction]["hp"] = int(printers[target_faction]["hp"]) - amount
-	_flash_figure(printers[target_faction]["node"], Color("#ff4a4a"))
+	if printer_nodes.has(target_faction):
+		_flash_figure(printer_nodes[target_faction], Color("#ff4a4a"))
 	_check_victory()
 	return amount
 
@@ -945,7 +1064,8 @@ func _apply_raw_damage(target_id: String, amount: int) -> void:
 	if not units.has(target_id):
 		return
 	var killed: bool = combat_rules.raw_damage(target_id, amount)
-	_flash_figure(units[target_id]["node"], Color("#ff4a4a"))
+	if unit_nodes.has(target_id):
+		_flash_figure(unit_nodes[target_id], Color("#ff4a4a"))
 	if killed:
 		_remove_unit(target_id)
 	_check_victory()
@@ -953,7 +1073,8 @@ func _apply_raw_damage(target_id: String, amount: int) -> void:
 
 func _heal_unit(id: String, amount: int) -> void:
 	if combat_rules.heal(id, amount):
-		_flash_figure(units[id]["node"], Color("#55f0a4"))
+		if unit_nodes.has(id):
+			_flash_figure(unit_nodes[id], Color("#55f0a4"))
 
 
 func _apply_status(id: String, status_name: String, payload: Dictionary) -> void:
@@ -976,7 +1097,9 @@ func _remove_unit(id: String) -> void:
 	if not units.has(id):
 		return
 	cell_occupants.erase(units[id]["cell"])
-	units[id]["node"].queue_free()
+	if unit_nodes.has(id):
+		unit_nodes[id].queue_free()
+		unit_nodes.erase(id)
 	units.erase(id)
 	initiative_queue.erase(id)
 	if selected_unit_id == id:
@@ -1010,10 +1133,10 @@ func _move_unit(id: String, destination: Vector2i, animate: bool) -> void:
 	if animate:
 		_play_unit_animation(id, ["Running", "Run", "Walking_Woman", "Walking", "Walk"])
 		var tween := create_tween()
-		tween.tween_property(units[id]["node"], "position", _cell_to_world(destination), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_property(unit_nodes[id], "position", _cell_to_world(destination), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 		tween.tween_callback(_resume_unit_idle.bind(id))
 	else:
-		units[id]["node"].position = _cell_to_world(destination)
+		unit_nodes[id].position = _cell_to_world(destination)
 
 
 func _movement_cost(id: String, cell: Vector2i) -> int:
@@ -1143,6 +1266,225 @@ func _distance_to_nearest_enemy_or_printer(id: String, from_cell: Vector2i) -> i
 	return combat_ai.distance_to_nearest_target(id, from_cell, units, printers, enemy_faction, grid_navigation)
 
 
+func _submit_player_command(command_type: String, cell := Vector2i(-1, -1), unit_key := "") -> void:
+	command_sequence += 1
+	var command: Dictionary = command_validator.make(command_type, command_sequence, active_unit_id, cell, unit_key)
+	if session_mode == "client":
+		network_session.send_command(command)
+		input_mode = "busy"
+		_clear_overlays()
+		_update_ui()
+	else:
+		_execute_authoritative_command(player_faction, command)
+
+
+func _execute_authoritative_command(sender_faction: String, command: Dictionary, peer_id := 0) -> bool:
+	var command_type := str(command.get("type", ""))
+	var valid_cells: Array = []
+	var requires_cell := true
+	if phase == "initiative" and active_unit_id != "" and units.has(active_unit_id):
+		match command_type:
+			CombatCommandsScript.MOVE:
+				valid_cells = _reachable_cells(active_unit_id).keys()
+			CombatCommandsScript.ATTACK:
+				valid_cells = _valid_attack_cells(active_unit_id)
+			CombatCommandsScript.ABILITY:
+				valid_cells = _ability_target_cells(active_unit_id)
+				var ability_id := str(_unit_data(active_unit_id)["ability_id"])
+				requires_cell = ability_id not in ["brace", "bloodlust", "hold_line", "forest_shield"]
+	var error_message: String = command_validator.validate(command, sender_faction, {
+		"phase": phase,
+		"units": units,
+		"factions": faction_state,
+		"definitions": CombatDataScript.UNITS,
+		"active_unit_id": active_unit_id,
+		"valid_cells": valid_cells,
+		"requires_cell": requires_cell,
+	})
+	if error_message != "":
+		if peer_id > 1:
+			network_session.reject(peer_id, error_message)
+		else:
+			_set_notice(error_message)
+		return false
+	match command_type:
+		CombatCommandsScript.SPAWN:
+			var cell := _first_free_spawn_cell(sender_faction)
+			if cell.x < 0:
+				return false
+			_spawn_unit(sender_faction, str(command["unit_key"]), cell, not smoke_mode)
+			_complete_spawn(sender_faction)
+		CombatCommandsScript.SKIP_SPAWN:
+			_complete_spawn(sender_faction)
+		CombatCommandsScript.MOVE:
+			_move_unit(active_unit_id, command["cell"], not smoke_mode)
+			input_mode = "inspect"
+			_clear_overlays()
+			_update_ui()
+		CombatCommandsScript.ATTACK:
+			_resolve_basic_attack(command["cell"])
+		CombatCommandsScript.ABILITY:
+			if command.has("cell"):
+				_resolve_targeted_ability(command["cell"])
+			else:
+				_begin_ability(active_unit_id)
+		CombatCommandsScript.WAIT:
+			_end_activation()
+	_broadcast_snapshot(command)
+	return true
+
+
+func _snapshot() -> Dictionary:
+	return combat_state.build_snapshot(units, printers, faction_state, initiative_queue, {
+		"round": round_number,
+		"phase": phase,
+		"first_faction": first_faction,
+		"active_unit_id": active_unit_id,
+		"battle_over": battle_over,
+		"action_counter": action_counter,
+		"next_unit_serial": next_unit_serial,
+	})
+
+
+func _broadcast_snapshot(event := {}) -> void:
+	if session_mode == "host" and remote_peer_id > 1:
+		network_session.send_snapshot(_snapshot(), event, remote_peer_id)
+
+
+func _on_network_peer_joined(peer_id: int) -> void:
+	if session_mode != "host" or remote_peer_id != 0:
+		return
+	remote_peer_id = peer_id
+	session_status.text = "Opponent connected. Starting match..."
+	top_status.text = "ENET HOST // OPPONENT CONNECTED"
+	_begin_match(CombatDataScript.FACTION_ELVES)
+
+
+func _on_network_peer_left(peer_id: int) -> void:
+	if peer_id != remote_peer_id:
+		return
+	remote_peer_id = 0
+	if phase == "setup":
+		session_overlay.visible = true
+		session_status.text = "Opponent disconnected. Still hosting on UDP port %d." % CombatNetworkScript.DEFAULT_PORT
+	else:
+		battle_over = true
+		phase = "complete"
+		winner_label.text = "Opponent disconnected.\nThe ENet match has ended."
+		winner_overlay.visible = true
+		_update_ui()
+
+
+func _on_network_connected() -> void:
+	session_status.text = "Connected. Waiting for the host's match state..."
+	top_status.text = "ENET CLIENT // CONNECTED"
+
+
+func _on_network_failed(message: String) -> void:
+	if phase == "setup":
+		session_overlay.visible = true
+		session_status.text = message
+	else:
+		_set_notice(message)
+
+
+func _on_network_command_received(peer_id: int, command: Dictionary) -> void:
+	if session_mode != "host" or peer_id != remote_peer_id:
+		return
+	var sequence := int(command.get("sequence", 0))
+	if sequence <= last_remote_sequence:
+		network_session.reject(peer_id, "Duplicate or out-of-order command.")
+		return
+	last_remote_sequence = sequence
+	_execute_authoritative_command(CombatDataScript.FACTION_GOBLINS, command, peer_id)
+
+
+func _on_network_snapshot_received(snapshot: Dictionary, event: Dictionary) -> void:
+	if session_mode != "client":
+		return
+	var previous_units := units.duplicate(true)
+	var previous_printers := printers.duplicate(true)
+	var flow: Dictionary = combat_state.apply_snapshot(snapshot, units, printers, faction_state, cell_occupants, initiative_queue)
+	if flow.is_empty():
+		_on_network_command_rejected("The host sent an incompatible match snapshot.")
+		return
+	round_number = int(flow["round"])
+	phase = str(flow["phase"])
+	first_faction = str(flow["first_faction"])
+	active_unit_id = str(flow["active_unit_id"])
+	battle_over = bool(flow["battle_over"])
+	action_counter = int(flow["action_counter"])
+	next_unit_serial = int(flow["next_unit_serial"])
+	player_faction = CombatDataScript.FACTION_GOBLINS
+	ai_faction = CombatDataScript.FACTION_ELVES
+	session_overlay.visible = false
+	faction_overlay.visible = false
+	_reconcile_network_views(previous_units, previous_printers, event)
+	_refresh_network_input()
+
+
+func _reconcile_network_views(previous_units: Dictionary, previous_printers: Dictionary, event: Dictionary) -> void:
+	for id in unit_nodes.keys().duplicate():
+		if not units.has(id):
+			unit_nodes[id].queue_free()
+			unit_nodes.erase(id)
+	for id in units.keys():
+		var is_new := not unit_nodes.has(id)
+		if is_new:
+			var data: Dictionary = CombatDataScript.UNITS[units[id]["key"]]
+			var node := _build_unit_figure(id, data, str(units[id]["faction"]))
+			node.position = _cell_to_world(units[id]["cell"])
+			unit_root.add_child(node)
+			unit_nodes[id] = node
+			_play_print_animation(node, CombatDataScript.FACTIONS[units[id]["faction"]]["color"])
+		else:
+			var destination := _cell_to_world(units[id]["cell"])
+			if previous_units.has(id) and previous_units[id]["cell"] != units[id]["cell"]:
+				_play_unit_animation(id, ["Running", "Run", "Walking_Woman", "Walking", "Walk"])
+				var tween := create_tween()
+				tween.tween_property(unit_nodes[id], "position", destination, 0.28)
+				tween.tween_callback(_resume_unit_idle.bind(id))
+			else:
+				unit_nodes[id].position = destination
+		if previous_units.has(id) and int(previous_units[id]["hp"]) != int(units[id]["hp"]):
+			var flash_color := Color("#55f0a4") if int(units[id]["hp"]) > int(previous_units[id]["hp"]) else Color("#ff4a4a")
+			_flash_figure(unit_nodes[id], flash_color)
+	var event_type := str(event.get("type", ""))
+	var actor_id := str(event.get("actor_id", ""))
+	if unit_nodes.has(actor_id):
+		if event_type == CombatCommandsScript.ATTACK:
+			_play_unit_animation(actor_id, ["Thrust_Slash", "SwordSlash", "Double_Blade_Spin"])
+		elif event_type == CombatCommandsScript.ABILITY:
+			_play_unit_animation(actor_id, ["mage_soell_cast_4", "Spell_Cast", "Cast", "Thrust_Slash"])
+	for faction in printers.keys():
+		if previous_printers.has(faction) and int(previous_printers[faction]["hp"]) > int(printers[faction]["hp"]) and printer_nodes.has(faction):
+			_flash_figure(printer_nodes[faction], Color("#ff4a4a"))
+
+
+func _refresh_network_input() -> void:
+	_clear_overlays()
+	_build_roster_cards()
+	if _player_can_act():
+		selected_unit_id = active_unit_id
+		input_mode = "move"
+		reachable_cache = _reachable_cells(active_unit_id)
+		_show_cells(reachable_cache.keys(), Color("#4cb7ff66"), 0.045)
+		_show_unit_in_inspector(active_unit_id)
+	else:
+		input_mode = "busy"
+	if battle_over:
+		var loser: String = combat_state.losing_faction(units, printers, faction_state, CombatDataScript.ROSTERS)
+		var victor := CombatDataScript.enemy_faction(loser) if loser != "" else CombatDataScript.FACTION_ELVES
+		winner_label.text = "%s wins.\nThe authoritative ENet match is complete." % CombatDataScript.FACTIONS[victor]["name"]
+		winner_overlay.visible = true
+	_update_ui()
+
+
+func _on_network_command_rejected(message: String) -> void:
+	_set_notice("Host rejected command: %s" % message)
+	_refresh_network_input()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and _player_can_act():
 		input_mode = "move"
@@ -1163,16 +1505,13 @@ func _on_cell_clicked(cell: Vector2i) -> void:
 	if battle_over:
 		return
 	if input_mode == "attack" and target_cache.has(cell):
-		_resolve_basic_attack(cell)
+		_submit_player_command(CombatCommandsScript.ATTACK, cell)
 		return
 	if input_mode == "ability" and target_cache.has(cell):
-		_resolve_targeted_ability(cell)
+		_submit_player_command(CombatCommandsScript.ABILITY, cell)
 		return
 	if _player_can_act() and input_mode == "move" and reachable_cache.has(cell):
-		_move_unit(active_unit_id, cell, true)
-		input_mode = "inspect"
-		_clear_overlays()
-		_update_ui()
+		_submit_player_command(CombatCommandsScript.MOVE, cell)
 		return
 	if cell_occupants.has(cell):
 		selected_unit_id = cell_occupants[cell]
@@ -1265,6 +1604,7 @@ func _check_victory() -> bool:
 	winner_label.text = "%s wins.\n%s was destroyed or exhausted." % [CombatDataScript.FACTIONS[victor]["name"], CombatDataScript.FACTIONS[loser]["name"]]
 	winner_overlay.visible = not smoke_mode
 	_update_ui()
+	_broadcast_snapshot({"type": "victory", "victor": victor})
 	return true
 
 
@@ -1390,5 +1730,23 @@ func _run_smoke_test() -> void:
 		assert(_check_victory(), "An exhausted faction with no living units must lose immediately")
 		assert(battle_over and phase == "complete", "Unit elimination did not complete the battle")
 		assert(winner_label.text.begins_with(CombatDataScript.FACTIONS[ai_faction]["name"]), "The surviving faction was not declared the winner")
+	for id in units.keys():
+		assert(not units[id].has("node"), "Authoritative unit state must not contain scene nodes")
+	for faction in printers.keys():
+		assert(not printers[faction].has("node"), "Authoritative printer state must not contain scene nodes")
+	var snapshot_probe: Dictionary = _snapshot()
+	assert(not var_to_bytes(snapshot_probe).is_empty(), "Combat snapshots must be Variant-serializable")
+	var probe_units := {}
+	var probe_printers := {}
+	var probe_factions := {}
+	var probe_occupants := {}
+	var probe_initiative: Array[String] = []
+	var probe_flow: Dictionary = combat_state.apply_snapshot(snapshot_probe, probe_units, probe_printers, probe_factions, probe_occupants, probe_initiative)
+	assert(not probe_flow.is_empty() and probe_units == units, "Snapshot round trip changed authoritative units")
+	assert(probe_printers == printers and probe_factions == faction_state, "Snapshot round trip changed match resources")
+	var command_probe: Dictionary = command_validator.make(CombatCommandsScript.WAIT, 1, "probe")
+	var command_context := {"phase": "initiative", "units": {"probe": {"faction": "elves"}}, "active_unit_id": "probe"}
+	assert(command_validator.validate(command_probe, "elves", command_context) == "", "A legal authoritative command was rejected")
+	assert(command_validator.validate(command_probe, "goblins", command_context) != "", "A command from the wrong faction was accepted")
 	print("COMBAT_SMOKE_OK round=%d activations=%d units=%d" % [round_number, action_counter, units.size()])
 	get_tree().quit(0)
