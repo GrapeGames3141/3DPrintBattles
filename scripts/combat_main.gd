@@ -12,6 +12,9 @@ const FILAMENT_PER_ROUND := 2
 const MAX_FILAMENT := 10
 const PLAYER_DEFAULT_FACTION := "elves"
 const CAMERA_FOCUS := Vector3(0.0, 0.0, 4.0)
+const MIN_CAMERA_DISTANCE := 24.0
+const MAX_CAMERA_DISTANCE := 72.0
+const TOUCH_DRAG_THRESHOLD := 12.0
 
 const TERRAIN_GRASS := "grass"
 const TERRAIN_ROAD := "road"
@@ -68,8 +71,13 @@ var rng := RandomNumberGenerator.new()
 var camera_rig: Node3D
 var camera: Camera3D
 var camera_distance := 55.0
-var camera_yaw_step := 0
+var camera_yaw_degrees := 0.0
 var camera_dragging := false
+var active_touches := {}
+var touch_start_positions := {}
+var touch_dragged := {}
+var pinch_distance := -1.0
+var pinch_active := false
 var world_root: Node3D
 var terrain_root: Node3D
 var prop_root: Node3D
@@ -608,6 +616,8 @@ func _begin_match(chosen_faction: String) -> void:
 		call_deferred("_capture_validation_frame")
 		return
 	_start_spawn_phase()
+	if OS.has_feature("mobile"):
+		_set_notice("Touch: drag to rotate, pinch to zoom, and tap to select.")
 	if smoke_mode:
 		call_deferred("_run_smoke_test")
 
@@ -1465,17 +1475,21 @@ func _distance_to_nearest_enemy_or_printer(id: String, from_cell: Vector2i) -> i
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
+	if event is InputEventScreenTouch:
+		_handle_screen_touch(event)
+	elif event is InputEventScreenDrag:
+		_handle_screen_drag(event)
+	elif event is InputEventMouseButton:
+		# Android also emits an emulated left click for touch input. Board taps are
+		# resolved from ScreenTouch so a camera drag cannot move or attack by accident.
+		if OS.has_feature("mobile") and event.button_index == MOUSE_BUTTON_LEFT:
+			return
 		if event.button_index == MOUSE_BUTTON_MIDDLE:
 			camera_dragging = event.pressed
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			camera_distance = maxf(24.0, camera_distance - 2.0)
-			camera.position.z = camera_distance
-			camera.look_at(CAMERA_FOCUS, Vector3.UP)
+			_set_camera_distance(camera_distance - 2.0)
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			camera_distance = minf(72.0, camera_distance + 2.0)
-			camera.position.z = camera_distance
-			camera.look_at(CAMERA_FOCUS, Vector3.UP)
+			_set_camera_distance(camera_distance + 2.0)
 		elif event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			var cell := _screen_to_cell(event.position)
 			if cell.x >= 0:
@@ -1488,17 +1502,74 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera_rig.position += (-right.normalized() * event.relative.x - forward.normalized() * event.relative.y) * 0.028
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_Q:
-			camera_yaw_step -= 1
-			camera_rig.rotation_degrees.y = float(camera_yaw_step * 45)
+			camera_yaw_degrees -= 45.0
+			camera_rig.rotation_degrees.y = camera_yaw_degrees
 		elif event.keycode == KEY_E:
-			camera_yaw_step += 1
-			camera_rig.rotation_degrees.y = float(camera_yaw_step * 45)
+			camera_yaw_degrees += 45.0
+			camera_rig.rotation_degrees.y = camera_yaw_degrees
 		elif event.keycode == KEY_ESCAPE and _player_can_act():
 			input_mode = "move"
 			reachable_cache = _reachable_cells(active_unit_id)
 			_clear_overlays()
 			_show_cells(reachable_cache.keys(), Color("#4cb7ff66"), 0.045)
 			_update_ui()
+
+
+func _handle_screen_touch(event: InputEventScreenTouch) -> void:
+	if event.pressed:
+		active_touches[event.index] = event.position
+		touch_start_positions[event.index] = event.position
+		touch_dragged[event.index] = false
+		if active_touches.size() >= 2:
+			pinch_active = true
+			pinch_distance = _current_pinch_distance()
+			for touch_index in touch_dragged.keys():
+				touch_dragged[touch_index] = true
+		return
+	var was_gesture := pinch_active or bool(touch_dragged.get(event.index, false)) or active_touches.size() > 1
+	active_touches.erase(event.index)
+	touch_start_positions.erase(event.index)
+	touch_dragged.erase(event.index)
+	if active_touches.size() < 2:
+		pinch_distance = -1.0
+	if active_touches.is_empty():
+		pinch_active = false
+	if not was_gesture:
+		var cell := _screen_to_cell(event.position)
+		if cell.x >= 0:
+			_on_cell_clicked(cell)
+
+
+func _handle_screen_drag(event: InputEventScreenDrag) -> void:
+	active_touches[event.index] = event.position
+	var start_position: Vector2 = touch_start_positions.get(event.index, event.position)
+	if start_position.distance_to(event.position) >= TOUCH_DRAG_THRESHOLD:
+		touch_dragged[event.index] = true
+	if active_touches.size() >= 2:
+		pinch_active = true
+		for touch_index in touch_dragged.keys():
+			touch_dragged[touch_index] = true
+		var next_distance := _current_pinch_distance()
+		if pinch_distance > 0.0 and next_distance > 0.0:
+			_set_camera_distance(camera_distance - (next_distance - pinch_distance) * 0.08)
+		pinch_distance = next_distance
+		return
+	if not pinch_active and bool(touch_dragged.get(event.index, false)):
+		camera_yaw_degrees -= event.relative.x * 0.18
+		camera_rig.rotation_degrees.y = camera_yaw_degrees
+
+
+func _set_camera_distance(value: float) -> void:
+	camera_distance = clampf(value, MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE)
+	camera.position.z = camera_distance
+	camera.look_at(CAMERA_FOCUS, Vector3.UP)
+
+
+func _current_pinch_distance() -> float:
+	if active_touches.size() < 2:
+		return -1.0
+	var positions: Array = active_touches.values()
+	return (positions[0] as Vector2).distance_to(positions[1] as Vector2)
 
 
 func _screen_to_cell(screen_position: Vector2) -> Vector2i:
@@ -1680,6 +1751,34 @@ func _run_smoke_test() -> void:
 	_start_target_selection(targeting_probe, "attack", Color("#ff4c4c88"))
 	assert(target_cache == targeting_probe, "Target selection was erased while clearing old overlays")
 	_clear_overlays()
+	var yaw_before := camera_yaw_degrees
+	active_touches[0] = Vector2(100.0, 100.0)
+	touch_start_positions[0] = Vector2(100.0, 100.0)
+	touch_dragged[0] = false
+	var rotate_probe := InputEventScreenDrag.new()
+	rotate_probe.index = 0
+	rotate_probe.position = Vector2(140.0, 100.0)
+	rotate_probe.relative = Vector2(40.0, 0.0)
+	_handle_screen_drag(rotate_probe)
+	assert(not is_equal_approx(yaw_before, camera_yaw_degrees), "One-finger drag did not rotate the combat camera")
+	active_touches.clear()
+	touch_start_positions.clear()
+	touch_dragged.clear()
+	var zoom_before := camera_distance
+	active_touches[0] = Vector2(100.0, 100.0)
+	active_touches[1] = Vector2(200.0, 100.0)
+	pinch_distance = _current_pinch_distance()
+	var zoom_probe := InputEventScreenDrag.new()
+	zoom_probe.index = 1
+	zoom_probe.position = Vector2(240.0, 100.0)
+	zoom_probe.relative = Vector2(40.0, 0.0)
+	_handle_screen_drag(zoom_probe)
+	assert(camera_distance < zoom_before, "Two-finger pinch-out did not zoom the combat camera in")
+	active_touches.clear()
+	touch_start_positions.clear()
+	touch_dragged.clear()
+	pinch_active = false
+	pinch_distance = -1.0
 	var deadline := Time.get_ticks_msec() + 18000
 	while action_counter < 12 and not battle_over and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame

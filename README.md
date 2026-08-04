@@ -20,6 +20,13 @@ Turns resolve by Initiative. A unit may move and then use one basic attack, abil
 - Middle-drag pans the camera; mouse wheel zooms; Q/E rotates by 45 degrees.
 - Escape cancels targeting and restores movement highlights.
 
+### Phone combat controls
+
+- Tap a highlighted grid square to move or choose a target.
+- Drag one finger horizontally across the battlefield to rotate the camera.
+- Pinch with two fingers to zoom in or out.
+- Camera gestures are separated from taps so dragging cannot trigger a grid action.
+
 ### Rosters
 
 | Faction | Unit | Rarity | Roles | HP / DEF / OFF | Range / Move / Init | Cost |
@@ -55,9 +62,9 @@ Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --combat-smoke-test
 Godot_v4.7.1-stable_win64_console.exe --headless --path . res://main.tscn -- --smoke-test
 
 # Builds
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.3.exe
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.4.exe
 Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Model Inspector" builds/android/PrintForge-Model-Inspector-0.3.0-arm64.apk
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Combat POC" builds/android/PrintForge-Combat-POC-0.3.3-arm64.apk
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Combat POC" builds/android/PrintForge-Combat-POC-0.3.4-arm64.apk
 ```
 
 Combat smoke success prints `COMBAT_SMOKE_OK`; inspector smoke success prints `SUMMON_LAB_SMOKE_TEST_OK`.
