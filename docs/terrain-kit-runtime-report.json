@@ -1,0 +1,265 @@
+{
+  "source": "E:\\AI Projects\\Games\\3dprint\\source_assets\\enchanted_terrain_split_v2\\enchanted_terrain_kit_split_v2.glb",
+  "output": "E:\\AI Projects\\Games\\3dprint\\assets\\models\\enchanted_terrain_kit_runtime.glb",
+  "output_bytes": 2790900,
+  "target_faces": {
+    "BroadleafTree": 18000,
+    "PineTree": 14000,
+    "DeadStump": 12000,
+    "RoundedBoulder": 5000,
+    "JaggedBoulders": 7000,
+    "RollingHill": 4000,
+    "RoadTile": 2500,
+    "StreamTile": 3000,
+    "BridgeTile": 9000
+  },
+  "source_total_faces": 1122784,
+  "runtime_total_faces": 74497,
+  "texture_limit": 1024,
+  "textures": [
+    {
+      "name": "base_color",
+      "before": [
+        2048,
+        2048
+      ],
+      "after": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "emissive",
+      "before": [
+        2048,
+        2048
+      ],
+      "after": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "metallic_roughness",
+      "before": [
+        2048,
+        2048
+      ],
+      "after": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "normal",
+      "before": [
+        2048,
+        2048
+      ],
+      "after": [
+        1024,
+        1024
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "name": "BroadleafTree",
+      "source_faces": 360806,
+      "runtime_faces": 17999,
+      "bounds": {
+        "min": [
+          -0.236845,
+          -0.230406,
+          -0.000899
+        ],
+        "max": [
+          0.263918,
+          0.285979,
+          0.644784
+        ],
+        "size": [
+          0.500763,
+          0.516385,
+          0.645684
+        ]
+      }
+    },
+    {
+      "name": "PineTree",
+      "source_faces": 167790,
+      "runtime_faces": 14000,
+      "bounds": {
+        "min": [
+          -0.170006,
+          -0.171871,
+          -0.000335
+        ],
+        "max": [
+          0.183882,
+          0.183935,
+          0.669898
+        ],
+        "size": [
+          0.353888,
+          0.355805,
+          0.670233
+        ]
+      }
+    },
+    {
+      "name": "DeadStump",
+      "source_faces": 139320,
+      "runtime_faces": 12000,
+      "bounds": {
+        "min": [
+          -0.187018,
+          -0.227773,
+          -0.000159
+        ],
+        "max": [
+          0.251269,
+          0.247815,
+          0.622679
+        ],
+        "size": [
+          0.438288,
+          0.475588,
+          0.622838
+        ]
+      }
+    },
+    {
+      "name": "RoundedBoulder",
+      "source_faces": 68938,
+      "runtime_faces": 5000,
+      "bounds": {
+        "min": [
+          -0.234669,
+          -0.241676,
+          -0.004406
+        ],
+        "max": [
+          0.241967,
+          0.235254,
+          0.342838
+        ],
+        "size": [
+          0.476636,
+          0.47693,
+          0.347244
+        ]
+      }
+    },
+    {
+      "name": "JaggedBoulders",
+      "source_faces": 100958,
+      "runtime_faces": 6999,
+      "bounds": {
+        "min": [
+          -0.238539,
+          -0.236949,
+          -0.000279
+        ],
+        "max": [
+          0.236132,
+          0.237622,
+          0.450919
+        ],
+        "size": [
+          0.47467,
+          0.474571,
+          0.451199
+        ]
+      }
+    },
+    {
+      "name": "RollingHill",
+      "source_faces": 87144,
+      "runtime_faces": 4000,
+      "bounds": {
+        "min": [
+          -0.259857,
+          -0.259243,
+          -0.000576
+        ],
+        "max": [
+          0.259956,
+          0.263912,
+          0.166594
+        ],
+        "size": [
+          0.519813,
+          0.523156,
+          0.167171
+        ]
+      }
+    },
+    {
+      "name": "RoadTile",
+      "source_faces": 35580,
+      "runtime_faces": 2500,
+      "bounds": {
+        "min": [
+          -0.22545,
+          -0.223859,
+          -0.000586
+        ],
+        "max": [
+          0.230768,
+          0.218963,
+          0.06444
+        ],
+        "size": [
+          0.456218,
+          0.442822,
+          0.065027
+        ]
+      }
+    },
+    {
+      "name": "StreamTile",
+      "source_faces": 43180,
+      "runtime_faces": 2999,
+      "bounds": {
+        "min": [
+          -0.239104,
+          -0.245618,
+          -0.001191
+        ],
+        "max": [
+          0.245758,
+          0.241162,
+          0.063614
+        ],
+        "size": [
+          0.484862,
+          0.486779,
+          0.064805
+        ]
+      }
+    },
+    {
+      "name": "BridgeTile",
+      "source_faces": 119068,
+      "runtime_faces": 9000,
+      "bounds": {
+        "min": [
+          -0.344858,
+          -0.340771,
+          -0.00054
+        ],
+        "max": [
+          0.268131,
+          0.221988,
+          0.238092
+        ],
+        "size": [
+          0.612989,
+          0.562759,
+          0.238632
+        ]
+      }
+    }
+  ]
+}

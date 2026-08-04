@@ -1,6 +1,7 @@
 extends Node3D
 
 const CombatDataScript := preload("res://scripts/combat_data.gd")
+const TERRAIN_KIT_SCENE: PackedScene = preload("res://assets/models/enchanted_terrain_kit_runtime.glb")
 
 const MAP_WIDTH := 25
 const MAP_HEIGHT := 33
@@ -117,6 +118,8 @@ var winner_label: Label
 
 var tile_meshes := {}
 var tile_materials := {}
+var terrain_asset_meshes := {}
+var terrain_instance_counts := {}
 
 
 func _ready() -> void:
@@ -203,6 +206,7 @@ func _build_camera() -> void:
 
 
 func _build_map() -> void:
+	_prepare_terrain_assets()
 	_prepare_tile_assets()
 	for z in range(MAP_HEIGHT):
 		for x in range(MAP_WIDTH):
@@ -214,6 +218,7 @@ func _build_map() -> void:
 				kind = TERRAIN_ROAD
 			terrain[cell] = kind
 			_add_tile(cell, kind)
+	_add_surface_terrain()
 
 	for cell in TREE_CELLS:
 		obstacles[cell] = "tree"
@@ -223,7 +228,20 @@ func _build_map() -> void:
 		_add_boulder(cell)
 	for cell in HILL_CELLS:
 		_add_hill(cell)
-	_add_bridge_details()
+
+
+func _prepare_terrain_assets() -> void:
+	var library := TERRAIN_KIT_SCENE.instantiate()
+	for child in library.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := child as MeshInstance3D
+		terrain_asset_meshes[str(mesh_instance.name)] = mesh_instance.mesh
+	library.free()
+	var expected := [
+		"BroadleafTree", "PineTree", "DeadStump", "RoundedBoulder", "JaggedBoulders",
+		"RollingHill", "RoadTile", "StreamTile", "BridgeTile",
+	]
+	for asset_name in expected:
+		assert(terrain_asset_meshes.has(asset_name), "Missing runtime terrain mesh: %s" % asset_name)
 
 
 func _prepare_tile_assets() -> void:
@@ -256,15 +274,63 @@ func _add_tile(cell: Vector2i, kind: String) -> void:
 	tile.position = _cell_to_world(cell)
 	tile.position.y = -0.075 if kind != TERRAIN_WATER else -0.105
 	terrain_root.add_child(tile)
-	if kind == TERRAIN_BRIDGE:
-		for plank_index in range(3):
-			var seam := MeshInstance3D.new()
-			var seam_mesh := BoxMesh.new()
-			seam_mesh.size = Vector3(CELL_SIZE - 0.08, 0.018, 0.028)
-			seam.mesh = seam_mesh
-			seam.material_override = _material(Color("#5a3b26"), 0.75)
-			seam.position = tile.position + Vector3(0.0, 0.005, (-0.52 + float(plank_index) * 0.52))
-			terrain_root.add_child(seam)
+
+
+func _add_surface_terrain() -> void:
+	for z in range(MAP_HEIGHT):
+		if z in [15, 16]:
+			continue
+		_add_fitted_terrain_mesh(
+			"RoadTile",
+			terrain_root,
+			_cell_to_world(Vector2i(12, z)) + Vector3(0.0, -0.105, 0.0),
+			CELL_SIZE * 3.0 - 0.04,
+			CELL_SIZE - 0.035,
+			1.7
+		)
+	var river_center_z := (_cell_to_world(Vector2i(0, 15)).z + _cell_to_world(Vector2i(0, 16)).z) * 0.5
+	for x in range(MAP_WIDTH):
+		if x in [11, 12, 13]:
+			continue
+		_add_fitted_terrain_mesh(
+			"StreamTile",
+			terrain_root,
+			Vector3(_cell_to_world(Vector2i(x, 15)).x, -0.08, river_center_z),
+			CELL_SIZE - 0.035,
+			CELL_SIZE * 2.0 - 0.04,
+			1.55
+		)
+	_add_fitted_terrain_mesh(
+		"BridgeTile",
+		terrain_root,
+		Vector3(_cell_to_world(Vector2i(12, 15)).x, -0.22, river_center_z),
+		CELL_SIZE * 2.0 - 0.04,
+		CELL_SIZE * 3.0 - 0.04,
+		1.8,
+		90.0
+	)
+
+
+func _add_fitted_terrain_mesh(
+	asset_name: String,
+	parent: Node3D,
+	position: Vector3,
+	width: float,
+	depth: float,
+	vertical_scale: float,
+	rotation_y_degrees := 0.0
+) -> MeshInstance3D:
+	var mesh: Mesh = terrain_asset_meshes[asset_name]
+	var size := mesh.get_aabb().size
+	var instance := MeshInstance3D.new()
+	instance.name = asset_name
+	instance.mesh = mesh
+	instance.position = position
+	instance.scale = Vector3(width / maxf(size.x, 0.001), vertical_scale, depth / maxf(size.z, 0.001))
+	instance.rotation_degrees.y = rotation_y_degrees
+	parent.add_child(instance)
+	terrain_instance_counts[asset_name] = int(terrain_instance_counts.get(asset_name, 0)) + 1
+	return instance
 
 
 func _add_tree(cell: Vector2i) -> void:
@@ -272,24 +338,26 @@ func _add_tree(cell: Vector2i) -> void:
 	root.name = "Tree_%d_%d" % [cell.x, cell.y]
 	root.position = _cell_to_world(cell)
 	prop_root.add_child(root)
-	var trunk := MeshInstance3D.new()
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.14
-	trunk_mesh.bottom_radius = 0.23
-	trunk_mesh.height = 1.65
-	trunk.mesh = trunk_mesh
-	trunk.position.y = 0.82
-	trunk.material_override = _material(Color("#513823"), 0.88)
-	root.add_child(trunk)
-	for offset in [Vector3(0.0, 1.75, 0.0), Vector3(-0.38, 1.50, 0.05), Vector3(0.35, 1.55, -0.12)]:
-		var crown := MeshInstance3D.new()
-		var crown_mesh := SphereMesh.new()
-		crown_mesh.radius = 0.62
-		crown_mesh.height = 1.15
-		crown.mesh = crown_mesh
-		crown.position = offset
-		crown.material_override = _material(Color("#315f38"), 0.92)
-		root.add_child(crown)
+	var variant := posmod(cell.x * 7 + cell.y * 3, 5)
+	var asset_name := "BroadleafTree"
+	var horizontal_scale := 3.0
+	var vertical_scale := 4.3
+	if variant in [1, 3]:
+		asset_name = "PineTree"
+		horizontal_scale = 4.5
+		vertical_scale = 5.8
+	elif variant == 4:
+		asset_name = "DeadStump"
+		horizontal_scale = 2.9
+		vertical_scale = 3.8
+	var tree := MeshInstance3D.new()
+	tree.name = asset_name
+	tree.mesh = terrain_asset_meshes[asset_name]
+	tree.scale = Vector3(horizontal_scale, vertical_scale, horizontal_scale)
+	tree.position.y = -0.035
+	tree.rotation_degrees.y = float(posmod(cell.x * 31 + cell.y * 17, 4)) * 90.0
+	root.add_child(tree)
+	_add_obstacle_collision(root, 0.55, 2.1)
 
 
 func _add_boulder(cell: Vector2i) -> void:
@@ -297,44 +365,40 @@ func _add_boulder(cell: Vector2i) -> void:
 	root.name = "Boulder_%d_%d" % [cell.x, cell.y]
 	root.position = _cell_to_world(cell)
 	prop_root.add_child(root)
-	for index in range(3):
-		var rock := MeshInstance3D.new()
-		var rock_mesh := SphereMesh.new()
-		rock_mesh.radius = 0.48 - float(index) * 0.08
-		rock_mesh.height = 0.72 + float(index) * 0.12
-		rock.mesh = rock_mesh
-		rock.scale = Vector3(1.0, 1.0 + float(index) * 0.32, 0.82)
-		rock.position = Vector3((float(index) - 1.0) * 0.32, 0.36, (0.18 if index == 1 else -0.08))
-		rock.rotation_degrees.y = float(index) * 31.0
-		rock.material_override = _material(Color("#697078"), 0.86)
-		root.add_child(rock)
+	var asset_name := "RoundedBoulder" if posmod(cell.x + cell.y, 2) == 0 else "JaggedBoulders"
+	var rock := MeshInstance3D.new()
+	rock.name = asset_name
+	rock.mesh = terrain_asset_meshes[asset_name]
+	rock.scale = Vector3(2.3, 3.0, 2.3)
+	rock.position.y = -0.035
+	rock.rotation_degrees.y = float(posmod(cell.x * 19 + cell.y * 11, 4)) * 90.0
+	root.add_child(rock)
+	_add_obstacle_collision(root, 0.65, 0.95)
 
 
 func _add_hill(cell: Vector2i) -> void:
 	var hill := MeshInstance3D.new()
 	hill.name = "RollingHill_%d_%d" % [cell.x, cell.y]
-	var mesh := SphereMesh.new()
-	mesh.radius = 1.65
-	mesh.height = 1.1
-	hill.mesh = mesh
-	hill.scale = Vector3(1.7, 0.32, 1.35)
-	hill.position = _cell_to_world(cell) + Vector3(0.0, -0.34, 0.0)
-	hill.material_override = _material(Color("#557c48"), 0.94)
+	hill.mesh = terrain_asset_meshes["RollingHill"]
+	hill.scale = Vector3(2.3, 3.0, 2.3)
+	hill.position = _cell_to_world(cell) + Vector3(0.0, -0.05, 0.0)
+	hill.rotation_degrees.y = float(posmod(cell.x + cell.y, 4)) * 90.0
 	prop_root.add_child(hill)
 
 
-func _add_bridge_details() -> void:
-	for z in [15, 16]:
-		for x_edge in [10.58, 13.42]:
-			var rail := MeshInstance3D.new()
-			var rail_mesh := BoxMesh.new()
-			rail_mesh.size = Vector3(0.12, 0.42, CELL_SIZE - 0.10)
-			rail.mesh = rail_mesh
-			rail.position = _cell_to_world(Vector2i(0, z))
-			rail.position.x = (x_edge - 12.0) * CELL_SIZE
-			rail.position.y = 0.20
-			rail.material_override = _material(Color("#66503a"), 0.72)
-			prop_root.add_child(rail)
+func _add_obstacle_collision(parent: Node3D, radius: float, height: float) -> void:
+	var body := StaticBody3D.new()
+	body.name = "GridObstacleCollision"
+	body.collision_layer = 2
+	body.collision_mask = 0
+	var collision := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = radius
+	shape.height = height
+	collision.shape = shape
+	collision.position.y = height * 0.5
+	body.add_child(collision)
+	parent.add_child(body)
 
 
 func _build_printers() -> void:
@@ -1837,6 +1901,11 @@ func _capture_validation_frame() -> void:
 
 func _run_smoke_test() -> void:
 	assert(terrain.size() == MAP_WIDTH * MAP_HEIGHT, "Combat map cell count mismatch")
+	assert(terrain_asset_meshes.size() == 9, "Runtime terrain library must expose all nine recovered assets")
+	assert(int(terrain_instance_counts.get("RoadTile", 0)) == 31, "Road runtime mesh coverage mismatch")
+	assert(int(terrain_instance_counts.get("StreamTile", 0)) == 22, "Stream runtime mesh coverage mismatch")
+	assert(int(terrain_instance_counts.get("BridgeTile", 0)) == 1, "Bridge runtime mesh coverage mismatch")
+	assert(prop_root.find_children("*", "StaticBody3D", true, false).size() == obstacles.size(), "Terrain collision coverage mismatch")
 	assert(TREE_CELLS.size() + BOULDER_CELLS.size() == obstacles.size(), "Obstacle registry mismatch")
 	assert(terrain[Vector2i(4, 15)] == TERRAIN_WATER and terrain[Vector2i(4, 16)] == TERRAIN_WATER, "River must be two cells wide")
 	assert(terrain[Vector2i(12, 15)] == TERRAIN_BRIDGE and terrain[Vector2i(12, 16)] == TERRAIN_BRIDGE, "Bridge must span the river")

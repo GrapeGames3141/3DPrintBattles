@@ -8,4 +8,13 @@ The second pass confirms that the intended models are spatially separate. Three-
 
 The verified full-resolution outputs are under `source_assets/enchanted_terrain_split_v2/` as one combined GLB with nine named meshes and nine individually centered GLBs. `previews/enchanted-terrain-kit-split-v2.png` shows the successful reconstruction, while `docs/terrain-kit-split-v2-report.json` and `docs/terrain-kit-split-v2-validation.json` record the grouping and clean re-import checks.
 
-These full-resolution sources total 1,122,784 polygons and are not yet referenced by the combat runtime. The current procedural terrain remains active until a deliberate optimization and collision pass is approved; this avoids silently adding the full source density to the Android build.
+The combat runtime now uses `assets/models/enchanted_terrain_kit_runtime.glb`. `tools/prepare_terrain_runtime.py` performs the reproducible mobile preparation pass:
+
+- centers every asset at ground level;
+- corrects the source atlas's 45-degree diamond presentation to match the orthogonal combat grid;
+- reduces 1,122,784 source polygons to 74,497 runtime polygons;
+- reduces the four shared 2048px texture maps to 1024px;
+- exports one 2.79 MB GLB containing all nine named meshes; and
+- preserves exact grid-based obstacle rules while adding primitive collision bodies to trees and boulders.
+
+The road, two-square stream, and bridge use fitted repeated modules over the existing authoritative grid tiles. Grass remains the lightweight procedural underlay, preventing gaps at map edges and keeping movement highlighting legible. `docs/terrain-kit-runtime-report.json` records per-asset budgets and bounds, and `previews/enchanted-terrain-kit-runtime-v2.png` shows the optimized library.

@@ -48,7 +48,7 @@ Both rosters cost 19 total. Combat uses Common, Uncommon, and Rare only. Their f
 
 The animated Ironbound Goblin, Verdant Alchemist (used for Bogbrew Stitchdoc), and Moonlit Elf Duelist (used for Moonshadow Rogue) are used directly. The other seven future units use readable procedural standees in the POC, with their modeling references shown in the unit inspector. The concept library is in `assets/concepts/combat/`; every unit and both printers also have separate front, back, left, and right references in `assets/concepts/combat/four-view-v2/`.
 
-The supplied enchanted terrain kit has now been separated successfully into nine complete full-resolution assets. The corrected proximity-based split, preview, and validation reports are documented in `docs/terrain-kit-status.md`. The playable POC still uses procedural terrain until the 1.12-million-polygon source kit receives a deliberate runtime optimization and collision pass.
+The supplied enchanted terrain kit has been separated into nine complete assets and integrated into combat. The runtime library reduces the 1,122,784-polygon source to 74,497 polygons with shared 1024px textures, corrects the atlas's 45-degree presentation rotation, and provides exact grid-aligned roads, stream, bridge, trees, boulders, stump, and hills. Trees and boulders retain authoritative grid blocking plus lightweight primitive collision. Full preparation and validation details are in `docs/terrain-kit-status.md`.
 
 ## Android model inspector
 
