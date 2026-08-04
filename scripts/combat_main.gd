@@ -861,7 +861,7 @@ func _build_unit_figure(id: String, data: Dictionary, faction: String) -> Node3D
 			_fit_model_to_base(model)
 			_start_model_idle(model)
 	else:
-		_build_procedural_standee(visual_anchor, data, faction)
+		_build_cardboard_placeholder(visual_anchor, data, faction)
 	return root
 
 
@@ -905,41 +905,57 @@ func _resume_unit_idle(id: String) -> void:
 				return
 
 
-func _build_procedural_standee(anchor: Node3D, data: Dictionary, faction: String) -> void:
+func _build_cardboard_placeholder(anchor: Node3D, data: Dictionary, faction: String) -> void:
 	var faction_color: Color = CombatDataScript.FACTIONS[faction]["color"]
-	var rarity_color: Color = CombatDataScript.RARITY_STYLE[data["rarity"]]["edge"]
-	var body := MeshInstance3D.new()
-	var body_mesh := CapsuleMesh.new()
-	body_mesh.radius = 0.28
-	body_mesh.height = 1.12
-	body.mesh = body_mesh
-	body.position.y = 0.72
-	body.material_override = _material(faction_color.darkened(0.18), 0.66, 0.12)
-	anchor.add_child(body)
-	var head := MeshInstance3D.new()
-	var head_mesh := SphereMesh.new()
-	head_mesh.radius = 0.24
-	head_mesh.height = 0.48
-	head.mesh = head_mesh
-	head.position.y = 1.50
-	head.material_override = _material(faction_color.lightened(0.16), 0.72, 0.02)
-	anchor.add_child(head)
-	var weapon := MeshInstance3D.new()
-	var weapon_mesh := BoxMesh.new()
-	weapon_mesh.size = Vector3(0.09, 1.20, 0.09)
-	weapon.mesh = weapon_mesh
-	weapon.position = Vector3(0.42, 0.92, 0.0)
-	weapon.rotation_degrees.z = -13.0
-	weapon.material_override = _emissive_material(rarity_color, 1.0)
-	anchor.add_child(weapon)
-	var crest := Label3D.new()
-	crest.text = str(data["name"]).left(2).to_upper()
-	crest.font_size = 48
-	crest.outline_size = 10
-	crest.modulate = Color.WHITE
-	crest.position = Vector3(0.0, 1.0, 0.30)
-	crest.pixel_size = 0.006
-	anchor.add_child(crest)
+	var cardboard_core := MeshInstance3D.new()
+	cardboard_core.name = "CardboardCore"
+	var core_mesh := BoxMesh.new()
+	core_mesh.size = Vector3(0.82, 1.30, 0.82)
+	cardboard_core.mesh = core_mesh
+	cardboard_core.position.y = 0.68
+	cardboard_core.material_override = _material(Color("#8f7045"), 0.96, 0.0)
+	anchor.add_child(cardboard_core)
+
+	var concept_directory := str(data["concept"]).get_base_dir()
+	_add_cardboard_face(anchor, "Front", "%s/front.png" % concept_directory, Vector3(0.0, 0.68, 0.416), 0.0)
+	_add_cardboard_face(anchor, "Back", "%s/back.png" % concept_directory, Vector3(0.0, 0.68, -0.416), 180.0)
+	_add_cardboard_face(anchor, "Left", "%s/left.png" % concept_directory, Vector3(-0.416, 0.68, 0.0), -90.0)
+	_add_cardboard_face(anchor, "Right", "%s/right.png" % concept_directory, Vector3(0.416, 0.68, 0.0), 90.0)
+
+	var team_lid := MeshInstance3D.new()
+	team_lid.name = "TeamColorTop"
+	var lid_mesh := BoxMesh.new()
+	lid_mesh.size = Vector3(0.86, 0.065, 0.86)
+	team_lid.mesh = lid_mesh
+	team_lid.position.y = 1.36
+	team_lid.material_override = _emissive_material(faction_color, 0.85)
+	anchor.add_child(team_lid)
+
+
+func _add_cardboard_face(
+	anchor: Node3D,
+	face_name: String,
+	texture_path: String,
+	position: Vector3,
+	rotation_y_degrees: float
+) -> void:
+	var panel := MeshInstance3D.new()
+	panel.name = "CardFace_%s" % face_name
+	var panel_mesh := QuadMesh.new()
+	panel_mesh.size = Vector2(0.76, 1.18)
+	panel.mesh = panel_mesh
+	panel.position = position
+	panel.rotation_degrees.y = rotation_y_degrees
+	var panel_material := StandardMaterial3D.new()
+	panel_material.albedo_color = Color("#f1dfbd")
+	panel_material.roughness = 0.94
+	panel_material.metallic = 0.0
+	panel_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	panel_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	if ResourceLoader.exists(texture_path):
+		panel_material.albedo_texture = load(texture_path) as Texture2D
+	panel.material_override = panel_material
+	anchor.add_child(panel)
 
 
 func _hide_helper_meshes(node: Node) -> void:

@@ -143,6 +143,9 @@ static func validate() -> void:
 		for unit_id in ROSTERS[faction]:
 			var definition: Dictionary = UNITS[unit_id]
 			assert(definition["faction"] == faction, "Roster faction mismatch")
+			var concept_directory := str(definition["concept"]).get_base_dir()
+			for side in ["front", "back", "left", "right"]:
+				assert(ResourceLoader.exists("%s/%s.png" % [concept_directory, side]), "Missing cardboard concept side for %s: %s" % [unit_id, side])
 			assert(definition["rarity"] in ["Common", "Uncommon", "Rare"], "Unsupported rarity")
 			total_cost += int(definition["cost"])
 		assert(total_cost == 19, "Faction roster costs must remain symmetric")
