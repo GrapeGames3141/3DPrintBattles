@@ -936,7 +936,7 @@ func _initiative_before(a: String, b: String) -> bool:
 
 func _next_activation() -> void:
 	_clear_overlays()
-	if battle_over:
+	if _check_victory():
 		return
 	while not initiative_queue.is_empty():
 		var id: String = initiative_queue.pop_front()
@@ -1617,11 +1617,11 @@ func _check_victory() -> bool:
 		if int(printers[faction]["hp"]) <= 0:
 			loser = faction
 			break
-		var living := 0
+		var living_units := 0
 		for id in units.keys():
-			if str(units[id]["faction"]) == faction:
-				living += 1
-		if living == 0 and faction_state.has(faction) and faction_state[faction]["reserve"].is_empty():
+			if str(units[id]["faction"]) == faction and int(units[id]["hp"]) > 0:
+				living_units += 1
+		if living_units == 0 and faction_state.has(faction) and faction_state[faction]["reserve"].is_empty():
 			loser = faction
 			break
 	if loser == "":
@@ -1680,5 +1680,13 @@ func _run_smoke_test() -> void:
 	while action_counter < 12 and not battle_over and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	assert(action_counter >= 8 or battle_over, "Initiative loop did not advance")
+	if not battle_over:
+		faction_state[player_faction]["reserve"].clear()
+		for id in units.keys().duplicate():
+			if str(units[id]["faction"]) == player_faction:
+				_remove_unit(id)
+		assert(_check_victory(), "An exhausted faction with no living units must lose immediately")
+		assert(battle_over and phase == "complete", "Unit elimination did not complete the battle")
+		assert(winner_label.text.begins_with(CombatDataScript.FACTIONS[ai_faction]["name"]), "The surviving faction was not declared the winner")
 	print("COMBAT_SMOKE_OK round=%d activations=%d units=%d" % [round_number, action_counter, units.size()])
 	get_tree().quit(0)
