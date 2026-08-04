@@ -7,7 +7,7 @@ config_version=5
 config/name="PrintForge Combat POC"
 config/name.mobile="PrintForge Model Inspector"
 run/main_scene="res://combat_main.tscn"
-run/main_scene.mobile="res://main.tscn"
+run/main_scene.mobile="res://mobile_router.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
