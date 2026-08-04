@@ -1,0 +1,391 @@
+{
+  "source": "E:\\AI Projects\\Games\\3dprint\\source_assets\\Meshy_AI_Enchanted_Terrain_Kit_0804010559_texture.glb",
+  "method": "3D AABB-overlap clusters plus isolated stream/bridge X split",
+  "aabb_epsilon": 0.005,
+  "stream_bridge_cut_x": 0.315,
+  "source_loose_islands": 973,
+  "proximity_clusters": [
+    {
+      "islands": 8,
+      "polygons": 35580,
+      "center": [
+        -0.654655,
+        -0.459267,
+        -0.514157
+      ],
+      "size": [
+        0.591029,
+        0.613598,
+        0.064008
+      ],
+      "assigned_to": [
+        "RoadTile"
+      ]
+    },
+    {
+      "islands": 27,
+      "polygons": 68938,
+      "center": [
+        -0.671086,
+        0.308364,
+        -0.37477
+      ],
+      "size": [
+        0.558022,
+        0.673442,
+        0.342921
+      ],
+      "assigned_to": [
+        "RoundedBoulder"
+      ]
+    },
+    {
+      "islands": 275,
+      "polygons": 360806,
+      "center": [
+        -0.628235,
+        0.678221,
+        0.223843
+      ],
+      "size": [
+        0.577577,
+        0.496184,
+        0.64511
+      ],
+      "assigned_to": [
+        "BroadleafTree"
+      ]
+    },
+    {
+      "islands": 77,
+      "polygons": 162248,
+      "center": [
+        0.320437,
+        -0.513741,
+        -0.42737
+      ],
+      "size": [
+        1.256817,
+        0.828321,
+        0.238521
+      ],
+      "assigned_to": [
+        "StreamTile",
+        "BridgeTile"
+      ]
+    },
+    {
+      "islands": 51,
+      "polygons": 100958,
+      "center": [
+        0.002222,
+        0.307328,
+        -0.320805
+      ],
+      "size": [
+        0.565295,
+        0.670207,
+        0.450891
+      ],
+      "assigned_to": [
+        "JaggedBoulders"
+      ]
+    },
+    {
+      "islands": 289,
+      "polygons": 167790,
+      "center": [
+        0.026614,
+        0.683951,
+        0.21203
+      ],
+      "size": [
+        0.340487,
+        0.375752,
+        0.670673
+      ],
+      "assigned_to": [
+        "PineTree"
+      ]
+    },
+    {
+      "islands": 166,
+      "polygons": 87144,
+      "center": [
+        0.654203,
+        0.30863,
+        -0.463643
+      ],
+      "size": [
+        0.589248,
+        0.733413,
+        0.1653
+      ],
+      "assigned_to": [
+        "RollingHill"
+      ]
+    },
+    {
+      "islands": 80,
+      "polygons": 139320,
+      "center": [
+        0.672118,
+        0.612457,
+        0.193877
+      ],
+      "size": [
+        0.526966,
+        0.509086,
+        0.622979
+      ],
+      "assigned_to": [
+        "DeadStump"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "name": "BroadleafTree",
+      "grid": [
+        0,
+        0
+      ],
+      "loose_islands": 275,
+      "vertices": 192456,
+      "polygons": 360806,
+      "bounds": {
+        "min": [
+          -0.917023,
+          0.430129,
+          -0.098712
+        ],
+        "max": [
+          -0.339446,
+          0.926313,
+          0.546398
+        ],
+        "size": [
+          0.577577,
+          0.496184,
+          0.64511
+        ]
+      }
+    },
+    {
+      "name": "PineTree",
+      "grid": [
+        1,
+        0
+      ],
+      "loose_islands": 289,
+      "vertices": 93287,
+      "polygons": 167790,
+      "bounds": {
+        "min": [
+          -0.14363,
+          0.496075,
+          -0.123307
+        ],
+        "max": [
+          0.196857,
+          0.871827,
+          0.547366
+        ],
+        "size": [
+          0.340487,
+          0.375752,
+          0.670673
+        ]
+      }
+    },
+    {
+      "name": "DeadStump",
+      "grid": [
+        2,
+        0
+      ],
+      "loose_islands": 80,
+      "vertices": 73912,
+      "polygons": 139320,
+      "bounds": {
+        "min": [
+          0.408635,
+          0.357914,
+          -0.117613
+        ],
+        "max": [
+          0.935601,
+          0.867,
+          0.505366
+        ],
+        "size": [
+          0.526966,
+          0.509086,
+          0.622979
+        ]
+      }
+    },
+    {
+      "name": "RoundedBoulder",
+      "grid": [
+        0,
+        1
+      ],
+      "loose_islands": 27,
+      "vertices": 36092,
+      "polygons": 68938,
+      "bounds": {
+        "min": [
+          -0.950097,
+          -0.028357,
+          -0.54623
+        ],
+        "max": [
+          -0.392075,
+          0.645085,
+          -0.203309
+        ],
+        "size": [
+          0.558022,
+          0.673442,
+          0.342921
+        ]
+      }
+    },
+    {
+      "name": "JaggedBoulders",
+      "grid": [
+        1,
+        1
+      ],
+      "loose_islands": 51,
+      "vertices": 52964,
+      "polygons": 100958,
+      "bounds": {
+        "min": [
+          -0.280425,
+          -0.027775,
+          -0.546251
+        ],
+        "max": [
+          0.28487,
+          0.642432,
+          -0.09536
+        ],
+        "size": [
+          0.565295,
+          0.670207,
+          0.450891
+        ]
+      }
+    },
+    {
+      "name": "RollingHill",
+      "grid": [
+        2,
+        1
+      ],
+      "loose_islands": 166,
+      "vertices": 47844,
+      "polygons": 87144,
+      "bounds": {
+        "min": [
+          0.359579,
+          -0.058077,
+          -0.546293
+        ],
+        "max": [
+          0.948827,
+          0.675336,
+          -0.380993
+        ],
+        "size": [
+          0.589248,
+          0.733413,
+          0.1653
+        ]
+      }
+    },
+    {
+      "name": "RoadTile",
+      "grid": [
+        0,
+        2
+      ],
+      "loose_islands": 8,
+      "vertices": 18397,
+      "polygons": 35580,
+      "bounds": {
+        "min": [
+          -0.950169,
+          -0.766066,
+          -0.546161
+        ],
+        "max": [
+          -0.35914,
+          -0.152468,
+          -0.482153
+        ],
+        "size": [
+          0.591029,
+          0.613598,
+          0.064008
+        ]
+      }
+    },
+    {
+      "name": "StreamTile",
+      "grid": [
+        1,
+        2
+      ],
+      "loose_islands": 12,
+      "vertices": 22333,
+      "polygons": 43180,
+      "bounds": {
+        "min": [
+          -0.307972,
+          -0.775852,
+          -0.54626
+        ],
+        "max": [
+          0.303393,
+          -0.09958,
+          -0.482995
+        ],
+        "size": [
+          0.611365,
+          0.676272,
+          0.063265
+        ]
+      }
+    },
+    {
+      "name": "BridgeTile",
+      "grid": [
+        2,
+        2
+      ],
+      "loose_islands": 65,
+      "vertices": 62984,
+      "polygons": 119068,
+      "bounds": {
+        "min": [
+          0.273374,
+          -0.927901,
+          -0.546631
+        ],
+        "max": [
+          0.948845,
+          -0.279237,
+          -0.30811
+        ],
+        "size": [
+          0.675471,
+          0.648664,
+          0.238521
+        ]
+      }
+    }
+  ]
+}

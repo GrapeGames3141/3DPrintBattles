@@ -1,0 +1,1152 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_kit_split_v2.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.950169,
+        -0.927901,
+        -0.546631
+      ],
+      "max": [
+        0.948845,
+        0.926313,
+        0.547366
+      ],
+      "size": [
+        1.899014,
+        1.854214,
+        1.093997
+      ],
+      "center": [
+        -0.000662,
+        -0.000794,
+        0.000368
+      ]
+    },
+    "objects": [
+      {
+        "name": "RoadTile",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 18781,
+        "polygons": 35580,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "RoundedBoulder",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 36731,
+        "polygons": 68938,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BroadleafTree",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 192502,
+        "polygons": 360806,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "StreamTile",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 22549,
+        "polygons": 43180,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "JaggedBoulders",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 53624,
+        "polygons": 100958,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "PineTree",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 93331,
+        "polygons": 167790,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "BridgeTile",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 63201,
+        "polygons": 119068,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "RollingHill",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 48685,
+        "polygons": 87144,
+        "materials": [
+          "material"
+        ]
+      },
+      {
+        "name": "DeadStump",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 74322,
+        "polygons": 139320,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\BroadleafTree.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.288788,
+        -0.248092,
+        0.0
+      ],
+      "max": [
+        0.288788,
+        0.248092,
+        0.64511
+      ],
+      "size": [
+        0.577577,
+        0.496184,
+        0.64511
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.322555
+      ]
+    },
+    "objects": [
+      {
+        "name": "BroadleafTree",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 192502,
+        "polygons": 360806,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\PineTree.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.170244,
+        -0.187876,
+        0.0
+      ],
+      "max": [
+        0.170244,
+        0.187876,
+        0.670673
+      ],
+      "size": [
+        0.340487,
+        0.375752,
+        0.670673
+      ],
+      "center": [
+        0.0,
+        -0.0,
+        0.335337
+      ]
+    },
+    "objects": [
+      {
+        "name": "PineTree",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 93331,
+        "polygons": 167790,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\DeadStump.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.263483,
+        -0.254543,
+        0.0
+      ],
+      "max": [
+        0.263483,
+        0.254543,
+        0.622979
+      ],
+      "size": [
+        0.526966,
+        0.509086,
+        0.622979
+      ],
+      "center": [
+        -0.0,
+        0.0,
+        0.31149
+      ]
+    },
+    "objects": [
+      {
+        "name": "DeadStump",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 74322,
+        "polygons": 139320,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\RoundedBoulder.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.279011,
+        -0.336721,
+        0.0
+      ],
+      "max": [
+        0.279011,
+        0.336721,
+        0.342921
+      ],
+      "size": [
+        0.558022,
+        0.673442,
+        0.342921
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.171461
+      ]
+    },
+    "objects": [
+      {
+        "name": "RoundedBoulder",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 36726,
+        "polygons": 68938,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\JaggedBoulders.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.282647,
+        -0.335103,
+        0.0
+      ],
+      "max": [
+        0.282647,
+        0.335103,
+        0.450891
+      ],
+      "size": [
+        0.565295,
+        0.670207,
+        0.450891
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.225445
+      ]
+    },
+    "objects": [
+      {
+        "name": "JaggedBoulders",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 53628,
+        "polygons": 100958,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\RollingHill.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.294624,
+        -0.366707,
+        0.0
+      ],
+      "max": [
+        0.294624,
+        0.366706,
+        0.1653
+      ],
+      "size": [
+        0.589248,
+        0.733413,
+        0.1653
+      ],
+      "center": [
+        0.0,
+        -0.0,
+        0.08265
+      ]
+    },
+    "objects": [
+      {
+        "name": "RollingHill",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 48690,
+        "polygons": 87144,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\RoadTile.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.295515,
+        -0.306799,
+        0.0
+      ],
+      "max": [
+        0.295514,
+        0.306799,
+        0.064008
+      ],
+      "size": [
+        0.591029,
+        0.613598,
+        0.064008
+      ],
+      "center": [
+        -0.0,
+        0.0,
+        0.032004
+      ]
+    },
+    "objects": [
+      {
+        "name": "RoadTile",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 18781,
+        "polygons": 35580,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\StreamTile.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.305683,
+        -0.338136,
+        0.0
+      ],
+      "max": [
+        0.305683,
+        0.338136,
+        0.063265
+      ],
+      "size": [
+        0.611365,
+        0.676272,
+        0.063265
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.031632
+      ]
+    },
+    "objects": [
+      {
+        "name": "StreamTile",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 22548,
+        "polygons": 43180,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\assets\\models\\enchanted_terrain_v2\\BridgeTile.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.337736,
+        -0.324332,
+        0.0
+      ],
+      "max": [
+        0.337736,
+        0.324332,
+        0.238521
+      ],
+      "size": [
+        0.675471,
+        0.648664,
+        0.238521
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.11926
+      ]
+    },
+    "objects": [
+      {
+        "name": "BridgeTile",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 63202,
+        "polygons": 119068,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  }
+]
