@@ -12,8 +12,10 @@ const FILAMENT_PER_ROUND := 2
 const MAX_FILAMENT := 10
 const PLAYER_DEFAULT_FACTION := "elves"
 const CAMERA_FOCUS := Vector3(0.0, 0.0, 4.0)
-const MIN_CAMERA_DISTANCE := 24.0
+const DEFAULT_CAMERA_DISTANCE := 55.0
+const MIN_CAMERA_DISTANCE := 8.0
 const MAX_CAMERA_DISTANCE := 72.0
+const CAMERA_DEFAULT_OFFSET := Vector3(0.0, 44.0, 51.0)
 const TOUCH_DRAG_THRESHOLD := 12.0
 
 const TERRAIN_GRASS := "grass"
@@ -70,7 +72,7 @@ var rng := RandomNumberGenerator.new()
 
 var camera_rig: Node3D
 var camera: Camera3D
-var camera_distance := 55.0
+var camera_distance := DEFAULT_CAMERA_DISTANCE
 var camera_yaw_degrees := 0.0
 var camera_dragging := false
 var active_touches := {}
@@ -185,7 +187,7 @@ func _build_camera() -> void:
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
 	camera.fov = 45.0
-	camera.position = Vector3(0.0, 44.0, camera_distance)
+	camera.position = CAMERA_FOCUS + CAMERA_DEFAULT_OFFSET
 	camera_rig.add_child(camera)
 	camera.look_at(CAMERA_FOCUS, Vector3.UP)
 
@@ -1551,17 +1553,19 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 			touch_dragged[touch_index] = true
 		var next_distance := _current_pinch_distance()
 		if pinch_distance > 0.0 and next_distance > 0.0:
-			_set_camera_distance(camera_distance - (next_distance - pinch_distance) * 0.08)
+			_set_camera_distance(camera_distance - (next_distance - pinch_distance) * 0.15)
 		pinch_distance = next_distance
 		return
 	if not pinch_active and bool(touch_dragged.get(event.index, false)):
 		camera_yaw_degrees -= event.relative.x * 0.18
 		camera_rig.rotation_degrees.y = camera_yaw_degrees
+		camera.look_at(CAMERA_FOCUS, Vector3.UP)
 
 
 func _set_camera_distance(value: float) -> void:
 	camera_distance = clampf(value, MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE)
-	camera.position.z = camera_distance
+	var zoom_ratio := camera_distance / DEFAULT_CAMERA_DISTANCE
+	camera.position = CAMERA_FOCUS + CAMERA_DEFAULT_OFFSET * zoom_ratio
 	camera.look_at(CAMERA_FOCUS, Vector3.UP)
 
 
@@ -1774,6 +1778,9 @@ func _run_smoke_test() -> void:
 	zoom_probe.relative = Vector2(40.0, 0.0)
 	_handle_screen_drag(zoom_probe)
 	assert(camera_distance < zoom_before, "Two-finger pinch-out did not zoom the combat camera in")
+	_set_camera_distance(MIN_CAMERA_DISTANCE)
+	assert(camera.position.y < 10.0, "Minimum phone zoom did not bring the camera close to the battlefield")
+	_set_camera_distance(zoom_before)
 	active_touches.clear()
 	touch_start_positions.clear()
 	touch_dragged.clear()

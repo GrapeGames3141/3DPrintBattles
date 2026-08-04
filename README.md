@@ -62,9 +62,9 @@ Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --combat-smoke-test
 Godot_v4.7.1-stable_win64_console.exe --headless --path . res://main.tscn -- --smoke-test
 
 # Builds
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.4.exe
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.5.exe
 Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Model Inspector" builds/android/PrintForge-Model-Inspector-0.3.0-arm64.apk
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Combat POC" builds/android/PrintForge-Combat-POC-0.3.4-arm64.apk
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Combat POC" builds/android/PrintForge-Combat-POC-0.3.5-arm64.apk
 ```
 
 Combat smoke success prints `COMBAT_SMOKE_OK`; inspector smoke success prints `SUMMON_LAB_SMOKE_TEST_OK`.

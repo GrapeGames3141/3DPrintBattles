@@ -1,4 +1,4 @@
-# Combat POC rules lock — 0.3.4
+# Combat POC rules lock — 0.3.5
 
 This is the implementation contract for the first Windows combat proof of concept.
 
