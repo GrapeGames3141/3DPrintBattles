@@ -16,6 +16,12 @@ const DEFAULT_CAMERA_DISTANCE := 55.0
 const MIN_CAMERA_DISTANCE := 8.0
 const MAX_CAMERA_DISTANCE := 72.0
 const CAMERA_DEFAULT_OFFSET := Vector3(0.0, 44.0, 51.0)
+const DEFAULT_CAMERA_PITCH_DEGREES := 40.78
+const MIN_CAMERA_PITCH_DEGREES := 24.0
+const MAX_CAMERA_PITCH_DEGREES := 72.0
+const CAMERA_TOUCH_PAN_SPEED := 0.035
+const CAMERA_MOUSE_PAN_SPEED := 0.028
+const CAMERA_ORBIT_SPEED := 0.18
 const TOUCH_DRAG_THRESHOLD := 12.0
 
 const TERRAIN_GRASS := "grass"
@@ -73,13 +79,18 @@ var rng := RandomNumberGenerator.new()
 var camera_rig: Node3D
 var camera: Camera3D
 var camera_distance := DEFAULT_CAMERA_DISTANCE
+var camera_focus := CAMERA_FOCUS
 var camera_yaw_degrees := 0.0
+var camera_pitch_degrees := DEFAULT_CAMERA_PITCH_DEGREES
 var camera_dragging := false
+var camera_rotation_dragging := false
 var active_touches := {}
 var touch_start_positions := {}
 var touch_dragged := {}
 var pinch_distance := -1.0
 var pinch_active := false
+var two_finger_angle := 0.0
+var two_finger_centroid := Vector2.ZERO
 var world_root: Node3D
 var terrain_root: Node3D
 var prop_root: Node3D
@@ -187,9 +198,8 @@ func _build_camera() -> void:
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
 	camera.fov = 45.0
-	camera.position = CAMERA_FOCUS + CAMERA_DEFAULT_OFFSET
 	camera_rig.add_child(camera)
-	camera.look_at(CAMERA_FOCUS, Vector3.UP)
+	_update_camera_transform()
 
 
 func _build_map() -> void:
@@ -438,6 +448,10 @@ func _build_ui() -> void:
 	active_label = _label("DEPLOYMENT", 18, Color("#8ccfff"))
 	active_label.custom_minimum_size.x = 290.0
 	top_row.add_child(active_label)
+	var reset_view_button := _action_button("RESET VIEW")
+	reset_view_button.custom_minimum_size = Vector2(112.0, 38.0)
+	reset_view_button.pressed.connect(_reset_camera_view)
+	top_row.add_child(reset_view_button)
 
 	var roster_box := PanelContainer.new()
 	roster_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
@@ -619,7 +633,7 @@ func _begin_match(chosen_faction: String) -> void:
 		return
 	_start_spawn_phase()
 	if OS.has_feature("mobile"):
-		_set_notice("Touch: drag to rotate, pinch to zoom, and tap to select.")
+		_set_notice("Touch: one finger pans; two-finger twist rotates; two-finger slide tilts; pinch zooms.")
 	if smoke_mode:
 		call_deferred("_run_smoke_test")
 
@@ -1488,6 +1502,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if event.button_index == MOUSE_BUTTON_MIDDLE:
 			camera_dragging = event.pressed
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			camera_rotation_dragging = event.pressed
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_set_camera_distance(camera_distance - 2.0)
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -1497,18 +1513,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			if cell.x >= 0:
 				_on_cell_clicked(cell)
 	elif event is InputEventMouseMotion and camera_dragging:
-		var right := camera.global_transform.basis.x
-		var forward := -camera.global_transform.basis.z
-		right.y = 0.0
-		forward.y = 0.0
-		camera_rig.position += (-right.normalized() * event.relative.x - forward.normalized() * event.relative.y) * 0.028
+		_pan_camera(event.relative, CAMERA_MOUSE_PAN_SPEED)
+	elif event is InputEventMouseMotion and camera_rotation_dragging:
+		_orbit_camera(event.relative)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_Q:
 			camera_yaw_degrees -= 45.0
-			camera_rig.rotation_degrees.y = camera_yaw_degrees
+			_update_camera_transform()
 		elif event.keycode == KEY_E:
 			camera_yaw_degrees += 45.0
-			camera_rig.rotation_degrees.y = camera_yaw_degrees
+			_update_camera_transform()
+		elif event.keycode == KEY_HOME:
+			_reset_camera_view()
 		elif event.keycode == KEY_ESCAPE and _player_can_act():
 			input_mode = "move"
 			reachable_cache = _reachable_cells(active_unit_id)
@@ -1525,6 +1541,8 @@ func _handle_screen_touch(event: InputEventScreenTouch) -> void:
 		if active_touches.size() >= 2:
 			pinch_active = true
 			pinch_distance = _current_pinch_distance()
+			two_finger_angle = _current_two_finger_angle()
+			two_finger_centroid = _current_touch_centroid()
 			for touch_index in touch_dragged.keys():
 				touch_dragged[touch_index] = true
 		return
@@ -1534,6 +1552,8 @@ func _handle_screen_touch(event: InputEventScreenTouch) -> void:
 	touch_dragged.erase(event.index)
 	if active_touches.size() < 2:
 		pinch_distance = -1.0
+		two_finger_angle = 0.0
+		two_finger_centroid = Vector2.ZERO
 	if active_touches.is_empty():
 		pinch_active = false
 	if not was_gesture:
@@ -1552,21 +1572,74 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 		for touch_index in touch_dragged.keys():
 			touch_dragged[touch_index] = true
 		var next_distance := _current_pinch_distance()
+		var next_angle := _current_two_finger_angle()
+		var next_centroid := _current_touch_centroid()
 		if pinch_distance > 0.0 and next_distance > 0.0:
 			_set_camera_distance(camera_distance - (next_distance - pinch_distance) * 0.15)
+		var angle_delta := wrapf(next_angle - two_finger_angle, -PI, PI)
+		camera_yaw_degrees -= rad_to_deg(angle_delta)
+		camera_pitch_degrees = clampf(
+			camera_pitch_degrees - (next_centroid.y - two_finger_centroid.y) * CAMERA_ORBIT_SPEED,
+			MIN_CAMERA_PITCH_DEGREES,
+			MAX_CAMERA_PITCH_DEGREES
+		)
 		pinch_distance = next_distance
+		two_finger_angle = next_angle
+		two_finger_centroid = next_centroid
+		_update_camera_transform()
 		return
 	if not pinch_active and bool(touch_dragged.get(event.index, false)):
-		camera_yaw_degrees -= event.relative.x * 0.18
-		camera_rig.rotation_degrees.y = camera_yaw_degrees
-		camera.look_at(CAMERA_FOCUS, Vector3.UP)
+		_pan_camera(event.relative, CAMERA_TOUCH_PAN_SPEED)
+
+
+func _pan_camera(screen_delta: Vector2, speed: float) -> void:
+	var right := camera.global_transform.basis.x
+	var forward := -camera.global_transform.basis.z
+	right.y = 0.0
+	forward.y = 0.0
+	if right.length_squared() < 0.0001 or forward.length_squared() < 0.0001:
+		return
+	var zoom_scale := clampf(camera_distance / DEFAULT_CAMERA_DISTANCE, 0.35, 1.35)
+	camera_focus += (-right.normalized() * screen_delta.x - forward.normalized() * screen_delta.y) * speed * zoom_scale
+	var x_limit := float(MAP_WIDTH - 1) * CELL_SIZE * 0.55
+	var z_limit := float(MAP_HEIGHT - 1) * CELL_SIZE * 0.55
+	camera_focus.x = clampf(camera_focus.x, -x_limit, x_limit)
+	camera_focus.z = clampf(camera_focus.z, -z_limit, z_limit)
+	_update_camera_transform()
+
+
+func _orbit_camera(screen_delta: Vector2) -> void:
+	camera_yaw_degrees -= screen_delta.x * CAMERA_ORBIT_SPEED
+	camera_pitch_degrees = clampf(
+		camera_pitch_degrees - screen_delta.y * CAMERA_ORBIT_SPEED,
+		MIN_CAMERA_PITCH_DEGREES,
+		MAX_CAMERA_PITCH_DEGREES
+	)
+	_update_camera_transform()
+
+
+func _reset_camera_view() -> void:
+	camera_focus = CAMERA_FOCUS
+	camera_distance = DEFAULT_CAMERA_DISTANCE
+	camera_yaw_degrees = 0.0
+	camera_pitch_degrees = DEFAULT_CAMERA_PITCH_DEGREES
+	_update_camera_transform()
+
+
+func _update_camera_transform() -> void:
+	if camera == null or camera_rig == null:
+		return
+	camera_rig.position = camera_focus
+	camera_rig.rotation_degrees.y = camera_yaw_degrees
+	var orbit_length := CAMERA_DEFAULT_OFFSET.length() * camera_distance / DEFAULT_CAMERA_DISTANCE
+	var pitch_radians := deg_to_rad(camera_pitch_degrees)
+	camera.position = Vector3(0.0, sin(pitch_radians) * orbit_length, cos(pitch_radians) * orbit_length)
+	camera.look_at(camera_focus, Vector3.UP)
 
 
 func _set_camera_distance(value: float) -> void:
 	camera_distance = clampf(value, MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE)
-	var zoom_ratio := camera_distance / DEFAULT_CAMERA_DISTANCE
-	camera.position = CAMERA_FOCUS + CAMERA_DEFAULT_OFFSET * zoom_ratio
-	camera.look_at(CAMERA_FOCUS, Vector3.UP)
+	_update_camera_transform()
 
 
 func _current_pinch_distance() -> float:
@@ -1574,6 +1647,24 @@ func _current_pinch_distance() -> float:
 		return -1.0
 	var positions: Array = active_touches.values()
 	return (positions[0] as Vector2).distance_to(positions[1] as Vector2)
+
+
+func _current_two_finger_angle() -> float:
+	if active_touches.size() < 2:
+		return 0.0
+	var positions: Array = active_touches.values()
+	var first: Vector2 = positions[0]
+	var second: Vector2 = positions[1]
+	return (second - first).angle()
+
+
+func _current_touch_centroid() -> Vector2:
+	if active_touches.is_empty():
+		return Vector2.ZERO
+	var result := Vector2.ZERO
+	for position in active_touches.values():
+		result += position as Vector2
+	return result / float(active_touches.size())
 
 
 func _screen_to_cell(screen_position: Vector2) -> Vector2i:
@@ -1755,23 +1846,49 @@ func _run_smoke_test() -> void:
 	_start_target_selection(targeting_probe, "attack", Color("#ff4c4c88"))
 	assert(target_cache == targeting_probe, "Target selection was erased while clearing old overlays")
 	_clear_overlays()
-	var yaw_before := camera_yaw_degrees
+	var focus_before := camera_focus
 	active_touches[0] = Vector2(100.0, 100.0)
 	touch_start_positions[0] = Vector2(100.0, 100.0)
 	touch_dragged[0] = false
-	var rotate_probe := InputEventScreenDrag.new()
-	rotate_probe.index = 0
-	rotate_probe.position = Vector2(140.0, 100.0)
-	rotate_probe.relative = Vector2(40.0, 0.0)
-	_handle_screen_drag(rotate_probe)
-	assert(not is_equal_approx(yaw_before, camera_yaw_degrees), "One-finger drag did not rotate the combat camera")
+	var pan_probe := InputEventScreenDrag.new()
+	pan_probe.index = 0
+	pan_probe.position = Vector2(140.0, 100.0)
+	pan_probe.relative = Vector2(40.0, 0.0)
+	_handle_screen_drag(pan_probe)
+	assert(not camera_focus.is_equal_approx(focus_before), "One-finger drag did not pan the combat camera")
 	active_touches.clear()
 	touch_start_positions.clear()
 	touch_dragged.clear()
+	pinch_active = false
+	pinch_distance = -1.0
+	var yaw_before := camera_yaw_degrees
+	var pitch_before := camera_pitch_degrees
+	active_touches[0] = Vector2(100.0, 100.0)
+	active_touches[1] = Vector2(200.0, 100.0)
+	touch_start_positions[0] = active_touches[0]
+	touch_start_positions[1] = active_touches[1]
+	touch_dragged[0] = true
+	touch_dragged[1] = true
+	pinch_distance = _current_pinch_distance()
+	two_finger_angle = _current_two_finger_angle()
+	two_finger_centroid = _current_touch_centroid()
+	var orbit_probe := InputEventScreenDrag.new()
+	orbit_probe.index = 0
+	orbit_probe.position = Vector2(100.0, 60.0)
+	orbit_probe.relative = Vector2(0.0, -40.0)
+	_handle_screen_drag(orbit_probe)
+	assert(not is_equal_approx(yaw_before, camera_yaw_degrees), "Two-finger twist did not rotate the combat camera")
+	assert(not is_equal_approx(pitch_before, camera_pitch_degrees), "Two-finger vertical slide did not tilt the combat camera")
+	active_touches.clear()
+	touch_start_positions.clear()
+	touch_dragged.clear()
+	pinch_active = false
 	var zoom_before := camera_distance
 	active_touches[0] = Vector2(100.0, 100.0)
 	active_touches[1] = Vector2(200.0, 100.0)
 	pinch_distance = _current_pinch_distance()
+	two_finger_angle = _current_two_finger_angle()
+	two_finger_centroid = _current_touch_centroid()
 	var zoom_probe := InputEventScreenDrag.new()
 	zoom_probe.index = 1
 	zoom_probe.position = Vector2(240.0, 100.0)
@@ -1781,6 +1898,9 @@ func _run_smoke_test() -> void:
 	_set_camera_distance(MIN_CAMERA_DISTANCE)
 	assert(camera.position.y < 10.0, "Minimum phone zoom did not bring the camera close to the battlefield")
 	_set_camera_distance(zoom_before)
+	_reset_camera_view()
+	assert(camera_focus.is_equal_approx(CAMERA_FOCUS), "Reset view did not restore the tactical focus")
+	assert(is_equal_approx(camera_yaw_degrees, 0.0), "Reset view did not restore camera rotation")
 	active_touches.clear()
 	touch_start_positions.clear()
 	touch_dragged.clear()

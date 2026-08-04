@@ -17,14 +17,16 @@ Turns resolve by Initiative. A unit may move and then use one basic attack, abil
 
 - Left-click a blue square to move; click a highlighted target to attack or use an ability.
 - Use the roster buttons during deployment, or skip the round's spawn.
-- Middle-drag pans the camera; mouse wheel zooms; Q/E rotates by 45 degrees.
+- Middle-drag pans the camera; right-drag rotates and tilts; mouse wheel zooms; Q/E rotates by 45 degrees.
+- Use **Reset View** (or Home) to restore the default tactical framing.
 - Escape cancels targeting and restores movement highlights.
 
 ### Phone combat controls
 
 - Tap a highlighted grid square to move or choose a target.
-- Drag one finger horizontally across the battlefield to rotate the camera.
-- Pinch with two fingers to zoom in or out.
+- Drag one finger to pan across the battlefield.
+- Twist two fingers to rotate; slide them vertically together to tilt; pinch to zoom in or out.
+- Use **Reset View** to return to the default tactical framing.
 - Camera gestures are separated from taps so dragging cannot trigger a grid action.
 
 ### Rosters
