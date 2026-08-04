@@ -1,6 +1,13 @@
 extends Node3D
 
 const CombatDataScript := preload("res://scripts/combat_data.gd")
+const CombatAIScript := preload("res://scripts/combat_ai.gd")
+const CombatCameraScript := preload("res://scripts/combat_camera.gd")
+const CombatGridScript := preload("res://scripts/combat_grid.gd")
+const CombatHudScript := preload("res://scripts/combat_hud.gd")
+const CombatRulesScript := preload("res://scripts/combat_rules.gd")
+const CombatStateScript := preload("res://scripts/combat_state.gd")
+const CombatUnitViewScript := preload("res://scripts/combat_unit_view.gd")
 const TERRAIN_KIT_SCENE: PackedScene = preload("res://assets/models/enchanted_terrain_kit_runtime.glb")
 
 const MAP_WIDTH := 25
@@ -18,13 +25,6 @@ const MIN_CAMERA_DISTANCE := 8.0
 const MAX_CAMERA_DISTANCE := 72.0
 const CAMERA_DEFAULT_OFFSET := Vector3(0.0, 44.0, 51.0)
 const DEFAULT_CAMERA_PITCH_DEGREES := 40.78
-const MIN_CAMERA_PITCH_DEGREES := 24.0
-const MAX_CAMERA_PITCH_DEGREES := 72.0
-const CAMERA_TOUCH_PAN_SPEED := 0.035
-const CAMERA_MOUSE_PAN_SPEED := 0.028
-const CAMERA_ORBIT_SPEED := 0.18
-const TOUCH_DRAG_THRESHOLD := 12.0
-
 const TERRAIN_GRASS := "grass"
 const TERRAIN_ROAD := "road"
 const TERRAIN_WATER := "water"
@@ -79,19 +79,13 @@ var rng := RandomNumberGenerator.new()
 
 var camera_rig: Node3D
 var camera: Camera3D
-var camera_distance := DEFAULT_CAMERA_DISTANCE
-var camera_focus := CAMERA_FOCUS
-var camera_yaw_degrees := 0.0
-var camera_pitch_degrees := DEFAULT_CAMERA_PITCH_DEGREES
-var camera_dragging := false
-var camera_rotation_dragging := false
-var active_touches := {}
-var touch_start_positions := {}
-var touch_dragged := {}
-var pinch_distance := -1.0
-var pinch_active := false
-var two_finger_angle := 0.0
-var two_finger_centroid := Vector2.ZERO
+var camera_controller
+var grid_navigation
+var combat_rules
+var combat_ai
+var combat_state
+var unit_view
+var hud_builder
 var world_root: Node3D
 var terrain_root: Node3D
 var prop_root: Node3D
@@ -124,6 +118,14 @@ var terrain_instance_counts := {}
 
 func _ready() -> void:
 	CombatDataScript.validate()
+	combat_ai = CombatAIScript.new()
+	combat_state = CombatStateScript.new()
+	unit_view = CombatUnitViewScript.new()
+	hud_builder = CombatHudScript.new()
+	combat_rules = CombatRulesScript.new()
+	combat_rules.configure(units, CombatDataScript.UNITS)
+	grid_navigation = CombatGridScript.new()
+	grid_navigation.configure(MAP_WIDTH, MAP_HEIGHT, CELL_SIZE, terrain, obstacles, printer_cells, units, cell_occupants, TERRAIN_WATER)
 	rng.seed = 1337
 	_parse_command_line()
 	_build_world()
@@ -202,7 +204,21 @@ func _build_camera() -> void:
 	camera.name = "Camera3D"
 	camera.fov = 45.0
 	camera_rig.add_child(camera)
-	_update_camera_transform()
+	camera_controller = CombatCameraScript.new()
+	camera_controller.configure(
+		camera_rig,
+		camera,
+		world_root,
+		MAP_WIDTH,
+		MAP_HEIGHT,
+		CELL_SIZE,
+		CAMERA_FOCUS,
+		DEFAULT_CAMERA_DISTANCE,
+		MIN_CAMERA_DISTANCE,
+		MAX_CAMERA_DISTANCE,
+		CAMERA_DEFAULT_OFFSET,
+		DEFAULT_CAMERA_PITCH_DEGREES
+	)
 
 
 func _build_map() -> void:
@@ -477,195 +493,49 @@ func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
 
 
 func _cell_to_world(cell: Vector2i) -> Vector3:
-	return Vector3((float(cell.x) - 12.0) * CELL_SIZE, 0.0, (float(cell.y) - 16.0) * CELL_SIZE)
+	return grid_navigation.cell_to_world(cell)
 
 
 func _cells_center(cells: Array) -> Vector3:
-	var result := Vector3.ZERO
-	for cell in cells:
-		result += _cell_to_world(cell)
-	return result / float(cells.size())
+	return grid_navigation.cells_center(cells)
 
 
 func _build_ui() -> void:
-	var canvas := CanvasLayer.new()
-	canvas.name = "CombatUI"
-	add_child(canvas)
-
-	var top_bar := PanelContainer.new()
-	top_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	top_bar.offset_bottom = 58.0
-	top_bar.add_theme_stylebox_override("panel", _panel_style(Color("#101b2dda"), Color("#d7bb75")))
-	canvas.add_child(top_bar)
-	var top_row := HBoxContainer.new()
-	top_row.add_theme_constant_override("separation", 28)
-	top_bar.add_child(top_row)
-	top_status = _label("PRINTFORGE // COMBAT PROOF", 20, Color("#ffd886"))
-	top_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_row.add_child(top_status)
-	round_label = _label("ROUND 1", 18, Color.WHITE)
-	top_row.add_child(round_label)
-	printer_label = _label("FORGES G50 • E50", 16, Color("#ffb49c"))
-	top_row.add_child(printer_label)
-	filament_label = _label("FILAMENT", 18, Color("#7de3b0"))
-	top_row.add_child(filament_label)
-	active_label = _label("DEPLOYMENT", 18, Color("#8ccfff"))
-	active_label.custom_minimum_size.x = 290.0
-	top_row.add_child(active_label)
-	var reset_view_button := _action_button("RESET VIEW")
-	reset_view_button.custom_minimum_size = Vector2(112.0, 38.0)
-	reset_view_button.pressed.connect(_reset_camera_view)
-	top_row.add_child(reset_view_button)
-
-	var roster_box := PanelContainer.new()
-	roster_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
-	roster_box.position = Vector2(16.0, -245.0)
-	roster_box.size = Vector2(300.0, 490.0)
-	roster_box.add_theme_stylebox_override("panel", _panel_style(Color("#101b2ded"), Color("#53718b")))
-	canvas.add_child(roster_box)
-	var roster_margin := MarginContainer.new()
-	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-		roster_margin.add_theme_constant_override(side, 12)
-	roster_box.add_child(roster_margin)
-	roster_panel = VBoxContainer.new()
-	roster_panel.add_theme_constant_override("separation", 8)
-	roster_margin.add_child(roster_panel)
-
-	var inspector_box := PanelContainer.new()
-	inspector_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
-	inspector_box.position = Vector2(-316.0, -245.0)
-	inspector_box.size = Vector2(300.0, 490.0)
-	inspector_box.add_theme_stylebox_override("panel", _panel_style(Color("#101b2ded"), Color("#53718b")))
-	canvas.add_child(inspector_box)
-	var inspector_margin := MarginContainer.new()
-	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-		inspector_margin.add_theme_constant_override(side, 14)
-	inspector_box.add_child(inspector_margin)
-	var inspector_column := VBoxContainer.new()
-	inspector_column.add_theme_constant_override("separation", 8)
-	inspector_margin.add_child(inspector_column)
-	inspector_title = _label("SELECT A UNIT", 22, Color("#ffd886"))
-	inspector_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inspector_column.add_child(inspector_title)
-	inspector_portrait = TextureRect.new()
-	inspector_portrait.custom_minimum_size.y = 92.0
-	inspector_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	inspector_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	inspector_column.add_child(inspector_portrait)
-	inspector_body = _label("Choose a roster card to deploy, or click a figure on the field.", 14, Color("#d8e2ed"))
-	inspector_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inspector_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	inspector_column.add_child(inspector_body)
-
-	var bottom_box := PanelContainer.new()
-	bottom_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	bottom_box.position = Vector2(-350.0, -82.0)
-	bottom_box.size = Vector2(700.0, 66.0)
-	bottom_box.add_theme_stylebox_override("panel", _panel_style(Color("#101b2ded"), Color("#d7bb75")))
-	canvas.add_child(bottom_box)
-	action_panel = HBoxContainer.new()
-	action_panel.alignment = BoxContainer.ALIGNMENT_CENTER
-	action_panel.add_theme_constant_override("separation", 12)
-	bottom_box.add_child(action_panel)
-	attack_button = _action_button("BASIC ATTACK")
-	attack_button.pressed.connect(_on_attack_pressed)
-	action_panel.add_child(attack_button)
-	ability_button = _action_button("ABILITY")
-	ability_button.pressed.connect(_on_ability_pressed)
-	action_panel.add_child(ability_button)
-	wait_button = _action_button("WAIT")
-	wait_button.pressed.connect(_on_wait_pressed)
-	action_panel.add_child(wait_button)
-	skip_spawn_button = _action_button("SKIP SPAWN")
-	skip_spawn_button.pressed.connect(_on_skip_spawn_pressed)
-	action_panel.add_child(skip_spawn_button)
-
-	faction_overlay = _build_modal(canvas, "CHOOSE YOUR ARMY", "The other army is controlled by the tactical AI.")
-	var modal_buttons: HBoxContainer = faction_overlay.get_node("Panel/Margin/Column/Buttons")
-	var elves_button := _action_button("PLAY ELVES")
-	elves_button.pressed.connect(_begin_match.bind("elves"))
-	modal_buttons.add_child(elves_button)
-	var goblins_button := _action_button("PLAY GOBLINS")
-	goblins_button.pressed.connect(_begin_match.bind("goblins"))
-	modal_buttons.add_child(goblins_button)
-
-	winner_overlay = _build_modal(canvas, "BATTLE COMPLETE", "")
-	winner_label = winner_overlay.get_node("Panel/Margin/Column/Body")
-	var winner_buttons: HBoxContainer = winner_overlay.get_node("Panel/Margin/Column/Buttons")
-	var rematch := _action_button("REMATCH")
-	rematch.pressed.connect(_reload_scene)
-	winner_buttons.add_child(rematch)
-	winner_overlay.visible = false
+	var refs: Dictionary = hud_builder.build(self, {
+		"reset_view": _reset_camera_view,
+		"attack": _on_attack_pressed,
+		"ability": _on_ability_pressed,
+		"wait": _on_wait_pressed,
+		"skip_spawn": _on_skip_spawn_pressed,
+		"choose_faction": _begin_match,
+		"reload": _reload_scene,
+	})
+	top_status = refs["top_status"] as Label
+	round_label = refs["round_label"] as Label
+	printer_label = refs["printer_label"] as Label
+	filament_label = refs["filament_label"] as Label
+	active_label = refs["active_label"] as Label
+	roster_panel = refs["roster_panel"] as VBoxContainer
+	inspector_title = refs["inspector_title"] as Label
+	inspector_portrait = refs["inspector_portrait"] as TextureRect
+	inspector_body = refs["inspector_body"] as Label
+	action_panel = refs["action_panel"] as HBoxContainer
+	attack_button = refs["attack_button"] as Button
+	ability_button = refs["ability_button"] as Button
+	wait_button = refs["wait_button"] as Button
+	skip_spawn_button = refs["skip_spawn_button"] as Button
+	faction_overlay = refs["faction_overlay"] as Control
+	winner_overlay = refs["winner_overlay"] as Control
+	winner_label = refs["winner_label"] as Label
 	_update_ui()
 
 
-func _build_modal(canvas: CanvasLayer, heading: String, body: String) -> Control:
-	var shade := ColorRect.new()
-	shade.color = Color("#07101bd9")
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_STOP
-	canvas.add_child(shade)
-	var panel := PanelContainer.new()
-	panel.name = "Panel"
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-270.0, -125.0)
-	panel.size = Vector2(540.0, 250.0)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color("#132238"), Color("#d7bb75"), 3))
-	shade.add_child(panel)
-	var margin := MarginContainer.new()
-	margin.name = "Margin"
-	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-		margin.add_theme_constant_override(side, 24)
-	panel.add_child(margin)
-	var column := VBoxContainer.new()
-	column.name = "Column"
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 18)
-	margin.add_child(column)
-	var title := _label(heading, 28, Color("#ffd886"))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
-	var body_label := _label(body, 17, Color("#d8e2ed"))
-	body_label.name = "Body"
-	body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(body_label)
-	var buttons := HBoxContainer.new()
-	buttons.name = "Buttons"
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 14)
-	column.add_child(buttons)
-	return shade
-
-
-func _panel_style(color: Color, border: Color, width := 2) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.border_color = border
-	style.set_border_width_all(width)
-	style.set_corner_radius_all(8)
-	style.content_margin_left = 14.0
-	style.content_margin_right = 14.0
-	style.content_margin_top = 10.0
-	style.content_margin_bottom = 10.0
-	return style
-
-
 func _label(text_value: String, size: int, color: Color) -> Label:
-	var result := Label.new()
-	result.text = text_value
-	result.add_theme_font_size_override("font_size", size)
-	result.add_theme_color_override("font_color", color)
-	return result
+	return hud_builder.label(text_value, size, color)
 
 
 func _action_button(text_value: String) -> Button:
-	var result := Button.new()
-	result.text = text_value
-	result.custom_minimum_size = Vector2(145.0, 42.0)
-	result.add_theme_font_size_override("font_size", 15)
-	return result
+	return hud_builder.action_button(text_value)
 
 
 func _show_faction_choice() -> void:
@@ -683,12 +553,7 @@ func _begin_match(chosen_faction: String) -> void:
 	faction_overlay.visible = false
 	first_faction = CombatDataScript.FACTION_ELVES if rng.randi_range(0, 1) == 0 else CombatDataScript.FACTION_GOBLINS
 	faction_state.clear()
-	for faction in CombatDataScript.ROSTERS.keys():
-		faction_state[faction] = {
-			"filament": STARTING_FILAMENT,
-			"reserve": CombatDataScript.ROSTERS[faction].duplicate(),
-			"spawned": false,
-		}
+	faction_state.assign(combat_state.create_faction_state(CombatDataScript.ROSTERS, STARTING_FILAMENT))
 	phase = "spawn"
 	round_number = 1
 	if capture_mode:
@@ -802,19 +667,7 @@ func _spawn_unit(faction: String, unit_key: String, cell: Vector2i, animate: boo
 	var node := _build_unit_figure(id, data, faction)
 	node.position = _cell_to_world(cell)
 	unit_root.add_child(node)
-	var entry := {
-		"id": id,
-		"key": unit_key,
-		"faction": faction,
-		"cell": cell,
-		"hp": int(data["hp"]),
-		"max_hp": int(data["hp"]),
-		"cooldown": 0,
-		"acted": false,
-		"moved": 0,
-		"statuses": {},
-		"node": node,
-	}
+	var entry: Dictionary = combat_state.create_unit_entry(id, unit_key, faction, cell, int(data["hp"]), node)
 	units[id] = entry
 	cell_occupants[cell] = id
 	faction_state[faction]["filament"] = int(faction_state[faction]["filament"]) - int(data["cost"])
@@ -826,192 +679,20 @@ func _spawn_unit(faction: String, unit_key: String, cell: Vector2i, animate: boo
 
 
 func _build_unit_figure(id: String, data: Dictionary, faction: String) -> Node3D:
-	var root := Node3D.new()
-	root.name = id
-	var style: Dictionary = CombatDataScript.RARITY_STYLE[data["rarity"]]
-	var base := MeshInstance3D.new()
-	var disc := CylinderMesh.new()
-	disc.top_radius = 0.65
-	disc.bottom_radius = 0.72
-	disc.height = 0.20
-	base.mesh = disc
-	base.position.y = 0.10
-	base.material_override = _material(style["color"], 0.55, 0.32 if data["rarity"] == "Rare" else 0.06)
-	root.add_child(base)
-	for index in range(int(style["chevrons"])):
-		var mark := MeshInstance3D.new()
-		var mark_mesh := BoxMesh.new()
-		mark_mesh.size = Vector3(0.16, 0.035, 0.05)
-		mark.mesh = mark_mesh
-		mark.position = Vector3((float(index) - float(style["chevrons"] - 1) * 0.5) * 0.20, 0.225, 0.54)
-		mark.rotation_degrees.y = -18.0 if index % 2 == 0 else 18.0
-		mark.material_override = _emissive_material(style["edge"], 1.6)
-		root.add_child(mark)
-
-	var visual_anchor := Node3D.new()
-	visual_anchor.name = "Visual"
-	visual_anchor.position.y = 0.21
-	root.add_child(visual_anchor)
-	if not smoke_mode and data.has("scene") and ResourceLoader.exists(data["scene"]):
-		var resource := load(data["scene"]) as PackedScene
-		if resource != null:
-			var model := resource.instantiate()
-			visual_anchor.add_child(model)
-			_hide_helper_meshes(model)
-			_fit_model_to_base(model)
-			_start_model_idle(model)
-	else:
-		_build_cardboard_placeholder(visual_anchor, data, faction)
-	return root
-
-
-func _start_model_idle(model: Node) -> void:
-	var players := model.find_children("*", "AnimationPlayer", true, false)
-	for candidate in players:
-		var player := candidate as AnimationPlayer
-		if player == null:
-			continue
-		for preferred in ["Idle_6", "Idle", "idle", "Armature|clip0|baselayer"]:
-			if player.has_animation(preferred):
-				player.play(preferred)
-				return
-
+	return unit_view.build_unit_figure(id, data, faction, not smoke_mode)
 
 func _play_unit_animation(id: String, preferred: Array[String]) -> void:
 	if not units.has(id):
 		return
-	var figure := units[id]["node"] as Node
-	for candidate in figure.find_children("*", "AnimationPlayer", true, false):
-		var player := candidate as AnimationPlayer
-		if player == null:
-			continue
-		for animation_name in preferred:
-			if player.has_animation(animation_name):
-				player.play(animation_name)
-				return
+	unit_view.play_animation(units[id]["node"] as Node, preferred)
 
 
 func _resume_unit_idle(id: String) -> void:
 	if not units.has(id):
 		return
-	var figure := units[id]["node"] as Node
-	for candidate in figure.find_children("*", "AnimationPlayer", true, false):
-		var player := candidate as AnimationPlayer
-		if player == null:
-			continue
-		for animation_name in ["Idle_6", "Idle", "idle", "RESET"]:
-			if player.has_animation(animation_name):
-				player.play(animation_name)
-				return
-
-
-func _build_cardboard_placeholder(anchor: Node3D, data: Dictionary, faction: String) -> void:
-	var faction_color: Color = CombatDataScript.FACTIONS[faction]["color"]
-	var cardboard_core := MeshInstance3D.new()
-	cardboard_core.name = "CardboardCore"
-	var core_mesh := BoxMesh.new()
-	core_mesh.size = Vector3(0.82, 1.30, 0.82)
-	cardboard_core.mesh = core_mesh
-	cardboard_core.position.y = 0.68
-	cardboard_core.material_override = _material(Color("#8f7045"), 0.96, 0.0)
-	anchor.add_child(cardboard_core)
-
-	var concept_directory := str(data["concept"]).get_base_dir()
-	_add_cardboard_face(anchor, "Front", "%s/front.png" % concept_directory, Vector3(0.0, 0.68, 0.416), 0.0)
-	_add_cardboard_face(anchor, "Back", "%s/back.png" % concept_directory, Vector3(0.0, 0.68, -0.416), 180.0)
-	_add_cardboard_face(anchor, "Left", "%s/left.png" % concept_directory, Vector3(-0.416, 0.68, 0.0), -90.0)
-	_add_cardboard_face(anchor, "Right", "%s/right.png" % concept_directory, Vector3(0.416, 0.68, 0.0), 90.0)
-
-	var team_lid := MeshInstance3D.new()
-	team_lid.name = "TeamColorTop"
-	var lid_mesh := BoxMesh.new()
-	lid_mesh.size = Vector3(0.86, 0.065, 0.86)
-	team_lid.mesh = lid_mesh
-	team_lid.position.y = 1.36
-	team_lid.material_override = _emissive_material(faction_color, 0.85)
-	anchor.add_child(team_lid)
-
-
-func _add_cardboard_face(
-	anchor: Node3D,
-	face_name: String,
-	texture_path: String,
-	position: Vector3,
-	rotation_y_degrees: float
-) -> void:
-	var panel := MeshInstance3D.new()
-	panel.name = "CardFace_%s" % face_name
-	var panel_mesh := QuadMesh.new()
-	panel_mesh.size = Vector2(0.76, 1.18)
-	panel.mesh = panel_mesh
-	panel.position = position
-	panel.rotation_degrees.y = rotation_y_degrees
-	var panel_material := StandardMaterial3D.new()
-	panel_material.albedo_color = Color("#f1dfbd")
-	panel_material.roughness = 0.94
-	panel_material.metallic = 0.0
-	panel_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	panel_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	if ResourceLoader.exists(texture_path):
-		panel_material.albedo_texture = load(texture_path) as Texture2D
-	panel.material_override = panel_material
-	anchor.add_child(panel)
-
-
-func _hide_helper_meshes(node: Node) -> void:
-	if node is MeshInstance3D and str(node.name).to_lower().contains("icosphere"):
-		node.visible = false
-	for child in node.get_children():
-		_hide_helper_meshes(child)
-
-
-func _fit_model_to_base(model: Node3D) -> void:
-	model.scale = Vector3.ONE
-	model.position = Vector3.ZERO
-	var combined := AABB()
-	var has_bounds := false
-	for candidate in model.find_children("*", "MeshInstance3D", true, false):
-		var mesh := candidate as MeshInstance3D
-		if mesh == null or not mesh.visible or mesh.mesh == null:
-			continue
-		# Meshy skins retain a 0.01 armature-parent scale that is already handled by
-		# skinning at render time. Applying that parent transform to the authored
-		# mesh AABB makes the character appear 100x smaller than its real visual size.
-		var bounds := mesh.get_aabb()
-		combined = combined.merge(bounds) if has_bounds else bounds
-		has_bounds = true
-	if not has_bounds or combined.size.y <= 0.001:
-		model.scale = Vector3.ONE * 0.72
-		return
-	var horizontal_span := maxf(combined.size.x, combined.size.z)
-	var height_scale := 1.72 / combined.size.y
-	var width_scale := 1.05 / horizontal_span if horizontal_span > 0.001 else height_scale
-	var fit_scale := minf(height_scale, width_scale)
-	model.scale = Vector3.ONE * fit_scale
-	model.position = Vector3(
-		-(combined.position.x + combined.size.x * 0.5) * fit_scale,
-		-combined.position.y * fit_scale,
-		-(combined.position.z + combined.size.z * 0.5) * fit_scale
-	)
-
-
+	unit_view.resume_idle(units[id]["node"] as Node)
 func _play_print_animation(node: Node3D, color: Color) -> void:
-	var visual: Node3D = node.get_node("Visual")
-	visual.scale = Vector3(1.0, 0.01, 1.0)
-	var scan := MeshInstance3D.new()
-	var scan_mesh := CylinderMesh.new()
-	scan_mesh.top_radius = 0.76
-	scan_mesh.bottom_radius = 0.76
-	scan_mesh.height = 0.035
-	scan.mesh = scan_mesh
-	scan.position.y = 0.24
-	scan.material_override = _emissive_material(color, 4.0)
-	node.add_child(scan)
-	var tween := create_tween().set_parallel(true)
-	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(visual, "scale:y", 1.0, 0.75)
-	tween.tween_property(scan, "position:y", 2.25, 0.75)
-	tween.chain().tween_callback(scan.queue_free)
+	unit_view.play_print_animation(node, color)
 
 
 func _start_initiative_phase() -> void:
@@ -1100,8 +781,7 @@ func _end_round() -> void:
 		return
 	round_number += 1
 	first_faction = CombatDataScript.enemy_faction(first_faction)
-	for faction in faction_state.keys():
-		faction_state[faction]["filament"] = mini(MAX_FILAMENT, int(faction_state[faction]["filament"]) + FILAMENT_PER_ROUND)
+	combat_state.refill_filament(faction_state, MAX_FILAMENT, FILAMENT_PER_ROUND)
 	_start_spawn_phase()
 
 
@@ -1240,14 +920,12 @@ func _resolve_basic_attack(target_cell: Vector2i) -> void:
 
 
 func _deal_damage(attacker_id: String, target_id: String, ignore_defense: bool) -> int:
-	if not units.has(attacker_id) or not units.has(target_id):
+	var result: Dictionary = combat_rules.damage(attacker_id, target_id, ignore_defense)
+	var amount := int(result["amount"])
+	if amount <= 0:
 		return 0
-	var offense := _effective_stat(attacker_id, "offense")
-	var defense := 0 if ignore_defense else _effective_stat(target_id, "defense")
-	var amount := maxi(1, offense - floori(float(defense) / 2.0))
-	units[target_id]["hp"] = int(units[target_id]["hp"]) - amount
 	_flash_figure(units[target_id]["node"], Color("#ff4a4a"))
-	if int(units[target_id]["hp"]) <= 0:
+	if bool(result["killed"]):
 		_remove_unit(target_id)
 	_check_victory()
 	return amount
@@ -1256,7 +934,7 @@ func _deal_damage(attacker_id: String, target_id: String, ignore_defense: bool) 
 func _deal_printer_damage(attacker_id: String, target_faction: String) -> int:
 	if str(units[attacker_id]["faction"]) == target_faction:
 		return 0
-	var amount := maxi(1, _effective_stat(attacker_id, "offense") - floori(float(PRINTER_DEFENSE) / 2.0))
+	var amount: int = combat_rules.printer_damage_amount(attacker_id, PRINTER_DEFENSE)
 	printers[target_faction]["hp"] = int(printers[target_faction]["hp"]) - amount
 	_flash_figure(printers[target_faction]["node"], Color("#ff4a4a"))
 	_check_victory()
@@ -1266,49 +944,32 @@ func _deal_printer_damage(attacker_id: String, target_faction: String) -> int:
 func _apply_raw_damage(target_id: String, amount: int) -> void:
 	if not units.has(target_id):
 		return
-	units[target_id]["hp"] = int(units[target_id]["hp"]) - amount
+	var killed: bool = combat_rules.raw_damage(target_id, amount)
 	_flash_figure(units[target_id]["node"], Color("#ff4a4a"))
-	if int(units[target_id]["hp"]) <= 0:
+	if killed:
 		_remove_unit(target_id)
 	_check_victory()
 
 
 func _heal_unit(id: String, amount: int) -> void:
-	if units.has(id):
-		units[id]["hp"] = mini(_effective_max_hp(id), int(units[id]["hp"]) + amount)
+	if combat_rules.heal(id, amount):
 		_flash_figure(units[id]["node"], Color("#55f0a4"))
 
 
 func _apply_status(id: String, status_name: String, payload: Dictionary) -> void:
-	if units.has(id):
-		units[id]["statuses"][status_name] = payload.duplicate(true)
+	combat_rules.apply_status(id, status_name, payload)
 
 
 func _effective_stat(id: String, stat: String) -> int:
-	var value := int(_unit_data(id)[stat])
-	var statuses: Dictionary = units[id]["statuses"]
-	if stat == "defense" and statuses.has("defense_bonus"):
-		value += int(statuses["defense_bonus"]["amount"])
-	elif stat == "offense" and statuses.has("offense_bonus"):
-		value += int(statuses["offense_bonus"]["amount"])
-	elif stat == "movement":
-		if statuses.has("movement_bonus"):
-			value += int(statuses["movement_bonus"]["amount"])
-		if statuses.has("slow"):
-			value -= int(statuses["slow"]["amount"])
-		value = maxi(1, value)
-	return value
+	return combat_rules.effective_stat(id, stat)
 
 
 func _effective_max_hp(id: String) -> int:
-	var value := int(units[id]["max_hp"])
-	if units[id]["statuses"].has("forest_shield"):
-		value += int(units[id]["statuses"]["forest_shield"]["amount"])
-	return value
+	return combat_rules.effective_max_hp(id)
 
 
 func _unit_data(id: String) -> Dictionary:
-	return CombatDataScript.UNITS[units[id]["key"]]
+	return combat_rules.unit_data(id)
 
 
 func _remove_unit(id: String) -> void:
@@ -1323,70 +984,15 @@ func _remove_unit(id: String) -> void:
 
 
 func _flash_figure(node: Node3D, color: Color) -> void:
-	var light := OmniLight3D.new()
-	light.light_color = color
-	light.light_energy = 5.0
-	light.omni_range = 2.4
-	light.position.y = 1.0
-	node.add_child(light)
-	var tween := create_tween()
-	tween.tween_property(light, "light_energy", 0.0, 0.32)
-	tween.tween_callback(light.queue_free)
+	unit_view.flash(node, color)
 
 
 func _reachable_cells(id: String) -> Dictionary:
-	var start: Vector2i = units[id]["cell"]
-	var allowance := _effective_stat(id, "movement")
-	var costs := {start: 0}
-	var frontier: Array[Vector2i] = [start]
-	while not frontier.is_empty():
-		frontier.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return int(costs[a]) < int(costs[b]))
-		var current: Vector2i = frontier.pop_front()
-		for neighbor in _neighbors(current):
-			if not _is_walkable(neighbor, id):
-				continue
-			var next_cost := int(costs[current]) + _movement_cost(id, neighbor)
-			if next_cost > allowance:
-				continue
-			if not costs.has(neighbor) or next_cost < int(costs[neighbor]):
-				costs[neighbor] = next_cost
-				if not frontier.has(neighbor):
-					frontier.append(neighbor)
-	return costs
+	return grid_navigation.reachable_cells(id, _effective_stat(id, "movement"))
 
 
 func _find_path(id: String, destination: Vector2i) -> Array[Vector2i]:
-	var start: Vector2i = units[id]["cell"]
-	if start == destination:
-		return [start]
-	var allowance := _effective_stat(id, "movement")
-	var costs := {start: 0}
-	var came_from := {}
-	var frontier: Array[Vector2i] = [start]
-	while not frontier.is_empty():
-		frontier.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return int(costs[a]) < int(costs[b]))
-		var current: Vector2i = frontier.pop_front()
-		if current == destination:
-			break
-		for neighbor in _neighbors(current):
-			if not _is_walkable(neighbor, id):
-				continue
-			var next_cost := int(costs[current]) + _movement_cost(id, neighbor)
-			if next_cost > allowance:
-				continue
-			if not costs.has(neighbor) or next_cost < int(costs[neighbor]):
-				costs[neighbor] = next_cost
-				came_from[neighbor] = current
-				if not frontier.has(neighbor):
-					frontier.append(neighbor)
-	if not costs.has(destination):
-		return []
-	var path: Array[Vector2i] = [destination]
-	var cursor := destination
-	while cursor != start:
-		cursor = came_from[cursor]
-		path.push_front(cursor)
-	return path
+	return grid_navigation.find_path(id, destination, _effective_stat(id, "movement"))
 
 
 func _move_unit(id: String, destination: Vector2i, animate: bool) -> void:
@@ -1411,23 +1017,15 @@ func _move_unit(id: String, destination: Vector2i, animate: bool) -> void:
 
 
 func _movement_cost(id: String, cell: Vector2i) -> int:
-	if terrain.get(cell, TERRAIN_GRASS) == TERRAIN_WATER and not units[id]["statuses"].has("riverstep"):
-		return 3
-	return 1
+	return grid_navigation.movement_cost(id, cell)
 
 
 func _is_walkable(cell: Vector2i, mover_id := "") -> bool:
-	if cell.x < 0 or cell.x >= MAP_WIDTH or cell.y < 0 or cell.y >= MAP_HEIGHT:
-		return false
-	if obstacles.has(cell) or printer_cells.has(cell):
-		return false
-	if cell_occupants.has(cell) and str(cell_occupants[cell]) != mover_id:
-		return false
-	return true
+	return grid_navigation.is_walkable(cell, mover_id)
 
 
 func _neighbors(cell: Vector2i) -> Array[Vector2i]:
-	return [cell + Vector2i.LEFT, cell + Vector2i.RIGHT, cell + Vector2i.UP, cell + Vector2i.DOWN]
+	return grid_navigation.neighbors(cell)
 
 
 func _valid_attack_cells(id: String) -> Array[Vector2i]:
@@ -1477,20 +1075,11 @@ func _enemies_in_range(id: String, radius: int) -> Array[String]:
 
 
 func _grid_distance(a: Vector2i, b: Vector2i) -> int:
-	return absi(a.x - b.x) + absi(a.y - b.y)
+	return grid_navigation.grid_distance(a, b)
 
 
 func _has_line_of_sight(source: Vector2i, target: Vector2i) -> bool:
-	var delta := target - source
-	var steps := maxi(absi(delta.x), absi(delta.y))
-	if steps <= 1:
-		return true
-	for index in range(1, steps):
-		var sample := Vector2(float(source.x) + float(delta.x) * float(index) / float(steps), float(source.y) + float(delta.y) * float(index) / float(steps))
-		var cell := Vector2i(roundi(sample.x), roundi(sample.y))
-		if obstacles.has(cell):
-			return false
-	return true
+	return grid_navigation.has_line_of_sight(source, target)
 
 
 func _run_ai_activation(id: String) -> void:
@@ -1506,13 +1095,8 @@ func _run_ai_activation(id: String) -> void:
 		_resolve_ai_attack(id, attack_cells[0])
 		return
 	var reachable := _reachable_cells(id)
-	var destination: Vector2i = units[id]["cell"]
-	var best_distance := 99999
-	for cell in reachable.keys():
-		var distance := _distance_to_nearest_enemy_or_printer(id, cell)
-		if distance < best_distance:
-			best_distance = distance
-			destination = cell
+	var enemy := CombatDataScript.enemy_faction(str(units[id]["faction"]))
+	var destination: Vector2i = combat_ai.best_destination(id, reachable, units, printers, enemy, grid_navigation)
 	if destination != units[id]["cell"]:
 		_move_unit(id, destination, not smoke_mode)
 		if not smoke_mode:
@@ -1529,19 +1113,14 @@ func _try_ai_ability(id: String) -> bool:
 		return false
 	var ability_id := str(_unit_data(id)["ability_id"])
 	if ability_id in ["stitch", "renew"]:
-		var hurt_id := ""
-		var largest_gap := 0
-		for ally_id in _allies_in_range(id, maxi(1, int(_unit_data(id)["range"])), true):
-			var gap := int(units[ally_id]["max_hp"]) - int(units[ally_id]["hp"])
-			if gap > largest_gap:
-				largest_gap = gap
-				hurt_id = ally_id
+		var allies := _allies_in_range(id, maxi(1, int(_unit_data(id)["range"])), true)
+		var hurt_id: String = combat_ai.most_hurt_ally(units, allies)
 		if hurt_id != "":
 			active_unit_id = id
 			_resolve_targeted_ability(units[hurt_id]["cell"])
 			return true
 	elif ability_id in ["brace", "bloodlust", "hold_line", "forest_shield"]:
-		if round_number % 2 == 1:
+		if combat_ai.should_use_round_support(ability_id, round_number):
 			_begin_ability(id)
 			return true
 	else:
@@ -1559,206 +1138,25 @@ func _resolve_ai_attack(id: String, cell: Vector2i) -> void:
 
 
 func _distance_to_nearest_enemy_or_printer(id: String, from_cell: Vector2i) -> int:
-	var result := 99999
 	var faction := str(units[id]["faction"])
-	for enemy_id in units.keys():
-		if str(units[enemy_id]["faction"]) != faction:
-			result = mini(result, _grid_distance(from_cell, units[enemy_id]["cell"]))
 	var enemy_faction := CombatDataScript.enemy_faction(faction)
-	for cell in printers[enemy_faction]["cells"]:
-		result = mini(result, _grid_distance(from_cell, cell))
-	return result
+	return combat_ai.distance_to_nearest_target(id, from_cell, units, printers, enemy_faction, grid_navigation)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventScreenTouch:
-		_handle_screen_touch(event)
-	elif event is InputEventScreenDrag:
-		_handle_screen_drag(event)
-	elif event is InputEventMouseButton:
-		# Android also emits an emulated left click for touch input. Board taps are
-		# resolved from ScreenTouch so a camera drag cannot move or attack by accident.
-		if OS.has_feature("mobile") and event.button_index == MOUSE_BUTTON_LEFT:
-			return
-		if event.button_index == MOUSE_BUTTON_MIDDLE:
-			camera_dragging = event.pressed
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			camera_rotation_dragging = event.pressed
-		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_set_camera_distance(camera_distance - 2.0)
-		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_set_camera_distance(camera_distance + 2.0)
-		elif event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var cell := _screen_to_cell(event.position)
-			if cell.x >= 0:
-				_on_cell_clicked(cell)
-	elif event is InputEventMouseMotion and camera_dragging:
-		_pan_camera(event.relative, CAMERA_MOUSE_PAN_SPEED)
-	elif event is InputEventMouseMotion and camera_rotation_dragging:
-		_orbit_camera(event.relative)
-	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_Q:
-			camera_yaw_degrees -= 45.0
-			_update_camera_transform()
-		elif event.keycode == KEY_E:
-			camera_yaw_degrees += 45.0
-			_update_camera_transform()
-		elif event.keycode == KEY_HOME:
-			_reset_camera_view()
-		elif event.keycode == KEY_ESCAPE and _player_can_act():
-			input_mode = "move"
-			reachable_cache = _reachable_cells(active_unit_id)
-			_clear_overlays()
-			_show_cells(reachable_cache.keys(), Color("#4cb7ff66"), 0.045)
-			_update_ui()
-
-
-func _handle_screen_touch(event: InputEventScreenTouch) -> void:
-	if event.pressed:
-		active_touches[event.index] = event.position
-		touch_start_positions[event.index] = event.position
-		touch_dragged[event.index] = false
-		if active_touches.size() >= 2:
-			pinch_active = true
-			pinch_distance = _current_pinch_distance()
-			two_finger_angle = _current_two_finger_angle()
-			two_finger_centroid = _current_touch_centroid()
-			for touch_index in touch_dragged.keys():
-				touch_dragged[touch_index] = true
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and _player_can_act():
+		input_mode = "move"
+		reachable_cache = _reachable_cells(active_unit_id)
+		_clear_overlays()
+		_show_cells(reachable_cache.keys(), Color("#4cb7ff66"), 0.045)
+		_update_ui()
 		return
-	var was_gesture := pinch_active or bool(touch_dragged.get(event.index, false)) or active_touches.size() > 1
-	active_touches.erase(event.index)
-	touch_start_positions.erase(event.index)
-	touch_dragged.erase(event.index)
-	if active_touches.size() < 2:
-		pinch_distance = -1.0
-		two_finger_angle = 0.0
-		two_finger_centroid = Vector2.ZERO
-	if active_touches.is_empty():
-		pinch_active = false
-	if not was_gesture:
-		var cell := _screen_to_cell(event.position)
-		if cell.x >= 0:
-			_on_cell_clicked(cell)
-
-
-func _handle_screen_drag(event: InputEventScreenDrag) -> void:
-	active_touches[event.index] = event.position
-	var start_position: Vector2 = touch_start_positions.get(event.index, event.position)
-	if start_position.distance_to(event.position) >= TOUCH_DRAG_THRESHOLD:
-		touch_dragged[event.index] = true
-	if active_touches.size() >= 2:
-		pinch_active = true
-		for touch_index in touch_dragged.keys():
-			touch_dragged[touch_index] = true
-		var next_distance := _current_pinch_distance()
-		var next_angle := _current_two_finger_angle()
-		var next_centroid := _current_touch_centroid()
-		if pinch_distance > 0.0 and next_distance > 0.0:
-			_set_camera_distance(camera_distance - (next_distance - pinch_distance) * 0.15)
-		var angle_delta := wrapf(next_angle - two_finger_angle, -PI, PI)
-		camera_yaw_degrees -= rad_to_deg(angle_delta)
-		camera_pitch_degrees = clampf(
-			camera_pitch_degrees - (next_centroid.y - two_finger_centroid.y) * CAMERA_ORBIT_SPEED,
-			MIN_CAMERA_PITCH_DEGREES,
-			MAX_CAMERA_PITCH_DEGREES
-		)
-		pinch_distance = next_distance
-		two_finger_angle = next_angle
-		two_finger_centroid = next_centroid
-		_update_camera_transform()
-		return
-	if not pinch_active and bool(touch_dragged.get(event.index, false)):
-		_pan_camera(event.relative, CAMERA_TOUCH_PAN_SPEED)
-
-
-func _pan_camera(screen_delta: Vector2, speed: float) -> void:
-	var right := camera.global_transform.basis.x
-	var forward := -camera.global_transform.basis.z
-	right.y = 0.0
-	forward.y = 0.0
-	if right.length_squared() < 0.0001 or forward.length_squared() < 0.0001:
-		return
-	var zoom_scale := clampf(camera_distance / DEFAULT_CAMERA_DISTANCE, 0.35, 1.35)
-	camera_focus += (-right.normalized() * screen_delta.x - forward.normalized() * screen_delta.y) * speed * zoom_scale
-	var x_limit := float(MAP_WIDTH - 1) * CELL_SIZE * 0.55
-	var z_limit := float(MAP_HEIGHT - 1) * CELL_SIZE * 0.55
-	camera_focus.x = clampf(camera_focus.x, -x_limit, x_limit)
-	camera_focus.z = clampf(camera_focus.z, -z_limit, z_limit)
-	_update_camera_transform()
-
-
-func _orbit_camera(screen_delta: Vector2) -> void:
-	camera_yaw_degrees -= screen_delta.x * CAMERA_ORBIT_SPEED
-	camera_pitch_degrees = clampf(
-		camera_pitch_degrees - screen_delta.y * CAMERA_ORBIT_SPEED,
-		MIN_CAMERA_PITCH_DEGREES,
-		MAX_CAMERA_PITCH_DEGREES
-	)
-	_update_camera_transform()
+	if camera_controller != null:
+		camera_controller.handle_input(event, _on_cell_clicked)
 
 
 func _reset_camera_view() -> void:
-	camera_focus = CAMERA_FOCUS
-	camera_distance = DEFAULT_CAMERA_DISTANCE
-	camera_yaw_degrees = 0.0
-	camera_pitch_degrees = DEFAULT_CAMERA_PITCH_DEGREES
-	_update_camera_transform()
-
-
-func _update_camera_transform() -> void:
-	if camera == null or camera_rig == null:
-		return
-	camera_rig.position = camera_focus
-	camera_rig.rotation_degrees.y = camera_yaw_degrees
-	var orbit_length := CAMERA_DEFAULT_OFFSET.length() * camera_distance / DEFAULT_CAMERA_DISTANCE
-	var pitch_radians := deg_to_rad(camera_pitch_degrees)
-	camera.position = Vector3(0.0, sin(pitch_radians) * orbit_length, cos(pitch_radians) * orbit_length)
-	camera.look_at(camera_focus, Vector3.UP)
-
-
-func _set_camera_distance(value: float) -> void:
-	camera_distance = clampf(value, MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE)
-	_update_camera_transform()
-
-
-func _current_pinch_distance() -> float:
-	if active_touches.size() < 2:
-		return -1.0
-	var positions: Array = active_touches.values()
-	return (positions[0] as Vector2).distance_to(positions[1] as Vector2)
-
-
-func _current_two_finger_angle() -> float:
-	if active_touches.size() < 2:
-		return 0.0
-	var positions: Array = active_touches.values()
-	var first: Vector2 = positions[0]
-	var second: Vector2 = positions[1]
-	return (second - first).angle()
-
-
-func _current_touch_centroid() -> Vector2:
-	if active_touches.is_empty():
-		return Vector2.ZERO
-	var result := Vector2.ZERO
-	for position in active_touches.values():
-		result += position as Vector2
-	return result / float(active_touches.size())
-
-
-func _screen_to_cell(screen_position: Vector2) -> Vector2i:
-	var origin := camera.project_ray_origin(screen_position)
-	var direction := camera.project_ray_normal(screen_position)
-	var hit = Plane(Vector3.UP, 0.0).intersects_ray(origin, direction)
-	if hit == null:
-		return Vector2i(-1, -1)
-	var local_hit: Vector3 = world_root.to_local(hit)
-	var x := roundi(local_hit.x / CELL_SIZE + 12.0)
-	var y := roundi(local_hit.z / CELL_SIZE + 16.0)
-	if x < 0 or x >= MAP_WIDTH or y < 0 or y >= MAP_HEIGHT:
-		return Vector2i(-1, -1)
-	return Vector2i(x, y)
+	camera_controller.reset_view()
 
 
 func _on_cell_clicked(cell: Vector2i) -> void:
@@ -1858,18 +1256,7 @@ func _set_notice(message: String) -> void:
 func _check_victory() -> bool:
 	if battle_over:
 		return true
-	var loser := ""
-	for faction in CombatDataScript.ROSTERS.keys():
-		if int(printers[faction]["hp"]) <= 0:
-			loser = faction
-			break
-		var living_units := 0
-		for id in units.keys():
-			if str(units[id]["faction"]) == faction and int(units[id]["hp"]) > 0:
-				living_units += 1
-		if living_units == 0 and faction_state.has(faction) and faction_state[faction]["reserve"].is_empty():
-			loser = faction
-			break
+	var loser: String = combat_state.losing_faction(units, printers, faction_state, CombatDataScript.ROSTERS)
 	if loser == "":
 		return false
 	battle_over = true
@@ -1931,66 +1318,66 @@ func _run_smoke_test() -> void:
 	_start_target_selection(targeting_probe, "attack", Color("#ff4c4c88"))
 	assert(target_cache == targeting_probe, "Target selection was erased while clearing old overlays")
 	_clear_overlays()
-	var focus_before := camera_focus
-	active_touches[0] = Vector2(100.0, 100.0)
-	touch_start_positions[0] = Vector2(100.0, 100.0)
-	touch_dragged[0] = false
+	var focus_before: Vector3 = camera_controller.focus
+	camera_controller.active_touches[0] = Vector2(100.0, 100.0)
+	camera_controller.touch_start_positions[0] = Vector2(100.0, 100.0)
+	camera_controller.touch_dragged[0] = false
 	var pan_probe := InputEventScreenDrag.new()
 	pan_probe.index = 0
 	pan_probe.position = Vector2(140.0, 100.0)
 	pan_probe.relative = Vector2(40.0, 0.0)
-	_handle_screen_drag(pan_probe)
-	assert(not camera_focus.is_equal_approx(focus_before), "One-finger drag did not pan the combat camera")
-	active_touches.clear()
-	touch_start_positions.clear()
-	touch_dragged.clear()
-	pinch_active = false
-	pinch_distance = -1.0
-	var yaw_before := camera_yaw_degrees
-	var pitch_before := camera_pitch_degrees
-	active_touches[0] = Vector2(100.0, 100.0)
-	active_touches[1] = Vector2(200.0, 100.0)
-	touch_start_positions[0] = active_touches[0]
-	touch_start_positions[1] = active_touches[1]
-	touch_dragged[0] = true
-	touch_dragged[1] = true
-	pinch_distance = _current_pinch_distance()
-	two_finger_angle = _current_two_finger_angle()
-	two_finger_centroid = _current_touch_centroid()
+	camera_controller.handle_input(pan_probe, Callable())
+	assert(not camera_controller.focus.is_equal_approx(focus_before), "One-finger drag did not pan the combat camera")
+	camera_controller.active_touches.clear()
+	camera_controller.touch_start_positions.clear()
+	camera_controller.touch_dragged.clear()
+	camera_controller.pinch_active = false
+	camera_controller.pinch_distance = -1.0
+	var yaw_before: float = camera_controller.yaw_degrees
+	var pitch_before: float = camera_controller.pitch_degrees
+	camera_controller.active_touches[0] = Vector2(100.0, 100.0)
+	camera_controller.active_touches[1] = Vector2(200.0, 100.0)
+	camera_controller.touch_start_positions[0] = camera_controller.active_touches[0]
+	camera_controller.touch_start_positions[1] = camera_controller.active_touches[1]
+	camera_controller.touch_dragged[0] = true
+	camera_controller.touch_dragged[1] = true
+	camera_controller.pinch_distance = 100.0
+	camera_controller.two_finger_angle = 0.0
+	camera_controller.two_finger_centroid = Vector2(150.0, 100.0)
 	var orbit_probe := InputEventScreenDrag.new()
 	orbit_probe.index = 0
 	orbit_probe.position = Vector2(100.0, 60.0)
 	orbit_probe.relative = Vector2(0.0, -40.0)
-	_handle_screen_drag(orbit_probe)
-	assert(not is_equal_approx(yaw_before, camera_yaw_degrees), "Two-finger twist did not rotate the combat camera")
-	assert(not is_equal_approx(pitch_before, camera_pitch_degrees), "Two-finger vertical slide did not tilt the combat camera")
-	active_touches.clear()
-	touch_start_positions.clear()
-	touch_dragged.clear()
-	pinch_active = false
-	var zoom_before := camera_distance
-	active_touches[0] = Vector2(100.0, 100.0)
-	active_touches[1] = Vector2(200.0, 100.0)
-	pinch_distance = _current_pinch_distance()
-	two_finger_angle = _current_two_finger_angle()
-	two_finger_centroid = _current_touch_centroid()
+	camera_controller.handle_input(orbit_probe, Callable())
+	assert(not is_equal_approx(yaw_before, camera_controller.yaw_degrees), "Two-finger twist did not rotate the combat camera")
+	assert(not is_equal_approx(pitch_before, camera_controller.pitch_degrees), "Two-finger vertical slide did not tilt the combat camera")
+	camera_controller.active_touches.clear()
+	camera_controller.touch_start_positions.clear()
+	camera_controller.touch_dragged.clear()
+	camera_controller.pinch_active = false
+	var zoom_before: float = camera_controller.distance
+	camera_controller.active_touches[0] = Vector2(100.0, 100.0)
+	camera_controller.active_touches[1] = Vector2(200.0, 100.0)
+	camera_controller.pinch_distance = 100.0
+	camera_controller.two_finger_angle = 0.0
+	camera_controller.two_finger_centroid = Vector2(150.0, 100.0)
 	var zoom_probe := InputEventScreenDrag.new()
 	zoom_probe.index = 1
 	zoom_probe.position = Vector2(240.0, 100.0)
 	zoom_probe.relative = Vector2(40.0, 0.0)
-	_handle_screen_drag(zoom_probe)
-	assert(camera_distance < zoom_before, "Two-finger pinch-out did not zoom the combat camera in")
-	_set_camera_distance(MIN_CAMERA_DISTANCE)
+	camera_controller.handle_input(zoom_probe, Callable())
+	assert(camera_controller.distance < zoom_before, "Two-finger pinch-out did not zoom the combat camera in")
+	camera_controller.set_distance(MIN_CAMERA_DISTANCE)
 	assert(camera.position.y < 10.0, "Minimum phone zoom did not bring the camera close to the battlefield")
-	_set_camera_distance(zoom_before)
+	camera_controller.set_distance(zoom_before)
 	_reset_camera_view()
-	assert(camera_focus.is_equal_approx(CAMERA_FOCUS), "Reset view did not restore the tactical focus")
-	assert(is_equal_approx(camera_yaw_degrees, 0.0), "Reset view did not restore camera rotation")
-	active_touches.clear()
-	touch_start_positions.clear()
-	touch_dragged.clear()
-	pinch_active = false
-	pinch_distance = -1.0
+	assert(camera_controller.focus.is_equal_approx(CAMERA_FOCUS), "Reset view did not restore the tactical focus")
+	assert(is_equal_approx(camera_controller.yaw_degrees, 0.0), "Reset view did not restore camera rotation")
+	camera_controller.active_touches.clear()
+	camera_controller.touch_start_positions.clear()
+	camera_controller.touch_dragged.clear()
+	camera_controller.pinch_active = false
+	camera_controller.pinch_distance = -1.0
 	var deadline := Time.get_ticks_msec() + 18000
 	while action_counter < 12 and not battle_over and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame

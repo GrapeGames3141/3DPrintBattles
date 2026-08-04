@@ -9,4 +9,6 @@
 - Keep the combat Moonshadow Rogue model at `assets/models/moonlit_elf_duelist_animated.glb`; the Android inspector export deliberately excludes combat-only models and concept art.
 - Keep the combat Bogbrew Stitchdoc model at `assets/models/verdant_alchemist_animated.glb`.
 - Validate combat smoke plus all inspector rarity, strength, and animation selector modes before committing a release build.
+- Follow `docs/architecture.md` ownership boundaries. Put camera, grid, rules, state, AI, unit presentation, HUD, and balance changes in their owning modules; reserve `combat_main.gd` for turn sequencing and cross-module integration.
+- For concurrent worktrees, do not change a shared runtime dictionary schema or module interface without coordinating the matching `combat_main.gd` integration task.
 - Never commit signing keys or credentials.

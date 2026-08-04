@@ -50,6 +50,8 @@ The animated Ironbound Goblin, Verdant Alchemist (used for Bogbrew Stitchdoc), a
 
 The supplied enchanted terrain kit has been separated into nine complete assets and integrated into combat. The runtime library reduces the 1,122,784-polygon source to 74,497 polygons with shared 1024px textures, corrects the atlas's 45-degree presentation rotation, and provides exact grid-aligned roads, stream, bridge, trees, boulders, stump, and hills. Trees and boulders retain authoritative grid blocking plus lightweight primitive collision. Full preparation and validation details are in `docs/terrain-kit-status.md`.
 
+The combat code is divided into focused camera, grid, rules, state, AI, unit-view, HUD, and data modules, with `combat_main.gd` serving as the match-flow coordinator. See `docs/architecture.md` for module ownership, runtime flow, and the recommended worktree boundaries for concurrent tasks.
+
 ## Android model inspector
 
 The phone app retains rarity/base selection, rank badges, animation playback, the horizontal layer-print summon, the parchment stat ledger, reset, touch-drag rotation, and pinch zoom. Its source remains `scripts/summon_lab.gd` and `main.tscn`; combat does not replace that experience.
