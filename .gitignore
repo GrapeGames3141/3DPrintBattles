@@ -6,3 +6,5 @@ builds/
 *.keystore
 *.jks
 previews/capture-*.png
+source_assets/legacy-prepared-assets/
+source_assets/Meshy_AI_Ironbound_Goblin_biped_animations.zip

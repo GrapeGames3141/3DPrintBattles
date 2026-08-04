@@ -1,9 +1,10 @@
-# PrintForge Summon Lab project rules
+# PrintForge project rules
 
 - Keep the durable project and delivery artifacts in this repository.
-- Target Godot 4.7 with the Compatibility renderer and Android arm64.
+- Target Godot 4.7 with the Compatibility renderer: Windows for combat and Android arm64 for the separate model inspector.
+- Preserve `combat_main.tscn` as the desktop entry and `main.tscn` as the mobile inspector entry.
 - Preserve `source_assets/` as immutable input; regenerate optimized runtime GLBs with `tools/prepare_mobile_assets.py`.
-- Keep the runtime creature path stable at `assets/models/ironbound_goblin_mobile.glb` so an animated replacement can be swapped in without rewriting the viewer.
-- Validate all rarity, strength, and animation selector modes before committing a release build.
+- Keep the runtime creature path stable at `assets/models/ironbound_goblin_animated_v3.glb` so an animated replacement can be swapped in without rewriting either app.
+- Keep the combat Moonshadow Rogue model at `assets/models/moonlit_elf_duelist_animated.glb`; the Android inspector export deliberately excludes combat-only models and concept art.
+- Validate combat smoke plus all inspector rarity, strength, and animation selector modes before committing a release build.
 - Never commit signing keys or credentials.
-

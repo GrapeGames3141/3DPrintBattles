@@ -1,0 +1,97 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Downloads\\Meshy_AI_Enchanted_Terrain_Kit_0804010559_texture.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.950169,
+        -0.927901,
+        -0.546631
+      ],
+      "max": [
+        0.948845,
+        0.926313,
+        0.547366
+      ],
+      "size": [
+        1.899014,
+        1.854214,
+        1.093997
+      ],
+      "center": [
+        -0.000662,
+        -0.000794,
+        0.000368
+      ]
+    },
+    "objects": [
+      {
+        "name": "mesh_node",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 600269,
+        "polygons": 1122784,
+        "materials": [
+          "material"
+        ]
+      }
+    ],
+    "materials": [
+      {
+        "name": "material",
+        "textures": [
+          {
+            "name": "emissive",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "base_color",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "metallic_roughness",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          },
+          {
+            "name": "normal",
+            "size": [
+              2048,
+              2048
+            ],
+            "file_format": "JPEG"
+          }
+        ]
+      }
+    ],
+    "actions": []
+  }
+]

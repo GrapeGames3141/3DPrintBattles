@@ -1,60 +1,62 @@
-# PrintForge Summon Lab
+# PrintForge
 
-Windows-first Godot prototype for reviewing a creature, its rarity base, strength badge, and selectable animations. An Android landscape build is retained as the mobile demo target.
+Godot 4.7 project containing two deliberately separate applications:
 
-## Current controls
+- **PrintForge Combat POC (Windows):** grid tactics battle between the Goblin Scrap Legion and Elven Moonloom Host.
+- **PrintForge Model Inspector (Android):** the existing touch-friendly creature/base/animation inspection app. Mobile feature overrides keep `main.tscn` as its entry scene; desktop launches `combat_main.tscn`.
 
-- **Model:** selects the active creature. The initial build contains Ironbound Goblin Warrior; additional model resources can be added to `MODELS` in `scripts/summon_lab.gd`.
-- **Rarity / base:** selects one of six extracted base materials.
-- **Strength:** lights one, two, or three chevrons on the separate shield badge.
-- **Animation:** plays the layer-print summon, shows the model immediately, flips the base to its unit ledger, or plays one of the seven embedded goblin animations.
-- **Print / Play:** runs the selected mode.
-- **Reset:** restores the default model, rarity, strength, animation, orientation, and zoom.
-- Drag the 3D area to rotate the display. Pinch on a touchscreen or use the mouse wheel to zoom.
+## Combat POC
 
-The bottom of every base can carry a parchment-style unit ledger. The initial Ironbound Goblin Warrior is a low-cost melee unit with Health 24, Defense 6, Offense 8, Range 0, and Cost 3. Attack types are stored as a list so future units can combine Melee, Ranged, Magic, Healer, and Support roles.
+The battlefield is a 25×33 orthogonal grid. A three-cell road crosses north-to-south; a two-cell shallow river crosses east-to-west; a three-cell bridge occupies their center intersection. Trees and boulders block movement and line of sight. Shallow water costs three movement points; grass, road, bridge, and cosmetic rolling hills cost one.
 
-The summon begins with the empty selected base and rank badge. After a short pause, the goblin is revealed from its feet upward using a world-height shader, a bright filament scan ring, cooling horizontal layer lines, and mobile-safe sparks.
+Each faction owns a 2×2 fantasy printer with 50 Health and 8 Defense. Printers begin with 6 filament, gain 2 each round, cap at 10, and may produce one reserve unit per round. Destroying the enemy printer or exhausting its entire army wins.
 
-The rank badge is deliberately small, flat at the front edge, and raised just above the rim so it reads as a physical marker without obscuring the miniature. The goblin's round shield is rigid-bound to its left hand during asset preparation to prevent auto-weight deformation in action clips.
+Turns resolve by Initiative. A unit may move and then use one basic attack, ability, or Wait. Range 0 means adjacent melee. Damage is `max(1, Offense - floor(Defense / 2))`. Healers deal normal damage and heal for double their Offense. Goblin Bloodlust buffs Offense and Movement; Elven Forest Shield grants temporary Health and Defense.
 
-## Replacing the goblin GLB
+### Desktop controls
 
-1. Preserve the animated source separately.
-2. Export or copy its prepared runtime version over `assets/models/ironbound_goblin_animated_v3.glb`.
-3. Ensure the model stands on local Y=0 after Godot import.
-4. Reopen the project and let Godot reimport it.
-5. Embedded `AnimationPlayer` clips appear automatically in the Animation selector; `RESET` is hidden.
-6. The summon shader is applied to every `MeshInstance3D` surface, including skinned meshes.
+- Left-click a blue square to move; click a highlighted target to attack or use an ability.
+- Use the roster buttons during deployment, or skip the round's spawn.
+- Middle-drag pans the camera; mouse wheel zooms; Q/E rotates by 45 degrees.
+- Escape cancels targeting and restores movement highlights.
 
-Animation discovery is automatic. Friendly labels are supplied for the current seven clips, while any newly added clips still appear using their embedded names.
+### Rosters
 
-## Source and optimized assets
+| Faction | Unit | Rarity | Roles | HP / DEF / OFF | Range / Move / Init | Cost |
+|---|---|---|---|---:|---:|---:|
+| Goblin | Ironbound Goblin Warrior | Common | Melee | 24 / 6 / 8 | 0 / 5 / 5 | 3 |
+| Goblin | Hobgoblin Forge-Brute | Rare | Melee | 38 / 7 / 14 | 0 / 3 / 2 | 5 |
+| Goblin | Scrapbolt Slinger | Uncommon | Ranged | 19 / 3 / 10 | 5 / 5 / 6 | 4 |
+| Goblin | Bogbrew Stitchdoc | Uncommon | Ranged, Healer | 21 / 4 / 5 | 3 / 5 / 4 | 3 |
+| Goblin | Sparkspool Shaman | Rare | Magic, Support | 23 / 4 / 7 | 4 / 4 / 5 | 4 |
+| Elf | Dawnwood Warden | Common | Melee | 28 / 7 / 8 | 0 / 5 / 5 | 3 |
+| Elf | Moonshadow Rogue | Rare | Melee | 20 / 4 / 12 | 0 / 7 / 8 | 4 |
+| Elf | Starbough Longbow | Uncommon | Ranged | 18 / 3 / 10 | 6 / 5 / 7 | 4 |
+| Elf | Lifesong Tender | Uncommon | Magic, Healer | 20 / 4 / 4 | 4 / 5 / 5 | 3 |
+| Elf | Runeweave Sage | Rare | Magic, Support | 22 / 5 / 6 | 4 / 4 / 6 | 5 |
 
-- Original Meshy files live in `source_assets/` and are ignored by Godot via `.gdignore`.
-- Runtime GLBs live in `assets/models/`.
-- `tools/prepare_mobile_assets.py` splits the combined base sheet into six centered objects plus its source crest.
-- `tools/prepare_merged_animated_goblin.py` turns the supplied all-in-one Meshy animation GLB into the grounded runtime model and normalizes clip names.
-- The separate shield crest geometry is darkened at runtime and receives three procedural emissive chevrons so rank can change without regenerating the base model.
+Both rosters cost 19 total. Combat uses Common, Uncommon, and Rare only. Their figure bases use reclaimed wood / one chevron, carved stone / two chevrons, and cast bronze / three chevrons respectively.
 
-## Validation
+The animated Ironbound Goblin and supplied animated Moonlit Elf Duelist (used for Moonshadow Rogue) are used directly. The other eight future units use readable procedural standees in the POC, with their modeling references shown in the unit inspector. The concept library is in `assets/concepts/combat/`; every unit and both printers also have separate front, back, left, and right references in `assets/concepts/combat/four-view-v2/`.
 
-Use the console build of Godot 4.7.1:
+The supplied enchanted terrain kit is preserved and inspected, but its Meshy export is a fused 3×3 atlas rather than clean separate props. The rejected automatic split is documented in `docs/terrain-kit-status.md`; the playable POC uses clean procedural terrain until those source objects are separated reliably.
 
-```powershell
-Godot_v4.7.1-stable_win64_console.exe --headless --editor --path . --quit-after 5
-Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --smoke-test
-```
+## Android model inspector
 
-The smoke test exercises all six rarity bases, all three strength ranks, the summon shader, animation discovery, the underside unit ledger, zoom, and full reset. Success prints `SUMMON_LAB_SMOKE_TEST_OK`.
+The phone app retains rarity/base selection, rank badges, animation playback, the horizontal layer-print summon, the parchment stat ledger, reset, touch-drag rotation, and pinch zoom. Its source remains `scripts/summon_lab.gd` and `main.tscn`; combat does not replace that experience.
 
-The release was also exercised on a Pixel 9 Pro: full-width landscape rendering, selector input, summon playback, and touch-drag rotation were confirmed on-device.
-
-## Exports
-
-The repository contains a Windows Desktop preset as the primary target and an arm64 Android demo preset targeting SDK 35.
+## Validation and exports
 
 ```powershell
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Summon-Lab-0.2.0.exe
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Demo" builds/android/PrintForge-Summon-Lab-0.2.0-arm64.apk
+# Combat rules and AI smoke test
+Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --combat-smoke-test
+
+# Existing Android inspector smoke test (launch its scene explicitly)
+Godot_v4.7.1-stable_win64_console.exe --headless --path . res://main.tscn -- --smoke-test
+
+# Builds
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.0.exe
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Model Inspector" builds/android/PrintForge-Model-Inspector-0.3.0-arm64.apk
 ```
+
+Combat smoke success prints `COMBAT_SMOKE_OK`; inspector smoke success prints `SUMMON_LAB_SMOKE_TEST_OK`.

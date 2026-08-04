@@ -1,0 +1,56 @@
+[
+  {
+    "name": "BroadleafTree",
+    "loose_parts": 283,
+    "polygons_before": 395561,
+    "polygons_after": 134489
+  },
+  {
+    "name": "PineTree",
+    "loose_parts": 305,
+    "polygons_before": 199954,
+    "polygons_after": 67984
+  },
+  {
+    "name": "DeadStump",
+    "loose_parts": 202,
+    "polygons_before": 190452,
+    "polygons_after": 64752
+  },
+  {
+    "name": "RoundedBoulder",
+    "loose_parts": 20,
+    "polygons_before": 38359,
+    "polygons_after": 13042
+  },
+  {
+    "name": "JaggedBoulders",
+    "loose_parts": 37,
+    "polygons_before": 75333,
+    "polygons_after": 25613
+  },
+  {
+    "name": "RollingHill",
+    "loose_parts": 44,
+    "polygons_before": 36012,
+    "polygons_after": 12244
+  },
+  {
+    "name": "RoadTile",
+    "loose_parts": 7,
+    "polygons_before": 31404,
+    "polygons_after": 10676
+  },
+  {
+    "name": "StreamTile",
+    "loose_parts": 10,
+    "polygons_before": 36641,
+    "polygons_after": 12456
+  },
+  {
+    "name": "BridgeTile",
+    "loose_parts": 65,
+    "polygons_before": 119068,
+    "polygons_after": 40483
+  }
+]
