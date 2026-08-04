@@ -766,9 +766,9 @@ func _build_unit_figure(id: String, data: Dictionary, faction: String) -> Node3D
 		var resource := load(data["scene"]) as PackedScene
 		if resource != null:
 			var model := resource.instantiate()
-			model.scale = Vector3.ONE * 0.72
 			visual_anchor.add_child(model)
 			_hide_helper_meshes(model)
+			_fit_model_to_base(model)
 			_start_model_idle(model)
 	else:
 		_build_procedural_standee(visual_anchor, data, faction)
@@ -857,6 +857,36 @@ func _hide_helper_meshes(node: Node) -> void:
 		node.visible = false
 	for child in node.get_children():
 		_hide_helper_meshes(child)
+
+
+func _fit_model_to_base(model: Node3D) -> void:
+	model.scale = Vector3.ONE
+	model.position = Vector3.ZERO
+	var combined := AABB()
+	var has_bounds := false
+	for candidate in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh := candidate as MeshInstance3D
+		if mesh == null or not mesh.visible or mesh.mesh == null:
+			continue
+		# Meshy skins retain a 0.01 armature-parent scale that is already handled by
+		# skinning at render time. Applying that parent transform to the authored
+		# mesh AABB makes the character appear 100x smaller than its real visual size.
+		var bounds := mesh.get_aabb()
+		combined = combined.merge(bounds) if has_bounds else bounds
+		has_bounds = true
+	if not has_bounds or combined.size.y <= 0.001:
+		model.scale = Vector3.ONE * 0.72
+		return
+	var horizontal_span := maxf(combined.size.x, combined.size.z)
+	var height_scale := 1.72 / combined.size.y
+	var width_scale := 1.05 / horizontal_span if horizontal_span > 0.001 else height_scale
+	var fit_scale := minf(height_scale, width_scale)
+	model.scale = Vector3.ONE * fit_scale
+	model.position = Vector3(
+		-(combined.position.x + combined.size.x * 0.5) * fit_scale,
+		-combined.position.y * fit_scale,
+		-(combined.position.z + combined.size.z * 0.5) * fit_scale
+	)
 
 
 func _play_print_animation(node: Node3D, color: Color) -> void:
@@ -1053,7 +1083,10 @@ func _resolve_targeted_ability(target_cell: Vector2i) -> void:
 	var actor_id := active_unit_id
 	var target_id: String = cell_occupants[target_cell]
 	var ability_id := str(_unit_data(actor_id)["ability_id"])
-	_play_unit_animation(actor_id, ["Double_Blade_Spin", "Thrust_Slash", "SwordSlash"])
+	if ability_id in ["stitch", "renew", "bloodlust", "forest_shield"]:
+		_play_unit_animation(actor_id, ["mage_soell_cast_4", "Spell_Cast", "Cast", "Thrust_Slash", "SwordSlash"])
+	else:
+		_play_unit_animation(actor_id, ["Double_Blade_Spin", "Thrust_Slash", "SwordSlash"])
 	match ability_id:
 		"stitch":
 			_heal_unit(target_id, _effective_stat(actor_id, "offense") * 2)

@@ -1,0 +1,304 @@
+[
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\source_assets\\verdant_alchemist_biped\\Meshy_AI_Verdant_Alchemist_biped\\Meshy_AI_Verdant_Alchemist_biped_Character_output.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.4
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.4
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.2
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 51070,
+        "polygons": 45131,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Armature|clip0|baselayer",
+        "frame_range": [
+          0.8,
+          0.8
+        ],
+        "channels": 240
+      }
+    ]
+  },
+  {
+    "path": "C:\\Users\\Tak\\Documents\\Codex\\2026-08-02\\https-claude-ai-share-17598e7f-61a8\\staging\\3dprint\\source_assets\\verdant_alchemist_biped\\Meshy_AI_Verdant_Alchemist_biped\\Meshy_AI_Verdant_Alchemist_biped_Meshy_AI_Meshy_Merged_Animations.glb",
+    "import_result": [
+      "FINISHED"
+    ],
+    "bounds": {
+      "min": [
+        -0.951058,
+        -1.0,
+        -1.0
+      ],
+      "max": [
+        0.951058,
+        1.0,
+        1.460928
+      ],
+      "size": [
+        1.902116,
+        2.0,
+        2.460928
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.230464
+      ]
+    },
+    "objects": [
+      {
+        "name": "Armature",
+        "type": "ARMATURE",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.01,
+          0.01,
+          0.01
+        ]
+      },
+      {
+        "name": "char1",
+        "type": "MESH",
+        "parent": "Armature",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 51246,
+        "polygons": 45131,
+        "materials": [
+          "Material_1"
+        ]
+      },
+      {
+        "name": "Icosphere",
+        "type": "MESH",
+        "parent": null,
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "vertices": 42,
+        "polygons": 80,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Material_1",
+        "textures": [
+          {
+            "name": "texture_0",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          },
+          {
+            "name": "texture_0.001",
+            "size": [
+              4096,
+              4096
+            ],
+            "file_format": "PNG"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "name": "Casual_Walk",
+        "frame_range": [
+          0.0,
+          100.799995
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Dead",
+        "frame_range": [
+          0.0,
+          71.199997
+        ],
+        "channels": 240
+      },
+      {
+        "name": "mage_soell_cast_4",
+        "frame_range": [
+          0.0,
+          53.599998
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Running",
+        "frame_range": [
+          0.0,
+          15.2
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Thrust_Slash",
+        "frame_range": [
+          0.0,
+          72.0
+        ],
+        "channels": 240
+      },
+      {
+        "name": "Walking",
+        "frame_range": [
+          0.0,
+          24.799999
+        ],
+        "channels": 240
+      }
+    ]
+  }
+]

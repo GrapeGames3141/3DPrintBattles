@@ -61,7 +61,8 @@ const UNITS := {
 		"range": 3, "movement": 5, "initiative": 4, "cost": 3,
 		"ability": "Emergency Stitch", "ability_id": "stitch", "cooldown": 2,
 		"ability_text": "Heal for double Offense and remove one negative effect.",
-		"concept": "res://assets/concepts/combat/four-view-v2/bogbrew-stitchdoc/front.png", "scene": "",
+		"concept": "res://assets/concepts/combat/four-view-v2/bogbrew-stitchdoc/front.png",
+		"scene": "res://assets/models/verdant_alchemist_animated.glb",
 	},
 	"sparkspool_shaman": {
 		"name": "Sparkspool Shaman", "faction": FACTION_GOBLINS, "gender": "Female",

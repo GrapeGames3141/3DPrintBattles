@@ -37,7 +37,7 @@ Turns resolve by Initiative. A unit may move and then use one basic attack, abil
 
 Both rosters cost 19 total. Combat uses Common, Uncommon, and Rare only. Their figure bases use reclaimed wood / one chevron, carved stone / two chevrons, and cast bronze / three chevrons respectively.
 
-The animated Ironbound Goblin and supplied animated Moonlit Elf Duelist (used for Moonshadow Rogue) are used directly. The other eight future units use readable procedural standees in the POC, with their modeling references shown in the unit inspector. The concept library is in `assets/concepts/combat/`; every unit and both printers also have separate front, back, left, and right references in `assets/concepts/combat/four-view-v2/`.
+The animated Ironbound Goblin, Verdant Alchemist (used for Bogbrew Stitchdoc), and Moonlit Elf Duelist (used for Moonshadow Rogue) are used directly. The other seven future units use readable procedural standees in the POC, with their modeling references shown in the unit inspector. The concept library is in `assets/concepts/combat/`; every unit and both printers also have separate front, back, left, and right references in `assets/concepts/combat/four-view-v2/`.
 
 The supplied enchanted terrain kit is preserved and inspected, but its Meshy export is a fused 3×3 atlas rather than clean separate props. The rejected automatic split is documented in `docs/terrain-kit-status.md`; the playable POC uses clean procedural terrain until those source objects are separated reliably.
 
@@ -55,7 +55,7 @@ Godot_v4.7.1-stable_win64_console.exe --headless --path . -- --combat-smoke-test
 Godot_v4.7.1-stable_win64_console.exe --headless --path . res://main.tscn -- --smoke-test
 
 # Builds
-Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.0.exe
+Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Windows Desktop" builds/windows/PrintForge-Combat-POC-0.3.1.exe
 Godot_v4.7.1-stable_win64_console.exe --headless --path . --export-debug "Android Model Inspector" builds/android/PrintForge-Model-Inspector-0.3.0-arm64.apk
 ```
 

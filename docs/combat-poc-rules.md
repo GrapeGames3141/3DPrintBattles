@@ -1,4 +1,4 @@
-# Combat POC rules lock — 0.3.0
+# Combat POC rules lock — 0.3.1
 
 This is the implementation contract for the first Windows combat proof of concept.
 
@@ -38,3 +38,5 @@ This is the implementation contract for the first Windows combat proof of concep
 `assets/concepts/combat/four-view-v2/` contains separate `front.png`, `back.png`, `left.png`, and `right.png` files for all ten units and both printers. Character references use a relaxed A-pose with props held outside the body silhouette and no crossed-body equipment. The corrected Hobgoblin has one cleaver only and an empty off-hand.
 
 The supplied Moonlit Elf Duelist is assigned to Moonshadow Rogue. Its nine embedded clips include idle, movement, dodge, two attacks, death, and alternate walk animations.
+
+The supplied Verdant Alchemist is assigned to Bogbrew Stitchdoc. Its six embedded clips include casual walk, running, walking, spell cast, thrust/slash, and death. Healing uses the spell-cast clip; basic attacks use thrust/slash.
