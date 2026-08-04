@@ -1007,14 +1007,11 @@ func _on_skip_spawn_pressed() -> void:
 func _on_attack_pressed() -> void:
 	if not _player_can_act():
 		return
-	target_cache = _valid_attack_cells(active_unit_id)
-	if target_cache.is_empty():
+	var valid_targets := _valid_attack_cells(active_unit_id)
+	if valid_targets.is_empty():
 		_set_notice("No enemy is in attack range.")
 		return
-	input_mode = "attack"
-	_clear_overlays()
-	_show_cells(target_cache, Color("#ff4c4c88"), 0.06)
-	_update_ui()
+	_start_target_selection(valid_targets, "attack", Color("#ff4c4c88"))
 
 
 func _on_ability_pressed() -> void:
@@ -1060,20 +1057,23 @@ func _begin_ability(id: String) -> void:
 				units[target_id]["hp"] = int(units[target_id]["hp"]) + 6
 			_finish_ability(id, "Forest Shield granted nearby allies temporary Health and Defense.")
 		"stitch", "renew":
-			target_cache = _ally_cells_in_range(id, int(_unit_data(id)["range"]), true)
-			_start_targeted_ability(target_cache, Color("#55f0a488"))
+			_start_targeted_ability(_ally_cells_in_range(id, int(_unit_data(id)["range"]), true), Color("#55f0a488"))
 		_:
-			target_cache = _valid_attack_cells(id)
-			_start_targeted_ability(target_cache, Color("#c96dff88"))
+			_start_targeted_ability(_valid_attack_cells(id), Color("#c96dff88"))
 
 
 func _start_targeted_ability(cells: Array[Vector2i], color: Color) -> void:
 	if cells.is_empty():
 		_set_notice("No valid ability target is in range.")
 		return
-	input_mode = "ability"
+	_start_target_selection(cells, "ability", color)
+
+
+func _start_target_selection(cells: Array[Vector2i], mode: String, color: Color) -> void:
 	_clear_overlays()
-	_show_cells(cells, color, 0.065)
+	target_cache.append_array(cells)
+	input_mode = mode
+	_show_cells(target_cache, color, 0.065 if mode == "ability" else 0.06)
 	_update_ui()
 
 
@@ -1676,6 +1676,10 @@ func _run_smoke_test() -> void:
 	assert(terrain[Vector2i(12, 15)] == TERRAIN_BRIDGE and terrain[Vector2i(12, 16)] == TERRAIN_BRIDGE, "Bridge must span the river")
 	assert(CombatDataScript.total_roster_cost(CombatDataScript.FACTION_GOBLINS) == 19, "Goblin roster economy drifted")
 	assert(CombatDataScript.total_roster_cost(CombatDataScript.FACTION_ELVES) == 19, "Elf roster economy drifted")
+	var targeting_probe: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
+	_start_target_selection(targeting_probe, "attack", Color("#ff4c4c88"))
+	assert(target_cache == targeting_probe, "Target selection was erased while clearing old overlays")
+	_clear_overlays()
 	var deadline := Time.get_ticks_msec() + 18000
 	while action_counter < 12 and not battle_over and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
