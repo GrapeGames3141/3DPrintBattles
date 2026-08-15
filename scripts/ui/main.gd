@@ -233,6 +233,13 @@ func render() -> void:
 	root.add_theme_constant_override("separation", 12)
 	margin.add_child(root)
 	render_header(root)
+	# Battle is a first-fold activity, not a list below a generic scrolling shell.
+	# Give it the remaining safe content area directly so mobile layout cannot
+	# collapse action rows to zero height before the scroll container settles.
+	if screen == "battle":
+		render_battle_fullscreen(root)
+		call_deferred("focus_first_button")
+		return
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(0, 0)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1562,64 +1569,107 @@ func _training_seed(day_key: String) -> int:
 	return seed
 
 func render_battle() -> void:
-	render_battle_compact()
+	# Kept as the screen entry point for callers/tests; render() installs the
+	# explicit full-height battle composition above the generic scroll shell.
+	var root := VBoxContainer.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(root)
+	render_battle_fullscreen(root)
 
-func render_battle_compact() -> void:
-	var intro := make_panel(Color("19334de8"), Color("f1be69"))
-	body.add_child(intro.get_parent())
+func render_battle_fullscreen(host: Container) -> void:
+	var frame := PanelContainer.new()
+	frame.name = "BattleFullscreenPanel"
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	frame.custom_minimum_size = Vector2(0, 420)
+	frame.add_theme_stylebox_override("panel", panel_style(Color("19334de8"), Color("f1be69")))
+	host.add_child(frame)
+	var intro := VBoxContainer.new()
+	intro.name = "BattleFullscreenContent"
+	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	intro.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	intro.add_theme_constant_override("separation", 8)
+	frame.add_child(intro)
+	status = label("", 14, Color("fff0a1"))
+	status.name = "BattleStatus"
+	intro.add_child(status)
 	intro.add_child(label("Proving Grounds - %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 22, Color("ffd36c")))
 	var stage := BattleSpriteStage.new()
+	stage.name = "BattleStage"
 	stage.configure(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)))
-	stage.custom_minimum_size = Vector2(0, 128 if is_portrait_layout() else 132)
+	var compact_secondary := battle_secondary_open and not is_portrait_layout()
+	stage.custom_minimum_size = Vector2(0, 188 if is_portrait_layout() else (96 if compact_secondary else 172))
+	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
 	intro.add_child(stage)
 	if battle.active_player == 0 and not battle.finished:
 		render_battle_action_dock(intro)
 		render_battle_secondary(intro)
-	if not battle_secondary_open:
-		for player in [1, 0]:
-			var unit := battle.active_unit(player)
-			var armor_id := str(unit.get("armor_id", ""))
-			var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
-			intro.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP - %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-			intro.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
-			intro.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 13, Color("d9e7f3")))
 	if battle.finished:
 		intro.add_child(label("%s - Core Printer status resolved." % ("Victory!" if battle.winner == 0 else "Defeat."), 22, Color("ffd36c")))
 		intro.add_child(make_button("Return to Workshop", func(): GameManager.claim_battle_reward(battle); screen="workshop"; render()))
 		return
-	if not battle_secondary_open:
-		body.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-5))), 14, Color("d0dfeb")))
+	# Portrait has room for the always-visible status summary. On compact
+	# landscape, let the presentation use that room so the first fold remains
+	# entirely actionable; Details retains the full verbose readout.
+	if not battle_secondary_open and is_portrait_layout():
+		render_battle_summary(intro)
 	if battle.active_player == 1 and not battle.finished and not ai_pending:
 		ai_pending = true
 		call_deferred("run_ai" if bool(settings().get("reduced_motion", false)) else "run_ai_after_presentation")
 
+func render_battle_summary(host: Container) -> void:
+	var summary := make_panel(Color("10273ad8"), Color("517b9a"))
+	summary.name = "BattleSummary"
+	var panel := summary.get_parent() as PanelContainer
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, 142)
+	host.add_child(panel)
+	for player in [1, 0]:
+		var unit := battle.active_unit(player)
+		var armor_id := str(unit.get("armor_id", ""))
+		var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
+		summary.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP - %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
+		summary.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+		summary.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 13, Color("d9e7f3")))
+	summary.add_child(label("Battle log: " + " | ".join(battle.log.slice(maxi(0, battle.log.size()-3))), 13, Color("d0dfeb")))
+
 func render_battle_action_dock(host: Container) -> void:
 	var dock := make_panel(Color("214969ee"), Color("6de4ff"))
 	dock.name = "BattleActionDock"
-	host.add_child(dock.get_parent())
+	var dock_panel := dock.get_parent() as PanelContainer
+	dock_panel.custom_minimum_size = Vector2(0, 182 if is_portrait_layout() else 116)
+	dock_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	host.add_child(dock_panel)
 	dock.add_child(label("Moves", 18, Color("d7f8ff")))
 	var actions := GridContainer.new()
 	actions.name = "BattleActionGrid"
 	actions.columns = 2 if is_portrait_layout() else 4
+	actions.custom_minimum_size = Vector2(0, 104 if is_portrait_layout() else 48)
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_theme_constant_override("h_separation", 8)
 	actions.add_theme_constant_override("v_separation", 8)
 	dock.add_child(actions)
 	var unit: Dictionary = battle.active_unit(0)
 	var basic := make_button("Basic Attack (%d)" % int(unit.attack), func(): intent({"type":"attack"}))
 	basic.name = "BattleActionBasicAttack"
+	basic.custom_minimum_size.y = 48
 	actions.add_child(basic)
 	var ability := make_button("%s (%d FC)" % [str(unit.ability), int(unit.ability_cost)], func(): intent({"type":"ability"}))
 	ability.name = "BattleActionSignatureAbility"
+	ability.custom_minimum_size.y = 48
 	ability.disabled = int(unit.cooldown_remaining) > 0 or int(battle.players[0].filament) < int(unit.ability_cost)
 	actions.add_child(ability)
 	var defend := make_button("Defend", func(): intent({"type":"defend"}), Color("526e93"))
 	defend.name = "BattleActionDefend"
+	defend.custom_minimum_size.y = 48
 	actions.add_child(defend)
 	var end_turn := make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d"))
 	end_turn.name = "BattleActionEndTurn"
+	end_turn.custom_minimum_size.y = 48
 	actions.add_child(end_turn)
 	var secondary := make_button("Hide Bench, Hand & Details" if battle_secondary_open else "Bench, Hand & Details", toggle_battle_secondary, Color("536c8d"))
 	secondary.name = "BattleSecondaryToggle"
+	secondary.custom_minimum_size = Vector2(0, 48)
 	dock.add_child(secondary)
 
 func render_battle_secondary(host: Container) -> void:
@@ -1627,7 +1677,10 @@ func render_battle_secondary(host: Container) -> void:
 		return
 	var panel := make_panel(Color("172e43ee"), Color("7bcbe5"))
 	panel.name = "BattleSecondaryPanel"
-	host.add_child(panel.get_parent())
+	var secondary_panel := panel.get_parent() as PanelContainer
+	secondary_panel.custom_minimum_size = Vector2(0, 160)
+	secondary_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	host.add_child(secondary_panel)
 	panel.add_child(label("Tactics", 16, Color("9beaff")))
 	var tabs := GridContainer.new()
 	tabs.name = "BattleSecondaryTabs"

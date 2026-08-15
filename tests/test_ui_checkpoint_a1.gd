@@ -32,16 +32,30 @@ func _ready() -> void:
 		main.battle_secondary_open = false
 		main.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
 		main.render()
+		# The dock is constructed synchronously: even before container settling it
+		# must advertise a nonzero, touch-safe action grid rather than becoming an
+		# empty Android first frame.
+		var initial_grid := main.find_child("BattleActionGrid", true, false) as GridContainer
+		require(initial_grid != null and initial_grid.custom_minimum_size.y >= (104.0 if size.y > size.x else 48.0), "BattleActionGrid has an explicit pre-settle height at %s" % size)
+		for control_name in ["BattleActionBasicAttack", "BattleActionSignatureAbility", "BattleActionDefend", "BattleActionEndTurn"]:
+			var initial_control := main.find_child(control_name, true, false) as Button
+			require(initial_control != null and not initial_control.text.is_empty() and initial_control.custom_minimum_size.y >= 48.0, "%s has a pre-settle readable 48px contract at %s" % [control_name, size])
 		await get_tree().process_frame
+		await get_tree().process_frame
+		var frame := main.find_child("BattleFullscreenPanel", true, false) as PanelContainer
+		var content := main.find_child("BattleFullscreenContent", true, false) as VBoxContainer
 		var grid := main.find_child("BattleActionGrid", true, false) as GridContainer
 		require(main.find_child("BattleActionDock", true, false) != null, "BattleActionDock is present before detail rows at %s" % size)
+		require(frame != null and content != null and frame.custom_minimum_size.y >= 420.0 and frame.get_global_rect().size.y > 0.0, "battle uses an explicit non-collapsing full-height frame at %s (frame %s)" % [size, frame.get_global_rect() if frame != null else Rect2()])
+		require(frame != null and frame.get_global_rect().end.y >= float(size.y) * 0.85 and frame.get_global_rect().end.y <= float(size.y), "battle composition reaches the lower visible viewport at %s (frame %s)" % [size, frame.get_global_rect() if frame != null else Rect2()])
 		require(grid != null and grid.columns == (2 if size.y > size.x else 4), "BattleActionGrid uses the responsive column count at %s" % size)
+		require(grid != null and grid.custom_minimum_size.y >= (104.0 if size.y > size.x else 48.0) and grid.get_global_rect().size.y >= (104.0 if size.y > size.x else 48.0), "BattleActionGrid retains a real visible height at %s (rect %s)" % [size, grid.get_global_rect() if grid != null else Rect2()])
 		for control_name in ["BattleActionBasicAttack", "BattleActionSignatureAbility", "BattleActionDefend", "BattleActionEndTurn"]:
 			var control := main.find_child(control_name, true, false) as Button
 			var rect := control.get_global_rect() if control != null else Rect2()
-			require(control != null and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(size.x) and rect.end.y <= float(size.y), "%s is visible on first render at %s (rect %s)" % [control_name, size, rect])
+			require(control != null and not control.text.is_empty() and rect.size.x > 0.0 and rect.size.y >= 48.0 and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(size.x) and rect.end.y <= float(size.y), "%s is visible with readable text and a 48px target on first render at %s (rect %s)" % [control_name, size, rect])
 		var secondary := main.find_child("BattleSecondaryToggle", true, false) as Button
-		require(secondary != null and secondary.get_global_rect().end.y <= float(size.y), "Bench and Hand expander is visible on first render at %s" % size)
+		require(secondary != null and secondary.custom_minimum_size.y >= 48.0 and secondary.get_global_rect().size.y >= 48.0 and secondary.get_global_rect().end.y <= float(size.y), "Bench and Hand expander is visible on first render at %s" % size)
 		if secondary != null:
 			secondary.emit_signal("pressed")
 			await get_tree().process_frame
