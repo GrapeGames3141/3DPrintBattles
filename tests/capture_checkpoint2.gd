@@ -2,6 +2,7 @@ extends Node
 ## Reusable deterministic visual QA capture; output is deliberately outside the repository.
 const OUTPUT_DIR := "E:/CodexCache/printforge-validation"
 const MAIN_SCENE := preload("res://scenes/main.tscn")
+const ART_GALLERY := preload("res://scripts/ui/creature_art_gallery.gd")
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -9,9 +10,18 @@ var capture_tag := ""
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(OUTPUT_DIR)
+	# Captures are visual evidence, not interactive runs; keep the desktop cursor
+	# out of contact sheets and existing workshop screenshots.
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	capture_mode = requested_mode()
 	capture_tag = requested_tag()
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
+	if capture_mode in ["art_gallery_page1", "art_gallery_page2"]:
+		workshop = ART_GALLERY.new()
+		workshop.page = 1 if capture_mode == "art_gallery_page1" else 2
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture")
+		return
 	if capture_mode == "high_contrast_battle": GameManager.profile.settings.high_contrast = true; GameManager.profile.settings.reduced_motion = true
 	workshop = MAIN_SCENE.instantiate()
 	workshop.shop_day_key = "2026-08-14"
@@ -75,6 +85,10 @@ func fixture_profile() -> Dictionary:
 
 func capture() -> void:
 	await wait_for_stable_header()
+	# Hide/capture the Windows pointer immediately before the viewport readback.
+	# This is more reliable than the initial hidden request while the window gains focus.
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	await wait_frames(2)
 	capture_size = requested_resolution()
 	var suffix := "_%s" % capture_tag if not capture_tag.is_empty() else ""
 	get_viewport().get_texture().get_image().save_png(OUTPUT_DIR.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix]))
@@ -89,8 +103,12 @@ func wait_for_stable_header() -> void:
 	# Avoid capturing before a resized window has completed its first container pass.
 	for _frame in 60:
 		var header := workshop.find_child("WorkshopHeader", true, false) as Control
-		if header and header.is_visible_in_tree() and header.get_global_rect().position.y >= 15.0 and header.get_global_rect().size.y >= 80.0:
-			await wait_frames(3)
+		var bottom_safe := true
+		if capture_mode in ["art_gallery_page1", "art_gallery_page2"]:
+			var last_card := workshop.find_child("GalleryLastCard", true, false) as Control
+			bottom_safe = last_card != null and last_card.is_visible_in_tree() and last_card.get_global_rect().end.y <= get_viewport().get_visible_rect().end.y - 12.0
+		if header and header.is_visible_in_tree() and header.get_global_rect().position.y >= 15.0 and header.get_global_rect().size.y >= 80.0 and bottom_safe:
+			await wait_frames(6)
 			return
 		await get_tree().process_frame
 	push_error("Capture header never reached a safe visible layout.")
@@ -104,7 +122,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]: return mode
+			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func requested_tag() -> String:

@@ -13,13 +13,17 @@ func _ready() -> void:
 	require(sequence.advance(3000) and sequence.phase == ArcaneForgeSequence.AWAKENED and not sequence.skip(), "awakening completes once")
 	var reduced := ArcaneForgeSequence.create(true); reduced.begin(); reduced.skip()
 	require(reduced.reduced_motion and reduced.phase == ArcaneForgeSequence.RAW_COMPLETE and reduced.request_commit() and reduced.resolve_commit(true) and ArcaneForgeSequence.presentation_interval_seconds(true) > ArcaneForgeSequence.presentation_interval_seconds(false) and ArcaneForgeSequence.presentation_step_bps(true) < ArcaneForgeSequence.PRINT_COMPLETE_BPS / 2, "reduced motion remains calm staged and skippable")
-	var fallback := Catalog.creature("galehopper")
-	require(str(Catalog.creature("cinderpaw").raw_print).ends_with("cinderpaw_raw_print.png") and str(fallback.get("raw_print", "")).is_empty(), "catalog maps approved raw prints without changing future IDs")
-	for id in ["cinderpaw", "aquafin", "voltwig", "mossmunk"]:
-		var path := str(Catalog.creature(id).raw_print)
-		var texture := ResourceLoader.load(path) as Texture2D
-		# Headless Windows may not expose source PNG bytes, so validate the exported-resource seam.
-		require(ResourceLoader.exists(path) and texture != null and texture.get_width() > 0, "%s raw art exists and loads" % id)
+	var fallback := Catalog.creature("future_unmapped_creature")
+	require(fallback.is_empty() and BattleSpriteStage.sprite_path_for("future_unmapped_creature").ends_with("mossmunk_sprite_sheet.png"), "unknown future IDs retain the safe mascot visual fallback")
+	for definition in Catalog.CREATURES:
+		var creature_id: String = str(definition.id)
+		var living_path: String = str(definition.get("sprite_sheet", ""))
+		var raw_path: String = str(definition.get("raw_print", ""))
+		var living_texture := ResourceLoader.load(living_path) as Texture2D
+		var raw_texture := ResourceLoader.load(raw_path) as Texture2D
+		# Headless Windows may not expose source PNG bytes, so validate the imported/export seam here.
+		require(ResourceLoader.exists(living_path) and living_texture != null and living_texture.get_width() == 1536 and living_texture.get_height() == 1024, "%s living 4x2 sheet exists and loads at 1536x1024" % creature_id)
+		require(ResourceLoader.exists(raw_path) and raw_texture != null and raw_texture.get_width() > 0 and raw_texture.get_height() > 0, "%s raw print exists and loads" % creature_id)
 	if failures.is_empty(): print("PASS: checkpoint6 Arcane Forge sequence and asset mappings")
 	call_deferred("finish")
 

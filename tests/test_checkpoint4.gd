@@ -9,7 +9,7 @@ func _ready() -> void:
 	require(bool(settings_result.ok) and int(settings_result.profile.settings.text_scale_bps) == 15000, "settings save validates")
 	require(not bool(AccessibilityRules.save(migrated, {"text_scale_bps":11111}).ok), "invalid text scale rejected")
 	require(BattleSpriteStage.select_frame("attack", 0, true, true, 0.2) == 0 and BattleSpriteStage.select_frame("attack", 0, true, false, 0.2) == 5 and BattleSpriteStage.select_frame("attack", 0, false, false, 0.2) == 7, "sprite frames support reduced motion and hit response")
-	require(BattleSpriteStage.sprite_path_for("cinderpaw").ends_with("cinderpaw_sprite_sheet.png") and BattleSpriteStage.sprite_path_for("galehopper").ends_with("mossmunk_sprite_sheet.png"), "catalog sprite mapping safely falls back")
+	require(BattleSpriteStage.sprite_path_for("cinderpaw").ends_with("cinderpaw_sprite_sheet.png") and BattleSpriteStage.sprite_path_for("future_unmapped_creature").ends_with("mossmunk_sprite_sheet.png"), "catalog sprite mapping safely falls back for unknown future IDs")
 	var armored := BattleState.create([{"creature_id":"cinderpaw","armor_id":"chest_plate"}], ["mossmunk"], 3, 3, 2)
 	var unit := armored.active_unit(0)
 	require(int(unit.max_hp) == 52 and int(unit.speed) == 6 and int(unit.armor) == 1, "armor applies hp speed armor modifiers")
