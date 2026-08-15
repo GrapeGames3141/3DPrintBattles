@@ -99,18 +99,14 @@ func _load_assets() -> void:
 		living_textures[id] = CreatureSpriteCache.texture_for_path(living_path) if not living_path.is_empty() else null
 
 func _presentation_signature() -> String:
-	if station_id != PRINTER: return "maker:%d" % team_ids.size()
+	if station_id != PRINTER: return "maker:%s" % ",".join(team_ids)
 	return "%s:%d:%d:%d" % [sequence.phase(), sequence.phase_progress_bps() / 100, sequence.printer_frame_index(reduced_motion), sequence.selected_index(unlocked_ids.size())]
 
 func _team_creature_ids(profile: Dictionary) -> Array[String]:
-	var instances: Dictionary = {}
-	for creature in profile.get("creatures", []):
-		instances[str(creature.get("instance_id", ""))] = str(creature.get("creature_id", ""))
 	var result: Array[String] = []
-	for instance_id in profile.get("team", []):
-		var creature_id := str(instances.get(str(instance_id), ""))
-		if not creature_id.is_empty() and result.size() < 3:
-			result.append(creature_id)
+	for entry in ProfileRules.team_loadout(profile):
+		var creature_id := str(entry.get("creature_id", ""))
+		if not creature_id.is_empty() and result.size() < 3: result.append(creature_id)
 	return result
 
 func _draw() -> void:

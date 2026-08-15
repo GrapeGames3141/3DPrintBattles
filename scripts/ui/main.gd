@@ -34,6 +34,7 @@ var status: Label
 var battle_last_event := ""
 var battle_last_actor := 0
 var ai_pending := false
+var battle_session_generation := 0
 var battle_concede_armed := false
 var battle_secondary_open := false
 var battle_secondary_tab := "bench"
@@ -52,6 +53,8 @@ var printer_capture_freeze := false
 var printer_failure := ""
 var printer_return_screen := "collection"
 var printer_progress_label: Label
+var team_draft_dirty := false
+var _focus_after_render := true
 var workshop_ambient_capture_freeze := false
 var workshop_station_live_capture_progress := -1
 var workshop_station_live_capture_seed := 17
@@ -119,6 +122,7 @@ func navigate_to(target: String) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE): return
+	_focus_after_render = true
 	if screen == "workshop":
 		if not workshop_drawer_object.is_empty():
 			close_workshop_drawer()
@@ -186,6 +190,9 @@ func make_button(text_value: String, callback: Callable, accent := Color("2f93a8
 	button.add_theme_stylebox_override("normal", panel_style(Color(accent, 0.90), Color("a8edff")))
 	button.add_theme_stylebox_override("hover", panel_style(Color(accent, 1.0).lightened(0.12), Color("fff0a1")))
 	button.add_theme_stylebox_override("pressed", panel_style(Color(accent, 1.0).darkened(0.12), Color("ffffff")))
+	button.gui_input.connect(func(event: InputEvent):
+		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
+			_focus_after_render = true)
 	button.pressed.connect(callback)
 	return button
 
@@ -251,7 +258,9 @@ func render() -> void:
 	# collapse action rows to zero height before the scroll container settles.
 	if screen == "battle":
 		render_battle_fullscreen(root)
-		call_deferred("focus_first_button")
+		if _focus_after_render:
+			_focus_after_render = false
+			call_deferred("focus_first_button")
 		return
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(0, 0)
@@ -279,7 +288,9 @@ func render() -> void:
 		"local_vs": render_local_vs()
 		"trade": render_local_trade()
 		_: render_workshop()
-	call_deferred("focus_first_button")
+	if _focus_after_render:
+		_focus_after_render = false
+		call_deferred("focus_first_button")
 
 func _detach_persistent_screen_components() -> void:
 	# Main's shell is intentionally rebuilt for responsive text/contrast. Detach
@@ -1006,6 +1017,9 @@ func _workshop_action_label(target: String) -> String:
 	return str(names.get(target, "Open Station"))
 
 func open_workshop_view(view_id: String) -> void:
+	# This is intentional station navigation, unlike a touch-driven draft refresh.
+	# Restore a deterministic keyboard/controller target for the new location.
+	_focus_after_render = true
 	workshop_view = view_id if view_id == "overview" or not _workshop_view_data(view_id).is_empty() else "overview"
 	workshop_selected = workshop_view
 	workshop_drawer_object = ""
@@ -1080,6 +1094,11 @@ func start_local_vs() -> void:
 	var team := GameManager.current_team_loadout()
 	if team.is_empty(): _toast("Choose a starter before starting local versus."); return
 	local_authority = LocalBattleAuthority.create(team, ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+	var setup_error := local_authority.state.validation_error(true)
+	if not setup_error.is_empty():
+		local_authority = null
+		_toast(setup_error)
+		return
 	local_ready_seat = -1
 	local_concede_armed = false
 	if screen == "workshop": workshop_return_view = workshop_view
@@ -1093,6 +1112,10 @@ func render_local_vs() -> void:
 		panel.add_child(label("Start a private hot-seat match from the Workshop.", 16, Color("dce8f4")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	var state := local_authority.state
+	var setup_error := state.validation_error(false)
+	if not setup_error.is_empty():
+		panel.add_child(label("This local match cannot continue: " + setup_error, 16, Color("ffaaa1")))
+		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	panel.add_child(label("Authority revision %d  |  Match seed %d  |  No rewards in local versus" % [local_authority.revision, state.seed], 15, Color("9beaff")))
 	var seat := state.active_player
 	if not state.finished and local_ready_seat != seat:
@@ -1391,44 +1414,92 @@ func render_collection() -> void:
 func render_team() -> void:
 	var intro := make_panel(Color("19334de8"), Color("8deaff")); body.add_child(intro.get_parent())
 	intro.add_child(label("Three-Slot Team Builder", 25, Color("8deaff")))
-	if team_draft.is_empty(): team_draft = Array(GameManager.profile.team)
+	if not team_draft_dirty: team_draft = Array(GameManager.profile.get("team", [])).duplicate()
 	intro.add_child(label("Draft training team: %d / 3. Every selected print is unique; a team needs one to three companions." % team_draft.size(), 15, Color("dce8f4")))
 	for creature in GameManager.profile.creatures:
-		var instance_id := str(creature.instance_id)
+		var instance_id := str(creature.get("instance_id", ""))
+		if instance_id.is_empty(): continue
 		var selected: bool = instance_id in team_draft
-		intro.add_child(make_button(("Remove " if selected else "Add ") + str(Catalog.creature(str(creature.creature_id)).name), func():
-			if selected:
-				if team_draft.size() > 1: team_draft.erase(instance_id)
-				else: _toast("A training team needs at least one companion.")
-			elif team_draft.size() < 3:
-				team_draft.append(instance_id)
-			else: _toast("A team can hold only three companions.")
-			render(), Color("588d73") if selected else Color("2f93a8")))
-	intro.add_child(make_button("Save Team", func(): GameManager.save_team(team_draft), Color("a86b2e")))
+		intro.add_child(make_button(("Remove " if selected else "Add ") + str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown")), toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
+	intro.add_child(make_button("Save Team", save_team_draft, Color("a86b2e")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func toggle_team_draft_member(instance_id: String) -> void:
+	if instance_id in team_draft:
+		if team_draft.size() > 1: team_draft.erase(instance_id)
+		else: _toast("A training team needs at least one companion.")
+	elif team_draft.size() < 3:
+		team_draft.append(instance_id)
+	else:
+		_toast("A team can hold only three companions.")
+	team_draft_dirty = true
+	render()
+
+func save_team_draft() -> void:
+	var draft: Array = team_draft.duplicate()
+	# Reset before the synchronous profile_changed signal so its render sees the
+	# saved profile rather than a stale draft.
+	team_draft_dirty = false
+	if GameManager.save_team(draft):
+		team_draft = Array(GameManager.profile.get("team", [])).duplicate()
+		_toast("Team saved. Maker shelf and training bench are updated.")
+	else:
+		team_draft_dirty = true
 
 func render_armor() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
 	panel.add_child(label("Armor Workbench", 25, Color("ffd36c")))
-	panel.add_child(label("Each print wears at most one armor piece. Move or remove an equipped piece without losing either item.", 15, Color("dce8f4")))
+	panel.add_child(label("Build a durable loadout in three clear steps. Each print wears one piece; moving or removing it never loses either item.", 15, Color("dce8f4")))
+	panel.add_child(label("Step 1 - Acquire blueprints", 19, Color("9beaff")))
+	var locked_count := 0
 	for definition in Catalog.ARMOR:
-		var known: bool = definition.id in GameManager.profile.armor_blueprints
-		panel.add_child(make_button(("Print " if known else "Learn ") + str(definition.name) + " (%d FC)" % int(definition.print if known else definition.blueprint), func():
-			if known: GameManager.print_armor(str(definition.id))
-			else: GameManager.learn_armor_blueprint(str(definition.id))))
+		if str(definition.get("id", "")) not in GameManager.profile.get("armor_blueprints", []): locked_count += 1
+	if locked_count > 0:
+		panel.add_child(label("%d armor blueprint%s are still available through Forge Offers." % [locked_count, "s" if locked_count != 1 else ""], 14, Color("fff0a1")))
+		panel.add_child(make_button("Browse Forge Offers", navigate_to.bind("shop"), Color("2f93a8")))
+	else:
+		panel.add_child(label("Every catalog armor blueprint is learned.", 14, Color("a8e3a5")))
+	panel.add_child(label("Step 2 - Print learned armor", 19, Color("9beaff")))
+	var learned_count := 0
+	for definition in Catalog.ARMOR:
+		var definition_id := str(definition.get("id", ""))
+		if definition_id not in GameManager.profile.get("armor_blueprints", []): continue
+		learned_count += 1
+		var owned_count := 0
+		for armor_instance in GameManager.profile.get("armor", []):
+			if armor_instance is Dictionary and str(armor_instance.get("armor_id", "")) == definition_id: owned_count += 1
+		panel.add_child(make_button("Print %s (%d FC) - owned %d" % [str(definition.get("name", definition_id)), int(definition.get("print", 0)), owned_count], print_armor_blueprint.bind(definition_id), Color("a86b2e")))
+	if learned_count == 0: panel.add_child(label("Learn an armor blueprint in Forge Offers, then return here to print it.", 14, Color("dce8f4")))
+	panel.add_child(label("Step 3 - Equip, move, or remove", 19, Color("9beaff")))
+	if GameManager.profile.get("armor", []).is_empty():
+		panel.add_child(label("No armor prints yet. Print a learned blueprint above to fit a companion.", 14, Color("dce8f4")))
 	for creature in GameManager.profile.creatures:
-		var creature_id := str(creature.instance_id); var creature_name := str(Catalog.creature(str(creature.creature_id)).name); var equipped := str(creature.get("armor_id", ""))
+		var creature_id := str(creature.get("instance_id", "")); var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown")); var equipped := str(creature.get("armor_id", ""))
 		panel.add_child(label("%s: %s" % [creature_name, "Unarmored" if equipped.is_empty() else equipped.replace("_", " ").capitalize()], 15, Color("a8e3a5") if not equipped.is_empty() else Color("dce8f4")))
-		if not equipped.is_empty(): panel.add_child(make_button("Unequip from %s" % creature_name, func(): GameManager.unequip_armor(creature_id), Color("536c8d")))
+		if not equipped.is_empty(): panel.add_child(make_button("Unequip from %s" % creature_name, unequip_armor_from.bind(creature_id), Color("536c8d")))
 	for armor_instance in GameManager.profile.armor:
-		var armor_id := str(armor_instance.armor_instance_id); var armor_name := str(armor_instance.armor_id).replace("_", " ").capitalize()
+		var armor_id := str(armor_instance.get("armor_instance_id", "")); var armor_name := str(armor_instance.get("armor_id", "")).replace("_", " ").capitalize()
+		if armor_id.is_empty(): continue
 		for creature in GameManager.profile.creatures:
-			var target_id := str(creature.instance_id); var target_name := str(Catalog.creature(str(creature.creature_id)).name)
+			var target_id := str(creature.get("instance_id", "")); var target_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
 			var moving := not str(armor_instance.get("equipped_to", "")).is_empty()
-			panel.add_child(make_button(("Move " if moving else "Equip ") + armor_name + " to " + target_name, func():
-				if moving: GameManager.reassign_armor(target_id, armor_id)
-				else: GameManager.equip_armor(target_id, armor_id), Color("588d73")))
+			panel.add_child(make_button(("Move " if moving else "Equip ") + armor_name + " to " + target_name, equip_or_move_armor.bind(target_id, armor_id), Color("588d73")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func print_armor_blueprint(armor_id: String) -> void:
+	GameManager.print_armor(armor_id)
+
+func unequip_armor_from(creature_instance_id: String) -> void:
+	GameManager.unequip_armor(creature_instance_id)
+
+func equip_or_move_armor(creature_instance_id: String, armor_instance_id: String) -> void:
+	var equipped := false
+	for armor_instance in GameManager.profile.get("armor", []):
+		if armor_instance is Dictionary and str(armor_instance.get("armor_instance_id", "")) == armor_instance_id:
+			equipped = not str(armor_instance.get("equipped_to", "")).is_empty()
+			break
+	if equipped: GameManager.reassign_armor(creature_instance_id, armor_instance_id)
+	else: GameManager.equip_armor(creature_instance_id, armor_instance_id)
 
 func render_deck() -> void:
 	var panel := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(panel.get_parent())
@@ -1441,20 +1512,49 @@ func render_deck() -> void:
 		for saved in GameManager.profile.get("decks", []):
 			if str(saved.get("id", "")) == slot_id: saved_cards = saved.get("cards", []).duplicate()
 		var action := "Active" if str(GameManager.profile.active_deck_id) == slot_id else "Select"
-		panel.add_child(make_button("%s: %d cards - %s" % [str(ProgressionRules.DECK_SLOT_NAMES[slot_id]), saved_cards.size(), action], func():
-			deck_slot_id = slot_id
-			deck_draft = saved_cards.duplicate() if not saved_cards.is_empty() else GameManager.active_deck_cards()
-			if not saved_cards.is_empty(): GameManager.select_deck(slot_id)
-			render(), Color("588d73") if str(GameManager.profile.active_deck_id) == slot_id else Color("526e93")))
+		var slot_button := make_button("%s: %d cards - %s" % [str(ProgressionRules.DECK_SLOT_NAMES[slot_id]), saved_cards.size(), action], select_deck_slot.bind(slot_id), Color("588d73") if str(GameManager.profile.active_deck_id) == slot_id else Color("526e93"))
+		slot_button.name = "DeckSlot%s" % slot_id.capitalize()
+		panel.add_child(slot_button)
 	for card in Catalog.SUPPORT_CARDS:
 		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0)); var copies: int = deck_draft.count(card_id)
 		if owned <= 0: continue
 		var row := HBoxContainer.new(); panel.add_child(row)
 		var info := label("%s | owned %d | slot %d" % [str(card.name), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
-		row.add_child(make_button("-", func(): deck_draft.erase(card_id); render(), Color("536c8d")))
-		row.add_child(make_button("+", func(): if deck_draft.size() < 15 and deck_draft.count(card_id) < owned: deck_draft.append(card_id); render(), Color("2f93a8")))
-	panel.add_child(make_button("Save %s as active (%d / 15)" % [str(ProgressionRules.DECK_SLOT_NAMES.get(deck_slot_id, "Forge Deck")), deck_draft.size()], func(): GameManager.save_deck_slot(deck_draft, deck_slot_id), Color("a86b2e")))
+		var remove_card := make_button("-", change_deck_draft.bind(card_id, false), Color("536c8d"))
+		remove_card.name = "DeckRemove%s" % card_id.capitalize()
+		row.add_child(remove_card)
+		var add_card := make_button("+", change_deck_draft.bind(card_id, true), Color("2f93a8"))
+		add_card.name = "DeckAdd%s" % card_id.capitalize()
+		row.add_child(add_card)
+	panel.add_child(make_button("Save %s as active (%d / 15)" % [str(ProgressionRules.DECK_SLOT_NAMES.get(deck_slot_id, "Forge Deck")), deck_draft.size()], save_active_deck_draft, Color("a86b2e")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func _saved_deck_cards(deck_id: String) -> Array:
+	for saved in GameManager.profile.get("decks", []):
+		if saved is Dictionary and str(saved.get("id", "")) == deck_id:
+			var cards = saved.get("cards", [])
+			return cards.duplicate() if cards is Array else []
+	return []
+
+func select_deck_slot(deck_id: String) -> void:
+	deck_slot_id = deck_id
+	var saved_cards := _saved_deck_cards(deck_id)
+	deck_draft = saved_cards.duplicate() if not saved_cards.is_empty() else GameManager.active_deck_cards()
+	if not saved_cards.is_empty():
+		GameManager.select_deck(deck_id)
+	else:
+		render()
+
+func change_deck_draft(card_id: String, add: bool) -> void:
+	var owned: int = int(GameManager.profile.get("support_cards", {}).get(card_id, 0))
+	if add:
+		if deck_draft.size() < 15 and deck_draft.count(card_id) < owned: deck_draft.append(card_id)
+	else:
+		deck_draft.erase(card_id)
+	render()
+
+func save_active_deck_draft() -> void:
+	GameManager.save_deck_slot(deck_draft.duplicate(), deck_slot_id)
 
 func render_codex() -> void:
 	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
@@ -1471,11 +1571,19 @@ func render_codex() -> void:
 func start_battle() -> void:
 	var player_team := GameManager.current_team_loadout()
 	if player_team.is_empty():
-		_toast("Choose a starter before entering the Proving Grounds.")
+		_toast("Your training team is incomplete. Choose a ready print in Team Builder.")
 		return
 	# Training begins with the currently selected/available team; one print is valid.
 	var rival_team := GameManager.training_opponent(shop_day_key)
+	# A new match invalidates every deferred AI callback tied to an older stage.
+	battle_session_generation += 1
+	ai_pending = false
 	battle = BattleState.create(player_team, rival_team, GameManager.filament_cap(), 3, _training_seed(shop_day_key), GameManager.active_deck_cards())
+	var setup_error := battle.validation_error(true)
+	if not setup_error.is_empty():
+		battle = null
+		_toast(setup_error)
+		return
 	battle_last_event = ""
 	battle_last_actor = 0
 	battle_concede_armed = false
@@ -1491,6 +1599,13 @@ func _training_seed(day_key: String) -> int:
 	return seed
 
 func render_battle_fullscreen(host: Container) -> void:
+	if battle == null or not battle.validation_error().is_empty():
+		var unavailable := make_panel(Color("19334de8"), Color("ffaaa1"))
+		host.add_child(unavailable.get_parent())
+		unavailable.add_child(label("Proving Grounds unavailable", 24, Color("ffaaa1")))
+		unavailable.add_child(label("Your current team needs a catalog-valid ready print before a training match can begin.", 16, Color("dce8f4")))
+		unavailable.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+		return
 	var frame := PanelContainer.new()
 	frame.name = "BattleFullscreenPanel"
 	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1526,7 +1641,12 @@ func render_battle_fullscreen(host: Container) -> void:
 		render_battle_summary(intro)
 	if battle.active_player == 1 and not battle.finished and not ai_pending:
 		ai_pending = true
-		call_deferred("run_ai" if bool(settings().get("reduced_motion", false)) else "run_ai_after_presentation")
+		var scheduled_state := battle
+		var scheduled_generation := battle_session_generation
+		if bool(settings().get("reduced_motion", false)):
+			call_deferred("run_ai", scheduled_state, scheduled_generation)
+		else:
+			call_deferred("run_ai_after_presentation", scheduled_state, scheduled_generation)
 
 func render_battle_summary(host: Container) -> void:
 	var summary := make_panel(Color("10273ad8"), Color("517b9a"))
@@ -1552,7 +1672,10 @@ func render_battle_action_dock(host: Container) -> void:
 	dock_panel.custom_minimum_size = Vector2(0, 182 if is_portrait_layout() else 116)
 	dock_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	host.add_child(dock_panel)
-	dock.add_child(label("Moves", 18, Color("d7f8ff")))
+	var opening_locked := battle.turn == 1 and battle.active_player == 0 and battle.opening_player == 0
+	var dock_title := label("Moves - Opening: Defend or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"))
+	if opening_locked: dock_title.name = "BattleOpeningGuidance"
+	dock.add_child(dock_title)
 	var actions := GridContainer.new()
 	actions.name = "BattleActionGrid"
 	actions.columns = 2 if is_portrait_layout() else 4
@@ -1569,11 +1692,12 @@ func render_battle_action_dock(host: Container) -> void:
 	var basic := make_button("Basic Attack (%d)" % attack_value, submit_battle_action.bind("attack"))
 	basic.name = "BattleActionBasicAttack"
 	basic.custom_minimum_size.y = 48
+	basic.disabled = opening_locked
 	actions.add_child(basic)
 	var ability := make_button("%s (%d FC)" % [ability_name, ability_cost], submit_battle_action.bind("ability"))
 	ability.name = "BattleActionSignatureAbility"
 	ability.custom_minimum_size.y = 48
-	ability.disabled = int(unit.get("cooldown_remaining", 0)) > 0 or int(battle.players[0].get("filament", 0)) < ability_cost
+	ability.disabled = opening_locked or int(unit.get("cooldown_remaining", 0)) > 0 or int(battle.players[0].get("filament", 0)) < ability_cost
 	actions.add_child(ability)
 	var defend := make_button("Defend", submit_battle_action.bind("defend"), Color("526e93"))
 	defend.name = "BattleActionDefend"
@@ -1721,14 +1845,19 @@ func cancel_battle_concede() -> void:
 	_toast("Concede cancelled.")
 	render()
 
-func run_ai_after_presentation() -> void:
+func run_ai_after_presentation(expected_state: BattleState, expected_generation: int) -> void:
 	await get_tree().create_timer(0.5).timeout
+	if expected_state != battle or expected_generation != battle_session_generation or screen != "battle":
+		return
 	ai_pending = false
-	if battle and battle.active_player == 1 and not battle.finished: run_ai()
+	if battle.active_player == 1 and not battle.finished:
+		run_ai(expected_state, expected_generation)
 
-func run_ai() -> void:
+func run_ai(expected_state: BattleState = null, expected_generation := -1) -> void:
+	if expected_state != null and (expected_state != battle or expected_generation != battle_session_generation or screen != "battle"):
+		return
 	ai_pending = false
-	if battle.active_player != 1 or battle.finished: return
+	if battle == null or screen != "battle" or battle.active_player != 1 or battle.finished: return
 	var applied := AIOpponent.choose_intent(battle, str(settings().get("ai_difficulty", "Craftsman")))
 	var result := BattleRules.apply_intent(battle, 1, applied)
 	if not result.ok and battle.active_player == 1 and not battle.finished:

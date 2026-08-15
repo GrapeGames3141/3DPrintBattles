@@ -1,6 +1,7 @@
 extends Node
 
 const LIVE_LAYER := preload("res://scripts/ui/workshop_station_live_layer.gd")
+const WORKSHOP_COMPONENT := preload("res://scripts/ui/workshop_screen_component.gd")
 
 var failures: Array[String] = []
 
@@ -60,6 +61,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	require(not live.is_processing() and live.sequence.phase() == frozen_phase, "reduced motion freezes a meaningful raw-print frame")
+	var component := WORKSHOP_COMPONENT.new()
+	var one_member := profile.duplicate(true)
+	one_member.team = [str(one_member.onboarding.starter_instance_id)]
+	var retained := component.refresh(one_member, "maker", false, false, false, 17, false, -1)
+	require(retained.team_ids == ["cinderpaw"], "Maker live layer begins with the current one-member team")
+	var three_members := profile.duplicate(true)
+	var refreshed := component.refresh(three_members, "maker", false, false, false, 17, false, -1)
+	require(refreshed == retained and refreshed.team_ids == ["cinderpaw", "mossmunk", "aquafin"], "persistent Maker layer refreshes all shelf slots when team IDs change without a revision or restart")
 	live.queue_free()
 	if failures.is_empty():
 		print("PASS: workshop station-live sequence, team shelf, and review coin floor")

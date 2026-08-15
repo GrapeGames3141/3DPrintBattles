@@ -43,19 +43,12 @@ func choose_starter(creature_id: String) -> bool:
 
 func current_team_creature_ids() -> Array:
 	var result: Array = []
-	for instance_id in profile.get("team", []):
-		var creature := _creature_instance(str(instance_id))
-		if not creature.is_empty(): result.append(str(creature.creature_id))
+	for entry in ProfileRules.team_loadout(profile):
+		result.append(str(entry.get("creature_id", "")))
 	return result
 
 func current_team_loadout() -> Array:
-	var result: Array = []
-	for instance_id in profile.get("team", []):
-		var creature := _creature_instance(str(instance_id))
-		if creature.is_empty(): continue
-		var armor_id := str(creature.get("armor_id", ""))
-		result.append({"creature_id":str(creature.creature_id),"armor_id":armor_id})
-	return result
+	return ProfileRules.team_loadout(profile)
 
 func active_deck_cards() -> Array:
 	return ProgressionRules.active_deck(profile)

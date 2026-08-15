@@ -6,6 +6,8 @@ const IMPLEMENTED_CARD_EFFECTS: Array[String] = ["filament", "heal", "shield", "
 
 static func apply_intent(state: BattleState, player: int, intent: Dictionary) -> Dictionary:
 	if state.finished or player != state.active_player: return {"ok":false,"error":"Not your turn."}
+	var setup_error := state.validation_error(true)
+	if not setup_error.is_empty(): return {"ok":false,"error":setup_error}
 	var type := str(intent.get("type", ""))
 	match type:
 		"attack": return _attack(state, player, false)

@@ -12,7 +12,10 @@ func enter(_context: Dictionary = {}) -> void:
 
 func refresh(profile: Dictionary, station: String, portrait: bool, reduced_motion: bool, high_contrast: bool, seed: int, frozen: bool, capture_progress: int) -> WorkshopStationLiveLayer:
 	enter()
-	var signature := "%s:%s:%s:%s:%s:%s:%s" % [int(profile.get("revision", 0)), station, portrait, reduced_motion, high_contrast, seed, frozen]
+	var team_signature: Array[String] = []
+	for entry in ProfileRules.team_loadout(profile):
+		team_signature.append(str(entry.get("creature_id", "")))
+	var signature := "%s:%s:%s:%s:%s:%s:%s:%s" % [int(profile.get("revision", 0)), station, portrait, reduced_motion, high_contrast, seed, frozen, ",".join(team_signature)]
 	if signature != _config_signature:
 		_config_signature = signature
 		live_layer.configure(profile, station, portrait, reduced_motion, high_contrast, seed, frozen)

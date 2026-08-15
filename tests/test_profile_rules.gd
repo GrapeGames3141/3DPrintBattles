@@ -27,6 +27,22 @@ func _ready() -> void:
 	require(int(migrated.schema_version) == Catalog.SCHEMA_VERSION and int(migrated.coins) == 320 and migrated.creatures.size() == 2 and migrated.armor.size() == 1, "schema-one migration preserves inventory and progression")
 	require(ProfileRules.has_starter(migrated) and str(migrated.onboarding.starter_id) == "aquafin", "legacy migration completes onboarding without extra grant")
 	require(OnboardingState.screen_for_profile(migrated) == "workshop", "migrated profile routes to workshop")
+	var repairable: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
+	var starter_instance: Dictionary = repairable.creatures[0]
+	starter_instance.erase("creature_id")
+	starter_instance.species_id = "cinderpaw"
+	repairable.team = ["cinderpaw", "missing", "cinderpaw", "extra"]
+	repairable.onboarding.starter_instance_id = ""
+	var repaired := ProfileRules.migrate(repairable)
+	var repaired_loadout := ProfileRules.team_loadout(repaired)
+	require(str(repaired.creatures[0].creature_id) == "cinderpaw" and str(repaired.onboarding.starter_instance_id) == str(starter_instance.instance_id) and repaired.team == [str(starter_instance.instance_id)] and repaired_loadout.size() == 1 and str(repaired_loadout[0].creature_id) == "cinderpaw", "current-schema integrity repair restores a uniquely provable starter alias and deduplicated team")
+	require(ProfileRules.migrate(repaired) == repaired, "current-schema integrity repair is idempotent")
+	var irreparable := ProfileRules.new_profile()
+	irreparable.onboarding = {"state":"complete", "starter_id":"not_a_catalog_creature", "starter_instance_id":"bad"}
+	irreparable.creatures = [{"instance_id":"bad", "creature_id":"not_a_catalog_creature"}]
+	irreparable.team = ["bad"]
+	var blocked := ProfileRules.migrate(irreparable)
+	require(ProfileRules.team_loadout(blocked).is_empty() and blocked.team.is_empty(), "irreparable current-schema ownership is safely blocked without invented inventory")
 	if failures.is_empty(): print("PASS: profile schema migration, starter permanence, and onboarding UI state")
 	call_deferred("_finish")
 

@@ -98,5 +98,20 @@ func active_unit(player: int) -> Dictionary:
 	var unit = team_value[active_index]
 	return unit if unit is Dictionary else {}
 
+func validation_error(require_ready := false) -> String:
+	if players.size() != 2: return "Battle setup is missing a complete pair of teams."
+	for player in [0, 1]:
+		var unit := active_unit(player)
+		if unit.is_empty() or Catalog.creature(str(unit.get("id", ""))).is_empty():
+			return "Battle setup has an invalid %s team." % ("player" if player == 0 else "rival")
+		if int(unit.get("max_hp", 0)) <= 0:
+			return "Battle setup has invalid %s vitality data." % ("player" if player == 0 else "rival")
+		if require_ready and int(unit.get("hp", 0)) <= 0:
+			return "Battle setup has no ready %s print." % ("player" if player == 0 else "rival")
+		var player_data = players[player]
+		if not player_data is Dictionary or int(player_data.get("spool_cap", 0)) <= 0:
+			return "Battle setup is missing %s filament data." % ("player" if player == 0 else "rival")
+	return ""
+
 func serialize() -> Dictionary:
 	return {"match_id":match_id,"turn":turn,"active_player":active_player,"opening_player":opening_player,"finished":finished,"winner":winner,"players":players,"log":log,"seed":seed,"reward_claimed":reward_claimed}

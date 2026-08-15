@@ -64,6 +64,11 @@ func _ready() -> void:
 			var control := main.find_child(control_name, true, false) as Button
 			var rect := control.get_global_rect() if control != null else Rect2()
 			require(control != null and not control.text.is_empty() and rect.size.x > 0.0 and rect.size.y >= 48.0 and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(size.x) and rect.end.y <= float(size.y), "%s is visible with readable text and a 48px target on first render at %s (rect %s)" % [control_name, size, rect])
+		var opening_basic := main.find_child("BattleActionBasicAttack", true, false) as Button
+		var opening_ability := main.find_child("BattleActionSignatureAbility", true, false) as Button
+		var opening_defend := main.find_child("BattleActionDefend", true, false) as Button
+		var opening_end := main.find_child("BattleActionEndTurn", true, false) as Button
+		require(opening_basic != null and opening_basic.disabled and opening_ability != null and opening_ability.disabled and opening_defend != null and not opening_defend.disabled and opening_end != null and not opening_end.disabled and main.find_child("BattleOpeningGuidance", true, false) != null, "opening winner HUD disables attacks and guides Defend or End Turn at %s" % size)
 		var secondary := main.find_child("BattleSecondaryToggle", true, false) as Button
 		require(secondary != null and secondary.custom_minimum_size.y >= 48.0 and secondary.get_global_rect().size.y >= 48.0 and secondary.get_global_rect().end.y <= float(size.y), "Bench and Hand expander is visible on first render at %s" % size)
 		if secondary != null:
@@ -87,6 +92,31 @@ func _ready() -> void:
 			main.intent({"type":"defend"})
 			await get_tree().process_frame
 			require(main.battle.log.size() > before_log, "expanded battle submits a legal core action at %s" % size)
+	# The two legal opening choices must be actionable through their visible UI,
+	# not merely enabled decoration.
+	for opening_control_name in ["BattleActionDefend", "BattleActionEndTurn"]:
+		main.screen = "battle"
+		main.battle_secondary_open = false
+		main.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+		main.battle_session_generation += 1
+		main.ai_pending = false
+		main.render()
+		await get_tree().process_frame
+		var opening_control := main.find_child(opening_control_name, true, false) as Button
+		var opening_control_enabled := opening_control != null and not opening_control.disabled
+		var opening_log: int = main.battle.log.size()
+		if opening_control != null: opening_control.emit_signal("pressed")
+		require(opening_control_enabled and main.battle.active_player == 1 and main.battle.turn == 2 and main.battle.log.size() > opening_log, "%s advances a legal opening turn through the action dock" % opening_control_name)
+	# A deferred callback captured for the previous match must not mutate this
+	# replacement match after its presentation delay.
+	var stale_state: BattleState = main.battle
+	var stale_generation: int = main.battle_session_generation
+	main.start_battle()
+	var replacement_log_size: int = main.battle.log.size()
+	var replacement_turn: int = main.battle.turn
+	var replacement_active: int = main.battle.active_player
+	main.run_ai(stale_state, stale_generation)
+	require(main.battle.log.size() == replacement_log_size and main.battle.turn == replacement_turn and main.battle.active_player == replacement_active, "stale AI callback cannot mutate a replacement training match")
 	# Reproduce a legacy Android snapshot that only kept an ID and current health.
 	# The normalizer must restore catalog combat/presentation fields before the HUD
 	# builds the four moves or the player summary.
