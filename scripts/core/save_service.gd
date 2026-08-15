@@ -2,6 +2,7 @@ extends Node
 ## Versioned local profile plus append-only idempotent synchronization journal.
 const PROFILE_PATH := "user://printforge_profile.json"
 const JOURNAL_PATH := "user://printforge_offline_journal.jsonl"
+var session_events: Array = []
 
 func load_profile() -> Dictionary:
 	if not FileAccess.file_exists(PROFILE_PATH): return {}
@@ -23,6 +24,7 @@ func append_event(kind: String, payload: Dictionary, revision: int) -> void:
 	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(JOURNAL_PATH) else FileAccess.WRITE_READ
 	var file := FileAccess.open(JOURNAL_PATH, mode)
 	if file == null:
+		session_events.append(row)
 		push_warning("Offline journal storage is unavailable; event was not persisted.")
 		return
 	file.seek_end()
@@ -34,7 +36,7 @@ func commit_mutation(profile: Dictionary, kind: String, payload: Dictionary, rev
 	commit_snapshot(profile)
 
 func pending_events() -> Array:
-	if not FileAccess.file_exists(JOURNAL_PATH): return []
+	if not FileAccess.file_exists(JOURNAL_PATH): return session_events.duplicate(true)
 	var result: Array = []
 	var file := FileAccess.open(JOURNAL_PATH, FileAccess.READ)
 	while not file.eof_reached():
@@ -42,4 +44,5 @@ func pending_events() -> Array:
 		if line.is_empty(): continue
 		var row = JSON.parse_string(line)
 		if row is Dictionary: result.append(row)
+	for row in session_events: result.append(row.duplicate(true))
 	return result

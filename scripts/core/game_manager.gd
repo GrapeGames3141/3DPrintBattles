@@ -39,6 +39,15 @@ func current_team_creature_ids() -> Array:
 		if not creature.is_empty(): result.append(str(creature.creature_id))
 	return result
 
+func current_team_loadout() -> Array:
+	var result: Array = []
+	for instance_id in profile.get("team", []):
+		var creature := _creature_instance(str(instance_id))
+		if creature.is_empty(): continue
+		var armor_id := str(creature.get("armor_id", ""))
+		result.append({"creature_id":str(creature.creature_id),"armor_id":armor_id})
+	return result
+
 func active_deck_cards() -> Array:
 	return ProgressionRules.active_deck(profile)
 
@@ -58,6 +67,9 @@ func save_team(instance_ids: Array) -> bool:
 func save_deck(cards: Array) -> bool:
 	return apply_transition(ProgressionRules.save_deck(profile, cards), "save_deck")
 
+func save_settings(values: Dictionary) -> bool:
+	return apply_transition(AccessibilityRules.save(profile, values), "save_settings")
+
 func filament_cap() -> int:
 	return clampi(int(profile.spool_level), 3, 10)
 
@@ -75,13 +87,21 @@ func spend_coins(amount: int, reason: String) -> bool:
 	return true
 
 func award_battle(win: bool) -> void:
-	earn_coins(20 if win else 8, "battle")
-	profile.xp = int(profile.xp) + (30 if win else 10)
+	var coins: int = 20 if win else 8
+	var xp: int = 30 if win else 10
+	profile.coins = int(profile.coins) + coins
+	profile.xp = int(profile.xp) + xp
 	if int(profile.xp) >= filament_cap() * 100 and filament_cap() < 10:
 		profile.xp = int(profile.xp) - filament_cap() * 100
 		profile.spool_level = filament_cap() + 1
 		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
-	mutated("battle_reward", {"win":win})
+	mutated("battle_reward", {"win":win,"coins":coins,"xp":xp})
+
+func claim_battle_reward(state: BattleState) -> bool:
+	if not state.finished or state.reward_claimed: return false
+	state.reward_claimed = true
+	award_battle(state.winner == 0)
+	return true
 
 func complete_workshop_job(performance: int) -> int:
 	# Non-educational calibration/pattern job: 0..100 performance.

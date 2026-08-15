@@ -11,6 +11,15 @@ var deck_draft: Array = []
 var battle: BattleState
 var body: VBoxContainer
 var status: Label
+var battle_last_event := ""
+var battle_last_actor := 0
+var ai_pending := false
+
+func settings() -> Dictionary:
+	return GameManager.profile.get("settings", AccessibilityRules.defaults())
+
+func scaled_font(base: int) -> int:
+	return maxi(12, (base * int(settings().get("text_scale_bps", 10000))) / 10000)
 
 func _ready() -> void:
 	if shop_day_key.is_empty(): shop_day_key = Time.get_date_string_from_system()
@@ -33,9 +42,12 @@ func clear_children(node: Node) -> void:
 
 func panel_style(color: Color, border: Color = Color("6bd6ed")) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
+	if bool(settings().get("high_contrast", false)):
+		color = Color("07111fff")
+		border = Color("ffffffff")
 	style.bg_color = color
 	style.border_color = border
-	style.set_border_width_all(1)
+	style.set_border_width_all(3 if bool(settings().get("high_contrast", false)) else 1)
 	style.corner_radius_top_left = 14
 	style.corner_radius_top_right = 14
 	style.corner_radius_bottom_left = 14
@@ -62,9 +74,9 @@ func make_panel(color := Color("172942cc"), border := Color("6bd6ed")) -> VBoxCo
 func make_button(text_value: String, callback: Callable, accent := Color("2f93a8")) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 42)
+	button.custom_minimum_size = Vector2(0, 44)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_font_size_override("font_size", scaled_font(15))
 	button.add_theme_stylebox_override("normal", panel_style(Color(accent, 0.90), Color("a8edff")))
 	button.add_theme_stylebox_override("hover", panel_style(Color(accent, 1.0).lightened(0.12), Color("fff0a1")))
 	button.add_theme_stylebox_override("pressed", panel_style(Color(accent, 1.0).darkened(0.12), Color("ffffff")))
@@ -74,7 +86,7 @@ func make_button(text_value: String, callback: Callable, accent := Color("2f93a8
 func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	var value := Label.new()
 	value.text = text_value
-	value.add_theme_font_size_override("font_size", size)
+	value.add_theme_font_size_override("font_size", scaled_font(size))
 	value.add_theme_color_override("font_color", color)
 	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return value
@@ -134,6 +146,7 @@ func render() -> void:
 		"team": render_team()
 		"armor": render_armor()
 		"deck": render_deck()
+		"settings": render_settings()
 		_: render_workshop()
 
 func render_header(root: VBoxContainer) -> void:
@@ -238,6 +251,12 @@ func render_workshop() -> void:
 			"Workbench": station.add_child(make_button(item[2], func(): _toast("Calibration complete: +%d Forge Coins" % GameManager.complete_workshop_job(72)), Color("588d73")))
 			"Print Yard": station.add_child(label("%d printed companion%s are wandering." % [GameManager.profile.creatures.size(), "" if GameManager.profile.creatures.size()==1 else "s"], 14, Color("a8e3a5")))
 
+	var settings_station := make_panel(Color("152842e8"), Color("ffd36c"))
+	grid.add_child(settings_station.get_parent())
+	settings_station.add_child(label("Settings", 20, Color("ffd36c")))
+	settings_station.add_child(label("Text, contrast, motion, and training AI.", 14, Color("c9d8e6")))
+	settings_station.add_child(make_button("Open Settings", func(): screen="settings"; render()))
+
 func render_shop() -> void:
 	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
 	intro.add_child(label("Extruder Forge", 25, Color("ffd36c")))
@@ -248,6 +267,19 @@ func render_shop() -> void:
 		card.add_child(label(str(offer.name), 19, Color("8deaff")))
 		card.add_child(label(str(offer.kind).replace("_", " ").capitalize() + " • " + str(offer.price) + " FC", 14, Color("dce8f4")))
 		card.add_child(make_button("Acquire", func(): GameManager.buy_shop_offer(shop_day_key, str(offer.offer_id))))
+	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+
+func render_settings() -> void:
+	var panel := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(panel.get_parent())
+	var current := settings()
+	panel.add_child(label("Workshop Settings", 25, Color("ffd36c")))
+	panel.add_child(label("Settings are saved to this profile. Text, contrast, and motion controls never change battle rules.", 15, Color("dce8f4")))
+	for scale in AccessibilityRules.TEXT_SCALES:
+		panel.add_child(make_button("Text size %d%%" % (int(scale) / 100), func(): GameManager.save_settings({"text_scale_bps":scale}), Color("588d73") if int(current.text_scale_bps) == int(scale) else Color("2f93a8")))
+	panel.add_child(make_button("High contrast: %s" % ("On" if bool(current.high_contrast) else "Off"), func(): GameManager.save_settings({"high_contrast":not bool(current.high_contrast)})))
+	panel.add_child(make_button("Reduced motion: %s" % ("On" if bool(current.reduced_motion) else "Off"), func(): GameManager.save_settings({"reduced_motion":not bool(current.reduced_motion)})))
+	for difficulty in AccessibilityRules.DIFFICULTIES:
+		panel.add_child(make_button("Training AI: %s" % difficulty, func(): GameManager.save_settings({"ai_difficulty":difficulty}), Color("588d73") if str(current.ai_difficulty) == difficulty else Color("2f93a8")))
 	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
 
 func render_collection() -> void:
@@ -339,25 +371,33 @@ func render_codex() -> void:
 	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
 
 func start_battle() -> void:
-	var player_team := GameManager.current_team_creature_ids()
+	var player_team := GameManager.current_team_loadout()
 	if player_team.is_empty():
 		_toast("Choose a starter before entering the Proving Grounds.")
 		return
 	# Training begins with the currently selected/available team; one print is valid.
 	battle = BattleState.create(player_team, ["mossmunk"], GameManager.filament_cap(), 3, int(Time.get_ticks_msec()), GameManager.active_deck_cards())
+	battle_last_event = ""
+	battle_last_actor = 0
 	screen = "battle"
 	render()
 
 func render_battle() -> void:
 	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
 	intro.add_child(label("Proving Grounds — %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 24, Color("ffd36c")))
+	var stage := BattleSpriteStage.new()
+	stage.configure(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)))
+	intro.add_child(stage)
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
+		var armor_id := str(unit.get("armor_id", ""))
+		var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
 		intro.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP  •  %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 18, Color("ffaaa1") if player==1 else Color("a9ecff")))
+		intro.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 14, Color("f1be69")))
 		intro.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 14, Color("d9e7f3")))
 	if battle.finished:
 		intro.add_child(label("%s — Core Printer status resolved." % ("Victory!" if battle.winner == 0 else "Defeat."), 24, Color("ffd36c")))
-		intro.add_child(make_button("Return to Workshop", func(): GameManager.award_battle(battle.winner==0); screen="workshop"; render()))
+		intro.add_child(make_button("Return to Workshop", func(): GameManager.claim_battle_reward(battle); screen="workshop"; render()))
 		return
 	if battle.active_player == 0:
 		var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); body.add_child(actions)
@@ -373,18 +413,37 @@ func render_battle() -> void:
 		var cards := HBoxContainer.new(); body.add_child(cards); cards.add_child(label("Hand:",15))
 		for card_id in battle.players[0].hand: cards.add_child(make_button(str(card_id).replace("_", " ").capitalize(), func(): intent({"type":"card","card_id":card_id}), Color("526e93")))
 	body.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-5))), 14, Color("d0dfeb")))
-	if battle.active_player == 1 and not battle.finished: call_deferred("run_ai")
+	if battle.active_player == 1 and not battle.finished and not ai_pending:
+		ai_pending = true
+		call_deferred("run_ai" if bool(settings().get("reduced_motion", false)) else "run_ai_after_presentation")
 
 func intent(action: Dictionary) -> void:
 	var result := BattleRules.apply_intent(battle, 0, action)
 	if not result.ok: _toast(str(result.error))
-	render()
+	else:
+		battle_last_event = str(action.get("type", ""))
+		battle_last_actor = 0
+		render()
+
+func run_ai_after_presentation() -> void:
+	await get_tree().create_timer(0.5).timeout
+	ai_pending = false
+	if battle and battle.active_player == 1 and not battle.finished: run_ai()
 
 func run_ai() -> void:
+	ai_pending = false
 	if battle.active_player != 1 or battle.finished: return
-	var result := BattleRules.apply_intent(battle, 1, AIOpponent.choose_intent(battle, "Craftsman"))
-	if not result.ok and battle.active_player == 1 and not battle.finished: result = BattleRules.apply_intent(battle, 1, {"type":"defend"})
-	if not result.ok and battle.active_player == 1 and not battle.finished: BattleRules.apply_intent(battle, 1, {"type":"end_turn"})
+	var applied := AIOpponent.choose_intent(battle, str(settings().get("ai_difficulty", "Craftsman")))
+	var result := BattleRules.apply_intent(battle, 1, applied)
+	if not result.ok and battle.active_player == 1 and not battle.finished:
+		applied = {"type":"defend"}
+		result = BattleRules.apply_intent(battle, 1, applied)
+	if not result.ok and battle.active_player == 1 and not battle.finished:
+		applied = {"type":"end_turn"}
+		result = BattleRules.apply_intent(battle, 1, applied)
+	if result.ok:
+		battle_last_event = str(applied.type)
+		battle_last_actor = 1
 	render()
 
 func _toast(message: String) -> void:

@@ -12,9 +12,13 @@ func _ready() -> void:
 	capture_mode = requested_mode()
 	capture_tag = requested_tag()
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
+	if capture_mode == "high_contrast_battle": GameManager.profile.settings.high_contrast = true; GameManager.profile.settings.reduced_motion = true
 	workshop = MAIN_SCENE.instantiate()
 	workshop.shop_day_key = "2026-08-14"
-	if capture_mode != "onboarding": workshop.screen = capture_mode
+	if capture_mode in ["battle", "high_contrast_battle"]:
+		workshop.screen = "battle"
+		workshop.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	get_tree().root.call_deferred("add_child", workshop)
 	call_deferred("capture")
 
@@ -25,7 +29,7 @@ func fixture_profile() -> Dictionary:
 	var printed: Dictionary = ProgressionRules.print_creature(blueprint.profile, "mossmunk")
 	var armor_blueprint: Dictionary = ProgressionRules.learn_armor_blueprint(printed.profile, "helm")
 	var armor_print: Dictionary = ProgressionRules.print_armor(armor_blueprint.profile, "helm")
-	fixture = armor_print.profile
+	fixture = ProgressionRules.equip_armor(armor_print.profile, str(armor_print.profile.onboarding.starter_instance_id), str(armor_print.payload.armor_instance_id)).profile
 	fixture.team = [str(fixture.onboarding.starter_instance_id), str(printed.payload.instance_id)]
 	fixture.support_cards.coolant = 1
 	return fixture
@@ -61,7 +65,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "shop", "collection", "team", "armor", "deck"]: return mode
+			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle"]: return mode
 	return "onboarding"
 
 func requested_tag() -> String:

@@ -16,6 +16,12 @@ Godot_v4.7.1-stable_win64_console.exe --headless --path . res://tests/test_battl
 
 No Godot editor processes are required for the test scene.
 
+## Checkpoint 4 staging validation
+
+- 2026-08-14 final direct E: validation used Godot 4.7.1 with isolated app-data roots under `E:/CodexCache/printforge-validation/checkpoint4-final-e/`. Parser worker PID 21180, profile PID 25420, progression PID 16080, battle PID 22468, and checkpoint-4 PID 24264 each exited 0. The last test covers settings migration/rejection, reduced-motion/event frame selection, catalog sprite fallback, armor stat mapping/damage reduction, AI opening/low-HP decisions, and the one-claim reward latch.
+- Fresh Forward+ captures used `capture_checkpoint2.tscn` in separate processes and were written under `E:/CodexCache/printforge-validation/`: `battle_1280x720_checkpoint4-alpha-crop.png`, `battle_1920x1080_checkpoint4-alpha-crop.png`, `settings_1280x720_checkpoint4-final.png`, `settings_1920x1080_checkpoint4-repeat.png`, `high_contrast_battle_1280x720_checkpoint4-alpha-crop.png`, and `high_contrast_battle_1920x1080_checkpoint4-alpha-crop.png`. They were inspected for visible headers, readable controls, stable alpha-union sprite crops, equipped-armor labels, high-contrast borders, and non-cropped actions.
+- Direct visual invocations emitted known environment-only root-certificate/user-storage warnings plus a renderer cache warning on orderly exit. They still saved the requested PNGs and exited 0. The final process audit found no Godot console or worker process remaining.
+
 ## Checkpoint 3 validation
 
 - 2026-08-14: direct E: parser scan (PID 13152), profile migration/onboarding test (PID 18540), progression regression test (PID 23196), and battle regression test (PID 14148) each exited 0. Direct runs used isolated app-data paths under `E:/CodexCache/printforge-validation/` and bounded `--quit-after 300` scene runs.
