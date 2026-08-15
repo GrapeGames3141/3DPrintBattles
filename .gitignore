@@ -9,3 +9,7 @@ build/
 backend/node_modules/
 backend/dist/
 user-data/
+
+# Local secrets — never commit API keys or MCP credentials
+.cursor/mcp.json
+steam_appid.txt
