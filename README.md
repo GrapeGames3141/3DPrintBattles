@@ -18,7 +18,7 @@ Profile settings persist text scale (100%, 125%, or 150%), high contrast, reduce
 
 ## Arcane Forge printing
 
-Main Printer and Collection printing now enter a transaction-safe Arcane Forge preview. The dormant approved raw print rises in deterministic bottom-to-top layers on the physical build plate, pauses at raw completion, then awakens into the existing living idle sheet. No coins or inventory change while previewing, cancelling, or rendering; exactly one catalog-validated print transition is requested at raw completion. Reduced motion uses calm staged fades and remains skippable. The selected printer and raw forms are recorded in `docs/ART_GENERATION_LEDGER.md`; the four living sheets are untouched.
+Main Printer and Collection printing now enter a transaction-safe Arcane Forge preview. A four-frame Arcane Forge carriage animation runs through a deterministic twelve-second layer print, with the small dormant raw form anchored on the physical build plate. After the one authoritative print transition, it holds visibly for three seconds, then crossfades through restrained cyan/amber magic before the living form takes a short step away. No coins or inventory change while previewing, cancelling, or rendering; exactly one catalog-validated print transition is requested at raw completion. Reduced motion uses calm staged fades and remains skippable. Android uses the launcher icon, workshop splash, and sensor orientation configured for both portrait and landscape. The selected printer and raw forms are recorded in `docs/ART_GENERATION_LEDGER.md`; the living sheets are untouched.
 
 ## Run
 

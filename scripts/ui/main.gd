@@ -50,12 +50,12 @@ func _notification(what: int) -> void:
 func _process(delta: float) -> void:
 	if printer_capture_freeze: return
 	if screen != "printer" or printer_sequence == null: return
-	if printer_sequence.phase not in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.AWAKENING]: return
+	if printer_sequence.phase not in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING]: return
 	if not printer_sequence.reduced_motion: printer_presentation_seconds += delta
 	printer_tick_accumulator += delta
 	if printer_tick_accumulator < ArcaneForgeSequence.presentation_interval_seconds(printer_sequence.reduced_motion): return
 	printer_tick_accumulator = 0.0
-	printer_sequence.advance(ArcaneForgeSequence.presentation_step_bps(printer_sequence.reduced_motion))
+	printer_sequence.advance(ArcaneForgeSequence.presentation_step_bps(printer_sequence.reduced_motion, printer_sequence.phase))
 	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
 	render()
 
@@ -158,10 +158,11 @@ func render() -> void:
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 26)
-	margin.add_theme_constant_override("margin_right", 26)
-	margin.add_theme_constant_override("margin_top", 20)
-	margin.add_theme_constant_override("margin_bottom", 18)
+	var portrait := size.y > size.x
+	margin.add_theme_constant_override("margin_left", 14 if portrait else 26)
+	margin.add_theme_constant_override("margin_right", 14 if portrait else 26)
+	margin.add_theme_constant_override("margin_top", 14 if portrait else 20)
+	margin.add_theme_constant_override("margin_bottom", 14 if portrait else 18)
 	add_child(margin)
 	var root := VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -206,32 +207,33 @@ func focus_first_button() -> void:
 func render_header(root: VBoxContainer) -> void:
 	var header_box := PanelContainer.new()
 	header_box.name = "WorkshopHeader"
-	header_box.custom_minimum_size = Vector2(0, 90)
+	var portrait := size.y > size.x
+	header_box.custom_minimum_size = Vector2(0, 126 if portrait else 90)
 	header_box.add_theme_stylebox_override("panel", panel_style(Color("142840eb"), Color("f1be69")))
 	root.add_child(header_box)
-	var header := HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 64)
+	var header: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
+	header.custom_minimum_size = Vector2(0, 100 if portrait else 64)
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_theme_constant_override("separation", 16)
 	header_box.add_child(header)
 	var titles := VBoxContainer.new()
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	titles.custom_minimum_size = Vector2(560, 58)
+	titles.custom_minimum_size = Vector2(0 if portrait else 560, 58)
 	header.add_child(titles)
 	titles.add_child(label("PRINTFORGE LEGENDS", 29, Color("ffd36c")))
 	titles.add_child(label("Makers Guild Workshop", 14, Color("9beaff")))
 	if GameManager.has_selected_starter():
 		var account := label("Forge Coins  %d\nSpool  %d / 10" % [int(GameManager.profile.coins), GameManager.filament_cap()], 16, Color("d6f7ff"))
-		account.custom_minimum_size = Vector2(190, 58)
-		account.autowrap_mode = TextServer.AUTOWRAP_OFF
-		account.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		account.custom_minimum_size = Vector2(0 if portrait else 190, 40 if portrait else 58)
+		account.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
+		account.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
 		account.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		header.add_child(account)
 	else:
 		var ceremony := label("AWAKENING CEREMONY", 15, Color("fff0a1"))
-		ceremony.custom_minimum_size = Vector2(220, 58)
-		ceremony.autowrap_mode = TextServer.AUTOWRAP_OFF
-		ceremony.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		ceremony.custom_minimum_size = Vector2(0 if portrait else 220, 40 if portrait else 58)
+		ceremony.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
+		ceremony.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
 		ceremony.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		header.add_child(ceremony)
 
@@ -473,8 +475,9 @@ func render_printer() -> void:
 	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
 	var stage := ArcaneForgeStage.new()
 	stage.configure(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)))
-	stage.set_preview_phase(printer_sequence.phase, printer_sequence.progress_bps)
+	stage.set_preview_phase(printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps())
 	stage.set_presentation_time(printer_presentation_seconds)
+	stage.custom_minimum_size = Vector2(0, 540 if size.y > size.x else 330)
 	panel.add_child(stage)
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
@@ -486,8 +489,14 @@ func render_printer() -> void:
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.RAW_COMPLETE:
 			panel.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
+		ArcaneForgeSequence.RAW_HOLD:
+			panel.add_child(label("Raw print complete. The Forge record is secure; the dormant form rests for a moment before awakening.", 16, Color("fff0a1")))
+			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENING:
 			panel.add_child(label("Filament awakening in progress. The new print is already safely recorded.", 16, Color("9beaff")))
+			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+		ArcaneForgeSequence.DEPARTING:
+			panel.add_child(label("%s takes its first steps away from the build plate." % str(definition.name), 16, Color("a8e3a5")))
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENED:
 			panel.add_child(label("Welcome, %s! Your living print is ready for the Collection." % str(definition.name), 20, Color("a8e3a5")))

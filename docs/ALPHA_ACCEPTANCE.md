@@ -15,7 +15,8 @@
 | Recoverable saves | `test_save_recovery.tscn`: physical isolated backup recovery and idempotent journal acknowledgement | READY |
 | Accessibility | persisted text scale, contrast, reduced motion, 44px buttons, deterministic focus, and Escape navigation | READY |
 | Windows export | canonical durable `export/PrintForgeLegends.exe`: final export PID 22276 and isolated OpenGL launch PID 24820 | READY for credential-free internal alpha |
-| Arcane Forge raw-print awakening | Integer `ArcaneForgeSequence`, transaction-safe printer UI, checkpoint6 tests, 1280/1920 OpenGL capture matrix, durable export/launch | READY |
+| Arcane Forge raw-print awakening | Integer `ArcaneForgeSequence`, transaction-safe printer UI, 12-second four-frame printer carriage, post-commit raw hold, crossfade/sparks/departure, checkpoint6/UI tests, and accepted 720x1280 + 1280x720 captures | READY |
+| Android arm64 review export | Signed debug APK `PrintForge-Legends-0.5.1-alpha-arm64.apk`, package/version metadata, sensor orientation, launcher icon, workshop splash, arm64 archive audit, and SHA-256 in `VALIDATION.md` | READY for credential-free review |
 
 ## Credential-dependent production blockers
 
@@ -31,6 +32,6 @@ Do **not** regenerate or alter the current four validated sheets. A future appro
 
 The current four sheets remain the awakened/living forms. A later non-gameplay awakening presentation seam may map each catalog creature to a separate raw, fresh-off-the-build-plate pre-awakening sprite: single-color matte PLA, strong layer ridges, segmented seams, support nubs or contacts, a small raft/brim, and a rigid dormant pose. A magic filament-spark/crossfade may then reveal the existing living sheet. This is future art/UI work only and must not alter combat state, the current sheets, or catalog gameplay IDs.
 
-Checkpoint 6 implements the approved dedicated 2D Arcane Forge printer presentation: a restrained nozzle sweep reveals the raw-print sprite bottom-to-top, then cyan/amber sparks crossfade into the existing living sheet. Reduced motion uses calm staged fades with no rapid sweep or flash. The validated living sheets remain unedited.
+Checkpoint 6 implements the approved dedicated 2D Arcane Forge printer presentation: its four generated carriage frames reveal the raw-print sprite bottom-to-top, followed by a committed raw hold, cyan/amber sparks, living crossfade, and a short departure. Reduced motion uses calm staged fades with no rapid sweep or flash. The validated living sheets remain unedited.
 
 The Arcane Forge/raw-print/awakening presentation is durable and verified in checkpoint 6. Future production integrations remain outside this completed credential-free internal alpha.

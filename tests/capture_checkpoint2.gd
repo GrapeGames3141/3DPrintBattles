@@ -10,6 +10,14 @@ var capture_tag := ""
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(OUTPUT_DIR)
+	var forced_viewport := requested_capture_viewport()
+	if forced_viewport.x > 0 and forced_viewport.y > 0:
+		# Desktop project overrides retain the normal 16:9 viewport even when the
+		# OS window is portrait. The harness explicitly resizes root content so
+		# portrait captures exercise the same responsive containers as Android.
+		get_viewport().content_scale_size = forced_viewport
+		get_viewport().size = forced_viewport
+		DisplayServer.window_set_size(forced_viewport)
 	# Captures are visual evidence, not interactive runs; keep the desktop cursor
 	# out of contact sheets and existing workshop screenshots.
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
@@ -35,7 +43,7 @@ func _ready() -> void:
 		workshop.screen = "local_vs"
 		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
 		workshop.local_ready_seat = workshop.local_authority.state.active_player
-	elif capture_mode in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]:
+	elif capture_mode in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]:
 		workshop.screen = "printer"
 		workshop.printer_creature_id = "mossmunk" if capture_mode == "printer_mossmunk_raw_complete" else "cinderpaw"
 		workshop.printer_price = int(Catalog.rarity(str(Catalog.creature(workshop.printer_creature_id).rarity)).print)
@@ -43,12 +51,16 @@ func _ready() -> void:
 		if capture_mode != "printer_preview":
 			workshop.printer_sequence.begin()
 		if capture_mode == "printer_printing": workshop.printer_sequence.advance(3600)
-		elif capture_mode in ["printer_raw_complete", "printer_mossmunk_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced"]:
+		elif capture_mode in ["printer_raw_complete", "printer_mossmunk_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
 			workshop.printer_sequence.advance(7000)
-			if capture_mode in ["printer_awakening", "printer_awakened", "printer_reduced"]:
+			if capture_mode in ["printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
 				workshop.printer_sequence.request_commit()
 				workshop.printer_sequence.resolve_commit(true)
-				workshop.printer_sequence.advance(1500 if capture_mode == "printer_awakening" else 3000)
+				if capture_mode in ["printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
+					workshop.printer_sequence.advance(ArcaneForgeSequence.RAW_HOLD_BPS)
+					workshop.printer_sequence.advance(900 if capture_mode == "printer_awakening" else ArcaneForgeSequence.AWAKEN_BPS)
+				if capture_mode in ["printer_departing", "printer_awakened", "printer_reduced"]:
+					workshop.printer_sequence.advance(450 if capture_mode == "printer_departing" else ArcaneForgeSequence.DEPART_BPS)
 	elif capture_mode in ["trade", "trade_draft", "trade_settled"]:
 		workshop.screen = "trade"
 		workshop.local_trade = LocalTradeAuthority.create(GameManager.profile, workshop._guildmate_profile())
@@ -91,7 +103,13 @@ func capture() -> void:
 	await wait_frames(2)
 	capture_size = requested_resolution()
 	var suffix := "_%s" % capture_tag if not capture_tag.is_empty() else ""
-	get_viewport().get_texture().get_image().save_png(OUTPUT_DIR.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix]))
+	var image := get_viewport().get_texture().get_image()
+	var expected := requested_capture_viewport()
+	if expected.x > 0 and image.get_size() != expected:
+		push_error("Capture dimension mismatch: expected %s, received %s" % [expected, image.get_size()])
+		get_tree().quit(1)
+		return
+	image.save_png(OUTPUT_DIR.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix]))
 	print("CAPTURED: %s (%s, %s%s)" % [OUTPUT_DIR, capture_mode, capture_size, suffix])
 	get_tree().quit()
 
@@ -107,7 +125,8 @@ func wait_for_stable_header() -> void:
 		if capture_mode in ["art_gallery_page1", "art_gallery_page2"]:
 			var last_card := workshop.find_child("GalleryLastCard", true, false) as Control
 			bottom_safe = last_card != null and last_card.is_visible_in_tree() and last_card.get_global_rect().end.y <= get_viewport().get_visible_rect().end.y - 12.0
-		if header and header.is_visible_in_tree() and header.get_global_rect().position.y >= 15.0 and header.get_global_rect().size.y >= 80.0 and bottom_safe:
+		var header_top := 10.0 if get_viewport().size.y > get_viewport().size.x else 15.0
+		if header and header.is_visible_in_tree() and header.get_global_rect().position.y >= header_top and header.get_global_rect().size.y >= 80.0 and bottom_safe:
 			await wait_frames(6)
 			return
 		await get_tree().process_frame
@@ -118,11 +137,19 @@ func requested_resolution() -> String:
 	if size.x <= 0 or size.y <= 0: size = get_viewport().get_texture().get_size()
 	return "%dx%d" % [int(size.x), int(size.y)]
 
+func requested_capture_viewport() -> Vector2i:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--capture-viewport="):
+			var values := arg.trim_prefix("--capture-viewport=").split("x")
+			if values.size() == 2:
+				return Vector2i(int(values[0]), int(values[1]))
+	return Vector2i.ZERO
+
 func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func requested_tag() -> String:

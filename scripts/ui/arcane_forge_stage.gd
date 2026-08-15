@@ -2,22 +2,29 @@ class_name ArcaneForgeStage
 extends Control
 ## Purely visual Arcane Forge compositor. Profile and battle state never enter this node.
 
-const PRINTER_PATH := "res://assets/ui/arcane_forge_printer.png"
+const PRINTER_FRAME_PATHS := [
+	"res://assets/ui/arcane_forge_printer_frame_01.png",
+	"res://assets/ui/arcane_forge_printer_frame_02.png",
+	"res://assets/ui/arcane_forge_printer_frame_03.png",
+	"res://assets/ui/arcane_forge_printer_frame_04.png",
+]
 const CELL := Vector2i(384, 512)
 
 var creature_id := "cinderpaw"
 var phase := ArcaneForgeSequence.IDLE
 var progress_bps := 0
+var phase_progress_bps := 0
 var reduced_motion := false
 var high_contrast := false
 var elapsed := 0.0
-var printer: Texture2D
+var printer_frames: Array[Texture2D] = []
 var raw: Texture2D
 var living: Texture2D
 
 func _ready() -> void:
-	# Large enough for the printer/readable build plate while leaving 720p room for controls.
-	custom_minimum_size = Vector2(0, 280)
+	# The portrait caller deliberately gives the forge more vertical room.
+	# Landscape stays compact enough that its primary controls are on-screen.
+	custom_minimum_size = Vector2(0, 330)
 	_load_assets()
 	queue_redraw()
 
@@ -28,22 +35,33 @@ func configure(id: String, reduce_motion: bool, contrast: bool) -> void:
 	_load_assets()
 	queue_redraw()
 
-func set_preview_phase(value: String, value_bps: int) -> void:
+func set_preview_phase(value: String, value_bps: int, local_phase_bps := 0) -> void:
 	phase = value
 	progress_bps = clampi(value_bps, 0, 10000)
+	phase_progress_bps = clampi(local_phase_bps, 0, 10000)
 	queue_redraw()
 
 func set_presentation_time(seconds: float) -> void:
 	elapsed = maxf(0.0, seconds)
 	queue_redraw()
 
+func printer_frame_index() -> int:
+	if printer_frames.is_empty(): return 0
+	if reduced_motion or phase != ArcaneForgeSequence.PRINTING: return 0
+	# Ping-pong instead of looping across the print bed discontinuously.
+	var pattern := [0, 1, 2, 3, 2, 1]
+	return int(pattern[int(floor(elapsed * 2.4)) % pattern.size()])
+
 func _process(delta: float) -> void:
-	if not reduced_motion and phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.AWAKENING]:
+	if not reduced_motion and phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING]:
 		elapsed += delta
 		queue_redraw()
 
 func _load_assets() -> void:
-	printer = ResourceLoader.load(PRINTER_PATH) as Texture2D
+	printer_frames.clear()
+	for path in PRINTER_FRAME_PATHS:
+		var texture := ResourceLoader.load(path) as Texture2D
+		if texture != null: printer_frames.append(texture)
 	var definition := Catalog.creature(creature_id)
 	var raw_path := str(definition.get("raw_print", ""))
 	if raw_path.is_empty() or not ResourceLoader.exists(raw_path): raw_path = str(Catalog.creature("mossmunk").get("raw_print", ""))
@@ -52,14 +70,16 @@ func _load_assets() -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("081526d9") if not high_contrast else Color("000000f5"), true)
-	var printer_rect := _fit_rect(printer, Rect2(8, 4, size.x - 16, size.y - 8))
+	var printer := printer_frames[mini(printer_frame_index(), printer_frames.size() - 1)] if not printer_frames.is_empty() else null
+	# Center a deliberately dominant square printer. These normalized bounds match
+	# the visible gold build surface in the approved printer frames.
+	var printer_bounds := Rect2(size.x * 0.17, 0, size.x * 0.66, size.y)
+	var printer_rect := _fit_rect(printer, printer_bounds)
 	if printer != null: draw_texture_rect(printer, printer_rect, false)
-	var plate := Rect2(size.x * 0.39, size.y * 0.52, size.x * 0.27, size.y * 0.30)
-	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.AWAKENING]:
+	var plate := Rect2(printer_rect.position.x + printer_rect.size.x * 0.28, printer_rect.position.y + printer_rect.size.y * 0.57, printer_rect.size.x * 0.50, printer_rect.size.y * 0.13)
+	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING]:
 		_draw_raw(plate)
-	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE] and not reduced_motion:
-		_draw_nozzle(plate)
-	if phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.AWAKENED]:
+	if phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
 	if high_contrast: draw_rect(Rect2(2, 2, size.x - 4, size.y - 4), Color.WHITE, false, 3.0)
@@ -72,8 +92,11 @@ func _fit_rect(texture: Texture2D, bounds: Rect2) -> Rect2:
 
 func _draw_raw(plate: Rect2) -> void:
 	if raw == null: return
-	var rect := _fit_rect(raw, plate)
-	var reveal := 10000 if phase in [ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.AWAKENED] else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
+	# The raw source has a small raft at its bottom. Align that raft to the actual
+	# plate surface and keep the physical print at about one fifth of printer height.
+	var raw_height := plate.size.y * 1.48
+	var rect := Rect2(Vector2(plate.get_center().x - raw_height * 0.5, _plate_surface_y(plate) - raw_height), Vector2(raw_height, raw_height))
+	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
 	var shown := rect.size.y * float(reveal) / 10000.0
 	if shown <= 0.5: return
 	var source_height := raw.get_height() * float(reveal) / 10000.0
@@ -81,7 +104,7 @@ func _draw_raw(plate: Rect2) -> void:
 	var destination := Rect2(rect.position + Vector2(0, rect.size.y - shown), Vector2(rect.size.x, shown))
 	var raw_alpha := 1.0
 	if phase == ArcaneForgeSequence.AWAKENING:
-		raw_alpha = 1.0 - clampf(float(progress_bps - ArcaneForgeSequence.PRINT_COMPLETE_BPS) / 3000.0, 0.0, 1.0)
+		raw_alpha = 1.0 - clampf(float(phase_progress_bps) / 10000.0, 0.0, 1.0)
 	draw_texture_rect_region(raw, destination, source, Color(1, 1, 1, raw_alpha))
 	if phase == ArcaneForgeSequence.PRINTING:
 		var scan_y := destination.position.y
@@ -89,27 +112,33 @@ func _draw_raw(plate: Rect2) -> void:
 
 func _draw_living(plate: Rect2) -> void:
 	if living == null: return
-	var alpha := 1.0 if phase == ArcaneForgeSequence.AWAKENED else clampf(float(progress_bps - ArcaneForgeSequence.PRINT_COMPLETE_BPS) / 3000.0, 0.0, 1.0)
-	if reduced_motion and phase == ArcaneForgeSequence.AWAKENING: alpha = 0.65
+	var alpha := 1.0
+	if phase == ArcaneForgeSequence.AWAKENING:
+		alpha = 0.65 if reduced_motion else clampf(float(phase_progress_bps) / 10000.0, 0.0, 1.0)
+	if phase == ArcaneForgeSequence.DEPARTING:
+		alpha = 1.0 - clampf(float(phase_progress_bps) / 14000.0, 0.0, 0.7)
+	if phase == ArcaneForgeSequence.AWAKENED: alpha = 0.0
 	var source := Rect2(0, 0, CELL.x, CELL.y)
-	# A sprite cell is portrait; build its height from the stage, not the shallow plate.
-	# This keeps the awakened companion readable above the physical build surface.
-	var height := size.y * 0.68
+	# Awakened form is larger than the dormant print but remains about 36% of the
+	# printer height instead of filling the gantry.
+	var height := (plate.size.y / 0.13) * 0.36
 	var width := height * float(CELL.x) / float(CELL.y)
-	var rect := Rect2(Vector2(plate.get_center().x - width * 0.5, plate.end.y - height), Vector2(width, height))
+	var offset := Vector2.ZERO
+	if phase == ArcaneForgeSequence.DEPARTING:
+		var amount := float(phase_progress_bps) / 10000.0
+		# Clear diagonal departure visibly takes the living creature off the plate.
+		offset = Vector2(plate.size.x * amount, -height * 0.80 * amount)
+	var rect := Rect2(Vector2(plate.get_center().x - width * 0.5, _plate_surface_y(plate) - height) + offset, Vector2(width, height))
 	draw_texture_rect_region(living, rect, source, Color(1, 1, 1, alpha))
 
-func _draw_nozzle(plate: Rect2) -> void:
-	var cycle := (sin(elapsed * 5.0) + 1.0) * 0.5
-	var x := lerpf(plate.position.x, plate.end.x, cycle)
-	var y := lerpf(plate.end.y, plate.position.y, clampf(float(progress_bps) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0.0, 1.0))
-	draw_circle(Vector2(x, y), 8.0, Color("ffc45f"))
-	draw_line(Vector2(x, y - 18), Vector2(x, y + 8), Color("7defff"), 3.0)
+func _plate_surface_y(plate: Rect2) -> float:
+	# Source perspective places the printable surface just behind the front rim.
+	return plate.position.y + plate.size.y * 0.64
 
 func _draw_sparks(plate: Rect2) -> void:
-	var intensity := clampf(float(progress_bps - ArcaneForgeSequence.PRINT_COMPLETE_BPS) / 3000.0, 0.0, 1.0)
+	var intensity := clampf(float(phase_progress_bps) / 10000.0, 0.0, 1.0)
 	for index in 12:
 		var angle := float(index) * TAU / 12.0
-		var distance := lerpf(16.0, plate.size.x * 0.45, intensity)
+		var distance := lerpf(16.0, plate.size.x * 0.58, intensity)
 		var center := plate.get_center() + Vector2(cos(angle), sin(angle)) * distance
 		draw_circle(center, 3.0 + intensity * 3.0, Color("6defff") if index % 2 == 0 else Color("ffc15b"))

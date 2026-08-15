@@ -58,7 +58,7 @@ func _ready() -> void:
 	main.advance_printer_for_test(ArcaneForgeSequence.PRINT_COMPLETE_BPS)
 	await get_tree().process_frame
 	var printed_instance_id: String = str(GameManager.profile.creatures[GameManager.profile.creatures.size() - 1].instance_id)
-	require(main.printer_sequence.phase == ArcaneForgeSequence.AWAKENING and GameManager.profile.creatures.size() == creature_count_before_print + 1 and int(GameManager.profile.coins) == coins_before_print - print_price and int(GameManager.profile.revision) == revision_before_print + 1, "raw completion commits one catalog print and exact debit")
+	require(main.printer_sequence.phase == ArcaneForgeSequence.RAW_HOLD and GameManager.profile.creatures.size() == creature_count_before_print + 1 and int(GameManager.profile.coins) == coins_before_print - print_price and int(GameManager.profile.revision) == revision_before_print + 1, "raw completion commits one catalog print and enters the post-commit raw hold")
 	main.advance_printer_for_test(ArcaneForgeSequence.FULL_BPS)
 	main.skip_printer()
 	require(GameManager.profile.creatures.size() == creature_count_before_print + 1, "Forge completion and skip cannot duplicate the print")
