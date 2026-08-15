@@ -26,6 +26,11 @@ func append_event(kind: String, payload: Dictionary, revision: int) -> void:
 	file.seek_end()
 	file.store_line(JSON.stringify(row))
 
+func commit_mutation(profile: Dictionary, kind: String, payload: Dictionary, revision: int) -> void:
+	# One public mutation path keeps journal and snapshot ordering together.
+	append_event(kind, payload, revision)
+	commit_snapshot(profile)
+
 func pending_events() -> Array:
 	if not FileAccess.file_exists(JOURNAL_PATH): return []
 	var result: Array = []

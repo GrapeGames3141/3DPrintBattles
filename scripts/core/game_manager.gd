@@ -8,11 +8,36 @@ var profile: Dictionary = {}
 func _ready() -> void:
 	profile = SaveService.load_profile()
 	if profile.is_empty():
-		profile = default_profile()
+		profile = ProfileRules.new_profile()
 		SaveService.commit_snapshot(profile)
+	else:
+		var migrated := ProfileRules.migrate(profile)
+		if migrated != profile:
+			profile = migrated
+			SaveService.commit_snapshot(profile)
 
 func default_profile() -> Dictionary:
-	return {"schema_version":Catalog.SCHEMA_VERSION,"catalog_version":Catalog.CATALOG_VERSION,"revision":0,"next_instance_nonce":1,"coins":180,"xp":0,"spool_level":3,"blueprints":["cinderpaw","aquafin","voltwig"],"creatures":[{"instance_id":"starter-cinderpaw","creature_id":"cinderpaw","armor_id":""},{"instance_id":"starter-aquafin","creature_id":"aquafin","armor_id":""},{"instance_id":"starter-voltwig","creature_id":"voltwig","armor_id":""}],"armor":[],"discovered":["cinderpaw","aquafin","voltwig"],"team":["starter-cinderpaw","starter-aquafin","starter-voltwig"],"daily_job_count":0,"last_job_day":"","shop":{},"server_revision":0}
+	return ProfileRules.new_profile()
+
+func has_selected_starter() -> bool:
+	return ProfileRules.has_starter(profile)
+
+func choose_starter(creature_id: String) -> bool:
+	var result := ProfileRules.choose_starter(profile, creature_id)
+	if not bool(result.ok):
+		toast_requested.emit(str(result.error))
+		return false
+	profile = result.profile
+	mutated("choose_starter", {"creature_id":creature_id, "instance_id":str(result.instance_id)})
+	toast_requested.emit("%s is now bound to your Forge." % Catalog.creature(creature_id).name)
+	return true
+
+func current_team_creature_ids() -> Array:
+	var result: Array = []
+	for instance_id in profile.get("team", []):
+		var creature := _creature_instance(str(instance_id))
+		if not creature.is_empty(): result.append(str(creature.creature_id))
+	return result
 
 func filament_cap() -> int:
 	return clampi(int(profile.spool_level), 3, 10)
@@ -56,7 +81,7 @@ func learn_blueprint(creature_id: String, price: int) -> bool:
 func print_creature(creature_id: String, price: int) -> bool:
 	if not creature_id in profile.blueprints or not spend_coins(price, "print:%s" % creature_id): return false
 	var instance_id := _next_instance_id(creature_id)
-	profile.creatures.append({"instance_id":instance_id,"creature_id":creature_id,"armor_id":""})
+	profile.creatures.append({"instance_id":instance_id,"creature_id":creature_id,"armor_id":"","bound":false,"tradable":true,"source":"printed"})
 	mutated("print_creature", {"creature_id":creature_id,"instance_id":instance_id})
 	return true
 
@@ -104,6 +129,5 @@ func _armor_definition(armor_id: String) -> Dictionary:
 
 func mutated(kind: String, payload: Dictionary) -> void:
 	profile.revision = int(profile.revision) + 1
-	SaveService.append_event(kind, payload, int(profile.revision))
-	SaveService.commit_snapshot(profile)
+	SaveService.commit_mutation(profile, kind, payload, int(profile.revision))
 	profile_changed.emit()
