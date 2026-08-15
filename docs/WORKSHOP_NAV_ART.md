@@ -17,7 +17,13 @@ print asset was regenerated or modified.
 | [`workshop_yard_closeup_v2.png`](../assets/ui/workshop/workshop_yard_closeup_v2.png) | Snow-lit Print Yard with companion lesson area, raw/finished print storytelling, and workshop continuity. | One broad companion-area hotspot opens the bounded daily Print Yard activity. |
 
 The implementation reads these only through `res://assets/ui/workshop/` in
-`scripts/ui/main.gd`. The images are aspect-fit using each file's native 3:2
-ratio, so normalized hotspots remain on their pictured props in portrait and
-landscape. The compact rune markers and Blueprint Tray are code-native UI,
+`scripts/ui/main.gd`. The images use each file's native 3:2 ratio, so
+normalized hotspots remain on their pictured props in portrait and landscape.
+The compact physical-item glow overlays and Blueprint Tray are code-native UI,
 not baked text or button plaques in the art.
+
+## Ambient and responsive presentation
+
+The Workshop overview and close-ups use the approved 3:2 art planes. Close-ups use a clipped cover plane in portrait so the room fills the usable viewport; hotspots remain children of that same mapped foreground plane. Their horizontal crop is boundedly pannable by swipe/drag, and keyboard focus pans the target fully into the clipped scene before it activates. The portrait overview keeps a contained foreground for all-station discoverability over a brighter cover backdrop; its zone positions therefore stay attached to the contained plane rather than the backdrop.
+
+`WorkshopHotspotOverlay` supplies soft cyan or amber physical-item corner light and never darkens the underlying art. `WorkshopAmbientLayer` adds slow, code-native printer and hologram movement only. It owns no profile, printer, or game state and freezes at a deterministic readable phase when reduced motion or capture freeze is enabled.

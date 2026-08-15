@@ -2,6 +2,9 @@ extends Control
 ## Reference-driven workshop presentation; final character art remains approval-gated.
 const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-reference.jpg")
 const WORKSHOP_OVERVIEW_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_v2.png")
+const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
+const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
+const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -44,6 +47,7 @@ var printer_presentation_seconds := 0.0
 var printer_capture_freeze := false
 var printer_failure := ""
 var printer_return_screen := "collection"
+var workshop_ambient_capture_freeze := false
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -165,6 +169,18 @@ func make_button(text_value: String, callback: Callable, accent := Color("2f93a8
 	button.add_theme_stylebox_override("pressed", panel_style(Color(accent, 1.0).darkened(0.12), Color("ffffff")))
 	button.pressed.connect(callback)
 	return button
+
+func workshop_hotspot_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = Color(0, 0, 0, 0)
+	style.shadow_color = Color(0, 0, 0, 0)
+	style.shadow_size = 0
+	style.content_margin_left = 0
+	style.content_margin_right = 0
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	return style
 
 func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	var value := Label.new()
@@ -387,20 +403,12 @@ func render_workshop_button_tray() -> void:
 		tray.add_child(make_button(str(action.label), _run_workshop_station.bind(str(action.target)), Color("a86b2e") if str(action.target) in ["printer", "calibration", "proving", "local_vs"] else Color("2f93a8")))
 
 func render_workshop() -> void:
-	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
 	var used_today: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
 	if workshop_view == "overview":
-		render_workshop_overview()
+		render_workshop_overview(used_today)
 	else:
 		render_workshop_closeup(used_today)
-	var strip := PanelContainer.new()
-	strip.name = "WorkshopProgressionStrip"
-	strip.custom_minimum_size = Vector2(0, 44)
-	strip.add_theme_stylebox_override("panel", panel_style(Color("102940e8"), Color("f1be69")))
-	body.add_child(strip)
-	var strip_text := label("%s | XP %d / %d | Calibration %d / %d" % [starter_name, int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 14, Color("9beaff"))
-	strip_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	strip.add_child(strip_text)
+	return
 
 func _workshop_views() -> Array:
 	return [
@@ -421,7 +429,7 @@ func _workshop_texture(view_id: String) -> Texture2D:
 	var resource := load(path)
 	return resource as Texture2D if resource is Texture2D else REFERENCE_TEXTURE
 
-func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: float, host: Control = null) -> Control:
+func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: float, host: Control = null, cover_art := false, ambient_view := "overview", cover_backdrop := false) -> Control:
 	var map_frame := PanelContainer.new()
 	map_frame.custom_minimum_size = Vector2(0, minimum_height)
 	map_frame.add_theme_stylebox_override("panel", panel_style(Color("071526e8"), Color("6bd6ed")))
@@ -429,30 +437,58 @@ func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: f
 	var map := Control.new()
 	map.name = name_value
 	map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map.clip_contents = true
 	map_frame.add_child(map)
+	if cover_backdrop:
+		var cover_image := TextureRect.new()
+		cover_image.name = "WorkshopCoverBackdrop"
+		cover_image.texture = texture
+		cover_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		cover_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		cover_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		cover_image.modulate = Color(0.58, 0.75, 0.96, 0.60)
+		cover_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		map.add_child(cover_image)
+		var cover_shade := ColorRect.new()
+		cover_shade.color = Color("07132670")
+		cover_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		cover_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		map.add_child(cover_shade)
 	var art_plane := Control.new()
 	art_plane.name = "%sArtPlane" % name_value
+	# Empty room pixels pass drag input to the clipped map; child prop Buttons
+	# retain their own click/focus behavior and forward drag gestures explicitly.
+	art_plane.mouse_filter = Control.MOUSE_FILTER_PASS
 	map.add_child(art_plane)
 	var texture_size := texture.get_size()
 	map.set_meta("workshop_art_aspect", texture_size.x / texture_size.y if texture_size.y > 0.0 else 1.5)
+	map.set_meta("workshop_art_cover", cover_art)
+	map.set_meta("workshop_pan_enabled", cover_art and is_portrait_layout())
 	map.resized.connect(_fit_workshop_art_plane.bind(map, art_plane))
+	if bool(map.get_meta("workshop_pan_enabled", false)):
+		map.gui_input.connect(_on_workshop_pan_gui_input.bind(map, art_plane))
+		_add_workshop_pan_affordance(map, art_plane)
 	call_deferred("_fit_workshop_art_plane", map, art_plane)
 	var image := TextureRect.new()
 	image.texture = texture
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# The visible room is an aspect-fit map: normalized hotspot anchors stay on
-	# their physical props in portrait instead of drifting under a cover crop.
-	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if cover_art else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	image.modulate = Color(0.94, 0.97, 1.0, 0.96)
 	art_plane.add_child(image)
 	var tint := ColorRect.new()
-	tint.color = Color("07132658")
+	tint.color = Color("07132618")
 	tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_plane.add_child(tint)
-	if not bool(settings().get("reduced_motion", false)):
+	var ambient := WORKSHOP_AMBIENT_LAYER.new()
+	ambient.name = "WorkshopAmbientLayer"
+	ambient.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ambient.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ambient.configure(ambient_view, not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze, 0.35)
+	art_plane.add_child(ambient)
+	if not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze:
 		var veil := ColorRect.new()
 		veil.color = Color("b7efff80")
 		veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -466,10 +502,107 @@ func _fit_workshop_art_plane(map: Control, art_plane: Control) -> void:
 	var available := map.size
 	if available.x <= 0.0 or available.y <= 0.0: return
 	var aspect: float = float(map.get_meta("workshop_art_aspect", 1.5))
-	var fitted_width := minf(available.x, available.y * aspect)
+	var fitted_width := maxf(available.x, available.y * aspect) if bool(map.get_meta("workshop_art_cover", false)) else minf(available.x, available.y * aspect)
 	var fitted_size := Vector2(fitted_width, fitted_width / aspect)
 	art_plane.size = fitted_size
-	art_plane.position = (available - fitted_size) * 0.5
+	var centered_position := (available - fitted_size) * 0.5
+	art_plane.position = centered_position
+	if bool(map.get_meta("workshop_pan_enabled", false)):
+		var saved_pan: float = float(map.get_meta("workshop_pan_x", centered_position.x))
+		_set_workshop_pan(map, art_plane, saved_pan)
+
+func _set_workshop_pan(map: Control, art_plane: Control, next_x: float) -> void:
+	var minimum_x := minf(0.0, map.size.x - art_plane.size.x)
+	var maximum_x := 0.0
+	art_plane.position.x = clampf(next_x, minimum_x, maximum_x)
+	map.set_meta("workshop_pan_x", art_plane.position.x)
+
+func _on_workshop_pan_gui_input(event: InputEvent, map: Control, art_plane: Control) -> void:
+	if not bool(map.get_meta("workshop_pan_enabled", false)):
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_begin_workshop_pan(map, art_plane, event.position)
+		else:
+			_end_workshop_pan(map)
+	elif event is InputEventMouseMotion and bool(map.get_meta("workshop_pan_tracking", false)):
+		_move_workshop_pan(map, art_plane, event.position)
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_begin_workshop_pan(map, art_plane, event.position)
+		else:
+			_end_workshop_pan(map)
+	elif event is InputEventScreenDrag:
+		_move_workshop_pan(map, art_plane, event.position)
+
+func _begin_workshop_pan(map: Control, art_plane: Control, pointer: Vector2) -> void:
+	map.set_meta("workshop_pan_tracking", true)
+	map.set_meta("workshop_pan_dragged", false)
+	map.set_meta("workshop_pan_start_pointer", pointer)
+	map.set_meta("workshop_pan_start_x", art_plane.position.x)
+
+func _move_workshop_pan(map: Control, art_plane: Control, pointer: Vector2) -> void:
+	var start_pointer: Vector2 = map.get_meta("workshop_pan_start_pointer", pointer)
+	var delta_x := pointer.x - start_pointer.x
+	if absf(delta_x) < 10.0 and not bool(map.get_meta("workshop_pan_dragged", false)):
+		return
+	map.set_meta("workshop_pan_dragged", true)
+	_set_workshop_pan(map, art_plane, float(map.get_meta("workshop_pan_start_x", art_plane.position.x)) + delta_x)
+
+func _end_workshop_pan(map: Control) -> void:
+	map.set_meta("workshop_pan_tracking", false)
+
+func _on_workshop_hotspot_gui_input(event: InputEvent, button: Button) -> void:
+	var art_plane := button.get_parent() as Control
+	var map := _workshop_scene_map(art_plane)
+	if map == null or not bool(map.get_meta("workshop_pan_enabled", false)):
+		return
+	var was_dragged := bool(map.get_meta("workshop_pan_dragged", false))
+	_on_workshop_pan_gui_input(event, map, art_plane)
+	if was_dragged or bool(map.get_meta("workshop_pan_dragged", false)):
+		button.set_meta("workshop_pan_cancelled", true)
+
+func _pan_workshop_hotspot_into_view(button: Button) -> void:
+	var art_plane := button.get_parent() as Control
+	var map := _workshop_scene_map(art_plane)
+	if map == null or not bool(map.get_meta("workshop_pan_enabled", false)):
+		return
+	var map_rect := map.get_global_rect()
+	var hotspot_rect := button.get_global_rect()
+	var padding := 18.0
+	var adjustment := 0.0
+	if hotspot_rect.position.x < map_rect.position.x + padding:
+		adjustment = map_rect.position.x + padding - hotspot_rect.position.x
+	elif hotspot_rect.end.x > map_rect.end.x - padding:
+		adjustment = map_rect.end.x - padding - hotspot_rect.end.x
+	if not is_zero_approx(adjustment):
+		_set_workshop_pan(map, art_plane, art_plane.position.x + adjustment)
+
+func _toggle_workshop_pan(map: Control, art_plane: Control) -> void:
+	var minimum_x := minf(0.0, map.size.x - art_plane.size.x)
+	var target_x := minimum_x if art_plane.position.x > minimum_x * 0.5 else 0.0
+	_set_workshop_pan(map, art_plane, target_x)
+
+func _add_workshop_pan_affordance(map: Control, art_plane: Control) -> void:
+	var button := Button.new()
+	button.name = "WorkshopPanAffordance"
+	button.text = ""
+	button.tooltip_text = "Swipe the workshop view to reach more tools"
+	button.accessibility_name = "Swipe the workshop view to reach more tools"
+	button.anchor_left = 0.45; button.anchor_right = 0.55
+	button.anchor_top = 0.82; button.anchor_bottom = 0.88
+	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
+	button.custom_minimum_size = Vector2(44, 30)
+	button.add_theme_stylebox_override("normal", workshop_hotspot_style())
+	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
+	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
+	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
+	var glyph := WORKSHOP_PAN_AFFORDANCE.new()
+	glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(glyph)
+	button.pressed.connect(_toggle_workshop_pan.bind(map, art_plane))
+	map.add_child(button)
 
 func _workshop_zone_button(view: Dictionary) -> Button:
 	var rect: Rect2 = view.rect
@@ -482,11 +615,11 @@ func _workshop_zone_button(view: Dictionary) -> Button:
 	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
 	button.custom_minimum_size = Vector2(44, 44)
 	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_stylebox_override("normal", panel_style(Color("07132600"), Color("6bd6ed00")))
-	button.add_theme_stylebox_override("hover", panel_style(Color("39b7d112"), Color("fff0a1")))
-	button.add_theme_stylebox_override("focus", panel_style(Color("07132600"), Color("ffffff")))
-	_add_workshop_rune(button, Color("9beaff"))
-	button.focus_entered.connect(func(): _toast(str(view.name)))
+	button.add_theme_stylebox_override("normal", workshop_hotspot_style())
+	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
+	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
+	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
+	_add_workshop_hotspot_overlay(button, Color("9beaff"))
 	button.pressed.connect(open_workshop_view.bind(str(view.id)))
 	return button
 
@@ -501,20 +634,34 @@ func _workshop_object_button(object: Dictionary) -> Button:
 	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
 	button.custom_minimum_size = Vector2(44, 44)
 	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_stylebox_override("normal", panel_style(Color("07132600"), Color("f1be6900")))
-	button.add_theme_stylebox_override("hover", panel_style(Color("a86b2e12"), Color("fff0a1")))
-	button.add_theme_stylebox_override("focus", panel_style(Color("07132600"), Color("ffffff")))
-	_add_workshop_rune(button, Color("ffd36c"))
-	button.focus_entered.connect(func(): _toast(str(object.name)))
-	button.pressed.connect(select_workshop_object.bind(str(object.id)))
+	button.add_theme_stylebox_override("normal", workshop_hotspot_style())
+	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
+	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
+	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
+	_add_workshop_hotspot_overlay(button, Color("ffd36c"))
+	button.gui_input.connect(_on_workshop_hotspot_gui_input.bind(button))
+	button.focus_entered.connect(_pan_workshop_hotspot_into_view.bind(button))
+	button.pressed.connect(_select_workshop_object_if_not_dragged.bind(str(object.id), button))
 	return button
 
-func _add_workshop_rune(button: Button, color: Color) -> void:
-	var rune := label("\u25C7", 22, color)
-	rune.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rune.position = Vector2(4, 2)
-	rune.tooltip_text = ""
-	button.add_child(rune)
+func _select_workshop_object_if_not_dragged(object_id: String, button: Button) -> void:
+	if bool(button.get_meta("workshop_pan_cancelled", false)):
+		button.set_meta("workshop_pan_cancelled", false)
+		return
+	select_workshop_object(object_id)
+
+func _add_workshop_hotspot_overlay(button: Button, color: Color) -> void:
+	var overlay := WORKSHOP_HOTSPOT_OVERLAY.new()
+	overlay.name = "WorkshopHotspotOverlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.configure(color, not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze, 0.25)
+	button.add_child(overlay)
+	button.mouse_entered.connect(overlay.set_emphasis.bind(0.65))
+	button.mouse_exited.connect(overlay.set_emphasis.bind(0.0))
+	button.focus_entered.connect(overlay.set_emphasis.bind(1.0))
+	button.focus_exited.connect(overlay.set_emphasis.bind(0.0))
+	button.button_down.connect(overlay.set_emphasis.bind(1.0))
 
 func _workshop_settings_button() -> Button:
 	var button := make_button("\u2699", navigate_to.bind("settings"), Color("536c8d"))
@@ -538,14 +685,12 @@ func _workshop_overview_button() -> Button:
 	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	return button
 
-func render_workshop_overview() -> void:
-	var map := _workshop_surface("WorkshopMap", WORKSHOP_OVERVIEW_TEXTURE, 470 if is_portrait_layout() else 560)
-	map.add_child(_workshop_settings_button())
+func render_workshop_overview(used_today: int) -> void:
+	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 215.0) if is_portrait_layout() else 560.0
+	var map := _workshop_surface("WorkshopMap", WORKSHOP_OVERVIEW_TEXTURE, overview_height, null, false, "overview", is_portrait_layout())
+	_workshop_scene_map(map).add_child(_workshop_settings_button())
 	for view in _workshop_views(): map.add_child(_workshop_zone_button(view))
-	var callout := make_panel(Color("102940e8"), Color("6bd6ed"))
-	body.add_child(callout.get_parent())
-	callout.add_child(label("Explore the Workshop", 21, Color("9beaff")))
-	callout.add_child(label("Focus or tap a subtle rune marker in the room to move closer to a work area. Each close-up keeps only its real tools in view.", 15, Color("dce8f4")))
+	_add_workshop_overview_status(map, used_today)
 
 func render_workshop_closeup(used_today: int) -> void:
 	var view := _workshop_view_data(workshop_view)
@@ -574,35 +719,66 @@ func render_workshop_closeup(used_today: int) -> void:
 		tray_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		tray_column.size_flags_stretch_ratio = 3.0
 		split.add_child(tray_column)
-		var split_map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), 500, art_column)
-		split_map.add_child(_workshop_overview_button())
-		split_map.add_child(_workshop_settings_button())
+		var split_map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), 500, art_column, true, workshop_view)
+		_workshop_scene_map(split_map).add_child(_workshop_overview_button())
+		_workshop_scene_map(split_map).add_child(_workshop_settings_button())
 		for object in view.objects: split_map.add_child(_workshop_object_button(object))
 		render_workshop_drawer(view, tray_column)
 		return
-	var closeup_height := 430 if is_portrait_layout() else 330
-	if workshop_drawer_object.is_empty(): closeup_height = 470 if is_portrait_layout() else 560
-	var map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), closeup_height)
-	map.add_child(_workshop_overview_button())
-	map.add_child(_workshop_settings_button())
-	for object in view.objects: map.add_child(_workshop_object_button(object))
-	var controls := HBoxContainer.new()
-	controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	controls.add_theme_constant_override("separation", 10)
-	body.add_child(controls)
-	var callout := label("%s - %s" % [str(view.name), str(view.callout)], 18, Color("ffd36c"))
-	callout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	callout.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	controls.add_child(callout)
+	var portrait := is_portrait_layout()
+	var closeup_height := 430.0 if portrait else 330.0
 	if workshop_drawer_object.is_empty():
-		var hint := make_panel(Color("102940e8"), Color("f1be69"))
-		body.add_child(hint.get_parent())
-		hint.add_child(label(str(view.name), 22, Color("9beaff")))
-		hint.add_child(label("Focus or tap a highlighted tool in this close-up to open its action drawer.", 15, Color("dce8f4")))
-		if workshop_view == "maker": hint.add_child(label("Calibration remaining today: %d of %d." % [maxi(0, ProgressionRules.DAILY_CALIBRATION_LIMIT - used_today), ProgressionRules.DAILY_CALIBRATION_LIMIT], 14, Color("fff0a1")))
-		if workshop_view == "yard": hint.add_child(label("%d companions are ready for one calm filament lesson today." % GameManager.profile.creatures.size(), 14, Color("a8e3a5")))
+		closeup_height = maxf(720.0, get_viewport().get_visible_rect().size.y - 250.0) if portrait else 560.0
+	var map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), closeup_height, null, portrait, workshop_view)
+	_workshop_scene_map(map).add_child(_workshop_overview_button())
+	_workshop_scene_map(map).add_child(_workshop_settings_button())
+	for object in view.objects: map.add_child(_workshop_object_button(object))
+	_add_workshop_scene_status(map, view, used_today)
+	if workshop_drawer_object.is_empty():
 		return
 	render_workshop_drawer(view)
+
+func _add_workshop_scene_status(art_plane: Control, view: Dictionary, used_today: int) -> void:
+	var scene_map := _workshop_scene_map(art_plane)
+	if scene_map == null:
+		return
+	var strip := PanelContainer.new()
+	strip.name = "WorkshopSceneStatus"
+	strip.anchor_left = 0.025; strip.anchor_right = 0.975
+	strip.anchor_top = 1.0; strip.anchor_bottom = 1.0
+	strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = -94; strip.offset_bottom = -14
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_theme_stylebox_override("panel", panel_style(Color("102940e8"), Color("f1be69")))
+	scene_map.add_child(strip)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 3)
+	strip.add_child(content)
+	content.add_child(label("%s - %s" % [str(view.name), str(view.callout)], 16, Color("ffd36c")))
+	var detail := "Focus a highlighted tool to open its Blueprint Tray."
+	if workshop_view == "maker": detail = "Calibration remaining today: %d / %d." % [maxi(0, ProgressionRules.DAILY_CALIBRATION_LIMIT - used_today), ProgressionRules.DAILY_CALIBRATION_LIMIT]
+	elif workshop_view == "yard": detail = "%d companions are ready for one calm filament lesson today." % GameManager.profile.creatures.size()
+	content.add_child(label(detail, 13, Color("dce8f4")))
+
+func _add_workshop_overview_status(art_plane: Control, used_today: int) -> void:
+	var scene_map := _workshop_scene_map(art_plane)
+	if scene_map == null:
+		return
+	var strip := PanelContainer.new()
+	strip.name = "WorkshopProgressionStrip"
+	strip.anchor_left = 0.025; strip.anchor_right = 0.975
+	strip.anchor_top = 1.0; strip.anchor_bottom = 1.0
+	strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = -94; strip.offset_bottom = -14
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_theme_stylebox_override("panel", panel_style(Color("102940e8"), Color("6bd6ed")))
+	scene_map.add_child(strip)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 3)
+	strip.add_child(content)
+	content.add_child(label("Explore the Workshop", 16, Color("9beaff")))
+	content.add_child(label("Focus a soft-lit work area to move closer. XP %d / %d | Calibration %d / %d" % [int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 13, Color("dce8f4")))
+
+func _workshop_scene_map(art_plane: Control) -> Control:
+	return art_plane.get_parent() as Control
 
 func _workshop_object_data(view: Dictionary, object_id: String) -> Dictionary:
 	for object in view.objects:

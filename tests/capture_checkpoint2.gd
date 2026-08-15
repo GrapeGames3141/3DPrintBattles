@@ -71,14 +71,15 @@ func _ready() -> void:
 			if capture_mode == "trade_settled":
 				var settled: Dictionary = workshop.local_trade.confirm(1, workshop.local_trade.creator_revision, workshop.local_trade.partner_revision)
 				if bool(settled.get("settled", false)): GameManager.profile = settled.creator
-	elif capture_mode in ["workshop_printer", "workshop_maker", "workshop_terminal", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer"]:
+	elif capture_mode in ["workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer"]:
 		workshop.screen = "workshop"
-		workshop.workshop_view = "maker" if capture_mode == "workshop_maker_drawer" else ("proving" if capture_mode == "workshop_proving_drawer" else str(capture_mode).trim_prefix("workshop_"))
+		workshop.workshop_view = "maker" if capture_mode == "workshop_maker_drawer" else ("proving" if capture_mode == "workshop_proving_drawer" else ("terminal" if capture_mode.begins_with("workshop_terminal_") else str(capture_mode).trim_prefix("workshop_")))
 		workshop.workshop_drawer_object = "armor_tools" if capture_mode == "workshop_maker_drawer" else ("training_door" if capture_mode == "workshop_proving_drawer" else "")
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	# Capture explicit deterministic phase snapshots; never let Main's live printer timer
 	# advance an awakening state while the header settles.
 	workshop.printer_capture_freeze = true
+	workshop.workshop_ambient_capture_freeze = true
 	get_tree().root.call_deferred("add_child", workshop)
 	call_deferred("capture")
 
@@ -99,6 +100,12 @@ func fixture_profile() -> Dictionary:
 
 func capture() -> void:
 	await wait_for_stable_header()
+	var capture_object := capture_workshop_object()
+	if not capture_object.is_empty():
+		var hotspot := workshop.find_child("WorkshopObject%s" % capture_object.capitalize(), true, false) as Button
+		if hotspot != null:
+			hotspot.grab_focus()
+			await wait_frames(2)
 	# Hide/capture the Windows pointer immediately before the viewport readback.
 	# This is more reliable than the initial hidden request while the window gains focus.
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -151,8 +158,15 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "shop", "collection", "team", "armor", "deck", "yard", "calibration", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["workshop", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "shop", "collection", "team", "armor", "deck", "yard", "calibration", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
+
+func capture_workshop_object() -> String:
+	match capture_mode:
+		"workshop_terminal_offers": return "offer_screen"
+		"workshop_terminal_forgedex": return "forgedex_screen"
+		"workshop_terminal_trade": return "trade_terminal"
+	return ""
 
 func requested_tag() -> String:
 	for arg in OS.get_cmdline_user_args():
