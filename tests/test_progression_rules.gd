@@ -53,7 +53,7 @@ func _ready() -> void:
 	var revision_before: int = int(GameManager.profile.get("revision", 0))
 	var coins_before: int = int(GameManager.profile.coins)
 	var events_before: int = SaveService.pending_events().size()
-	var game_printed := GameManager.print_creature("mossmunk", 20)
+	var game_printed := GameManager.print_creature("mossmunk")
 	require(game_printed and int(GameManager.profile.revision) == revision_before + 1 and int(GameManager.profile.coins) == coins_before - 20 and GameManager.profile.creatures.size() == blueprint.profile.creatures.size() + 1 and SaveService.pending_events().size() == events_before + 1, "accepted GameManager print commits one complete transition and journal event")
 	if failures.is_empty(): print("PASS: progression migration, daily shop, atomic purchases, team, armor, deck, and battle deck")
 	call_deferred("_finish")

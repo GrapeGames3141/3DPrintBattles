@@ -26,6 +26,8 @@ Main Printer and Collection printing now enter a transaction-safe Arcane Forge p
 
 The Workshop includes a credential-free Local Versus station and Guild Trade Table. Local Versus submits revisioned, seat-bound intents to a private local authority and hides each hand behind a fixed ready-player handoff. It awards no rewards. The trade table uses a fixed pairing code, dual profile-revision locks, two confirmations, final inventory validation, and a one-settlement latch; only the real local profile persists.
 
+`tests/test_alpha_loop.tscn` is the composed credential-free acceptance path: it starts from onboarding, selects the permanent starter, completes a workshop job, buys and prints Mossmunk through the Arcane Forge commit seam, saves a two-print team and 15-card deck, wins with legal deterministic battle intents, claims one reward, and reloads the isolated snapshot/journal. This internal-alpha loop is complete; Steam, hosted Nakama/PostgreSQL, signing, and approved production art/audio remain external release work.
+
 Open `project.godot` in Godot 4.7.1 or run `tests/test_profile_rules.tscn`, `tests/test_progression_rules.tscn`, and `tests/test_battle_rules.tscn` headlessly. The first run creates only local `user://` save data.
 
 ## Scope note

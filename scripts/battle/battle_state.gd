@@ -26,7 +26,7 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 		var armor_id := str(entry.get("armor_id", "")) if entry is Dictionary else ""
 		var def := Catalog.creature(creature_id)
 		if def.is_empty(): continue
-		var armor_def := _armor_definition(armor_id)
+		var armor_def: Dictionary = ProgressionRules.armor_def(armor_id)
 		var hp_bonus: int = clampi(int(armor_def.get("hp", 0)), 0, 100)
 		var speed_bonus: int = clampi(int(armor_def.get("speed", 0)), -10, 10)
 		var armor_bonus: int = clampi(int(armor_def.get("armor", 0)), 0, 10)
@@ -37,11 +37,6 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 	for draw_index in 4:
 		hand.append(deck.pop_front())
 	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"switch_discount":0,"passed_turns":0}
-
-static func _armor_definition(armor_id: String) -> Dictionary:
-	for row in Catalog.ARMOR:
-		if str(row.id) == armor_id: return row.duplicate(true)
-	return {}
 
 static func _valid_supplied_deck(deck: Array) -> bool:
 	if deck.size() != 15: return false

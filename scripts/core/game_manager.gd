@@ -109,13 +109,13 @@ func complete_workshop_job(performance: int) -> int:
 	earn_coins(reward, "workshop_job")
 	return reward
 
-func learn_blueprint(creature_id: String, price: int) -> bool:
+func learn_blueprint(creature_id: String) -> bool:
 	return apply_transition(ProgressionRules.purchase_creature_blueprint(profile, creature_id), "learn_blueprint")
 
-func print_creature(creature_id: String, price: int) -> bool:
+func print_creature(creature_id: String) -> bool:
 	return apply_transition(ProgressionRules.print_creature(profile, creature_id), "print_creature")
 
-func print_armor(armor_id: String, price: int) -> bool:
+func print_armor(armor_id: String) -> bool:
 	return apply_transition(ProgressionRules.print_armor(profile, armor_id), "print_armor")
 
 func learn_armor_blueprint(armor_id: String) -> bool:
@@ -137,26 +137,9 @@ func settle_local_trade(new_profile: Dictionary, audit: Dictionary) -> void:
 	profile = new_profile.duplicate(true)
 	mutated("local_trade_settled", audit)
 
-func _next_instance_id(prefix: String) -> String:
-	var nonce: int = int(profile.get("next_instance_nonce", 1))
-	profile.next_instance_nonce = nonce + 1
-	var timestamp: int = int(Time.get_unix_time_from_system())
-	var revision: int = int(profile.get("revision", 0)) + 1
-	return "%s-%d-%d-%d" % [prefix, timestamp, revision, nonce]
-
 func _creature_instance(instance_id: String) -> Dictionary:
 	for creature in profile.creatures:
 		if str(creature.instance_id) == instance_id: return creature
-	return {}
-
-func _armor_instance(instance_id: String) -> Dictionary:
-	for armor in profile.armor:
-		if str(armor.armor_instance_id) == instance_id: return armor
-	return {}
-
-func _armor_definition(armor_id: String) -> Dictionary:
-	for armor in Catalog.ARMOR:
-		if str(armor.id) == armor_id: return armor
 	return {}
 
 func mutated(kind: String, payload: Dictionary) -> void:

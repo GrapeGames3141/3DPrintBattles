@@ -25,7 +25,6 @@ var printer_price := 0
 var printer_tick_accumulator := 0.0
 var printer_presentation_seconds := 0.0
 var printer_capture_freeze := false
-var printer_commit_succeeded := false
 var printer_failure := ""
 
 func settings() -> Dictionary:
@@ -58,6 +57,10 @@ func _process(delta: float) -> void:
 	printer_tick_accumulator = 0.0
 	printer_sequence.advance(ArcaneForgeSequence.presentation_step_bps(printer_sequence.reduced_motion))
 	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
+	render()
+
+func navigate_to(target: String) -> void:
+	screen = target
 	render()
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -292,13 +295,13 @@ func render_workshop() -> void:
 		station.add_child(label(item[1], 14, Color("c9d8e6")))
 		match item[0]:
 			"Main Printer": station.add_child(make_button(item[2], func(): open_printer(str(GameManager.profile.onboarding.starter_id))))
-			"Extruder Forge": station.add_child(make_button(item[2], func(): screen="shop"; render()))
-			"Forgedex": station.add_child(make_button(item[2], func(): screen="codex"; render()))
+			"Extruder Forge": station.add_child(make_button(item[2], navigate_to.bind("shop")))
+			"Forgedex": station.add_child(make_button(item[2], navigate_to.bind("codex")))
 			"Proving Grounds": station.add_child(make_button(item[2], start_battle, Color("9a5b6f")))
-			"Team Builder": station.add_child(make_button(item[2], func(): screen="team"; render()))
-			"Deck Builder": station.add_child(make_button(item[2], func(): screen="deck"; render()))
-			"Armor Workbench": station.add_child(make_button(item[2], func(): screen="armor"; render()))
-			"Collection": station.add_child(make_button(item[2], func(): screen="collection"; render()))
+			"Team Builder": station.add_child(make_button(item[2], navigate_to.bind("team")))
+			"Deck Builder": station.add_child(make_button(item[2], navigate_to.bind("deck")))
+			"Armor Workbench": station.add_child(make_button(item[2], navigate_to.bind("armor")))
+			"Collection": station.add_child(make_button(item[2], navigate_to.bind("collection")))
 			"Workbench": station.add_child(make_button(item[2], func(): _toast("Calibration complete: +%d Forge Coins" % GameManager.complete_workshop_job(72)), Color("588d73")))
 			"Print Yard": station.add_child(label("%d printed companion%s are wandering." % [GameManager.profile.creatures.size(), "" if GameManager.profile.creatures.size()==1 else "s"], 14, Color("a8e3a5")))
 
@@ -306,7 +309,7 @@ func render_workshop() -> void:
 	grid.add_child(settings_station.get_parent())
 	settings_station.add_child(label("Settings", 20, Color("ffd36c")))
 	settings_station.add_child(label("Text, contrast, motion, and training AI.", 14, Color("c9d8e6")))
-	settings_station.add_child(make_button("Open Settings", func(): screen="settings"; render()))
+	settings_station.add_child(make_button("Open Settings", navigate_to.bind("settings")))
 	var versus_station := make_panel(Color("203348ed"), Color("f1be69")); grid.add_child(versus_station.get_parent())
 	versus_station.add_child(label("Local Versus", 20, Color("ffd36c")))
 	versus_station.add_child(label("Private hot-seat match with revisioned local authority.", 14, Color("c9d8e6")))
@@ -329,7 +332,7 @@ func render_local_vs() -> void:
 	panel.add_child(label("Local Versus - Proving Grounds", 25, Color("ffd36c")))
 	if local_authority == null:
 		panel.add_child(label("Start a private hot-seat match from the Workshop.", 16, Color("dce8f4")))
-		panel.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d"))); return
+		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	var state := local_authority.state
 	panel.add_child(label("Authority revision %d  |  Match seed %d  |  No rewards in local versus" % [local_authority.revision, state.seed], 15, Color("9beaff")))
 	var seat := state.active_player
@@ -337,14 +340,14 @@ func render_local_vs() -> void:
 		panel.add_child(label("Private handoff", 20, Color("fff0a1")))
 		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
 		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
-		panel.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d"))); return
+		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 120)
 	for player in [0, 1]:
 		var unit := state.active_unit(player)
 		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.name), int(unit.hp), int(unit.max_hp), str(unit.element)], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
 	if state.finished:
 		panel.add_child(label("Local match complete. No Forge Coins or rewards are granted.", 18, Color("fff0a1")))
-		panel.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d"))); return
+		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	panel.add_child(label("Player %d hand: %s" % [seat + 1, ", ".join(state.players[seat].hand)], 15, Color("dce8f4")))
 	var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); body.add_child(actions)
 	for action in [{"type":"attack","name":"Basic Attack"},{"type":"ability","name":"Signature Ability"},{"type":"defend","name":"Defend"},{"type":"end_turn","name":"End Turn"}]:
@@ -357,7 +360,7 @@ func render_local_vs() -> void:
 	for index in state.players[seat].team.size():
 		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
 			navigation.add_child(make_button("Switch to %s" % str(state.players[seat].team[index].name), func(): submit_local_intent({"type":"switch","index":index}), Color("4d7898")))
-	navigation.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	navigation.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func submit_local_intent(intent: Dictionary) -> void:
 	if local_authority == null: return
@@ -383,7 +386,7 @@ func render_local_trade() -> void:
 	if local_trade.settled:
 		panel.add_child(label("Settlement receipt", 19, Color("a8e3a5")))
 		panel.add_child(label("You received %s for %s. Audit %s. Your profile was updated; the guildmate was not saved." % [_trade_name(GameManager.profile, local_trade.requested_id), _trade_name(local_trade.partner, local_trade.offered_id), str(local_trade.audit.back().code)], 15, Color("dce8f4")))
-		body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+		body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 		return
 	var yours := local_trade.eligible(local_trade.creator); var theirs := local_trade.eligible(local_trade.partner)
 	panel.add_child(label("Your eligible prints", 18, Color("ffd36c")))
@@ -396,7 +399,7 @@ func render_local_trade() -> void:
 		panel.add_child(label("Creator: %s  |  Guildmate: %s" % ["Confirmed" if local_trade.creator_confirmed else "Awaiting confirmation", "Confirmed" if local_trade.partner_confirmed else "Awaiting confirmation"], 15, Color("a8e3a5") if local_trade.creator_confirmed and local_trade.partner_confirmed else Color("dce8f4")))
 		panel.add_child(make_button("Creator Confirm" if not local_trade.creator_confirmed else "Creator Confirmed", func(): confirm_local_trade(0), Color("a86b2e")))
 		panel.add_child(make_button("Guildmate Confirm" if not local_trade.partner_confirmed else "Guildmate Confirmed", func(): confirm_local_trade(1), Color("588d73")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func confirm_local_trade(seat: int) -> void:
 	var result := local_trade.confirm(seat, local_trade.creator_revision, local_trade.partner_revision)
@@ -428,7 +431,7 @@ func render_shop() -> void:
 		card.add_child(label(str(offer.name), 19, Color("8deaff")))
 		card.add_child(label(str(offer.kind).replace("_", " ").capitalize() + " • " + str(offer.price) + " FC", 14, Color("dce8f4")))
 		card.add_child(make_button("Acquire", func(): GameManager.buy_shop_offer(shop_day_key, str(offer.offer_id))))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_settings() -> void:
 	var panel := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(panel.get_parent())
@@ -441,7 +444,7 @@ func render_settings() -> void:
 	panel.add_child(make_button("Reduced motion: %s" % ("On" if bool(current.reduced_motion) else "Off"), func(): GameManager.save_settings({"reduced_motion":not bool(current.reduced_motion)})))
 	for difficulty in AccessibilityRules.DIFFICULTIES:
 		panel.add_child(make_button("Training AI: %s" % difficulty, func(): GameManager.save_settings({"ai_difficulty":difficulty}), Color("588d73") if str(current.ai_difficulty) == difficulty else Color("2f93a8")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func open_printer(creature_id: String) -> void:
 	var definition := Catalog.creature(creature_id)
@@ -453,7 +456,6 @@ func open_printer(creature_id: String) -> void:
 	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)))
 	printer_tick_accumulator = 0.0
 	printer_presentation_seconds = 0.0
-	printer_commit_succeeded = false
 	printer_failure = ""
 	screen = "printer"
 	render()
@@ -489,11 +491,11 @@ func render_printer() -> void:
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENED:
 			panel.add_child(label("Welcome, %s! Your living print is ready for the Collection." % str(definition.name), 20, Color("a8e3a5")))
-			panel.add_child(make_button("Print Another", func(): screen="collection"; render(), Color("a86b2e")))
-			panel.add_child(make_button("Return to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+			panel.add_child(make_button("Print Another", navigate_to.bind("collection"), Color("a86b2e")))
+			panel.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 		ArcaneForgeSequence.FAILED:
 			panel.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
-			panel.add_child(make_button("Return to Collection", func(): screen="collection"; render(), Color("536c8d")))
+			panel.add_child(make_button("Return to Collection", navigate_to.bind("collection"), Color("536c8d")))
 		_:
 			panel.add_child(label("Preview closed without changing your profile.", 16, Color("dce8f4")))
 
@@ -511,8 +513,7 @@ func advance_printer_for_test(step_bps: int) -> void:
 
 func _commit_printer_once() -> void:
 	if printer_sequence == null or not printer_sequence.request_commit(): return
-	var success := GameManager.print_creature(printer_creature_id, printer_price)
-	printer_commit_succeeded = success
+	var success := GameManager.print_creature(printer_creature_id)
 	if not success: printer_failure = "The blueprint, coins, or inventory no longer passed validation."
 	printer_sequence.resolve_commit(success)
 
@@ -539,7 +540,7 @@ func render_collection() -> void:
 	for creature in GameManager.profile.creatures:
 		var row := make_panel(Color("152842e8"), Color("5e99b4")); body.add_child(row.get_parent())
 		row.add_child(label("%s  •  %s%s" % [str(Catalog.creature(str(creature.creature_id)).name), "Bound" if bool(creature.get("bound", false)) else "Printed", "  • Armor: %s" % str(creature.armor_id) if not str(creature.get("armor_id", "")).is_empty() else ""], 16, Color("dce8f4")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_team() -> void:
 	var intro := make_panel(Color("19334de8"), Color("8deaff")); body.add_child(intro.get_parent())
@@ -558,7 +559,7 @@ func render_team() -> void:
 			else: _toast("A team can hold only three companions.")
 			render(), Color("588d73") if selected else Color("2f93a8")))
 	intro.add_child(make_button("Save Team", func(): GameManager.save_team(team_draft), Color("a86b2e")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_armor() -> void:
 	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
@@ -566,7 +567,7 @@ func render_armor() -> void:
 	for armor in Catalog.ARMOR:
 		var known: bool = armor.id in GameManager.profile.armor_blueprints
 		intro.add_child(make_button(("Print " if known else "Learn ") + str(armor.name) + " (%d FC)" % int(armor.print if known else armor.blueprint), func():
-			if known: GameManager.print_armor(str(armor.id), int(armor.print))
+			if known: GameManager.print_armor(str(armor.id))
 			else: GameManager.learn_armor_blueprint(str(armor.id))))
 	for armor_instance in GameManager.profile.armor:
 		if str(armor_instance.equipped_to).is_empty():
@@ -574,7 +575,7 @@ func render_armor() -> void:
 				var target_id := str(creature.instance_id)
 				var armor_instance_id := str(armor_instance.armor_instance_id)
 				intro.add_child(make_button("Equip %s to %s" % [str(armor_instance.armor_id), str(Catalog.creature(str(creature.creature_id)).name)], func(): GameManager.equip_armor(target_id, armor_instance_id), Color("588d73")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_deck() -> void:
 	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
@@ -601,7 +602,7 @@ func render_deck() -> void:
 		intro.add_child(make_button("Save Draft as Active Deck", func(): GameManager.save_deck(deck_draft), Color("588d73")))
 	else:
 		intro.add_child(label("Add %d more cards to make a legal 15-card deck." % [15 - deck_draft.size()], 14, Color("fff0a1")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_codex() -> void:
 	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
@@ -613,7 +614,7 @@ func render_codex() -> void:
 		var card := make_panel(Color("152842e8"), Color(Catalog.rarity(creature.rarity).color if known else "4b5d72")); grid.add_child(card.get_parent())
 		card.add_child(label(str(creature.name) if known else "???", 17, Color(Catalog.rarity(creature.rarity).color if known else "8492a1")))
 		card.add_child(label("%s • %d bends" % [creature.element, int(creature.bend)] if known else "Undiscovered", 13, Color("dce8f4")))
-	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func start_battle() -> void:
 	var player_team := GameManager.current_team_loadout()

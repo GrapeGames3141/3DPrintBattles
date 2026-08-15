@@ -1,18 +1,29 @@
 # Internal Alpha acceptance draft
 
-| Requirement | Staging evidence | Status |
+| Requirement | Executable evidence | Status |
 |---|---|---|
+| Onboarding and permanent starter | `test_alpha_loop.tscn`: new profile routes to onboarding, GameManager starter selection grants one bound Cinderpaw and one revisioned journal mutation | READY |
+| Workshop economy and collection | `test_alpha_loop.tscn`: workshop job reward, catalog-priced Mossmunk blueprint purchase, and collection inventory transition | READY |
+| Arcane Forge print transaction | `test_alpha_loop.tscn` drives the Main Forge from preview through raw completion; exactly one catalog print and exact coin debit; `test_ui_checkpoint6.tscn` covers cancel/failure/repeat safety | READY |
+| Team and 15-card deck | `test_alpha_loop.tscn`: legal two-instance team and owned fifteen-card active deck save | READY |
+| Deterministic combat and AI rules | `test_alpha_loop.tscn` completes legal opening-defense/pass/attack victory; `test_battle_rules.tscn` and `test_checkpoint4.tscn` cover legal AI intent scoring and combat boundaries | READY |
+| Exactly-once battle reward | `test_alpha_loop.tscn` claims a resolved win once, verifies the second claim is refused, and checks one revisioned reward transition | READY |
+| Snapshot and journal reload | `test_alpha_loop.tscn` reloads its isolated physical snapshot and journal, preserving coins, XP, revision, inventory, team, deck, and battle reward event | READY |
 | Deterministic local authority | `LocalBattleAuthority`; `test_checkpoint5.tscn`; backend `authority.test.js` defensive-copy/revision cases | READY |
 | Private hot-seat handoff | Workshop Local Versus route; accepted handoff and revealed-turn captures at 1280 and 1920 | READY |
 | Credential-free local trade | Dual-confirm `LocalTradeAuthority`, session-only Voltwig guildmate, exact-swap/audit and UI-flow tests | READY |
 | Recoverable saves | `test_save_recovery.tscn`: physical isolated backup recovery and idempotent journal acknowledgement | READY |
 | Accessibility | persisted text scale, contrast, reduced motion, 44px buttons, deterministic focus, and Escape navigation | READY |
-| Windows export | canonical durable `export/PrintForgeLegends.exe`: checkpoint-6 export PID 6168 and isolated OpenGL launch PID 25032 | READY for internal-alpha staging only |
+| Windows export | canonical durable `export/PrintForgeLegends.exe`: final export PID 22276 and isolated OpenGL launch PID 24820 | READY for credential-free internal alpha |
 | Arcane Forge raw-print awakening | Integer `ArcaneForgeSequence`, transaction-safe printer UI, checkpoint6 tests, 1280/1920 OpenGL capture matrix, durable export/launch | READY |
 
 ## Credential-dependent production blockers
 
 GodotSteam plus a Steam App ID/tickets; a Nakama runtime/SDK endpoint; PostgreSQL, hosting and signing; and approved production art/audio remain external production work. The local authority, local escrow, and offline recovery paths are credential-free substitutes.
+
+## Credential-free internal alpha conclusion
+
+The composed offline/internal-alpha loop is complete and verified: onboarding, workshop economy, Collection and Arcane Forge progression, team/deck building, deterministic combat/AI, one-time rewards, reload recovery, accessibility, local authority/trade, and the credential-free Windows internal export all have executable evidence. This does not represent production online/Steam readiness; the credential-dependent blockers above remain required for a production release.
 
 ## Future creature-sheet batch standard
 
@@ -22,4 +33,4 @@ The current four sheets remain the awakened/living forms. A later non-gameplay a
 
 Checkpoint 6 implements the approved dedicated 2D Arcane Forge printer presentation: a restrained nozzle sweep reveals the raw-print sprite bottom-to-top, then cyan/amber sparks crossfade into the existing living sheet. Reduced motion uses calm staged fades with no rapid sweep or flash. The validated living sheets remain unedited.
 
-The Arcane Forge/raw-print/awakening presentation is durable and verified in checkpoint 6. Whole alpha remains active: credential-dependent production integrations remain outside this checkpoint.
+The Arcane Forge/raw-print/awakening presentation is durable and verified in checkpoint 6. Future production integrations remain outside this completed credential-free internal alpha.
