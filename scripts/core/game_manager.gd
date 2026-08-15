@@ -39,6 +39,25 @@ func current_team_creature_ids() -> Array:
 		if not creature.is_empty(): result.append(str(creature.creature_id))
 	return result
 
+func active_deck_cards() -> Array:
+	return ProgressionRules.active_deck(profile)
+
+func daily_shop(day_key: String) -> Array:
+	var result := ProgressionRules.daily_shop(profile, day_key)
+	if not bool(result.ok): toast_requested.emit(str(result.error)); return []
+	profile = result.profile
+	SaveService.commit_snapshot(profile)
+	return result.offers
+
+func buy_shop_offer(day_key: String, offer_id: String) -> bool:
+	return apply_transition(ProgressionRules.buy_shop_offer(profile, day_key, offer_id), "buy_shop_offer")
+
+func save_team(instance_ids: Array) -> bool:
+	return apply_transition(ProgressionRules.save_team(profile, instance_ids), "save_team")
+
+func save_deck(cards: Array) -> bool:
+	return apply_transition(ProgressionRules.save_deck(profile, cards), "save_deck")
+
 func filament_cap() -> int:
 	return clampi(int(profile.spool_level), 3, 10)
 
@@ -71,38 +90,26 @@ func complete_workshop_job(performance: int) -> int:
 	return reward
 
 func learn_blueprint(creature_id: String, price: int) -> bool:
-	if creature_id in profile.blueprints: return false
-	if not spend_coins(price, "blueprint:%s" % creature_id): return false
-	profile.blueprints.append(creature_id)
-	if not creature_id in profile.discovered: profile.discovered.append(creature_id)
-	mutated("learn_blueprint", {"creature_id":creature_id})
-	return true
+	return apply_transition(ProgressionRules.purchase_creature_blueprint(profile, creature_id), "learn_blueprint")
 
 func print_creature(creature_id: String, price: int) -> bool:
-	if not creature_id in profile.blueprints or not spend_coins(price, "print:%s" % creature_id): return false
-	var instance_id := _next_instance_id(creature_id)
-	profile.creatures.append({"instance_id":instance_id,"creature_id":creature_id,"armor_id":"","bound":false,"tradable":true,"source":"printed"})
-	mutated("print_creature", {"creature_id":creature_id,"instance_id":instance_id})
-	return true
+	return apply_transition(ProgressionRules.print_creature(profile, creature_id), "print_creature")
 
 func print_armor(armor_id: String, price: int) -> bool:
-	if _armor_definition(armor_id).is_empty() or not spend_coins(price, "print_armor:%s" % armor_id): return false
-	var armor_instance_id := _next_instance_id("armor-%s" % armor_id)
-	profile.armor.append({"armor_instance_id":armor_instance_id,"armor_id":armor_id,"equipped_to":""})
-	mutated("print_armor", {"armor_id":armor_id,"armor_instance_id":armor_instance_id})
-	return true
+	return apply_transition(ProgressionRules.print_armor(profile, armor_id), "print_armor")
+
+func learn_armor_blueprint(armor_id: String) -> bool:
+	return apply_transition(ProgressionRules.learn_armor_blueprint(profile, armor_id), "learn_armor_blueprint")
 
 func equip_armor(creature_instance_id: String, armor_instance_id: String) -> bool:
-	var creature: Dictionary = _creature_instance(creature_instance_id)
-	var armor: Dictionary = _armor_instance(armor_instance_id)
-	if creature.is_empty() or armor.is_empty() or str(armor.equipped_to) != "":
-		toast_requested.emit("That creature or armor is not ready to equip.")
+	return apply_transition(ProgressionRules.equip_armor(profile, creature_instance_id, armor_instance_id), "equip_armor")
+
+func apply_transition(result: Dictionary, kind: String) -> bool:
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "That action is unavailable.")))
 		return false
-	for existing in profile.armor:
-		if str(existing.get("equipped_to", "")) == creature_instance_id: existing.equipped_to = ""
-	creature.armor_id = str(armor.armor_id)
-	armor.equipped_to = creature_instance_id
-	mutated("equip_armor", {"creature_instance_id":creature_instance_id,"armor_instance_id":armor_instance_id})
+	profile = result.profile
+	mutated(kind, result.get("payload", {}))
 	return true
 
 func _next_instance_id(prefix: String) -> String:

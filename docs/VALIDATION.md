@@ -16,6 +16,14 @@ Godot_v4.7.1-stable_win64_console.exe --headless --path . res://tests/test_battl
 
 No Godot editor processes are required for the test scene.
 
+## Checkpoint 3 validation
+
+- 2026-08-14: direct E: parser scan (PID 13152), profile migration/onboarding test (PID 18540), progression regression test (PID 23196), and battle regression test (PID 14148) each exited 0. Direct runs used isolated app-data paths under `E:/CodexCache/printforge-validation/` and bounded `--quit-after 300` scene runs.
+- 2026-08-14 visual QA: fresh-process Forward+ captures were written under `E:/CodexCache/printforge-validation/` for `shop`, `collection`, `team`, `armor`, and `deck` at both 1280x720 and 1920x1080, with a deterministic fixture containing Cinderpaw, a printed Mossmunk, a learned/printed unequipped Layered Helm, and an extra support card. Final 1280 PIDs: 13848, 22160, 3304, 13420, 11420. Final 1920 PIDs: 13736, 24272, 11968, 26596, 23744.
+- Shop grid width, collection printing, multi-creature team controls, armor target choices, deck count controls, and scroll behavior were visually inspected. No task-started Godot console or worker process remained at final audit.
+- Follow-up visual QA: `team_1920x1080_teamstable.png` was captured in a fresh process (PID 10904) after the harness polled the named workshop header for a visible y-position and 80px minimum height, then waited three settling frames. It was individually inspected at original detail with the full title, subtitle, coins, and spool readout visible.
+- Follow-up direct E: parser smoke: PID 4916 exited 0 after the capture-harness update; the final process audit found no Godot console or worker process.
+
 ## Checkpoint 2 validation
 
 The checkpoint adds `test_profile_rules.tscn` for version migration, one-time starter selection, bound-instance metadata, and pure onboarding routing. `capture_checkpoint2.tscn` is a reusable visual-QA scene that writes onboarding and workshop captures to `E:/CodexCache/printforge-validation/`; it must run with a non-headless Windows display driver because Godot's headless dummy renderer has no viewport texture to save.

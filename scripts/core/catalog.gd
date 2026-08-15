@@ -1,7 +1,7 @@
 extends Node
 ## Immutable launch catalog. Runtime objects store IDs only, never presentation nodes.
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 const CATALOG_VERSION := "0.1.0"
 const RARITIES := [
 	{"id":"common", "name":"Common", "color":"#b7bcc7", "weight_bps":4500, "blueprint":50, "print":20},
@@ -79,6 +79,11 @@ func rarity(id: String) -> Dictionary:
 	for item in RARITIES:
 		if item.id == id: return item.duplicate(true)
 	return RARITIES[0].duplicate(true)
+
+func support_card(id: String) -> Dictionary:
+	for item in SUPPORT_CARDS:
+		if item.id == id: return item.duplicate(true)
+	return {}
 
 func element_multiplier(attacker: String, defender: String) -> int:
 	return int(ELEMENT_CHART.get(attacker, {}).get(defender, 100))
