@@ -14,6 +14,11 @@ var status: Label
 var battle_last_event := ""
 var battle_last_actor := 0
 var ai_pending := false
+var local_authority: LocalBattleAuthority
+var local_ready_seat := -1
+var local_trade: LocalTradeAuthority
+var trade_creator_choice := ""
+var trade_partner_choice := ""
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -34,6 +39,13 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and is_inside_tree():
 		# Containers perform the responsive layout; redraw only the decorative background.
 		queue_redraw()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen != "onboarding" and screen != "workshop":
+		screen = "workshop"
+		local_ready_seat = -1
+		render()
+		get_viewport().set_input_as_handled()
 
 func clear_children(node: Node) -> void:
 	for child in node.get_children():
@@ -147,7 +159,17 @@ func render() -> void:
 		"armor": render_armor()
 		"deck": render_deck()
 		"settings": render_settings()
+		"local_vs": render_local_vs()
+		"trade": render_local_trade()
 		_: render_workshop()
+	call_deferred("focus_first_button")
+
+func focus_first_button() -> void:
+	for node in find_children("*", "Button", true, false):
+		var button := node as Button
+		if button and button.is_visible_in_tree() and button.disabled == false:
+			button.grab_focus()
+			return
 
 func render_header(root: VBoxContainer) -> void:
 	var header_box := PanelContainer.new()
@@ -256,6 +278,116 @@ func render_workshop() -> void:
 	settings_station.add_child(label("Settings", 20, Color("ffd36c")))
 	settings_station.add_child(label("Text, contrast, motion, and training AI.", 14, Color("c9d8e6")))
 	settings_station.add_child(make_button("Open Settings", func(): screen="settings"; render()))
+	var versus_station := make_panel(Color("203348ed"), Color("f1be69")); grid.add_child(versus_station.get_parent())
+	versus_station.add_child(label("Local Versus", 20, Color("ffd36c")))
+	versus_station.add_child(label("Private hot-seat match with revisioned local authority.", 14, Color("c9d8e6")))
+	versus_station.add_child(make_button("Begin Local Versus", start_local_vs, Color("a86b2e")))
+	var trade_station := make_panel(Color("203348ed"), Color("a8edff")); grid.add_child(trade_station.get_parent())
+	trade_station.add_child(label("Guild Trade Table", 20, Color("a8edff")))
+	trade_station.add_child(label("Credential-free local escrow demo. No chat or typed codes.", 14, Color("c9d8e6")))
+	trade_station.add_child(make_button("Open Local Trade", func(): local_trade=null; trade_creator_choice=""; trade_partner_choice=""; screen="trade"; render(), Color("4d7898")))
+
+func start_local_vs() -> void:
+	var team := GameManager.current_team_loadout()
+	if team.is_empty(): _toast("Choose a starter before starting local versus."); return
+	local_authority = LocalBattleAuthority.create(team, ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+	local_ready_seat = -1
+	screen = "local_vs"
+	render()
+
+func render_local_vs() -> void:
+	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
+	panel.add_child(label("Local Versus - Proving Grounds", 25, Color("ffd36c")))
+	if local_authority == null:
+		panel.add_child(label("Start a private hot-seat match from the Workshop.", 16, Color("dce8f4")))
+		panel.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d"))); return
+	var state := local_authority.state
+	panel.add_child(label("Authority revision %d  |  Match seed %d  |  No rewards in local versus" % [local_authority.revision, state.seed], 15, Color("9beaff")))
+	var seat := state.active_player
+	if not state.finished and local_ready_seat != seat:
+		panel.add_child(label("Private handoff", 20, Color("fff0a1")))
+		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
+		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
+		panel.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d"))); return
+	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 120)
+	for player in [0, 1]:
+		var unit := state.active_unit(player)
+		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.name), int(unit.hp), int(unit.max_hp), str(unit.element)], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
+	if state.finished:
+		panel.add_child(label("Local match complete. No Forge Coins or rewards are granted.", 18, Color("fff0a1")))
+		panel.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d"))); return
+	panel.add_child(label("Player %d hand: %s" % [seat + 1, ", ".join(state.players[seat].hand)], 15, Color("dce8f4")))
+	var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); body.add_child(actions)
+	for action in [{"type":"attack","name":"Basic Attack"},{"type":"ability","name":"Signature Ability"},{"type":"defend","name":"Defend"},{"type":"end_turn","name":"End Turn"}]:
+		actions.add_child(make_button(str(action.name), func(): submit_local_intent({"type":action.type}), Color("2f93a8")))
+	var card_counts := {}
+	for card_id in state.players[seat].hand: card_counts[str(card_id)] = int(card_counts.get(str(card_id), 0)) + 1
+	for card_id in card_counts:
+		body.add_child(make_button("Play %s x%d" % [str(card_id).replace("_", " ").capitalize(), int(card_counts[card_id])], func(): submit_local_intent({"type":"card","card_id":card_id}), Color("526e93")))
+	var navigation := HBoxContainer.new(); navigation.add_theme_constant_override("separation", 8); body.add_child(navigation)
+	for index in state.players[seat].team.size():
+		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
+			navigation.add_child(make_button("Switch to %s" % str(state.players[seat].team[index].name), func(): submit_local_intent({"type":"switch","index":index}), Color("4d7898")))
+	navigation.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+
+func submit_local_intent(intent: Dictionary) -> void:
+	if local_authority == null: return
+	var seat := local_authority.state.active_player
+	var result := local_authority.submit({"seat":seat,"expected_revision":local_authority.revision,"intent":intent})
+	if not bool(result.ok): _toast(str(result.error)); return
+	battle_last_event = str(intent.type); battle_last_actor = seat; local_ready_seat = -1; render()
+
+func _guildmate_profile() -> Dictionary:
+	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "aquafin").profile
+	profile.coins = 0
+	profile.blueprints.append("voltwig")
+	var printed := ProgressionRules.print_creature({"coins":99,"blueprints":["voltwig"],"creatures":[],"armor":[],"discovered":[],"team":[],"next_instance_nonce":7,"onboarding":profile.onboarding,"support_cards":{},"decks":[],"active_deck_id":"","armor_blueprints":[],"shop":[]}, "voltwig")
+	profile.creatures.append(printed.profile.creatures[0]); profile.creatures[-1].bound = false; profile.creatures[-1].tradable = true
+	return profile
+
+func render_local_trade() -> void:
+	var panel := make_panel(Color("19334de8"), Color("a8edff")); body.add_child(panel.get_parent())
+	panel.add_child(label("Guild Trade Table", 25, Color("a8edff")))
+	if local_trade == null: local_trade = LocalTradeAuthority.create(GameManager.profile, _guildmate_profile())
+	panel.add_child(label("Local demo pairing code: %s" % local_trade.code, 17, Color("fff0a1")))
+	panel.add_child(label("Two revision locks, two confirmations, one atomic settlement. The guildmate remains session-only.", 15, Color("dce8f4")))
+	if local_trade.settled:
+		panel.add_child(label("Settlement receipt", 19, Color("a8e3a5")))
+		panel.add_child(label("You received %s for %s. Audit %s. Your profile was updated; the guildmate was not saved." % [_trade_name(GameManager.profile, local_trade.requested_id), _trade_name(local_trade.partner, local_trade.offered_id), str(local_trade.audit.back().code)], 15, Color("dce8f4")))
+		body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+		return
+	var yours := local_trade.eligible(local_trade.creator); var theirs := local_trade.eligible(local_trade.partner)
+	panel.add_child(label("Your eligible prints", 18, Color("ffd36c")))
+	if yours.is_empty(): panel.add_child(label("Print an extra unbound, unequipped copy before local trade.", 15, Color("ffaaa1")))
+	for id in yours: panel.add_child(make_button("Offer %s" % _trade_name(local_trade.creator, id), func(): select_trade_choice(0, id), Color("4d7898")))
+	panel.add_child(label("Guildmate eligible prints", 18, Color("a8edff")))
+	for id in theirs: panel.add_child(make_button("Request %s" % _trade_name(local_trade.partner, id), func(): select_trade_choice(1, id), Color("4d7898")))
+	if not local_trade.offered_id.is_empty() and not local_trade.requested_id.is_empty() and not local_trade.settled:
+		panel.add_child(label("Escrow draft: %s for %s" % [_trade_name(local_trade.creator, local_trade.offered_id), _trade_name(local_trade.partner, local_trade.requested_id)], 16, Color("fff0a1")))
+		panel.add_child(label("Creator: %s  |  Guildmate: %s" % ["Confirmed" if local_trade.creator_confirmed else "Awaiting confirmation", "Confirmed" if local_trade.partner_confirmed else "Awaiting confirmation"], 15, Color("a8e3a5") if local_trade.creator_confirmed and local_trade.partner_confirmed else Color("dce8f4")))
+		panel.add_child(make_button("Creator Confirm" if not local_trade.creator_confirmed else "Creator Confirmed", func(): confirm_local_trade(0), Color("a86b2e")))
+		panel.add_child(make_button("Guildmate Confirm" if not local_trade.partner_confirmed else "Guildmate Confirmed", func(): confirm_local_trade(1), Color("588d73")))
+	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+
+func confirm_local_trade(seat: int) -> void:
+	var result := local_trade.confirm(seat, local_trade.creator_revision, local_trade.partner_revision)
+	if not bool(result.ok): _toast(str(result.error)); return
+	if bool(result.get("settled", false)): GameManager.settle_local_trade(result.creator, result.audit)
+	else: render()
+
+func select_trade_choice(seat: int, instance_id: String) -> void:
+	if local_trade == null or local_trade.settled: return
+	if seat == 0: trade_creator_choice = instance_id
+	else: trade_partner_choice = instance_id
+	if not trade_creator_choice.is_empty() and not trade_partner_choice.is_empty():
+		var draft := local_trade.choose(trade_creator_choice, trade_partner_choice)
+		if not bool(draft.ok): _toast(str(draft.error))
+	render()
+
+func _trade_name(profile: Dictionary, instance_id: String) -> String:
+	for creature in profile.get("creatures", []):
+		if str(creature.get("instance_id", "")) == instance_id: return str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Printed companion"))
+	return "Printed companion"
 
 func render_shop() -> void:
 	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())

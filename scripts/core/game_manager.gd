@@ -132,6 +132,11 @@ func apply_transition(result: Dictionary, kind: String) -> bool:
 	mutated(kind, result.get("payload", {}))
 	return true
 
+func settle_local_trade(new_profile: Dictionary, audit: Dictionary) -> void:
+	# The guildmate profile is deliberately session-only; only this local profile persists.
+	profile = new_profile.duplicate(true)
+	mutated("local_trade_settled", audit)
+
 func _next_instance_id(prefix: String) -> String:
 	var nonce: int = int(profile.get("next_instance_nonce", 1))
 	profile.next_instance_nonce = nonce + 1

@@ -1,0 +1,14 @@
+const assert = require("assert");
+const { InMemoryAuthority, InMemoryDualTrade } = require("../dist/authority");
+const authority = new InMemoryAuthority();
+assert.equal(authority.submit({ seat:1, expectedRevision:0, intent:{type:"defend"} }).reason, "wrong_seat");
+assert.equal(authority.submit({ seat:0, expectedRevision:2, intent:{type:"defend"} }).reason, "stale_revision");
+assert.equal(authority.submit({ seat:0, expectedRevision:0, intent:{type:"bad"} }).reason, "illegal_intent");
+assert.equal(authority.submit({ seat:0, expectedRevision:0, intent:{type:"defend"} }).revision, 1);
+const response = authority.submit({ seat:1, expectedRevision:1, intent:{type:"defend"} }); response.snapshot.turn = 999; assert.notEqual(authority.snapshot.turn, 999);
+const trade = new InMemoryDualTrade(["a"], ["b"], 4, 7);
+assert.equal(trade.confirm(0, 4, 7, "a", "b").settled, false);
+assert.equal(trade.confirm(1, 3, 7, "a", "b").reason, "stale");
+assert.equal(trade.confirm(1, 4, 7, "a", "b").settled, true);
+assert.deepEqual(trade.creator, ["b"]); assert.equal(trade.audit.length, 1); assert.equal(trade.confirm(0, 5, 8, "a", "b").reason, "settled");
+console.log("PASS: in-memory authority and dual-confirm local trade");

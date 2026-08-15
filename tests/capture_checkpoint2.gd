@@ -18,6 +18,25 @@ func _ready() -> void:
 	if capture_mode in ["battle", "high_contrast_battle"]:
 		workshop.screen = "battle"
 		workshop.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+	elif capture_mode == "local_vs":
+		workshop.screen = "local_vs"
+		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+	elif capture_mode == "local_vs_ready":
+		workshop.screen = "local_vs"
+		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+		workshop.local_ready_seat = workshop.local_authority.state.active_player
+	elif capture_mode in ["trade", "trade_draft", "trade_settled"]:
+		workshop.screen = "trade"
+		workshop.local_trade = LocalTradeAuthority.create(GameManager.profile, workshop._guildmate_profile())
+		var yours: Array = workshop.local_trade.eligible(workshop.local_trade.creator)
+		var theirs: Array = workshop.local_trade.eligible(workshop.local_trade.partner)
+		if not yours.is_empty() and not theirs.is_empty():
+			workshop.trade_creator_choice = yours[0]; workshop.trade_partner_choice = theirs[0]
+			workshop.local_trade.choose(yours[0], theirs[0])
+			if capture_mode in ["trade_draft", "trade_settled"]: workshop.local_trade.confirm(0, workshop.local_trade.creator_revision, workshop.local_trade.partner_revision)
+			if capture_mode == "trade_settled":
+				var settled: Dictionary = workshop.local_trade.confirm(1, workshop.local_trade.creator_revision, workshop.local_trade.partner_revision)
+				if bool(settled.get("settled", false)): GameManager.profile = settled.creator
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	get_tree().root.call_deferred("add_child", workshop)
 	call_deferred("capture")
@@ -31,6 +50,9 @@ func fixture_profile() -> Dictionary:
 	var armor_print: Dictionary = ProgressionRules.print_armor(armor_blueprint.profile, "helm")
 	fixture = ProgressionRules.equip_armor(armor_print.profile, str(armor_print.profile.onboarding.starter_instance_id), str(armor_print.payload.armor_instance_id)).profile
 	fixture.team = [str(fixture.onboarding.starter_instance_id), str(printed.payload.instance_id)]
+	# A spare print remains off-team so the trade capture demonstrates a legal offer.
+	var spare: Dictionary = ProgressionRules.print_creature(fixture, "mossmunk")
+	if bool(spare.ok): fixture = spare.profile
 	fixture.support_cards.coolant = 1
 	return fixture
 
@@ -65,7 +87,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle"]: return mode
+			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled"]: return mode
 	return "onboarding"
 
 func requested_tag() -> String:
