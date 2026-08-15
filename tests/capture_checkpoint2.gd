@@ -11,12 +11,10 @@ var capture_tag := ""
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(OUTPUT_DIR)
 	var forced_viewport := requested_capture_viewport()
+	# The project uses Godot's square-base + canvas_items/expand pattern. The
+	# command-line window resolution is the only capture sizing authority: do not
+	# mask a project stretch failure with a content-scale override here.
 	if forced_viewport.x > 0 and forced_viewport.y > 0:
-		# Desktop project overrides retain the normal 16:9 viewport even when the
-		# OS window is portrait. The harness explicitly resizes root content so
-		# portrait captures exercise the same responsive containers as Android.
-		get_viewport().content_scale_size = forced_viewport
-		get_viewport().size = forced_viewport
 		DisplayServer.window_set_size(forced_viewport)
 	# Captures are visual evidence, not interactive runs; keep the desktop cursor
 	# out of contact sheets and existing workshop screenshots.

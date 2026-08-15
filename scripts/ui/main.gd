@@ -37,6 +37,10 @@ func settings() -> Dictionary:
 func scaled_font(base: int) -> int:
 	return maxi(12, (base * int(settings().get("text_scale_bps", 10000))) / 10000)
 
+func is_portrait_layout() -> bool:
+	var viewport_size := get_viewport().get_visible_rect().size
+	return viewport_size.y > viewport_size.x
+
 func _ready() -> void:
 	if shop_day_key.is_empty(): shop_day_key = Time.get_date_string_from_system()
 	GameManager.profile_changed.connect(render)
@@ -409,7 +413,7 @@ func render_local_vs() -> void:
 		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
 		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 120)
+	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 110 if is_portrait_layout() else 120)
 	for player in [0, 1]:
 		var unit := state.active_unit(player)
 		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.name), int(unit.hp), int(unit.max_hp), str(unit.element)], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
@@ -417,14 +421,14 @@ func render_local_vs() -> void:
 		panel.add_child(label("Local match complete. No Forge Coins or rewards are granted.", 18, Color("fff0a1")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	panel.add_child(label("Player %d hand: %s" % [seat + 1, ", ".join(state.players[seat].hand)], 15, Color("dce8f4")))
-	var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); body.add_child(actions)
+	var actions := GridContainer.new(); actions.name = "LocalBattleActionGrid"; actions.columns = 2 if is_portrait_layout() else 4; actions.add_theme_constant_override("h_separation", 8); actions.add_theme_constant_override("v_separation", 8); panel.add_child(actions)
 	for action in [{"type":"attack","name":"Basic Attack"},{"type":"ability","name":"Signature Ability"},{"type":"defend","name":"Defend"},{"type":"end_turn","name":"End Turn"}]:
 		actions.add_child(make_button(str(action.name), func(): submit_local_intent({"type":action.type}), Color("2f93a8")))
 	var card_counts := {}
 	for card_id in state.players[seat].hand: card_counts[str(card_id)] = int(card_counts.get(str(card_id), 0)) + 1
 	for card_id in card_counts:
 		body.add_child(make_button("Play %s x%d" % [str(card_id).replace("_", " ").capitalize(), int(card_counts[card_id])], func(): submit_local_intent({"type":"card","card_id":card_id}), Color("526e93")))
-	var navigation := HBoxContainer.new(); navigation.add_theme_constant_override("separation", 8); body.add_child(navigation)
+	var navigation := GridContainer.new(); navigation.name = "LocalBattleNavigationGrid"; navigation.columns = 2 if is_portrait_layout() else 3; navigation.add_theme_constant_override("h_separation", 8); navigation.add_theme_constant_override("v_separation", 8); body.add_child(navigation)
 	for index in state.players[seat].team.size():
 		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
 			navigation.add_child(make_button("Switch to %s" % str(state.players[seat].team[index].name), func(): submit_local_intent({"type":"switch","index":index}), Color("4d7898")))
@@ -808,6 +812,7 @@ func render_battle() -> void:
 	intro.add_child(label("Proving Grounds — %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 24, Color("ffd36c")))
 	var stage := BattleSpriteStage.new()
 	stage.configure(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)))
+	stage.custom_minimum_size = Vector2(0, 120 if is_portrait_layout() else 145)
 	intro.add_child(stage)
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
@@ -821,22 +826,26 @@ func render_battle() -> void:
 		intro.add_child(make_button("Return to Workshop", func(): GameManager.claim_battle_reward(battle); screen="workshop"; render()))
 		return
 	if battle.active_player == 0:
-		var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); body.add_child(actions)
-		actions.add_child(make_button("Basic Attack", func(): intent({"type":"attack"})))
-		actions.add_child(make_button("Signature Ability", func(): intent({"type":"ability"})))
-		actions.add_child(make_button("Defend", func(): intent({"type":"defend"})))
-		actions.add_child(make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d")))
+		var actions := GridContainer.new(); actions.name = "BattleActionGrid"; actions.columns = 2 if is_portrait_layout() else 5; actions.add_theme_constant_override("h_separation", 8); actions.add_theme_constant_override("v_separation", 8); intro.add_child(actions)
+		var basic := make_button("Basic Attack", func(): intent({"type":"attack"})); basic.name = "BattleActionBasicAttack"; actions.add_child(basic)
+		var ability := make_button("Signature Ability", func(): intent({"type":"ability"})); ability.name = "BattleActionSignatureAbility"; actions.add_child(ability)
+		var defend := make_button("Defend", func(): intent({"type":"defend"})); defend.name = "BattleActionDefend"; actions.add_child(defend)
+		var end_turn := make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d")); end_turn.name = "BattleActionEndTurn"; actions.add_child(end_turn)
 		if battle_concede_armed:
-			actions.add_child(make_button("Confirm Concede", toggle_battle_concede, Color("9a5b6f")))
-			actions.add_child(make_button("Cancel Concede", cancel_battle_concede, Color("536c8d")))
+			var confirm := make_button("Confirm Concede", toggle_battle_concede, Color("9a5b6f")); confirm.name = "BattleActionConfirmConcede"; actions.add_child(confirm)
+			var cancel := make_button("Cancel Concede", cancel_battle_concede, Color("536c8d")); cancel.name = "BattleActionCancelConcede"; actions.add_child(cancel)
 		else:
-			actions.add_child(make_button("Concede", toggle_battle_concede, Color("9a5b6f")))
-		var switches := HBoxContainer.new(); body.add_child(switches); switches.add_child(label("Bench:",15))
+			var concede := make_button("Concede", toggle_battle_concede, Color("9a5b6f")); concede.name = "BattleActionConcede"; actions.add_child(concede)
+		var bench_section := VBoxContainer.new(); bench_section.add_theme_constant_override("separation", 6); body.add_child(bench_section)
+		bench_section.add_child(label("Bench", 15, Color("9beaff")))
+		var switches := GridContainer.new(); switches.name = "BattleBenchGrid"; switches.columns = 2 if is_portrait_layout() else 3; switches.add_theme_constant_override("h_separation", 8); switches.add_theme_constant_override("v_separation", 8); bench_section.add_child(switches)
 		for bench_index in battle.players[0].team.size():
 			if bench_index == int(battle.players[0].active): continue
 			var bench_unit: Dictionary = battle.players[0].team[bench_index]
 			if int(bench_unit.hp) > 0: switches.add_child(make_button("Switch %s" % str(bench_unit.name), func(): intent({"type":"switch","index":bench_index})))
-		var cards := HBoxContainer.new(); body.add_child(cards); cards.add_child(label("Hand:",15))
+		var hand_section := VBoxContainer.new(); hand_section.add_theme_constant_override("separation", 6); body.add_child(hand_section)
+		hand_section.add_child(label("Hand", 15, Color("9beaff")))
+		var cards := GridContainer.new(); cards.name = "BattleHandGrid"; cards.columns = 2 if is_portrait_layout() else 4; cards.add_theme_constant_override("h_separation", 8); cards.add_theme_constant_override("v_separation", 8); hand_section.add_child(cards)
 		for card_id in battle.players[0].hand: cards.add_child(make_button(str(card_id).replace("_", " ").capitalize(), func(): intent({"type":"card","card_id":card_id}), Color("526e93")))
 	body.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-5))), 14, Color("d0dfeb")))
 	if battle.active_player == 1 and not battle.finished and not ai_pending:

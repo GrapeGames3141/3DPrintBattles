@@ -1,5 +1,12 @@
 # Validation record
 
+## 2026-08-15 Checkpoint A.1 - expandable portrait battle HUD
+
+- Staging clone `E:/CodexCache/printforge-checkpointA1-20260815` was created from durable local `7b8d05d`. The Godot display configuration now uses a 720x720 base viewport with `canvas_items` and `expand`, retaining the 1280x720 desktop override and Android sensor orientation. The capture harness deliberately has no content-scale or viewport-size override; it asserts the screenshot dimensions instead.
+- Parser/import scan PID 9252 exited 0. Focused responsive HUD regression PID 19700 and final retained profile/progression/battle/checkpoint4/checkpoint5/checkpoint6/checkpoint-A/UI-A/UI-A1/alpha-loop/save/UI5/UI6/art-contract suite PIDs `24220/21036/3932/15540/25000/2884/21972/25596/26536/9628/16936/25200/5816/20544` all exited 0. The known Windows root-certificate warning and checkpoint6 dummy-renderer leak warning remain environment/pre-existing test output.
+- Inspected OpenGL captures prove full-frame sizing and first-render actions: `battle_1280x720_checkpointA1.png` (PID 25604), `battle_720x1280_checkpointA1-polish.png` (PID 25448), and `workshop_720x1280_checkpointA1.png` (PID 17456), under `E:/CodexCache/printforge-validation/`. The portrait battle has no letterbox; primary actions remain in `BattleActionGrid`, while Bench and Hand are titled compact grids below it.
+- Android debug/review export PID 17524 exited 0: `build/android/PrintForge-Legends-0.5.3-alpha-checkpointA1-arm64.apk`, 88,478,910 bytes, SHA-256 `806F37C0E13418E6FCC8B33651B853086C44AE786A930BBF01B1DDA2037EB0E9`. `apksigner verify --verbose` confirmed v2/v3 signing. `aapt` reported package `com.tak.printforge.legends.review`, version code 53/name `0.5.3-alpha-checkpointA1`, then returned 1 on the known `android:required` manifest parsing warning. Android physical-device smoke remains pending.
+
 ## 2026-08-15 Checkpoint A - workshop progression hub
 
 - Implementation was completed in `E:/CodexCache/printforge-checkpointA-20260815` from durable `SolBranch-Clean` baseline `a4906be`, then the reviewed code, tests, docs, preset, README, and final review APK were hash-synchronized to durable E:. No staging, commit, or remote operation was performed.
