@@ -22,6 +22,7 @@ var screen := "workshop"
 var workshop_selected := "printer"
 var workshop_view := "overview"
 var workshop_drawer_object := ""
+var printer_picker_open := false
 var workshop_return_view := "overview"
 var pending_starter_id := ""
 var shop_day_key := ""
@@ -35,6 +36,8 @@ var battle_last_event := ""
 var battle_last_actor := 0
 var ai_pending := false
 var battle_concede_armed := false
+var battle_secondary_open := false
+var battle_secondary_tab := "bench"
 var local_concede_armed := false
 var local_authority: LocalBattleAuthority
 var local_ready_seat := -1
@@ -115,11 +118,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen == "printer":
 		if printer_sequence != null and printer_sequence.phase == ArcaneForgeSequence.IDLE:
-			printer_sequence.cancel()
-			printer_creature_id = ""
-			screen = printer_return_screen
-			if screen == "workshop": workshop_view = workshop_return_view
-			render()
+			cancel_printer_preview()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen != "onboarding" and screen != "workshop":
@@ -768,6 +767,21 @@ func _workshop_settings_button() -> Button:
 	button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	return button
 
+func _printer_picker_button() -> Button:
+	var button := make_button("Close Blueprint Tray" if printer_picker_open else "Choose a Print", close_printer_picker if printer_picker_open else open_printer_picker, Color("a86b2e"))
+	button.name = "PrinterBlueprintTrayButton"
+	button.tooltip_text = "Choose a learned creature blueprint to preview in the Arcane Forge"
+	button.accessibility_name = "Choose a Print Blueprint Tray"
+	# Keep selection reachable in the physical Printer station without covering the
+	# presentation-only Forge. The right floor/cabinet stays clear in both crops.
+	button.anchor_left = 0.70; button.anchor_right = 0.88
+	button.anchor_top = 0.72 if is_portrait_layout() else 0.76
+	button.anchor_bottom = button.anchor_top
+	button.offset_left = 0; button.offset_right = 0
+	button.offset_top = 0; button.offset_bottom = 48
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return button
+
 func _workshop_overview_button() -> Button:
 	var button := make_button("\u2190", open_workshop_view.bind("overview"), Color("536c8d"))
 	button.name = "WorkshopOverviewButton"
@@ -794,9 +808,10 @@ func render_workshop_closeup(used_today: int) -> void:
 	if view.is_empty():
 		open_workshop_view("overview")
 		return
+	var picker_open := workshop_view == "printer" and printer_picker_open
 	# A selected tool gets a dedicated right-hand blueprint tray on desktop.
 	# Portrait deliberately keeps the proven art-over-tray composition instead.
-	if not is_portrait_layout() and not workshop_drawer_object.is_empty():
+	if not is_portrait_layout() and (not workshop_drawer_object.is_empty() or picker_open):
 		var split := HBoxContainer.new()
 		split.name = "WorkshopCloseupSplit"
 		split.custom_minimum_size = Vector2(0, 500)
@@ -807,26 +822,35 @@ func render_workshop_closeup(used_today: int) -> void:
 		art_column.name = "WorkshopCloseupArt"
 		art_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		art_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		art_column.size_flags_stretch_ratio = 7.0
+		art_column.size_flags_stretch_ratio = 6.0 if picker_open else 7.0
 		split.add_child(art_column)
 		var tray_column := VBoxContainer.new()
 		tray_column.name = "WorkshopBlueprintTrayColumn"
-		tray_column.custom_minimum_size = Vector2(300, 0)
+		tray_column.custom_minimum_size = Vector2(420 if picker_open else 300, 0)
 		tray_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tray_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		tray_column.size_flags_stretch_ratio = 3.0
+		tray_column.size_flags_stretch_ratio = 4.0 if picker_open else 3.0
 		split.add_child(tray_column)
 		var split_map := _workshop_surface("WorkshopCloseupMap", _workshop_station_texture(workshop_view), 500, art_column, true, workshop_view, false, true, _workshop_station_focus(workshop_view), _workshop_station_zoom(workshop_view))
 		_add_workshop_station_live(split_map)
 		var split_chrome := _workshop_scene_map(split_map)
 		split_chrome.add_child(_workshop_overview_button())
 		split_chrome.add_child(_workshop_settings_button())
+		if workshop_view == "printer":
+			split_chrome.add_child(_printer_picker_button())
 		for object in view.objects: split_map.add_child(_workshop_object_button(object))
-		render_workshop_drawer(view, tray_column)
+		if picker_open:
+			render_printer_blueprint_tray(tray_column)
+		else:
+			render_workshop_drawer(view, tray_column)
 		return
 	var portrait := is_portrait_layout()
 	var closeup_height := 430.0 if portrait else 330.0
-	if workshop_drawer_object.is_empty():
+	if picker_open and portrait:
+		# Leave enough room for the first picker tiles on small Android portrait
+		# screens while retaining an unobscured live Printer Bench above them.
+		closeup_height = 320.0
+	elif workshop_drawer_object.is_empty():
 		closeup_height = maxf(720.0, get_viewport().get_visible_rect().size.y - 250.0) if portrait else 560.0
 	var live_station := workshop_view in ["printer", "maker"]
 	var map := _workshop_surface("WorkshopCloseupMap", _workshop_station_texture(workshop_view), closeup_height, null, portrait or live_station, workshop_view, false, true, _workshop_station_focus(workshop_view), _workshop_station_zoom(workshop_view))
@@ -834,8 +858,13 @@ func render_workshop_closeup(used_today: int) -> void:
 	var chrome := _workshop_scene_map(map)
 	chrome.add_child(_workshop_overview_button())
 	chrome.add_child(_workshop_settings_button())
+	if workshop_view == "printer":
+		chrome.add_child(_printer_picker_button())
 	for object in view.objects: map.add_child(_workshop_object_button(object))
 	_add_workshop_scene_status(map, view, used_today)
+	if picker_open:
+		render_printer_blueprint_tray()
+		return
 	if workshop_drawer_object.is_empty():
 		return
 	render_workshop_drawer(view)
@@ -920,6 +949,101 @@ func render_workshop_drawer(view: Dictionary, host: Control = null) -> void:
 	action_tiles.add_child(make_button(_workshop_action_label(target), _run_workshop_station.bind(target), Color("a86b2e") if target in ["printer", "calibration", "proving", "local_vs"] else Color("2f93a8")))
 	action_tiles.add_child(make_button("Close Tray", close_workshop_drawer, Color("536c8d")))
 
+func printer_blueprint_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for stored_id in GameManager.profile.get("blueprints", []):
+		var creature_id := str(stored_id)
+		if not creature_id.is_empty() and not Catalog.creature(creature_id).is_empty() and creature_id not in ids:
+			ids.append(creature_id)
+	ids.sort_custom(func(left: String, right: String) -> bool: return str(Catalog.creature(left).get("name", left)) < str(Catalog.creature(right).get("name", right)))
+	return ids
+
+func _printer_owned_count(creature_id: String) -> int:
+	var count := 0
+	for instance in GameManager.profile.get("creatures", []):
+		if str(instance.get("creature_id", "")) == creature_id:
+			count += 1
+	return count
+
+func _printer_idle_texture(definition: Dictionary) -> Texture2D:
+	var path := str(definition.get("sprite_sheet", ""))
+	var sheet := ResourceLoader.load(path) as Texture2D if not path.is_empty() else null
+	if sheet != null:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = sheet
+		# Stay two pixels inside the 384x512 idle cell so linear filtering cannot
+		# leak a neighboring animation frame into this compact picker thumbnail.
+		atlas.region = Rect2(2, 2, 380, 508)
+		return atlas
+	var raw_path := str(definition.get("raw_print", ""))
+	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
+
+func _printer_blueprint_card(creature_id: String) -> Control:
+	var definition := Catalog.creature(creature_id)
+	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
+	var price := int(rarity.get("print", 0))
+	var owned := _printer_owned_count(creature_id)
+	var card := PanelContainer.new()
+	card.name = "PrinterBlueprintCard%s" % creature_id.capitalize()
+	card.set_meta("creature_id", creature_id)
+	card.set_meta("price", price)
+	card.set_meta("owned_count", owned)
+	card.custom_minimum_size = Vector2(190, 0)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", panel_style(Color("102940ec"), Color(str(rarity.get("color", "6bd6ed")))))
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	card.add_child(content)
+	var identity := HBoxContainer.new()
+	identity.add_theme_constant_override("separation", 8)
+	content.add_child(identity)
+	var preview := TextureRect.new()
+	preview.name = "PrinterBlueprintIdleArt"
+	preview.custom_minimum_size = Vector2(76, 104)
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.texture = _printer_idle_texture(definition)
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	identity.add_child(preview)
+	var facts := VBoxContainer.new()
+	facts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	identity.add_child(facts)
+	facts.add_child(label(str(definition.get("name", creature_id)), 17, Color("ffffff")))
+	facts.add_child(label("%s - %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 13, Color("b8dcef")))
+	facts.add_child(label("Forge Coin print: %d" % price, 13, Color("ffd36c")))
+	facts.add_child(label("Owned prints: %d" % owned, 13, Color("a8e3a5")))
+	var preview_button := make_button("Preview %s" % str(definition.get("name", creature_id)), open_printer.bind(creature_id), Color("a86b2e"))
+	preview_button.name = "PrinterPreview%s" % creature_id.capitalize()
+	preview_button.tooltip_text = "Preview %s in the Arcane Forge" % str(definition.get("name", creature_id))
+	content.add_child(preview_button)
+	return card
+
+func render_printer_blueprint_tray(host: Control = null) -> void:
+	var tray := make_panel(Color("15344bea"), Color("f1be69"))
+	tray.get_parent().name = "PrinterBlueprintTray"
+	(host if host != null else body).add_child(tray.get_parent())
+	tray.add_child(label("Blueprint Tray - Choose a Print", 21, Color("ffd36c")))
+	tray.add_child(label("Previewing is safe: Forge Coins and inventory change only when Begin Print reaches the secured commit seam.", 14, Color("dce8f4")))
+	var ids := printer_blueprint_ids()
+	if ids.is_empty():
+		var empty := label("No learned creature blueprints are ready. Visit Forge Offers to learn a pattern, then return to this bench.", 16, Color("fff0a1"))
+		empty.name = "PrinterBlueprintEmptyState"
+		tray.add_child(empty)
+		var offers := make_button("Open Forge Offers", navigate_to.bind("shop"), Color("2f93a8"))
+		offers.name = "PrinterBlueprintEmptyOffers"
+		tray.add_child(offers)
+		tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
+		return
+	var cards := GridContainer.new()
+	cards.name = "PrinterBlueprintGrid"
+	cards.columns = 1 if is_portrait_layout() else 2
+	cards.add_theme_constant_override("h_separation", 10)
+	cards.add_theme_constant_override("v_separation", 10)
+	tray.add_child(cards)
+	for creature_id in ids:
+		cards.add_child(_printer_blueprint_card(creature_id))
+	tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
+
 func _workshop_action_label(target: String) -> String:
 	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Start Training", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
 	return str(names.get(target, "Open Station"))
@@ -928,6 +1052,7 @@ func open_workshop_view(view_id: String) -> void:
 	workshop_view = view_id if view_id == "overview" or not _workshop_view_data(view_id).is_empty() else "overview"
 	workshop_selected = workshop_view
 	workshop_drawer_object = ""
+	printer_picker_open = false
 	render()
 
 func select_workshop_object(object_id: String) -> void:
@@ -940,6 +1065,23 @@ func select_workshop_object(object_id: String) -> void:
 func close_workshop_drawer() -> void:
 	if workshop_drawer_object.is_empty(): return
 	workshop_drawer_object = ""
+	render()
+
+func open_printer_picker() -> void:
+	# The Printer Bench is self-sufficient: selection is deliberate and never
+	# guesses a starter blueprint or mutates profile state.
+	if screen != "workshop":
+		screen = "workshop"
+	workshop_view = "printer"
+	workshop_selected = "printer"
+	workshop_drawer_object = ""
+	printer_picker_open = true
+	render()
+
+func close_printer_picker() -> void:
+	if not printer_picker_open:
+		return
+	printer_picker_open = false
 	render()
 
 func _workshop_stations() -> Array:
@@ -970,7 +1112,7 @@ func _workshop_hotspot(station: Dictionary) -> Button:
 
 func _run_workshop_station(id: String) -> void:
 	match id:
-		"printer": open_printer(str(GameManager.profile.onboarding.starter_id))
+		"printer": open_printer_picker()
 		"collection", "shop", "codex", "team", "deck", "armor", "settings": navigate_to(id)
 		"proving": start_battle()
 		"local_vs": start_local_vs()
@@ -1205,8 +1347,8 @@ func render_printer() -> void:
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENED:
 			panel.add_child(label("Welcome, %s! Your living print is ready for the Collection." % str(definition.name), 20, Color("a8e3a5")))
-			panel.add_child(make_button("Print Another", navigate_to.bind("collection"), Color("a86b2e")))
-			panel.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+			panel.add_child(make_button("Print Another", return_to_printer_picker, Color("a86b2e")))
+			panel.add_child(make_button("Return to Printer Bench", return_to_printer_station, Color("536c8d")))
 		ArcaneForgeSequence.FAILED:
 			panel.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
 			panel.add_child(make_button("Return to Collection", navigate_to.bind("collection"), Color("536c8d")))
@@ -1242,6 +1384,23 @@ func cancel_printer_preview() -> void:
 	screen = printer_return_screen
 	if screen == "workshop": workshop_view = workshop_return_view
 	render()
+
+func return_to_printer_station() -> void:
+	if printer_return_screen == "workshop":
+		screen = "workshop"
+		workshop_view = "printer"
+		workshop_selected = "printer"
+		workshop_drawer_object = ""
+		render()
+		return
+	navigate_to("collection")
+
+func return_to_printer_picker() -> void:
+	if printer_return_screen == "workshop":
+		printer_picker_open = true
+		return_to_printer_station()
+		return
+	navigate_to("collection")
 
 func render_collection() -> void:
 	var intro := make_panel(Color("19334de8"), Color("8deaff")); body.add_child(intro.get_parent())
@@ -1391,6 +1550,8 @@ func start_battle() -> void:
 	battle_last_event = ""
 	battle_last_actor = 0
 	battle_concede_armed = false
+	battle_secondary_open = false
+	battle_secondary_tab = "bench"
 	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "battle"
 	render()
@@ -1401,49 +1562,163 @@ func _training_seed(day_key: String) -> int:
 	return seed
 
 func render_battle() -> void:
-	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
-	intro.add_child(label("Proving Grounds — %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 24, Color("ffd36c")))
+	render_battle_compact()
+
+func render_battle_compact() -> void:
+	var intro := make_panel(Color("19334de8"), Color("f1be69"))
+	body.add_child(intro.get_parent())
+	intro.add_child(label("Proving Grounds - %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 22, Color("ffd36c")))
 	var stage := BattleSpriteStage.new()
 	stage.configure(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)))
-	stage.custom_minimum_size = Vector2(0, 120 if is_portrait_layout() else 145)
+	stage.custom_minimum_size = Vector2(0, 128 if is_portrait_layout() else 132)
 	intro.add_child(stage)
+	if battle.active_player == 0 and not battle.finished:
+		render_battle_action_dock(intro)
+		render_battle_secondary(intro)
+	if not battle_secondary_open:
+		for player in [1, 0]:
+			var unit := battle.active_unit(player)
+			var armor_id := str(unit.get("armor_id", ""))
+			var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
+			intro.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP - %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
+			intro.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+			intro.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 13, Color("d9e7f3")))
+	if battle.finished:
+		intro.add_child(label("%s - Core Printer status resolved." % ("Victory!" if battle.winner == 0 else "Defeat."), 22, Color("ffd36c")))
+		intro.add_child(make_button("Return to Workshop", func(): GameManager.claim_battle_reward(battle); screen="workshop"; render()))
+		return
+	if not battle_secondary_open:
+		body.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-5))), 14, Color("d0dfeb")))
+	if battle.active_player == 1 and not battle.finished and not ai_pending:
+		ai_pending = true
+		call_deferred("run_ai" if bool(settings().get("reduced_motion", false)) else "run_ai_after_presentation")
+
+func render_battle_action_dock(host: Container) -> void:
+	var dock := make_panel(Color("214969ee"), Color("6de4ff"))
+	dock.name = "BattleActionDock"
+	host.add_child(dock.get_parent())
+	dock.add_child(label("Moves", 18, Color("d7f8ff")))
+	var actions := GridContainer.new()
+	actions.name = "BattleActionGrid"
+	actions.columns = 2 if is_portrait_layout() else 4
+	actions.add_theme_constant_override("h_separation", 8)
+	actions.add_theme_constant_override("v_separation", 8)
+	dock.add_child(actions)
+	var unit: Dictionary = battle.active_unit(0)
+	var basic := make_button("Basic Attack (%d)" % int(unit.attack), func(): intent({"type":"attack"}))
+	basic.name = "BattleActionBasicAttack"
+	actions.add_child(basic)
+	var ability := make_button("%s (%d FC)" % [str(unit.ability), int(unit.ability_cost)], func(): intent({"type":"ability"}))
+	ability.name = "BattleActionSignatureAbility"
+	ability.disabled = int(unit.cooldown_remaining) > 0 or int(battle.players[0].filament) < int(unit.ability_cost)
+	actions.add_child(ability)
+	var defend := make_button("Defend", func(): intent({"type":"defend"}), Color("526e93"))
+	defend.name = "BattleActionDefend"
+	actions.add_child(defend)
+	var end_turn := make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d"))
+	end_turn.name = "BattleActionEndTurn"
+	actions.add_child(end_turn)
+	var secondary := make_button("Hide Bench, Hand & Details" if battle_secondary_open else "Bench, Hand & Details", toggle_battle_secondary, Color("536c8d"))
+	secondary.name = "BattleSecondaryToggle"
+	dock.add_child(secondary)
+
+func render_battle_secondary(host: Container) -> void:
+	if not battle_secondary_open:
+		return
+	var panel := make_panel(Color("172e43ee"), Color("7bcbe5"))
+	panel.name = "BattleSecondaryPanel"
+	host.add_child(panel.get_parent())
+	panel.add_child(label("Tactics", 16, Color("9beaff")))
+	var tabs := GridContainer.new()
+	tabs.name = "BattleSecondaryTabs"
+	tabs.columns = 2 if is_portrait_layout() else 4
+	tabs.add_theme_constant_override("h_separation", 8)
+	tabs.add_theme_constant_override("v_separation", 8)
+	panel.add_child(tabs)
+	for tab_data in [["bench", "Bench", "BattleSecondaryBenchTab"], ["hand", "Hand", "BattleSecondaryHandTab"], ["details", "Details", "BattleSecondaryDetailsTab"], ["concede", "Concede", "BattleSecondaryConcedeTab"]]:
+		var tab_id := str(tab_data[0])
+		var tab_button := make_button(str(tab_data[1]), set_battle_secondary_tab.bind(tab_id), Color("2f93a8") if battle_secondary_tab == tab_id else Color("536c8d"))
+		tab_button.name = str(tab_data[2])
+		tabs.add_child(tab_button)
+	if battle_secondary_tab == "bench":
+		render_battle_bench_tab(panel)
+	elif battle_secondary_tab == "hand":
+		render_battle_hand_tab(panel)
+	elif battle_secondary_tab == "details":
+		render_battle_details_tab(panel)
+	else:
+		render_battle_concede_tab(panel)
+
+func render_battle_bench_tab(panel: Container) -> void:
+	panel.add_child(label("Bench", 16, Color("9beaff")))
+	var switches := GridContainer.new()
+	switches.name = "BattleBenchGrid"
+	switches.columns = 2 if is_portrait_layout() else 3
+	switches.add_theme_constant_override("h_separation", 8)
+	switches.add_theme_constant_override("v_separation", 8)
+	panel.add_child(switches)
+	var switch_count := 0
+	for bench_index in battle.players[0].team.size():
+		if bench_index == int(battle.players[0].active):
+			continue
+		var bench_unit: Dictionary = battle.players[0].team[bench_index]
+		if int(bench_unit.hp) > 0:
+			var switch_button := make_button("Switch %s" % str(bench_unit.name), func(): intent({"type":"switch","index":bench_index}))
+			switch_button.name = "BattleSwitch%s" % str(bench_unit.id)
+			switches.add_child(switch_button)
+			switch_count += 1
+	if switch_count == 0:
+		switches.add_child(label("No healthy bench prints.", 14, Color("b9cad7")))
+
+func render_battle_hand_tab(panel: Container) -> void:
+	panel.add_child(label("Hand", 16, Color("9beaff")))
+	var cards := GridContainer.new()
+	cards.name = "BattleHandGrid"
+	cards.columns = 2 if is_portrait_layout() else 4
+	cards.add_theme_constant_override("h_separation", 8)
+	cards.add_theme_constant_override("v_separation", 8)
+	panel.add_child(cards)
+	for card_id in battle.players[0].hand:
+		var card := make_button(str(card_id).replace("_", " ").capitalize(), func(): intent({"type":"card","card_id":card_id}), Color("526e93"))
+		card.name = "BattleCard%s" % str(card_id).capitalize()
+		cards.add_child(card)
+
+func render_battle_details_tab(panel: Container) -> void:
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
 		var armor_id := str(unit.get("armor_id", ""))
 		var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
-		intro.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP  •  %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 18, Color("ffaaa1") if player==1 else Color("a9ecff")))
-		intro.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 14, Color("f1be69")))
-		intro.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 14, Color("d9e7f3")))
-	if battle.finished:
-		intro.add_child(label("%s — Core Printer status resolved." % ("Victory!" if battle.winner == 0 else "Defeat."), 24, Color("ffd36c")))
-		intro.add_child(make_button("Return to Workshop", func(): GameManager.claim_battle_reward(battle); screen="workshop"; render()))
-		return
-	if battle.active_player == 0:
-		var actions := GridContainer.new(); actions.name = "BattleActionGrid"; actions.columns = 2 if is_portrait_layout() else 5; actions.add_theme_constant_override("h_separation", 8); actions.add_theme_constant_override("v_separation", 8); intro.add_child(actions)
-		var basic := make_button("Basic Attack", func(): intent({"type":"attack"})); basic.name = "BattleActionBasicAttack"; actions.add_child(basic)
-		var ability := make_button("Signature Ability", func(): intent({"type":"ability"})); ability.name = "BattleActionSignatureAbility"; actions.add_child(ability)
-		var defend := make_button("Defend", func(): intent({"type":"defend"})); defend.name = "BattleActionDefend"; actions.add_child(defend)
-		var end_turn := make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d")); end_turn.name = "BattleActionEndTurn"; actions.add_child(end_turn)
-		if battle_concede_armed:
-			var confirm := make_button("Confirm Concede", toggle_battle_concede, Color("9a5b6f")); confirm.name = "BattleActionConfirmConcede"; actions.add_child(confirm)
-			var cancel := make_button("Cancel Concede", cancel_battle_concede, Color("536c8d")); cancel.name = "BattleActionCancelConcede"; actions.add_child(cancel)
-		else:
-			var concede := make_button("Concede", toggle_battle_concede, Color("9a5b6f")); concede.name = "BattleActionConcede"; actions.add_child(concede)
-		var bench_section := VBoxContainer.new(); bench_section.add_theme_constant_override("separation", 6); body.add_child(bench_section)
-		bench_section.add_child(label("Bench", 15, Color("9beaff")))
-		var switches := GridContainer.new(); switches.name = "BattleBenchGrid"; switches.columns = 2 if is_portrait_layout() else 3; switches.add_theme_constant_override("h_separation", 8); switches.add_theme_constant_override("v_separation", 8); bench_section.add_child(switches)
-		for bench_index in battle.players[0].team.size():
-			if bench_index == int(battle.players[0].active): continue
-			var bench_unit: Dictionary = battle.players[0].team[bench_index]
-			if int(bench_unit.hp) > 0: switches.add_child(make_button("Switch %s" % str(bench_unit.name), func(): intent({"type":"switch","index":bench_index})))
-		var hand_section := VBoxContainer.new(); hand_section.add_theme_constant_override("separation", 6); body.add_child(hand_section)
-		hand_section.add_child(label("Hand", 15, Color("9beaff")))
-		var cards := GridContainer.new(); cards.name = "BattleHandGrid"; cards.columns = 2 if is_portrait_layout() else 4; cards.add_theme_constant_override("h_separation", 8); cards.add_theme_constant_override("v_separation", 8); hand_section.add_child(cards)
-		for card_id in battle.players[0].hand: cards.add_child(make_button(str(card_id).replace("_", " ").capitalize(), func(): intent({"type":"card","card_id":card_id}), Color("526e93")))
-	body.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-5))), 14, Color("d0dfeb")))
-	if battle.active_player == 1 and not battle.finished and not ai_pending:
-		ai_pending = true
-		call_deferred("run_ai" if bool(settings().get("reduced_motion", false)) else "run_ai_after_presentation")
+		panel.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP - %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 15, Color("ffaaa1") if player == 1 else Color("a9ecff")))
+		panel.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+		panel.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 13, Color("d9e7f3")))
+	panel.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-4))), 13, Color("d0dfeb")))
+
+func render_battle_concede_tab(panel: Container) -> void:
+	var concede_row := HBoxContainer.new()
+	concede_row.add_theme_constant_override("separation", 8)
+	panel.add_child(concede_row)
+	if battle_concede_armed:
+		var confirm := make_button("Confirm Concede", toggle_battle_concede, Color("9a5b6f"))
+		confirm.name = "BattleActionConfirmConcede"
+		concede_row.add_child(confirm)
+		var cancel := make_button("Cancel Concede", cancel_battle_concede, Color("536c8d"))
+		cancel.name = "BattleActionCancelConcede"
+		concede_row.add_child(cancel)
+	else:
+		var concede := make_button("Concede", toggle_battle_concede, Color("9a5b6f"))
+		concede.name = "BattleActionConcede"
+		concede_row.add_child(concede)
+
+func toggle_battle_secondary() -> void:
+	battle_secondary_open = not battle_secondary_open
+	if battle_secondary_open:
+		battle_secondary_tab = "bench"
+	render()
+
+func set_battle_secondary_tab(tab_id: String) -> void:
+	battle_secondary_open = true
+	battle_secondary_tab = tab_id
+	render()
 
 func intent(action: Dictionary) -> void:
 	if str(action.get("type", "")) != "concede": battle_concede_armed = false

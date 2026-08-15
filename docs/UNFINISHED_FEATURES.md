@@ -12,7 +12,7 @@
 - [x] Responsive sensor-orientation shell and portrait Forge captures are present in `project.godot`, `tests/capture_checkpoint2.gd`, and `docs/VALIDATION.md`; this is not a complete device/accessibility matrix.
 - [x] Revisioned local hot-seat and credential-free local escrow trade are covered by `scripts/battle/local_battle_authority.gd`, `scripts/online/local_trade_authority.gd`, `tests/test_checkpoint5.tscn`, `tests/test_ui_checkpoint5.tscn`, and `tests/test_save_recovery.tscn`.
 - [x] Offline primary/backup save recovery and journal acknowledgement are covered by `scripts/core/save_service.gd` and `tests/test_save_recovery.tscn`.
-- [x] Spatial Workshop navigation is complete for the current 2D direction: five accessible physical-item glow zones, brighter 3:2 station close-ups with bounded portrait panning/focus reveal, compact prop drawers, slow reduced-motion-safe ambient presentation, and nested Back/Escape behavior are covered by `tests/test_ui_workshop_nav.tscn`. Independent v3 landscape/portrait overview plates are static establishing shots; the focused Printer and Maker stations host the presentation-only Forge and team shelf verified by `tests/test_workshop_live.tscn`. See `docs/WORKSHOP_NAV_ART.md` and the current Workshop navigation section in `docs/VALIDATION.md`.
+- [x] Spatial Workshop navigation is complete for the current 2D direction: five accessible physical-item glow zones, brighter 3:2 station close-ups with bounded portrait panning/focus reveal, compact prop drawers, slow reduced-motion-safe ambient presentation, nested Back/Escape behavior, and a non-mutating Printer Blueprint Tray are covered by `tests/test_ui_workshop_nav.tscn`. Independent v3 landscape/portrait overview plates are static establishing shots; the focused Printer and Maker stations host the presentation-only Forge and team shelf verified by `tests/test_workshop_live.tscn`. See `docs/WORKSHOP_NAV_ART.md` and the current Workshop navigation section in `docs/VALIDATION.md`.
 
 ## Critical path and ordering
 
@@ -36,7 +36,7 @@
   - **Evidence:** `tests/test_checkpoint_a.tscn` covers atomic reward/cap/rollover and `tests/test_ui_checkpoint_a.tscn` covers Workshop reachability; economy balancing remains P3 work.
 
 - [x] **Expose legal battle concede in the UI.** Solo and local-versus screens now require a second Concede press before submitting the existing legal rule intent, expose Cancel Concede while armed, and disarm on any other intent or private handoff; local-versus remains no-reward.
-  - **Evidence:** `scripts/ui/main.gd`, `tests/test_ui_checkpoint_a.tscn`, and existing `tests/test_battle_rules.tscn` preserve canonical concede resolution.
+  - **Evidence:** `scripts/ui/main.gd`, `tests/test_ui_checkpoint_a.tscn`, `tests/test_ui_checkpoint_a1.tscn`, and existing `tests/test_battle_rules.tscn` preserve canonical concede resolution and first-render portrait move access.
 
 - [ ] **Harden profile/save migration compatibility.** Schema migrations must preserve current saves across future profile, deck, armor, shop, settings, journal, and server-revision changes.
   - **DoD:** versioned fixtures for every released schema migrate idempotently; unsupported future versions fail safely with recovery guidance; backup, temp-write, journal acknowledgement, and interrupted-write tests remain green.

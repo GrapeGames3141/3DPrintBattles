@@ -36,3 +36,15 @@ The Workshop overview and close-ups use the approved art planes. Close-ups use a
 | [`workshop_overview_portrait_v3.png`](../assets/ui/workshop/workshop_overview_portrait_v3.png) | 2026-08-15 built-in image-generation stage plate for the portrait Workshop overview, composed independently rather than cropped from landscape. | Static portrait establishing shot. Focused Printer and Maker crops have independent landmark transforms so live overlays remain physically seated. |
 
 `WorkshopStationLiveLayer` composites the existing alpha Arcane Forge printer frames, catalog raw-print forms, living idle cells, and current active-team instances only into focused Printer and Maker station crops. Its integer-clock sequence is deterministic for capture/testing: ten seconds of bottom-up raw reveal, a raw hold, calm awakening/crossfade, departure, then a seeded choice among learned blueprint IDs. It never calls `GameManager`, saves, journals, changes coins, or changes the team. Reduced Motion is a static, readable raw-print frame. The empty plate regions are deliberate station integration space, not missing generated art.
+
+## Printer Blueprint Tray
+
+The Printer Bench owns a visible `Choose a Print` station control in the clear
+right-hand floor/cabinet region, away from the presentation-only live Forge.
+It opens a responsive Blueprint Tray rather than silently selecting the
+starter or detouring through Collection. Each tile is built from profile-owned
+catalog IDs only and shows the same idle-cell art, element, rarity, exact
+catalog print price, and owned instance count used by the Forge preview. The
+tray is two columns in the desktop station split and one column below the
+portrait scene. Opening, closing, and previewing stay presentation-only; the
+existing Arcane Forge commit seam remains the only coin/inventory authority.

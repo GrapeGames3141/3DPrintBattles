@@ -24,7 +24,7 @@ func _ready() -> void:
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
 	# Explicit capture-only injection proves the Android review custom-feature
 	# economy floor without pretending the desktop process has that feature.
-	if capture_mode == "station_live_review":
+	if capture_mode in ["station_live_review", "battle_review"]:
 		GameManager.apply_android_review_coin_floor(true)
 	if capture_mode in ["art_gallery_page1", "art_gallery_page2"]:
 		workshop = ART_GALLERY.new()
@@ -36,9 +36,10 @@ func _ready() -> void:
 	if capture_mode == "station_live_reduced": GameManager.profile.settings.reduced_motion = true
 	workshop = MAIN_SCENE.instantiate()
 	workshop.shop_day_key = "2026-08-14"
-	if capture_mode in ["battle", "high_contrast_battle"]:
+	if capture_mode in ["battle", "battle_review", "battle_secondary", "high_contrast_battle"]:
 		workshop.screen = "battle"
 		workshop.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+		workshop.battle_secondary_open = capture_mode == "battle_secondary"
 	elif capture_mode == "local_vs":
 		workshop.screen = "local_vs"
 		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
@@ -80,6 +81,16 @@ func _ready() -> void:
 		workshop.screen = "workshop"
 		workshop.workshop_view = "maker" if capture_mode == "station_live_maker_team" else "printer"
 		workshop.workshop_station_live_capture_progress = {"station_live_printer_start":0, "station_live_printer_mid":4400, "station_live_printer_hold":11000, "station_live_printer_awakening":14000, "station_live_printer_departing":15500, "station_live_maker_team":11000, "station_live_reduced":11000, "station_live_review":11000}.get(capture_mode, 0)
+	elif capture_mode in ["workshop_printer_picker", "printer_picker_preview_mossmunk"]:
+		if capture_mode == "workshop_printer_picker":
+			workshop.screen = "workshop"
+			workshop.workshop_view = "printer"
+			workshop.printer_picker_open = true
+		else:
+			workshop.screen = "printer"
+			workshop.printer_creature_id = "mossmunk"
+			workshop.printer_price = int(Catalog.rarity(str(Catalog.creature("mossmunk").rarity)).print)
+			workshop.printer_sequence = ArcaneForgeSequence.create(false)
 	elif capture_mode in ["workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer"]:
 		workshop.screen = "workshop"
 		workshop.workshop_view = "maker" if capture_mode == "workshop_maker_drawer" else ("proving" if capture_mode == "workshop_proving_drawer" else ("terminal" if capture_mode.begins_with("workshop_terminal_") else str(capture_mode).trim_prefix("workshop_")))
@@ -173,7 +184,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "shop", "collection", "team", "armor", "deck", "yard", "calibration", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "yard", "calibration", "settings", "battle", "battle_review", "battle_secondary", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

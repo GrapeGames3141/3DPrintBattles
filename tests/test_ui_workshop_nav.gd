@@ -35,6 +35,9 @@ func descendant_count(root: Node, node_name: String) -> int:
 func _ready() -> void:
 	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
 	profile.coins = 500
+	var moss_blueprint: Dictionary = ProgressionRules.purchase_creature_blueprint(profile, "mossmunk")
+	require(bool(moss_blueprint.get("ok", false)), "picker fixture learns a non-starter blueprint")
+	profile = moss_blueprint.get("profile", profile)
 	GameManager.profile = profile
 	var main := MAIN.instantiate()
 	add_child(main)
@@ -60,6 +63,42 @@ func _ready() -> void:
 		for object in view.objects:
 			var object_button := main.find_child("WorkshopObject%s" % str(object.id).capitalize(), true, false) as Button
 			require(object_button != null and object_button.text.is_empty() and not object_button.accessibility_name.is_empty(), "%s object hotspot is accessible without a plaque" % str(object.id))
+	main.open_workshop_view("printer")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var picker_entry := main.find_child("PrinterBlueprintTrayButton", true, false) as Button
+	require(picker_entry != null and picker_entry.is_visible_in_tree() and picker_entry.custom_minimum_size.y >= 44.0 and picker_entry.accessibility_name == "Choose a Print Blueprint Tray", "Printer station has a persistent accessible Choose a Print entry")
+	var profile_before_picker: Dictionary = GameManager.profile.duplicate(true)
+	picker_entry.emit_signal("pressed")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	require(main.printer_picker_open and main.find_child("PrinterBlueprintTray", true, false) != null, "Choose a Print opens the station-local Blueprint Tray")
+	var picker_ids: Array[String] = main.printer_blueprint_ids()
+	require(picker_ids == ["cinderpaw", "mossmunk"], "Blueprint Tray lists only learned catalog IDs in deterministic order")
+	var cinder_card := main.find_child("PrinterBlueprintCardCinderpaw", true, false) as Control
+	var moss_card := main.find_child("PrinterBlueprintCardMossmunk", true, false) as Control
+	require(cinder_card != null and int(cinder_card.get_meta("price", -1)) == int(Catalog.rarity("common").print) and int(cinder_card.get_meta("owned_count", -1)) == 1, "starter card shows catalog price and exact owned count")
+	require(moss_card != null and int(moss_card.get_meta("price", -1)) == int(Catalog.rarity("common").print) and int(moss_card.get_meta("owned_count", -1)) == 0 and moss_card.find_child("PrinterBlueprintIdleArt", true, false) != null, "non-starter card shows art, catalog price, and zero owned prints")
+	require(GameManager.profile == profile_before_picker, "opening the picker and cards does not mutate profile authority")
+	var moss_preview := main.find_child("PrinterPreviewMossmunk", true, false) as Button
+	require(moss_preview != null, "non-starter Preview action is present")
+	if moss_preview != null:
+		moss_preview.emit_signal("pressed")
+		await get_tree().process_frame
+		await get_tree().process_frame
+	require(main.screen == "printer" and main.printer_creature_id == "mossmunk" and main.printer_price == int(Catalog.rarity("common").print), "non-starter preview opens the exact selected Arcane Forge creature and price")
+	require(GameManager.profile == profile_before_picker, "previewing a selected blueprint has no coin, inventory, or revision mutation")
+	main.cancel_printer_preview()
+	await get_tree().process_frame
+	require(main.screen == "workshop" and main.workshop_view == "printer" and main.printer_picker_open, "Cancel Preview returns to the same Printer Blueprint Tray")
+	var restored_profile: Dictionary = GameManager.profile.duplicate(true)
+	GameManager.profile.blueprints = []
+	main.open_printer_picker()
+	await get_tree().process_frame
+	require(main.find_child("PrinterBlueprintEmptyState", true, false) != null and main.find_child("PrinterBlueprintEmptyOffers", true, false) is Button, "empty Blueprint Tray explains the Forge Offers route")
+	GameManager.profile = restored_profile
+	main.close_printer_picker()
+	await get_tree().process_frame
 	main.open_workshop_view("maker")
 	await get_tree().process_frame
 	main.select_workshop_object("team_board")
@@ -77,7 +116,13 @@ func _ready() -> void:
 	require(main.screen == "workshop" and main.workshop_view == "maker", "Escape from a station returns to its launching close-up")
 	await escape(main)
 	require(main.workshop_view == "overview", "a second Escape returns from the launching close-up to overview")
-	for entry in [{"target":"printer", "screen":"printer"}, {"target":"collection", "screen":"collection"}, {"target":"team", "screen":"team"}, {"target":"deck", "screen":"deck"}, {"target":"armor", "screen":"armor"}, {"target":"calibration", "screen":"calibration"}, {"target":"shop", "screen":"shop"}, {"target":"codex", "screen":"codex"}, {"target":"trade", "screen":"trade"}, {"target":"yard", "screen":"yard"}]:
+	main.screen = "workshop"
+	main.workshop_view = "printer"
+	main._run_workshop_station("printer")
+	await get_tree().process_frame
+	require(main.screen == "workshop" and main.workshop_view == "printer" and main.printer_picker_open, "Printer station action opens selection rather than silently choosing the starter")
+	main.close_printer_picker()
+	for entry in [{"target":"collection", "screen":"collection"}, {"target":"team", "screen":"team"}, {"target":"deck", "screen":"deck"}, {"target":"armor", "screen":"armor"}, {"target":"calibration", "screen":"calibration"}, {"target":"shop", "screen":"shop"}, {"target":"codex", "screen":"codex"}, {"target":"trade", "screen":"trade"}, {"target":"yard", "screen":"yard"}]:
 		main.screen = "workshop"
 		main.workshop_view = "overview"
 		main._run_workshop_station(str(entry.target))
@@ -97,6 +142,8 @@ func _ready() -> void:
 		await get_tree().process_frame
 		var live_layer := main.find_child("WorkshopStationLiveLayer", true, false)
 		require(live_layer != null and live_layer.station_id == "printer" and live_layer.is_processing(), "normal-motion live Printer station processes presentation only at %s" % viewport_size)
+		var responsive_picker := main.find_child("PrinterBlueprintTrayButton", true, false) as Control
+		require(responsive_picker != null and control_in_view(responsive_picker, viewport_size), "Choose a Print remains visible and touch-safe at %s" % viewport_size)
 		main.open_workshop_view("overview")
 		await get_tree().process_frame
 		for zone_name in zone_names:

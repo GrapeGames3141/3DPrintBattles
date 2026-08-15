@@ -14,7 +14,11 @@ var image_cache: Dictionary = {}
 var alpha_bounds_cache: Dictionary = {}
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 250)
+	# Callers may supply a compact battle HUD height before the node enters the
+	# tree. Preserve that explicit request; the large presentation default is
+	# only for callers that do not size the stage.
+	if custom_minimum_size.y <= 0.0:
+		custom_minimum_size = Vector2(0, 250)
 	queue_redraw()
 
 func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, reduce: bool) -> void:
