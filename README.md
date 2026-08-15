@@ -16,6 +16,10 @@ Starter completion owns only the 15 cards needed for the legal starter deck, nev
 
 Profile settings persist text scale (100%, 125%, or 150%), high contrast, reduced motion, and Apprentice/Craftsman/Master training AI. Controls have 44px minimum targets and status/element information is always written as text. Training uses the approved transparent 4x2 creature sheets for a responsive 2D stage: idle frames loop independently of deterministic combat, while legal attacks and abilities select wind-up, strike, recovery, and hit frames. Reduced motion holds frame zero. This is a presentation placeholder; final art and audio remain approval-gated.
 
+## Arcane Forge printing
+
+Main Printer and Collection printing now enter a transaction-safe Arcane Forge preview. The dormant approved raw print rises in deterministic bottom-to-top layers on the physical build plate, pauses at raw completion, then awakens into the existing living idle sheet. No coins or inventory change while previewing, cancelling, or rendering; exactly one catalog-validated print transition is requested at raw completion. Reduced motion uses calm staged fades and remains skippable. The selected printer and raw forms are recorded in `docs/ART_GENERATION_LEDGER.md`; the four living sheets are untouched.
+
 ## Run
 
 ## Internal alpha local play

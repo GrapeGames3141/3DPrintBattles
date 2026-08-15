@@ -27,10 +27,10 @@ const ELEMENT_CHART := {
 }
 
 const CREATURES := [
-	{"id":"cinderpaw","name":"Cinderpaw","rarity":"common","element":"Fire","bend":18,"hp":34,"attack":9,"speed":7,"cost":2,"ability":"Ember Pounce","ability_cost":2,"cooldown":2,"starter":true,"sprite_sheet":"res://assets/creatures/2d/cinderpaw_sprite_sheet.png"},
-	{"id":"aquafin","name":"Aquafin","rarity":"common","element":"Water","bend":17,"hp":36,"attack":8,"speed":6,"cost":2,"ability":"Tidal Patch","ability_cost":2,"cooldown":3,"starter":true,"sprite_sheet":"res://assets/creatures/2d/aquafin_sprite_sheet.png"},
-	{"id":"voltwig","name":"Voltwig","rarity":"common","element":"Lightning","bend":16,"hp":30,"attack":10,"speed":9,"cost":2,"ability":"Static Hop","ability_cost":2,"cooldown":2,"starter":true,"sprite_sheet":"res://assets/creatures/2d/voltwig_sprite_sheet.png"},
-	{"id":"mossmunk","name":"Mossmunk","rarity":"common","element":"Nature","bend":13,"hp":31,"attack":7,"speed":8,"cost":1,"ability":"Root Guard","ability_cost":1,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/mossmunk_sprite_sheet.png"},
+	{"id":"cinderpaw","name":"Cinderpaw","rarity":"common","element":"Fire","bend":18,"hp":34,"attack":9,"speed":7,"cost":2,"ability":"Ember Pounce","ability_cost":2,"cooldown":2,"starter":true,"sprite_sheet":"res://assets/creatures/2d/cinderpaw_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/cinderpaw_raw_print.png"},
+	{"id":"aquafin","name":"Aquafin","rarity":"common","element":"Water","bend":17,"hp":36,"attack":8,"speed":6,"cost":2,"ability":"Tidal Patch","ability_cost":2,"cooldown":3,"starter":true,"sprite_sheet":"res://assets/creatures/2d/aquafin_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/aquafin_raw_print.png"},
+	{"id":"voltwig","name":"Voltwig","rarity":"common","element":"Lightning","bend":16,"hp":30,"attack":10,"speed":9,"cost":2,"ability":"Static Hop","ability_cost":2,"cooldown":2,"starter":true,"sprite_sheet":"res://assets/creatures/2d/voltwig_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/voltwig_raw_print.png"},
+	{"id":"mossmunk","name":"Mossmunk","rarity":"common","element":"Nature","bend":13,"hp":31,"attack":7,"speed":8,"cost":1,"ability":"Root Guard","ability_cost":1,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/mossmunk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/mossmunk_raw_print.png"},
 	{"id":"frostling","name":"Frostling","rarity":"uncommon","element":"Ice","bend":26,"hp":42,"attack":12,"speed":6,"cost":3,"ability":"Cold Snap","ability_cost":3,"cooldown":3},
 	{"id":"stoneback","name":"Stoneback","rarity":"uncommon","element":"Stone","bend":29,"hp":49,"attack":10,"speed":4,"cost":3,"ability":"Shell Brace","ability_cost":2,"cooldown":3},
 	{"id":"galehopper","name":"Galehopper","rarity":"uncommon","element":"Wind","bend":24,"hp":35,"attack":13,"speed":11,"cost":3,"ability":"Gust Step","ability_cost":2,"cooldown":2},

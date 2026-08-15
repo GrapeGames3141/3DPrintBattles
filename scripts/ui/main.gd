@@ -19,6 +19,14 @@ var local_ready_seat := -1
 var local_trade: LocalTradeAuthority
 var trade_creator_choice := ""
 var trade_partner_choice := ""
+var printer_sequence: ArcaneForgeSequence
+var printer_creature_id := ""
+var printer_price := 0
+var printer_tick_accumulator := 0.0
+var printer_presentation_seconds := 0.0
+var printer_capture_freeze := false
+var printer_commit_succeeded := false
+var printer_failure := ""
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -40,7 +48,27 @@ func _notification(what: int) -> void:
 		# Containers perform the responsive layout; redraw only the decorative background.
 		queue_redraw()
 
+func _process(delta: float) -> void:
+	if printer_capture_freeze: return
+	if screen != "printer" or printer_sequence == null: return
+	if printer_sequence.phase not in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.AWAKENING]: return
+	if not printer_sequence.reduced_motion: printer_presentation_seconds += delta
+	printer_tick_accumulator += delta
+	if printer_tick_accumulator < ArcaneForgeSequence.presentation_interval_seconds(printer_sequence.reduced_motion): return
+	printer_tick_accumulator = 0.0
+	printer_sequence.advance(ArcaneForgeSequence.presentation_step_bps(printer_sequence.reduced_motion))
+	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
+	render()
+
 func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen == "printer":
+		if printer_sequence != null and printer_sequence.phase == ArcaneForgeSequence.IDLE:
+			printer_sequence.cancel()
+			printer_creature_id = ""
+			screen = "collection"
+			render()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen != "onboarding" and screen != "workshop":
 		screen = "workshop"
 		local_ready_seat = -1
@@ -158,6 +186,7 @@ func render() -> void:
 		"team": render_team()
 		"armor": render_armor()
 		"deck": render_deck()
+		"printer": render_printer()
 		"settings": render_settings()
 		"local_vs": render_local_vs()
 		"trade": render_local_trade()
@@ -262,7 +291,7 @@ func render_workshop() -> void:
 		station.add_child(label(item[0], 20, Color("8deaff")))
 		station.add_child(label(item[1], 14, Color("c9d8e6")))
 		match item[0]:
-			"Main Printer": station.add_child(make_button(item[2], func(): GameManager.print_creature(str(GameManager.profile.onboarding.starter_id), 20)))
+			"Main Printer": station.add_child(make_button(item[2], func(): open_printer(str(GameManager.profile.onboarding.starter_id))))
 			"Extruder Forge": station.add_child(make_button(item[2], func(): screen="shop"; render()))
 			"Forgedex": station.add_child(make_button(item[2], func(): screen="codex"; render()))
 			"Proving Grounds": station.add_child(make_button(item[2], start_battle, Color("9a5b6f")))
@@ -414,6 +443,90 @@ func render_settings() -> void:
 		panel.add_child(make_button("Training AI: %s" % difficulty, func(): GameManager.save_settings({"ai_difficulty":difficulty}), Color("588d73") if str(current.ai_difficulty) == difficulty else Color("2f93a8")))
 	body.add_child(make_button("Back to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
 
+func open_printer(creature_id: String) -> void:
+	var definition := Catalog.creature(creature_id)
+	if definition.is_empty() or creature_id not in GameManager.profile.get("blueprints", []):
+		_toast("That blueprint is not learned yet.")
+		return
+	printer_creature_id = creature_id
+	printer_price = int(Catalog.rarity(str(definition.rarity)).print)
+	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)))
+	printer_tick_accumulator = 0.0
+	printer_presentation_seconds = 0.0
+	printer_commit_succeeded = false
+	printer_failure = ""
+	screen = "printer"
+	render()
+
+func render_printer() -> void:
+	var definition := Catalog.creature(printer_creature_id)
+	if definition.is_empty() or printer_sequence == null:
+		screen = "collection"
+		render()
+		return
+	var panel := make_panel(Color("152d49ec"), Color("f1be69"))
+	body.add_child(panel.get_parent())
+	panel.add_child(label("Arcane Forge", 27, Color("ffd36c")))
+	panel.add_child(label("%s blueprint - %s - %d Forge Coins" % [str(definition.name), str(definition.element), printer_price], 16, Color("9beaff")))
+	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
+	var stage := ArcaneForgeStage.new()
+	stage.configure(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)))
+	stage.set_preview_phase(printer_sequence.phase, printer_sequence.progress_bps)
+	stage.set_presentation_time(printer_presentation_seconds)
+	panel.add_child(stage)
+	match printer_sequence.phase:
+		ArcaneForgeSequence.IDLE:
+			panel.add_child(label("Preview the dormant print on the build plate. Begin only when ready.", 16, Color("fff0a1")))
+			panel.add_child(make_button("Begin Print (%d FC)" % printer_price, begin_printer, Color("a86b2e")))
+			panel.add_child(make_button("Cancel Preview", cancel_printer_preview, Color("536c8d")))
+		ArcaneForgeSequence.PRINTING:
+			panel.add_child(label("Printing layers: %d%%. The nozzle and reveal are presentation only." % (printer_sequence.layer_reveal_bps() / 100), 16, Color("9beaff")))
+			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+		ArcaneForgeSequence.RAW_COMPLETE:
+			panel.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
+		ArcaneForgeSequence.AWAKENING:
+			panel.add_child(label("Filament awakening in progress. The new print is already safely recorded.", 16, Color("9beaff")))
+			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+		ArcaneForgeSequence.AWAKENED:
+			panel.add_child(label("Welcome, %s! Your living print is ready for the Collection." % str(definition.name), 20, Color("a8e3a5")))
+			panel.add_child(make_button("Print Another", func(): screen="collection"; render(), Color("a86b2e")))
+			panel.add_child(make_button("Return to Workshop", func(): screen="workshop"; render(), Color("536c8d")))
+		ArcaneForgeSequence.FAILED:
+			panel.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
+			panel.add_child(make_button("Return to Collection", func(): screen="collection"; render(), Color("536c8d")))
+		_:
+			panel.add_child(label("Preview closed without changing your profile.", 16, Color("dce8f4")))
+
+func begin_printer() -> void:
+	if printer_sequence == null or not printer_sequence.begin(): return
+	printer_tick_accumulator = 0.0
+	printer_presentation_seconds = 0.0
+	render()
+
+func advance_printer_for_test(step_bps: int) -> void:
+	if printer_sequence == null: return
+	printer_sequence.advance(step_bps)
+	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
+	render()
+
+func _commit_printer_once() -> void:
+	if printer_sequence == null or not printer_sequence.request_commit(): return
+	var success := GameManager.print_creature(printer_creature_id, printer_price)
+	printer_commit_succeeded = success
+	if not success: printer_failure = "The blueprint, coins, or inventory no longer passed validation."
+	printer_sequence.resolve_commit(success)
+
+func skip_printer() -> void:
+	if printer_sequence == null or not printer_sequence.skip(): return
+	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
+	render()
+
+func cancel_printer_preview() -> void:
+	if printer_sequence != null: printer_sequence.cancel()
+	printer_creature_id = ""
+	screen = "collection"
+	render()
+
 func render_collection() -> void:
 	var intro := make_panel(Color("19334de8"), Color("8deaff")); body.add_child(intro.get_parent())
 	intro.add_child(label("Collection & Print Yard", 25, Color("8deaff")))
@@ -422,7 +535,7 @@ func render_collection() -> void:
 		var blueprint := Catalog.creature(str(blueprint_id))
 		if not blueprint.is_empty():
 			var price: int = int(Catalog.rarity(str(blueprint.rarity)).print)
-			intro.add_child(make_button("Print %s (%d FC)" % [str(blueprint.name), price], func(): GameManager.print_creature(str(blueprint.id), price), Color("a86b2e")))
+			intro.add_child(make_button("Print %s (%d FC)" % [str(blueprint.name), price], func(): open_printer(str(blueprint.id)), Color("a86b2e")))
 	for creature in GameManager.profile.creatures:
 		var row := make_panel(Color("152842e8"), Color("5e99b4")); body.add_child(row.get_parent())
 		row.add_child(label("%s  •  %s%s" % [str(Catalog.creature(str(creature.creature_id)).name), "Bound" if bool(creature.get("bound", false)) else "Printed", "  • Armor: %s" % str(creature.armor_id) if not str(creature.get("armor_id", "")).is_empty() else ""], 16, Color("dce8f4")))

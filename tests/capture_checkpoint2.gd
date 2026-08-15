@@ -25,6 +25,20 @@ func _ready() -> void:
 		workshop.screen = "local_vs"
 		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
 		workshop.local_ready_seat = workshop.local_authority.state.active_player
+	elif capture_mode in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]:
+		workshop.screen = "printer"
+		workshop.printer_creature_id = "mossmunk" if capture_mode == "printer_mossmunk_raw_complete" else "cinderpaw"
+		workshop.printer_price = int(Catalog.rarity(str(Catalog.creature(workshop.printer_creature_id).rarity)).print)
+		workshop.printer_sequence = ArcaneForgeSequence.create(capture_mode == "printer_reduced")
+		if capture_mode != "printer_preview":
+			workshop.printer_sequence.begin()
+		if capture_mode == "printer_printing": workshop.printer_sequence.advance(3600)
+		elif capture_mode in ["printer_raw_complete", "printer_mossmunk_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced"]:
+			workshop.printer_sequence.advance(7000)
+			if capture_mode in ["printer_awakening", "printer_awakened", "printer_reduced"]:
+				workshop.printer_sequence.request_commit()
+				workshop.printer_sequence.resolve_commit(true)
+				workshop.printer_sequence.advance(1500 if capture_mode == "printer_awakening" else 3000)
 	elif capture_mode in ["trade", "trade_draft", "trade_settled"]:
 		workshop.screen = "trade"
 		workshop.local_trade = LocalTradeAuthority.create(GameManager.profile, workshop._guildmate_profile())
@@ -38,6 +52,9 @@ func _ready() -> void:
 				var settled: Dictionary = workshop.local_trade.confirm(1, workshop.local_trade.creator_revision, workshop.local_trade.partner_revision)
 				if bool(settled.get("settled", false)): GameManager.profile = settled.creator
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
+	# Capture explicit deterministic phase snapshots; never let Main's live printer timer
+	# advance an awakening state while the header settles.
+	workshop.printer_capture_freeze = true
 	get_tree().root.call_deferred("add_child", workshop)
 	call_deferred("capture")
 
@@ -87,7 +104,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled"]: return mode
+			if mode in ["workshop", "shop", "collection", "team", "armor", "deck", "settings", "battle", "high_contrast_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "trade_settled", "printer_preview", "printer_printing", "printer_raw_complete", "printer_awakening", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]: return mode
 	return "onboarding"
 
 func requested_tag() -> String:
