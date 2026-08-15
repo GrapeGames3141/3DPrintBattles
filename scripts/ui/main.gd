@@ -1154,7 +1154,7 @@ func render_local_vs() -> void:
 	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 110 if is_portrait_layout() else 120)
 	for player in [0, 1]:
 		var unit := state.active_unit(player)
-		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.name), int(unit.hp), int(unit.max_hp), str(unit.element)], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
+		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.get("name", "Unknown")), int(unit.get("hp", 0)), int(unit.get("max_hp", 1)), str(unit.get("element", "Unknown"))], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
 	if state.finished:
 		panel.add_child(label("Local match complete. No Forge Coins or rewards are granted.", 18, Color("fff0a1")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
@@ -1627,10 +1627,11 @@ func render_battle_summary(host: Container) -> void:
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
 		var armor_id := str(unit.get("armor_id", ""))
-		var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
-		summary.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP - %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-		summary.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
-		summary.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 13, Color("d9e7f3")))
+		var max_hp: int = int(unit.get("max_hp", 1))
+		var base_hp: int = int(Catalog.creature(str(unit.get("id", ""))).get("hp", max_hp))
+		summary.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
+		summary.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), max_hp - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+		summary.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
 	summary.add_child(label("Battle log: " + " | ".join(battle.log.slice(maxi(0, battle.log.size()-3))), 13, Color("d0dfeb")))
 
 func render_battle_action_dock(host: Container) -> void:
@@ -1650,20 +1651,24 @@ func render_battle_action_dock(host: Container) -> void:
 	actions.add_theme_constant_override("v_separation", 8)
 	dock.add_child(actions)
 	var unit: Dictionary = battle.active_unit(0)
-	var basic := make_button("Basic Attack (%d)" % int(unit.attack), func(): intent({"type":"attack"}))
+	var attack_value: int = int(unit.get("attack", 0))
+	var ability_name := str(unit.get("ability", "Signature"))
+	if ability_name.is_empty(): ability_name = "Signature"
+	var ability_cost: int = int(unit.get("ability_cost", 0))
+	var basic := make_button("Basic Attack (%d)" % attack_value, submit_battle_action.bind("attack"))
 	basic.name = "BattleActionBasicAttack"
 	basic.custom_minimum_size.y = 48
 	actions.add_child(basic)
-	var ability := make_button("%s (%d FC)" % [str(unit.ability), int(unit.ability_cost)], func(): intent({"type":"ability"}))
+	var ability := make_button("%s (%d FC)" % [ability_name, ability_cost], submit_battle_action.bind("ability"))
 	ability.name = "BattleActionSignatureAbility"
 	ability.custom_minimum_size.y = 48
-	ability.disabled = int(unit.cooldown_remaining) > 0 or int(battle.players[0].filament) < int(unit.ability_cost)
+	ability.disabled = int(unit.get("cooldown_remaining", 0)) > 0 or int(battle.players[0].get("filament", 0)) < ability_cost
 	actions.add_child(ability)
-	var defend := make_button("Defend", func(): intent({"type":"defend"}), Color("526e93"))
+	var defend := make_button("Defend", submit_battle_action.bind("defend"), Color("526e93"))
 	defend.name = "BattleActionDefend"
 	defend.custom_minimum_size.y = 48
 	actions.add_child(defend)
-	var end_turn := make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d"))
+	var end_turn := make_button("End Turn", submit_battle_action.bind("end_turn"), Color("536c8d"))
 	end_turn.name = "BattleActionEndTurn"
 	end_turn.custom_minimum_size.y = 48
 	actions.add_child(end_turn)
@@ -1715,9 +1720,9 @@ func render_battle_bench_tab(panel: Container) -> void:
 		if bench_index == int(battle.players[0].active):
 			continue
 		var bench_unit: Dictionary = battle.players[0].team[bench_index]
-		if int(bench_unit.hp) > 0:
-			var switch_button := make_button("Switch %s" % str(bench_unit.name), func(): intent({"type":"switch","index":bench_index}))
-			switch_button.name = "BattleSwitch%s" % str(bench_unit.id)
+		if int(bench_unit.get("hp", 0)) > 0:
+			var switch_button := make_button("Switch %s" % str(bench_unit.get("name", "Unknown")), submit_battle_switch.bind(bench_index))
+			switch_button.name = "BattleSwitch%s" % str(bench_unit.get("id", "Unknown"))
 			switches.add_child(switch_button)
 			switch_count += 1
 	if switch_count == 0:
@@ -1740,10 +1745,11 @@ func render_battle_details_tab(panel: Container) -> void:
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
 		var armor_id := str(unit.get("armor_id", ""))
-		var base_hp: int = int(Catalog.creature(str(unit.id)).get("hp", unit.max_hp))
-		panel.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.name) + "  %d/%d HP - %s" % [int(unit.hp), int(unit.max_hp), str(unit.element)], 15, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-		panel.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), int(unit.max_hp) - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
-		panel.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].filament), int(battle.players[player].spool_cap), int(unit.attack), str(unit.ability), int(unit.ability_cost), int(unit.cooldown_remaining)], 13, Color("d9e7f3")))
+		var max_hp: int = int(unit.get("max_hp", 1))
+		var base_hp: int = int(Catalog.creature(str(unit.get("id", ""))).get("hp", max_hp))
+		panel.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 15, Color("ffaaa1") if player == 1 else Color("a9ecff")))
+		panel.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), max_hp - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+		panel.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
 	panel.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-4))), 13, Color("d0dfeb")))
 
 func render_battle_concede_tab(panel: Container) -> void:
@@ -1772,6 +1778,12 @@ func set_battle_secondary_tab(tab_id: String) -> void:
 	battle_secondary_open = true
 	battle_secondary_tab = tab_id
 	render()
+
+func submit_battle_action(action_type: String) -> void:
+	intent({"type":action_type})
+
+func submit_battle_switch(bench_index: int) -> void:
+	intent({"type":"switch", "index":bench_index})
 
 func intent(action: Dictionary) -> void:
 	if str(action.get("type", "")) != "concede": battle_concede_armed = false

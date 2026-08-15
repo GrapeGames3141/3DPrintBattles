@@ -9,6 +9,12 @@ func require(value: bool, message: String) -> void:
 		failures.append(message)
 		push_error(message)
 
+func tree_has_text(node: Node, fragment: String) -> bool:
+	if node is Label and (node as Label).text.contains(fragment): return true
+	for child in node.get_children():
+		if tree_has_text(child, fragment): return true
+	return false
+
 func _ready() -> void:
 	require(int(ProjectSettings.get_setting("display/window/size/viewport_width")) == 720 and int(ProjectSettings.get_setting("display/window/size/viewport_height")) == 720, "project uses a square 720 base viewport")
 	require(str(ProjectSettings.get_setting("display/window/stretch/mode")) == "canvas_items" and str(ProjectSettings.get_setting("display/window/stretch/aspect")) == "expand", "project uses canvas_items expand stretching")
@@ -77,6 +83,33 @@ func _ready() -> void:
 			main.intent({"type":"defend"})
 			await get_tree().process_frame
 			require(main.battle.log.size() > before_log, "expanded battle submits a legal core action at %s" % size)
+	# Reproduce a legacy Android snapshot that only kept an ID and current health.
+	# The normalizer must restore catalog combat/presentation fields before the HUD
+	# builds the four moves or the player summary.
+	var legacy_size := Vector2i(576, 1024)
+	get_viewport().size = legacy_size
+	main.size = Vector2(legacy_size)
+	main.screen = "battle"
+	main.battle_secondary_open = false
+	main.battle = BattleState.create(GameManager.current_team_loadout(), ["voidmanta"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+	main.battle.players[0].team[0] = {"creature_id":"cinderpaw", "health":34}
+	main.battle.turn = 2
+	main.battle.active_player = 0
+	main.battle.opening_player = 1
+	main.render()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var normalized: Dictionary = main.battle.active_unit(0)
+	require(str(normalized.get("id", "")) == "cinderpaw" and str(normalized.get("name", "")) == "Cinderpaw" and int(normalized.get("hp", 0)) == 34 and int(normalized.get("attack", 0)) == 9, "legacy active unit inherits catalog identity and keeps runtime health")
+	require(tree_has_text(main, "You: Cinderpaw") and tree_has_text(main, "34/34 HP - Fire"), "normalized legacy player summary renders after Voidmanta rival")
+	for control_name in ["BattleActionBasicAttack", "BattleActionSignatureAbility", "BattleActionDefend", "BattleActionEndTurn", "BattleSecondaryToggle"]:
+		require(main.find_child(control_name, true, false) != null, "legacy runtime renders %s" % control_name)
+	var legacy_attack := main.find_child("BattleActionBasicAttack", true, false) as Button
+	var void_hp: int = int(main.battle.active_unit(1).get("hp", 0))
+	var legacy_log_size: int = main.battle.log.size()
+	if legacy_attack != null: legacy_attack.emit_signal("pressed")
+	await get_tree().process_frame
+	require(main.battle.log.size() > legacy_log_size and int(main.battle.active_unit(1).get("hp", void_hp)) < void_hp, "legacy Basic Attack applies through the canonical normalized combat state")
 	main.screen = "local_vs"
 	main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.active_deck_cards(), 20260815)
 	main.local_ready_seat = int(main.local_authority.state.active_player)
