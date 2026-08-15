@@ -21,6 +21,7 @@ window/stretch/mode="canvas_items"
 
 [rendering]
 textures/default_filters/use_nearest_mipmap_filter=false
+textures/vram_compression/import_etc2_astc=true
 
 [input]
 confirm={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":4194309)]}
