@@ -52,6 +52,7 @@ func _ready() -> void:
 	_refresh_coin_label()
 	_build_shop_grid()
 	_update_refresh_timer()
+	AudioManager.play_for_scene("Shop")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SHOP GRID
@@ -75,11 +76,19 @@ func _build_shop_grid() -> void:
 
 func _make_shop_card(item_id: String, kind: String) -> Panel:
 	var card = Panel.new()
-	card.custom_minimum_size = Vector2(180, 220)
+	card.custom_minimum_size = Vector2(180, 240)
+
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	card.add_child(margin)
 
 	var vbox = VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	card.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 8)
+	margin.add_child(vbox)
 
 	var data = {}
 	var rarity = 1
@@ -97,12 +106,13 @@ func _make_shop_card(item_id: String, kind: String) -> Panel:
 		bp_cost = data["blueprint_cost"]
 		placeholder_color = data["placeholder_color"]
 
-	# Color swatch
-	var swatch = ColorRect.new()
-	swatch.custom_minimum_size = Vector2(120, 120)
-	swatch.color = placeholder_color
-	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vbox.add_child(swatch)
+	var sprite_slot: Control
+	if kind == "creature":
+		sprite_slot = UIStyle.make_blueprint_scroll(data, Vector2(120, 150))
+	else:
+		sprite_slot = UIStyle.make_equipment_blueprint(data, Vector2(120, 150))
+	sprite_slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(sprite_slot)
 
 	var name_lbl = Label.new()
 	name_lbl.text = data.get("name", item_id)
@@ -153,12 +163,16 @@ func _on_slot_selected(item_id: String, kind: String) -> void:
 			data["forge_cost"],
 		]
 		detail_lore.text = data.get("lore", "")
-		detail_sprite.color = data["placeholder_color"]
+		detail_lore.add_theme_color_override("font_color", Color(0.82, 0.82, 0.88))
+		detail_stats.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95))
+		UIStyle.apply_creature_sprite(detail_sprite, data)
 	elif kind == "equipment" and item_id in GameData.EQUIPMENT:
 		data = GameData.EQUIPMENT[item_id]
 		detail_stats.text = data.get("description", "")
 		detail_lore.text = "Type: %s" % data["type"].capitalize()
-		detail_sprite.color = data["placeholder_color"]
+		detail_lore.add_theme_color_override("font_color", Color(0.82, 0.82, 0.88))
+		detail_stats.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95))
+		UIStyle.apply_equipment_sprite(detail_sprite, data)
 
 	detail_name.text = data.get("name", item_id)
 	var rarity: int = data.get("rarity", 1)
@@ -182,11 +196,12 @@ func _on_buy_blueprint_btn_pressed() -> void:
 		return
 	var success = SaveManager.buy_blueprint(item_id)
 	if success:
+		AudioManager.play_sfx("buy")
 		_refresh_coin_label()
 		_build_shop_grid()
 		_on_slot_selected(item_id, _selected_slot.get("kind", "creature"))
 	else:
-		# Flash the coin label red briefly
+		AudioManager.play_sfx("error")
 		coin_label.add_theme_color_override("font_color", Color.RED)
 		await get_tree().create_timer(0.5).timeout
 		coin_label.remove_theme_color_override("font_color")
@@ -204,8 +219,10 @@ func _on_print_btn_pressed() -> void:
 		success = SaveManager.print_equipment(item_id)
 
 	if success:
+		AudioManager.play_sfx("summon")
 		_refresh_coin_label()
 	else:
+		AudioManager.play_sfx("error")
 		coin_label.add_theme_color_override("font_color", Color.RED)
 		await get_tree().create_timer(0.5).timeout
 		coin_label.remove_theme_color_override("font_color")

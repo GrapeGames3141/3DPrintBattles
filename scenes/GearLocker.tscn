@@ -1,0 +1,215 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/GearLocker.gd" id="1_gear"]
+
+[node name="GearLocker" type="Node2D"]
+script = ExtResource("1_gear")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="HBoxContainer" parent="UI"]
+offset_right = 1280.0
+offset_bottom = 60.0
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="UI/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚙ Gear Locker"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="UI/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackBtn" type="Button" parent="UI/TopBar"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+size_flags_vertical = 4
+text = "← Workshop"
+
+[node name="PrintScroll" type="ScrollContainer" parent="UI"]
+offset_left = 16.0
+offset_top = 68.0
+offset_right = 396.0
+offset_bottom = 700.0
+
+[node name="PrintList" type="VBoxContainer" parent="UI/PrintScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="EquipPanel" type="Panel" parent="UI"]
+offset_left = 420.0
+offset_top = 68.0
+offset_right = 900.0
+offset_bottom = 700.0
+
+[node name="EquipTitle" type="Label" parent="UI/EquipPanel"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 464.0
+offset_bottom = 52.0
+theme_override_font_sizes/font_size = 20
+text = "Select a Print to manage gear"
+horizontal_alignment = 1
+
+[node name="PrintPreview" type="ColorRect" parent="UI/EquipPanel"]
+offset_left = 190.0
+offset_top = 64.0
+offset_right = 290.0
+offset_bottom = 164.0
+color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="ArmorSlot" type="HBoxContainer" parent="UI/EquipPanel"]
+offset_left = 16.0
+offset_top = 188.0
+offset_right = 464.0
+offset_bottom = 236.0
+theme_override_constants/separation = 12
+
+[node name="SlotLabel" type="Label" parent="UI/EquipPanel/ArmorSlot"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "🛡 Armor:"
+vertical_alignment = 1
+
+[node name="SlotValue" type="Label" parent="UI/EquipPanel/ArmorSlot"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_font_sizes/font_size = 18
+text = "—"
+vertical_alignment = 1
+
+[node name="ChangeArmorBtn" type="Button" parent="UI/EquipPanel/ArmorSlot"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+text = "Change"
+
+[node name="WeaponSlot" type="HBoxContainer" parent="UI/EquipPanel"]
+offset_left = 16.0
+offset_top = 248.0
+offset_right = 464.0
+offset_bottom = 296.0
+theme_override_constants/separation = 12
+
+[node name="SlotLabel" type="Label" parent="UI/EquipPanel/WeaponSlot"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "⚔ Weapon:"
+vertical_alignment = 1
+
+[node name="SlotValue" type="Label" parent="UI/EquipPanel/WeaponSlot"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_font_sizes/font_size = 18
+text = "—"
+vertical_alignment = 1
+
+[node name="ChangeWeaponBtn" type="Button" parent="UI/EquipPanel/WeaponSlot"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+text = "Change"
+
+[node name="AccessorySlot" type="HBoxContainer" parent="UI/EquipPanel"]
+offset_left = 16.0
+offset_top = 308.0
+offset_right = 464.0
+offset_bottom = 356.0
+theme_override_constants/separation = 12
+
+[node name="SlotLabel" type="Label" parent="UI/EquipPanel/AccessorySlot"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "💍 Accessory:"
+vertical_alignment = 1
+
+[node name="SlotValue" type="Label" parent="UI/EquipPanel/AccessorySlot"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_font_sizes/font_size = 18
+text = "—"
+vertical_alignment = 1
+
+[node name="ChangeAccessoryBtn" type="Button" parent="UI/EquipPanel/AccessorySlot"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+text = "Change"
+
+[node name="HintLabel" type="Label" parent="UI/EquipPanel"]
+offset_left = 16.0
+offset_top = 380.0
+offset_right = 464.0
+offset_bottom = 460.0
+theme_override_colors/font_color = Color(0.533, 0.533, 0.533, 1)
+theme_override_font_sizes/font_size = 14
+text = "Equip armor, weapons, and accessories to boost your prints in battle. Buy gear blueprints at the Filament Market."
+autowrap_mode = 3
+
+[node name="EquipmentPicker" type="Panel" parent="UI"]
+visible = false
+offset_right = 1280.0
+offset_bottom = 720.0
+
+[node name="Dimmer" type="ColorRect" parent="UI/EquipmentPicker"]
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.102, 0.102, 0.18, 0.85)
+
+[node name="PickerPanel" type="Panel" parent="UI/EquipmentPicker"]
+offset_left = 240.0
+offset_top = 80.0
+offset_right = 1040.0
+offset_bottom = 640.0
+
+[node name="PickerTitle" type="Label" parent="UI/EquipmentPicker/PickerPanel"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 784.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.91, 0.627, 0.125, 1)
+theme_override_font_sizes/font_size = 22
+text = "Choose Armor"
+horizontal_alignment = 1
+
+[node name="PickerGrid" type="GridContainer" parent="UI/EquipmentPicker/PickerPanel"]
+offset_left = 24.0
+offset_top = 64.0
+offset_right = 776.0
+offset_bottom = 460.0
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 3
+
+[node name="UnequipBtn" type="Button" parent="UI/EquipmentPicker/PickerPanel"]
+offset_left = 180.0
+offset_top = 480.0
+offset_right = 380.0
+offset_bottom = 528.0
+text = "Remove Equipment"
+
+[node name="CancelBtn" type="Button" parent="UI/EquipmentPicker/PickerPanel"]
+offset_left = 420.0
+offset_top = 480.0
+offset_right = 620.0
+offset_bottom = 528.0
+text = "Cancel"
+
+[connection signal="pressed" from="UI/TopBar/BackBtn" to="." method="_on_back_btn_pressed"]
+[connection signal="pressed" from="UI/EquipPanel/ArmorSlot/ChangeArmorBtn" to="." method="_on_change_armor_btn_pressed"]
+[connection signal="pressed" from="UI/EquipPanel/WeaponSlot/ChangeWeaponBtn" to="." method="_on_change_weapon_btn_pressed"]
+[connection signal="pressed" from="UI/EquipPanel/AccessorySlot/ChangeAccessoryBtn" to="." method="_on_change_accessory_btn_pressed"]
+[connection signal="pressed" from="UI/EquipmentPicker/PickerPanel/UnequipBtn" to="." method="_on_unequip_btn_pressed"]
+[connection signal="pressed" from="UI/EquipmentPicker/PickerPanel/CancelBtn" to="." method="_on_cancel_btn_pressed"]

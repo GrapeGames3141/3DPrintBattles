@@ -38,20 +38,43 @@ extends Node2D
 var _selected_print_iid = ""   # Currently selected print instance ID
 var _picker_slot = ""           # "armor" | "weapon" | "accessory"
 
-@onready var print_list: VBoxContainer     = $UI/PrintList
+@onready var print_list: VBoxContainer     = $UI/PrintScroll/PrintList
 @onready var equip_title: Label            = $UI/EquipPanel/EquipTitle
-@onready var print_preview: ColorRect      = $UI/EquipPanel/PrintPreview
+@onready var print_preview: Control        = $UI/EquipPanel/PrintPreview
 @onready var armor_value: Label            = $UI/EquipPanel/ArmorSlot/SlotValue
 @onready var weapon_value: Label           = $UI/EquipPanel/WeaponSlot/SlotValue
 @onready var accessory_value: Label        = $UI/EquipPanel/AccessorySlot/SlotValue
 @onready var equipment_picker: Panel       = $UI/EquipmentPicker
-@onready var picker_title: Label           = $UI/EquipmentPicker/PickerTitle
-@onready var picker_grid: GridContainer    = $UI/EquipmentPicker/PickerGrid
+@onready var picker_title: Label           = $UI/EquipmentPicker/PickerPanel/PickerTitle
+@onready var picker_grid: GridContainer    = $UI/EquipmentPicker/PickerPanel/PickerGrid
+@onready var unequip_btn: Button           = $UI/EquipmentPicker/PickerPanel/UnequipBtn
+@onready var cancel_btn: Button             = $UI/EquipmentPicker/PickerPanel/CancelBtn
 
 func _ready() -> void:
 	equipment_picker.visible = false
+	_style_picker_buttons()
 	_build_print_list()
 	_clear_equip_panel()
+	AudioManager.play_for_scene("GearLocker")
+
+func _style_picker_buttons() -> void:
+	var red = StyleBoxFlat.new()
+	red.bg_color = Color(0.62, 0.18, 0.18)
+	red.set_corner_radius_all(8)
+	red.content_margin_left = 12
+	red.content_margin_top = 8
+	red.content_margin_right = 12
+	red.content_margin_bottom = 8
+	var red_hover = red.duplicate()
+	red_hover.bg_color = Color(0.78, 0.24, 0.24)
+	var red_pressed = red.duplicate()
+	red_pressed.bg_color = Color(0.48, 0.12, 0.12)
+	unequip_btn.add_theme_stylebox_override("normal", red)
+	unequip_btn.add_theme_stylebox_override("hover", red_hover)
+	unequip_btn.add_theme_stylebox_override("pressed", red_pressed)
+	unequip_btn.add_theme_color_override("font_color", Color.WHITE)
+	unequip_btn.add_theme_color_override("font_hover_color", Color.WHITE)
+	unequip_btn.add_theme_color_override("font_pressed_color", Color(0.92, 0.92, 0.92))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PRINT LIST
@@ -78,10 +101,8 @@ func _build_print_list() -> void:
 		hbox.add_theme_constant_override("separation", 10)
 		card.add_child(hbox)
 
-		var swatch = ColorRect.new()
-		swatch.custom_minimum_size = Vector2(56, 56)
-		swatch.color = creature["placeholder_color"]
-		hbox.add_child(swatch)
+		var icon = UIStyle.make_creature_sprite(creature, Vector2(56, 56))
+		hbox.add_child(icon)
 
 		var vbox = VBoxContainer.new()
 		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -96,11 +117,11 @@ func _build_print_list() -> void:
 		var eq = inst["equipment"]
 		var eq_text = []
 		if eq["armor"] != "":
-			eq_text.append("🛡 " + GameData.EQUIPMENT[eq["armor"]]["name"])
+			eq_text.append("🛡 " + SaveManager.get_equipment_name(eq["armor"]))
 		if eq["weapon"] != "":
-			eq_text.append("⚔ " + GameData.EQUIPMENT[eq["weapon"]]["name"])
+			eq_text.append("⚔ " + SaveManager.get_equipment_name(eq["weapon"]))
 		if eq["accessory"] != "":
-			eq_text.append("💍 " + GameData.EQUIPMENT[eq["accessory"]]["name"])
+			eq_text.append("💍 " + SaveManager.get_equipment_name(eq["accessory"]))
 		var summary_lbl = Label.new()
 		summary_lbl.text = ", ".join(eq_text) if eq_text.size() > 0 else "No equipment"
 		summary_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -130,23 +151,18 @@ func _refresh_equip_panel() -> void:
 
 	var creature = GameData.CREATURES[inst["creature_id"]]
 	equip_title.text = creature["name"]
-	print_preview.color = creature["placeholder_color"]
+	UIStyle.apply_creature_sprite(print_preview, creature)
 
-	# Armor slot
-	var armor_id: String = inst["equipment"]["armor"]
-	armor_value.text = GameData.EQUIPMENT[armor_id]["name"] if armor_id != "" else "None"
-
-	# Weapon slot
-	var weapon_id: String = inst["equipment"]["weapon"]
-	weapon_value.text = GameData.EQUIPMENT[weapon_id]["name"] if weapon_id != "" else "None"
-
-	# Accessory slot
-	var acc_id: String = inst["equipment"]["accessory"]
-	accessory_value.text = GameData.EQUIPMENT[acc_id]["name"] if acc_id != "" else "None"
+	armor_value.text = SaveManager.get_equipment_name(inst["equipment"]["armor"]) if inst["equipment"]["armor"] != "" else "None"
+	weapon_value.text = SaveManager.get_equipment_name(inst["equipment"]["weapon"]) if inst["equipment"]["weapon"] != "" else "None"
+	accessory_value.text = SaveManager.get_equipment_name(inst["equipment"]["accessory"]) if inst["equipment"]["accessory"] != "" else "None"
 
 func _clear_equip_panel() -> void:
 	equip_title.text = "Select a Print to manage gear"
-	print_preview.color = Color(0.2, 0.2, 0.2)
+	for child in print_preview.get_children():
+		child.queue_free()
+	if print_preview is ColorRect:
+		print_preview.color = Color(0.2, 0.2, 0.2)
 	armor_value.text = "—"
 	weapon_value.text = "—"
 	accessory_value.text = "—"
@@ -175,6 +191,8 @@ func _build_picker_grid(slot: String) -> void:
 	for child in picker_grid.get_children():
 		child.queue_free()
 
+	picker_grid.columns = 3
+
 	# Show all owned equipment of this type that is unattached
 	var owned = SaveManager.get_equipment_owned()
 	var found = false
@@ -197,10 +215,25 @@ func _build_picker_grid(slot: String) -> void:
 		picker_grid.add_child(btn)
 
 	if not found:
+		picker_grid.columns = 1
 		var lbl = Label.new()
-		lbl.text = "No %s equipment available.\nVisit the Filament Market!" % slot
+		lbl.text = "No %s equipment available.\nVisit the Filament Market to buy and print gear!" % slot
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl.custom_minimum_size = Vector2(720, 100)
+		lbl.add_theme_color_override("font_color", UIStyle.TEXT_MUTED)
+		lbl.add_theme_font_size_override("font_size", 18)
 		picker_grid.add_child(lbl)
+
+	_update_unequip_button()
+
+func _update_unequip_button() -> void:
+	var inst = SaveManager.get_print_by_instance_id(_selected_print_iid)
+	var has_equipped = false
+	if not inst.is_empty():
+		has_equipped = inst["equipment"].get(_picker_slot, "") != ""
+	unequip_btn.visible = has_equipped
 
 func _on_equipment_picked(eq_instance_id: String) -> void:
 	SaveManager.equip_item(eq_instance_id, _selected_print_iid)
@@ -209,22 +242,9 @@ func _on_equipment_picked(eq_instance_id: String) -> void:
 	_build_print_list()
 
 func _on_unequip_btn_pressed() -> void:
-	# Remove whatever is in the current slot
-	var inst = SaveManager.get_print_by_instance_id(_selected_print_iid)
-	if inst.is_empty():
+	if _selected_print_iid == "":
 		return
-	var slot_iid: String = inst["equipment"][_picker_slot]
-	if slot_iid == "":
-		equipment_picker.visible = false
-		return
-	# Detach by equipping nothing — find the instance and clear attached_to
-	var eq_owned = SaveManager.get_equipment_owned()
-	for eq_inst in eq_owned:
-		if eq_inst["instance_id"] == slot_iid:
-			eq_inst["attached_to"] = ""
-			break
-	inst["equipment"][_picker_slot] = ""
-	SaveManager.save_game()
+	SaveManager.unequip_slot(_selected_print_iid, _picker_slot)
 	equipment_picker.visible = false
 	_refresh_equip_panel()
 	_build_print_list()

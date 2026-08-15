@@ -53,6 +53,12 @@ var ai_charge_active: bool = false
 var player_ability_cooldowns: Dictionary = {}  # ability_id: turns_remaining
 var ai_ability_cooldowns: Dictionary = {}
 var arcane_filament_used: bool = false    # Once per battle card
+var _battle_team_instance_ids: Array = []  # Save instance IDs for stat tracking
+
+# Card / ability combat flags
+var player_attack_bonus: float = 0.0
+var player_skip_attack: bool = false
+var emergency_summon_active: bool = false
 
 # ─────────────────────────────────────────────────────────────────────────────
 # START BATTLE
@@ -69,11 +75,17 @@ func start_battle(player_print_instances: Array, trainer: Dictionary) -> void:
 	player_ability_cooldowns = {}
 	ai_ability_cooldowns = {}
 	arcane_filament_used = false
+	player_attack_bonus = 0.0
+	player_skip_attack = false
+	emergency_summon_active = false
+	_battle_team_instance_ids = []
 
 	# Deep copy player team from passed instances
 	player_team = []
 	for inst in player_print_instances:
 		player_team.append(_make_battle_copy(inst))
+		if inst.has("instance_id"):
+			_battle_team_instance_ids.append(inst["instance_id"])
 	player_active_idx = 0
 
 	# Build AI team from trainer roster
@@ -114,6 +126,12 @@ func begin_first_turn() -> void:
 # TURN FLOW
 # ─────────────────────────────────────────────────────────────────────────────
 func _start_player_turn() -> void:
+	if _is_stunned("player"):
+		phase = BattlePhase.PLAYER_TURN
+		emit_signal("turn_started", true, turn_number)
+		emit_signal("status_effect_applied", "player", "stunned", 1)
+		call_deferred("_skip_player_turn_stunned")
+		return
 	phase = BattlePhase.PLAYER_TURN
 	_fill_forge("player", 1.0)
 	_apply_regen_effects("player")
@@ -122,6 +140,12 @@ func _start_player_turn() -> void:
 	emit_signal("turn_started", true, turn_number)
 
 func _start_ai_turn() -> void:
+	if _is_stunned("ai"):
+		phase = BattlePhase.AI_TURN
+		emit_signal("turn_started", false, turn_number)
+		emit_signal("status_effect_applied", "ai", "stunned", 1)
+		call_deferred("_skip_ai_turn_stunned")
+		return
 	phase = BattlePhase.AI_TURN
 	_fill_forge("ai", 1.0)
 	_apply_regen_effects("ai")
@@ -131,28 +155,46 @@ func _start_ai_turn() -> void:
 	# AI acts automatically after a short delay (handled by BattleScene timer)
 
 # Called by BattleScene after AI turn delay
+func _skip_player_turn_stunned() -> void:
+	if phase != BattlePhase.PLAYER_TURN:
+		return
+	phase = BattlePhase.RESOLVING
+	turn_number += 1
+	_check_battle_end()
+	if phase != BattlePhase.ENDED:
+		_start_ai_turn()
+
+func _skip_ai_turn_stunned() -> void:
+	if phase != BattlePhase.AI_TURN:
+		return
+	phase = BattlePhase.RESOLVING
+	turn_number += 1
+	_check_battle_end()
+	if phase != BattlePhase.ENDED:
+		_start_player_turn()
+
 func ai_take_turn() -> void:
 	if phase != BattlePhase.AI_TURN:
 		return
 	phase = BattlePhase.RESOLVING
 
-	# AI Decision tree:
-	# 1. Try to summon if forge bar full enough and bench isn't empty and no active print
-	# 2. Use ability if off cooldown and it's a good time
-	# 3. Auto-attack
-
 	var ai_print = get_ai_active_print()
-	if ai_print == null:
-		# Try to summon
+	if ai_print.is_empty():
 		_ai_try_summon()
 		_end_ai_turn()
 		return
 
-	# Check if ability is useful
+	if ai_charge_active:
+		_resolve_attack("ai", "player", 2.5)
+		ai_charge_active = false
+		_end_ai_turn()
+		return
+
 	if _ai_should_use_ability(ai_print):
-		_ai_use_ability(ai_print)
+		var charged = _ai_use_ability(ai_print)
+		if not charged:
+			_resolve_attack("ai", "player")
 	else:
-		# Auto attack
 		_resolve_attack("ai", "player")
 
 	_end_ai_turn()
@@ -164,20 +206,19 @@ func _end_ai_turn() -> void:
 		_start_player_turn()
 
 # Called by player pressing "End Turn" or by the 15-second timer
-func player_end_turn() -> void:
+func player_end_turn(skip_attack: bool = false) -> void:
 	if phase != BattlePhase.PLAYER_TURN:
 		return
 	phase = BattlePhase.RESOLVING
 
-	# Auto-attack if player has an active print
 	var player_print = get_player_active_print()
-	if player_print != null:
+	if not skip_attack and not player_skip_attack and not player_print.is_empty():
 		if player_charge_active:
-			# Cyclone Charge: double power attack
 			_resolve_attack("player", "ai", 2.5)
 			player_charge_active = false
 		else:
 			_resolve_attack("player", "ai")
+	player_skip_attack = false
 
 	turn_number += 1
 	_check_battle_end()
@@ -191,17 +232,18 @@ func player_use_ability() -> void:
 	if phase != BattlePhase.PLAYER_TURN:
 		return
 	var print_inst = get_player_active_print()
-	if print_inst == null:
+	if print_inst.is_empty():
 		return
 	var creature = GameData.CREATURES[print_inst["creature_id"]]
 	var ability_id: String = creature["ability"]
 
-	# Check cooldown
+	var cd = GameData.ABILITIES[ability_id]["cooldown"]
+	cd = max(0, cd - _cooldown_reduction("player"))
 	if player_ability_cooldowns.get(ability_id, 0) > 0:
 		return
 
 	var result = _apply_ability(ability_id, "player", "ai")
-	player_ability_cooldowns[ability_id] = GameData.ABILITIES[ability_id]["cooldown"]
+	player_ability_cooldowns[ability_id] = cd
 	emit_signal("ability_used", "player", ability_id, result)
 
 func player_play_card(card_id: String) -> void:
@@ -216,13 +258,13 @@ func player_play_card(card_id: String) -> void:
 			result = {"forge_added": card["value"]}
 		"forge_fill_attack":
 			_fill_forge("player", card["forge_value"])
-			# Attack bonus applied next auto-attack via flag
+			player_attack_bonus += float(card["attack_bonus"])
 			result = {"forge_added": card["forge_value"], "attack_bonus": card["attack_bonus"]}
 		"heal":
 			var healed = _heal_print("player", card["value"])
 			result = {"healed": healed}
 		"emergency_summon":
-			# Halve forge cost for next summon
+			emergency_summon_active = true
 			result = {"emergency_summon": true}
 		"forge_double":
 			if not arcane_filament_used:
@@ -240,14 +282,25 @@ func player_summon_print(bench_index: int) -> void:
 	if bench_index < 0 or bench_index >= player_team.size():
 		return
 	var print_inst = player_team[bench_index]
+	if print_inst["hp_current"] <= 0:
+		return
 	var creature = GameData.CREATURES[print_inst["creature_id"]]
 	var cost: float = float(creature["forge_cost"])
+	if emergency_summon_active:
+		cost *= 0.5
 
 	if player_forge < cost:
-		return  # Not enough forge units
+		return
 
 	player_forge -= cost
 	player_active_idx = bench_index
+	if emergency_summon_active:
+		var max_hp = creature["hp_base"] + _get_armor_hp_bonus(print_inst)
+		print_inst["hp_current"] = max(1, int(max_hp * 0.5))
+		emergency_summon_active = false
+		emit_signal("print_hp_changed", "player", print_inst["hp_current"], max_hp)
+
+	player_forge = max(0.0, player_forge)
 	emit_signal("forge_bar_changed", "player", player_forge)
 	emit_signal("next_print_summoned", "player", print_inst)
 
@@ -257,22 +310,19 @@ func player_summon_print(bench_index: int) -> void:
 func _resolve_attack(attacker_side: String, defender_side: String, multiplier: float = 1.0) -> void:
 	var attacker = _get_active_print(attacker_side)
 	var defender = _get_active_print(defender_side)
-	if attacker == null or defender == null:
+	if attacker.is_empty() or defender.is_empty():
 		return
 
 	var attacker_creature = GameData.CREATURES[attacker["creature_id"]]
 	var defender_creature = GameData.CREATURES[defender["creature_id"]]
 
-	# Base damage: bend_score / 4 rounded up
 	var base_dmg: int = ceili(float(attacker_creature["bend_score"]) / 4.0)
 
-	# Weapon bonus
+	var weapon_bp = _equip_blueprint_id(attacker["equipment"].get("weapon", ""))
 	var weapon_bonus = 0
-	var weapon_id: String = attacker["equipment"]["weapon"]
-	if weapon_id != "" and weapon_id in GameData.EQUIPMENT:
-		weapon_bonus = GameData.EQUIPMENT[weapon_id].get("attack_bonus", 0)
+	if weapon_bp != "" and weapon_bp in GameData.EQUIPMENT:
+		weapon_bonus = GameData.EQUIPMENT[weapon_bp].get("attack_bonus", 0)
 
-	# Elemental multiplier
 	var elem_mult = GameData.get_damage_multiplier(
 		attacker_creature["element"],
 		defender_creature["element"]
@@ -280,10 +330,26 @@ func _resolve_attack(attacker_side: String, defender_side: String, multiplier: f
 	var is_super = elem_mult > 1.0
 	var is_not   = elem_mult < 1.0
 
-	# Apply thorns status
 	var thorns_dmg = status_effects[defender_side].get("thorns", 0)
 
-	var total_dmg: int = int(ceil((base_dmg + weapon_bonus) * elem_mult * multiplier))
+	var stat_mult = 1.0
+	var boost = status_effects[attacker_side].get("stat_boost", null)
+	if boost is Dictionary and int(boost.get("turns", 0)) > 0:
+		stat_mult = 1.0 + float(boost.get("value", 0.0))
+
+	var element_bonus = 0
+	var acc_bp = _equip_blueprint_id(attacker["equipment"].get("accessory", ""))
+	if acc_bp != "" and acc_bp in GameData.EQUIPMENT:
+		var acc = GameData.EQUIPMENT[acc_bp]
+		if acc.get("effect_type") == "element_damage_bonus" \
+				and acc.get("element", "") == attacker_creature["element"]:
+			element_bonus = int(acc.get("value", 0))
+
+	var attack_bonus = int(player_attack_bonus) if attacker_side == "player" else 0
+	if attacker_side == "player":
+		player_attack_bonus = 0.0
+
+	var total_dmg: int = int(ceil((base_dmg + weapon_bonus + element_bonus + attack_bonus) * elem_mult * multiplier * stat_mult))
 	total_dmg = max(1, total_dmg)
 
 	# Apply block status
@@ -299,11 +365,24 @@ func _resolve_attack(attacker_side: String, defender_side: String, multiplier: f
 		defender_creature["hp_base"] + _get_armor_hp_bonus(defender))
 
 	# Thorns retaliation
-	if thorns_dmg > 0 and attacker != null:
+	if thorns_dmg > 0 and not attacker.is_empty():
 		attacker["hp_current"] = max(0, attacker["hp_current"] - thorns_dmg)
 		emit_signal("print_hp_changed", attacker_side,
 			attacker["hp_current"],
 			attacker_creature["hp_base"] + _get_armor_hp_bonus(attacker))
+
+	# Weapon on-hit effects
+	if weapon_bp != "" and weapon_bp in GameData.EQUIPMENT:
+		var weapon = GameData.EQUIPMENT[weapon_bp]
+		match weapon.get("effect_type", ""):
+			"stun_chance":
+				if randf() < float(weapon.get("value", 0.10)):
+					status_effects[defender_side]["stunned"] = 1
+					emit_signal("status_effect_applied", defender_side, "stunned", 1)
+			"slow":
+				status_effects[defender_side]["speed_debuff"] = int(weapon.get("value", 1))
+			"burn":
+				status_effects[defender_side]["burn"] = int(weapon.get("value", 1))
 
 	# Check if defender fainted
 	if defender["hp_current"] <= 0:
@@ -395,9 +474,9 @@ func _apply_ability(ability_id: String, user_side: String, target_side: String) 
 			result = {"drained": ability["value"]}
 
 		"charge":
-			# Skip attack this turn, set charge flag
 			if user_side == "player":
 				player_charge_active = true
+				player_skip_attack = true
 			else:
 				ai_charge_active = true
 			result = {"charging": true}
@@ -431,7 +510,7 @@ func _ai_try_summon() -> void:
 			return
 
 func _ai_should_use_ability(ai_print: Dictionary) -> bool:
-	if ai_print == null:
+	if ai_print.is_empty():
 		return false
 	var creature = GameData.CREATURES[ai_print["creature_id"]]
 	var ability_id: String = creature["ability"]
@@ -444,12 +523,15 @@ func _ai_should_use_ability(ai_print: Dictionary) -> bool:
 		return float(ai_print["hp_current"]) / max_hp < 0.5
 	return true  # Always use offensive abilities when available
 
-func _ai_use_ability(ai_print: Dictionary) -> void:
+func _ai_use_ability(ai_print: Dictionary) -> bool:
 	var creature = GameData.CREATURES[ai_print["creature_id"]]
 	var ability_id: String = creature["ability"]
+	var ability = GameData.ABILITIES[ability_id]
 	var result = _apply_ability(ability_id, "ai", "player")
-	ai_ability_cooldowns[ability_id] = GameData.ABILITIES[ability_id]["cooldown"]
+	var cd = ability["cooldown"]
+	ai_ability_cooldowns[ability_id] = cd
 	emit_signal("ability_used", "ai", ability_id, result)
+	return ability.get("effect_type") == "charge"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PRINT MANAGEMENT
@@ -491,30 +573,49 @@ func _handle_print_fainted(side: String) -> void:
 
 func _make_battle_copy(inst: Dictionary) -> Dictionary:
 	var copy = inst.duplicate(true)
-	# Apply equipment HP bonuses
-	var armor_id: String = inst["equipment"]["armor"]
-	if armor_id != "" and armor_id in GameData.EQUIPMENT:
-		copy["hp_current"] = GameData.CREATURES[inst["creature_id"]]["hp_base"] + \
-			GameData.EQUIPMENT[armor_id]["hp_bonus"]
+	copy["hp_current"] = SaveManager.get_print_max_hp(inst)
 	return copy
 
+func get_battle_max_hp(print_data: Dictionary) -> int:
+	var creature = GameData.CREATURES[print_data["creature_id"]]
+	return creature["hp_base"] + _get_armor_hp_bonus(print_data)
+
 func _get_armor_hp_bonus(inst: Dictionary) -> int:
-	var armor_id: String = inst["equipment"].get("armor", "")
-	if armor_id != "" and armor_id in GameData.EQUIPMENT:
-		return GameData.EQUIPMENT[armor_id].get("hp_bonus", 0)
+	var armor_bp = _equip_blueprint_id(inst["equipment"].get("armor", ""))
+	if armor_bp != "" and armor_bp in GameData.EQUIPMENT:
+		return GameData.EQUIPMENT[armor_bp].get("hp_bonus", 0)
 	return 0
+
+func _equip_blueprint_id(slot_value: String) -> String:
+	return SaveManager.get_equipment_blueprint_id(slot_value)
+
+func _cooldown_reduction(side: String) -> int:
+	var inst = _get_active_print(side)
+	if inst.is_empty():
+		return 0
+	var acc_bp = _equip_blueprint_id(inst["equipment"].get("accessory", ""))
+	if acc_bp != "" and acc_bp in GameData.EQUIPMENT:
+		var acc = GameData.EQUIPMENT[acc_bp]
+		if acc.get("effect_type") == "cooldown_reduction":
+			return int(acc.get("value", 0))
+	return 0
+
+func _is_stunned(side: String) -> bool:
+	return status_effects[side].get("stunned", 0) > 0
+
+func is_side_stunned(side: String) -> bool:
+	return _is_stunned(side)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STATUS EFFECTS
 # ─────────────────────────────────────────────────────────────────────────────
 func _apply_regen_effects(side: String) -> void:
-	# Tidal Core accessory regen
 	var print_inst = _get_active_print(side)
-	if print_inst == null or print_inst.is_empty():
+	if print_inst.is_empty():
 		return
-	var acc_id: String = print_inst["equipment"].get("accessory", "")
-	if acc_id != "" and acc_id in GameData.EQUIPMENT:
-		var acc = GameData.EQUIPMENT[acc_id]
+	var acc_bp = _equip_blueprint_id(print_inst["equipment"].get("accessory", ""))
+	if acc_bp != "" and acc_bp in GameData.EQUIPMENT:
+		var acc = GameData.EQUIPMENT[acc_bp]
 		if acc.get("effect_type") == "regen":
 			_heal_print(side, int(acc["value"]))
 
@@ -546,7 +647,7 @@ func _tick_ability_cooldowns(cooldowns: Dictionary) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 func _heal_print(side: String, amount: int) -> int:
 	var inst = _get_active_print(side)
-	if inst == null or inst.is_empty():
+	if inst.is_empty():
 		return 0
 	var creature = GameData.CREATURES[inst["creature_id"]]
 	var max_hp: int = creature["hp_base"] + _get_armor_hp_bonus(inst)
@@ -560,13 +661,12 @@ func _heal_print(side: String, amount: int) -> int:
 # FORGE BAR
 # ─────────────────────────────────────────────────────────────────────────────
 func _fill_forge(side: String, amount: float) -> void:
-	# Check Filament Ring accessory
 	var bonus = 0.0
 	var inst = _get_active_print(side)
-	if inst != null and not inst.is_empty():
-		var acc_id: String = inst["equipment"].get("accessory", "")
-		if acc_id != "" and acc_id in GameData.EQUIPMENT:
-			var acc = GameData.EQUIPMENT[acc_id]
+	if not inst.is_empty():
+		var acc_bp = _equip_blueprint_id(inst["equipment"].get("accessory", ""))
+		if acc_bp != "" and acc_bp in GameData.EQUIPMENT:
+			var acc = GameData.EQUIPMENT[acc_bp]
 			if acc.get("effect_type") == "forge_fill_passive":
 				bonus = float(acc["value"])
 
@@ -618,6 +718,17 @@ func _check_battle_end() -> void:
 		rewards["coins"],
 		rewards.get("drop", "")
 	)
+
+	for iid in _battle_team_instance_ids:
+		SaveManager.record_print_battle(iid, player_won)
+
+	if player_won:
+		SteamManager.on_battle_won(
+			SaveManager.data["player"]["total_wins"],
+			current_trainer.get("id", "unknown")
+		)
+	if rewards.get("drop", "") != "":
+		SteamManager.on_battle_drop(rewards["drop"])
 
 	emit_signal("battle_ended", player_won, rewards)
 

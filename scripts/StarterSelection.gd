@@ -17,6 +17,7 @@ func _ready() -> void:
 	confirm_btn.visible = false
 	selected_label.visible = false
 	_build_cards()
+	AudioManager.play_for_scene("StarterSelection")
 
 
 func _build_cards() -> void:
@@ -120,4 +121,5 @@ func _on_confirm_btn_pressed() -> void:
 	if selected_id == "":
 		return
 	SaveManager.choose_starter(selected_id)
+	AudioManager.play_sfx("summon")
 	SceneTransition.go_to("res://scenes/Workshop.tscn")

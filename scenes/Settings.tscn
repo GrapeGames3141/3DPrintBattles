@@ -1,0 +1,179 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Settings.gd" id="1_settings"]
+
+[node name="Settings" type="Node2D"]
+script = ExtResource("1_settings")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="HBoxContainer" parent="UI"]
+offset_right = 1280.0
+offset_bottom = 60.0
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="UI/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚙ Settings"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="UI/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackBtn" type="Button" parent="UI/TopBar"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+size_flags_vertical = 4
+text = "← Workshop"
+
+[node name="SettingsPanel" type="VBoxContainer" parent="UI"]
+offset_left = 390.0
+offset_top = 100.0
+offset_right = 890.0
+offset_bottom = 620.0
+theme_override_constants/separation = 24
+
+[node name="MusicRow" type="HBoxContainer" parent="UI/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/SettingsPanel/MusicRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "🎵 Music Volume"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="UI/SettingsPanel/MusicRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="MusicToggle" type="CheckButton" parent="UI/SettingsPanel/MusicRow"]
+layout_mode = 2
+text = "On"
+
+[node name="SFXRow" type="HBoxContainer" parent="UI/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/SettingsPanel/SFXRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "🔊 Sound Effects"
+vertical_alignment = 1
+
+[node name="SFXSlider" type="HSlider" parent="UI/SettingsPanel/SFXRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="SFXToggle" type="CheckButton" parent="UI/SettingsPanel/SFXRow"]
+layout_mode = 2
+text = "On"
+
+[node name="TestSoundBtn" type="Button" parent="UI/SettingsPanel"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "🔔 Test Sound"
+
+[node name="UIScaleRow" type="HBoxContainer" parent="UI/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/SettingsPanel/UIScaleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "🔍 UI Size"
+vertical_alignment = 1
+
+[node name="UIScaleSlider" type="HSlider" parent="UI/SettingsPanel/UIScaleRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 4
+min_value = 1.0
+max_value = 2.5
+step = 0.25
+value = 2.0
+
+[node name="UIScaleValue" type="Label" parent="UI/SettingsPanel/UIScaleRow"]
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "200%"
+vertical_alignment = 1
+
+[node name="FullscreenRow" type="HBoxContainer" parent="UI/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/SettingsPanel/FullscreenRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "🖥 Fullscreen"
+vertical_alignment = 1
+
+[node name="FullscreenToggle" type="CheckButton" parent="UI/SettingsPanel/FullscreenRow"]
+layout_mode = 2
+text = "Enable"
+
+[node name="HSeparator" type="HSeparator" parent="UI/SettingsPanel"]
+layout_mode = 2
+
+[node name="VersionLabel" type="Label" parent="UI/SettingsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.333, 0.333, 0.333, 1)
+theme_override_font_sizes/font_size = 16
+text = "PrintForge Legends v0.1.0 — Phase 2 build"
+horizontal_alignment = 1
+
+[node name="ResetRow" type="VBoxContainer" parent="UI/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResetLabel" type="Label" parent="UI/SettingsPanel/ResetRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.533, 0.267, 0.267, 1)
+theme_override_font_sizes/font_size = 18
+text = "⚠ Reset All Progress"
+horizontal_alignment = 1
+
+[node name="ResetWarning" type="Label" parent="UI/SettingsPanel/ResetRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 14
+text = "This deletes everything permanently."
+horizontal_alignment = 1
+
+[node name="ResetBtn" type="Button" parent="UI/SettingsPanel/ResetRow"]
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 0.85, 0.85, 1)
+text = "Reset Save Data"
+
+[connection signal="pressed" from="UI/TopBar/BackBtn" to="." method="_on_back_btn_pressed"]
+[connection signal="value_changed" from="UI/SettingsPanel/MusicRow/MusicSlider" to="." method="_on_music_slider_value_changed"]
+[connection signal="toggled" from="UI/SettingsPanel/MusicRow/MusicToggle" to="." method="_on_music_toggle_toggled"]
+[connection signal="value_changed" from="UI/SettingsPanel/SFXRow/SFXSlider" to="." method="_on_sfx_slider_value_changed"]
+[connection signal="toggled" from="UI/SettingsPanel/SFXRow/SFXToggle" to="." method="_on_sfx_toggle_toggled"]
+[connection signal="pressed" from="UI/SettingsPanel/TestSoundBtn" to="." method="_on_test_sound_btn_pressed"]
+[connection signal="value_changed" from="UI/SettingsPanel/UIScaleRow/UIScaleSlider" to="." method="_on_ui_scale_slider_value_changed"]
+[connection signal="toggled" from="UI/SettingsPanel/FullscreenRow/FullscreenToggle" to="." method="_on_fullscreen_toggle_toggled"]
+[connection signal="pressed" from="UI/SettingsPanel/ResetRow/ResetBtn" to="." method="_on_reset_btn_pressed"]

@@ -40,18 +40,45 @@ extends Node2D
 @onready var music_toggle: CheckButton  = $UI/SettingsPanel/MusicRow/MusicToggle
 @onready var sfx_slider: HSlider        = $UI/SettingsPanel/SFXRow/SFXSlider
 @onready var sfx_toggle: CheckButton    = $UI/SettingsPanel/SFXRow/SFXToggle
+@onready var test_sound_btn: Button     = $UI/SettingsPanel/TestSoundBtn
+@onready var ui_scale_slider: HSlider = $UI/SettingsPanel/UIScaleRow/UIScaleSlider
+@onready var ui_scale_value: Label      = $UI/SettingsPanel/UIScaleRow/UIScaleValue
 @onready var fullscreen_toggle: CheckButton = $UI/SettingsPanel/FullscreenRow/FullscreenToggle
+@onready var reset_btn: Button = $UI/SettingsPanel/ResetRow/ResetBtn
+
+var _loading_settings := false
 
 func _ready() -> void:
+	_style_reset_button()
 	_load_current_settings()
+	AudioManager.play_for_scene("Settings")
+
+func _style_reset_button() -> void:
+	var red = StyleBoxFlat.new()
+	red.bg_color = Color(0.55, 0.15, 0.15)
+	red.set_corner_radius_all(8)
+	red.content_margin_left = 12
+	red.content_margin_top = 8
+	red.content_margin_right = 12
+	red.content_margin_bottom = 8
+	var red_hover = red.duplicate()
+	red_hover.bg_color = Color(0.72, 0.2, 0.2)
+	reset_btn.add_theme_stylebox_override("normal", red)
+	reset_btn.add_theme_stylebox_override("hover", red_hover)
+	reset_btn.add_theme_color_override("font_color", Color.WHITE)
+	reset_btn.add_theme_color_override("font_hover_color", Color.WHITE)
 
 func _load_current_settings() -> void:
+	_loading_settings = true
 	music_slider.value   = AudioManager._music_volume
 	sfx_slider.value     = AudioManager._sfx_volume
 	music_toggle.button_pressed  = AudioManager._music_enabled
 	sfx_toggle.button_pressed    = AudioManager._sfx_enabled
-	fullscreen_toggle.button_pressed = \
-		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	var ui_scale: float = DisplaySettings.get_ui_scale()
+	ui_scale_slider.value = ui_scale
+	ui_scale_value.text = "%.0f%%" % (ui_scale * 100.0)
+	fullscreen_toggle.button_pressed = SaveManager.data.get("settings", {}).get("fullscreen", false)
+	_loading_settings = false
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SIGNAL HANDLERS
@@ -68,15 +95,20 @@ func _on_sfx_slider_value_changed(value: float) -> void:
 func _on_sfx_toggle_toggled(toggled_on: bool) -> void:
 	AudioManager.toggle_sfx(toggled_on)
 
+func _on_test_sound_btn_pressed() -> void:
+	AudioManager.play_test_sound()
+
+func _on_ui_scale_slider_value_changed(value: float) -> void:
+	if _loading_settings:
+		return
+	DisplaySettings.apply_ui_scale(value)
+	ui_scale_value.text = "%.0f%%" % (value * 100.0)
+	SaveManager.save_game()
+
 func _on_fullscreen_toggle_toggled(toggled_on: bool) -> void:
-	if toggled_on:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	else:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-	# Save fullscreen pref
-	if SaveManager.data.has("settings"):
-		SaveManager.data["settings"]["fullscreen"] = toggled_on
-		SaveManager.save_game()
+	if _loading_settings:
+		return
+	DisplaySettings.apply_fullscreen(toggled_on)
 
 func _on_reset_btn_pressed() -> void:
 	# Show confirmation dialog before wiping save

@@ -42,19 +42,15 @@ func _change_scene() -> void:
 		_fade_in()
 		return
 
-	# current_scene can be null for a frame after change_scene_to_file (esp. on boot)
+	# change_scene_to_file is deferred — current_scene still points at the old scene
+	# until scene_changed fires (e.g. "Main" on first boot, which has no music route).
+	await tree.scene_changed
+
 	var root_scene = tree.current_scene
 	if root_scene == null:
-		await tree.scene_changed
-		root_scene = tree.current_scene
-	if root_scene == null:
-		await tree.process_frame
-		root_scene = tree.current_scene
-
-	if root_scene != null and root_scene.has_method("receive_data"):
-		root_scene.receive_data(_pending_data)
-	elif root_scene == null:
 		push_error("[SceneTransition] current_scene is null after loading: %s" % _pending_scene)
+	elif root_scene.has_method("receive_data"):
+		root_scene.receive_data(_pending_data)
 
 	_fade_in()
 

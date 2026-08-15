@@ -91,6 +91,13 @@ theme_override_font_sizes/font_size = 22
 text = "100"
 vertical_alignment = 1
 
+[node name="SettingsBtn" type="Button" parent="UI/Root/TopBarPanel/TopBar"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 20
+text = "⚙"
+
 [node name="HubTitle" type="Label" parent="UI/Root"]
 layout_mode = 0
 offset_top = 80.0
@@ -156,6 +163,13 @@ theme_override_font_sizes/font_size = 20
 text = "🐾  Print Yard
 Watch your prints roam"
 
+[node name="GearLockerBtn" type="Button" parent="UI/Root/LocationButtons"]
+custom_minimum_size = Vector2(280, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "⚙  Gear Locker
+Equip your prints"
+
 [node name="DailyLoginPopup" type="Panel" parent="UI/Root"]
 visible = false
 layout_mode = 0
@@ -189,4 +203,6 @@ text = "Collect!"
 [connection signal="pressed" from="UI/Root/LocationButtons/AcademyBtn" to="." method="_on_academy_btn_pressed"]
 [connection signal="pressed" from="UI/Root/LocationButtons/ForgedexBtn" to="." method="_on_forgedex_btn_pressed"]
 [connection signal="pressed" from="UI/Root/LocationButtons/PrintYardBtn" to="." method="_on_print_yard_btn_pressed"]
+[connection signal="pressed" from="UI/Root/LocationButtons/GearLockerBtn" to="." method="_on_gear_locker_btn_pressed"]
+[connection signal="pressed" from="UI/Root/TopBarPanel/TopBar/SettingsBtn" to="." method="_on_settings_btn_pressed"]
 [connection signal="pressed" from="UI/Root/DailyLoginPopup/CloseBtn" to="." method="_on_daily_popup_close_pressed"]

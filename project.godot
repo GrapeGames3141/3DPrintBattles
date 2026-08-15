@@ -21,10 +21,15 @@ run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/ui/icon.png"
 
+[audio]
+
+buses/default_bus_layout="res://assets/audio/default_bus_layout.tres"
+
 [autoload]
 
 GameData="*res://data/GameData.gd"
 SaveManager="*res://scripts/SaveManager.gd"
+DisplaySettings="*res://scripts/DisplaySettings.gd"
 BattleManager="*res://scripts/BattleManager.gd"
 SceneTransition="*res://scripts/SceneTransition.gd"
 AudioManager="*res://scripts/AudioManager.gd"
@@ -34,6 +39,7 @@ SteamManager="*res://scripts/SteamManager.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

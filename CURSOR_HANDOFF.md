@@ -24,28 +24,48 @@ You (the developer) should:
 ## ▶ CURRENT BUILD STATUS
 _Last updated by Cursor. This section is the live progress log — keep it current._
 
-**Active phase: Phase 2 — Art Generation (starter sprites)**
+**Active phase: Phase 4 — Steam Launch**
 
 Phase 0 (environment) — partial:
 - [x] `.gitignore` and `.github/workflows/build.yml` present
 - [x] Node.js installed (v20)
 - [x] Godot 4.7 installed and project runs
 - [x] git repo on branch `phase1-build` at `git@github.com:PatGuettler/3DPrintBattles.git`
-- [ ] PixelLab MCP connected in Cursor (HTTP — see pixellab.ai MCP setup) ← **next human action**
+- [x] PixelLab MCP connected in Cursor (HTTP — pixellab enabled)
 - [ ] Other API keys (AutoSprite, Scenario, ElevenLabs) — later phases
 
-Phase 1 (core loop, placeholder art) — **complete** (user approved moving on):
+Phase 1 (core loop, placeholder art) — **complete**:
 - [x] All core scenes + PrintYard + global theme
 - [x] Godot 4.7 parse-error fixes (`:=` → `=`)
 - [x] SceneTransition null-scene crash fix
 - [x] UI polish pass (UIStyle.gd, starter cards, workshop hub)
 - [x] Playable through starter selection (user tested)
 
-Phase 2 (starter art) — not started:
-- [ ] Generate 3 starter idle sprites (PixelLab)
-- [ ] Generate blueprint scroll art (Scenario — needs key later)
-- [ ] Generate hit animations (AutoSprite — needs key later)
-- [ ] Wire sprites into StarterSelection + Battle scenes
+Phase 2 (starter art) — **complete**:
+- [x] All art from existing PixelLab library (6 characters + 9 dragon objects)
+- [x] Wired into all scenes
+- [x] Hit animations for starters (+ aliased hits for other creatures)
+
+Phase 3 — **complete**:
+- [x] All 14 creature idle sprites mapped in `data/pixellab_sprite_map.json`
+- [x] `tools/sync_all_sprites.py` — re-download all art from CDN
+- [x] Gear Locker, Settings, Academy (5 quests), Print Yard
+- [x] Equipment blueprint scroll cards in Shop (procedural)
+- [x] Trainer Select team picker uses real sprites + checkbox fix
+- [x] Placeholder audio (13 WAV files) + AudioManager autoload
+
+Phase 4 — in progress:
+- [x] Steam achievement hooks wired (`SaveManager`, `BattleManager` → `SteamManager`)
+- [x] `assets/steam/ACHIEVEMENTS.md` — Steamworks API name reference
+- [x] `assets/steam/STORE_PAGE.md` — store copy draft
+- [x] `steam_appid.txt.example` — template for local Steam testing
+- [x] CI updated to Godot 4.7
+- [x] **Gameplay hardening pass** — battle loop, gear, summon UI, combat fixes
+- [ ] Scene music + gameplay SFX (explicit scene hooks added; verify in editor)
+- [ ] Replace placeholder WAV with ElevenLabs audio (optional)
+- [ ] Steam developer account + GodotSteam + `steam_appid.txt` (human setup)
+- [ ] Store page art (`assets/steam/` screenshots)
+- [ ] Final QA pass
 
 Notes / decisions made by Cursor:
 - The theme is applied globally via `project.godot` (`gui/theme/custom`) instead of
@@ -53,6 +73,13 @@ Notes / decisions made by Cursor:
 - Battle.tscn follows the `@onready` node paths inside `Battle.gd` (the script is the
   real contract), which differ slightly from the tree sketched later in this doc.
 - Forgedex lightning filter binds element `"lightning"` (the value in GameData), not "light".
+- Blueprint scroll art uses procedural UIStyle cards until Scenario API key is set.
+- **All 15 creatures** use existing PixelLab art: 6 characters + 9 dragon objects (see `data/pixellab_sprite_map.json`). No upgrade required.
+- Dragon review batch (13 frames) split into 6 objects; 3 pre-existing dragons used for the other uncommons/rares.
+- Hit animations aliased from nearest starter (cinderpaw/aquafin/voltwig) for creatures without own anims.
+- Audio: Settings → Test Sound works; all scenes now call `AudioManager.play_for_scene()` in `_ready()`.
+- **Gameplay hardening (2025-06):** Starter grants 3 prints; dynamic team size; equipment instance ID fix; bench summon buttons; stun/charge/card fixes.
+- Steam achievements log to console when GodotSteam is not installed (dev-safe).
 
 ---
 

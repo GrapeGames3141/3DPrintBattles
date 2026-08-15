@@ -18,7 +18,7 @@ var _defaults = {
 	"player": {
 		"spool_level": 1,
 		"xp": 0,
-		"coins": 100,         # Starting coins so new players can buy something immediately
+		"coins": 150,         # Starting coins — room for shop after 3 starter prints
 		"starter_chosen": false,
 		"starter_id": "",
 		"total_battles": 0,
@@ -39,6 +39,9 @@ var _defaults = {
 	"settings": {
 		"music_volume": 0.8,
 		"sfx_volume": 1.0,
+		"music_enabled": true,
+		"sfx_enabled": true,
+		"ui_scale": 2.0,
 		"fullscreen": false,
 	},
 	"spool_upgrades": [],      # IDs of purchased spool upgrades
@@ -82,6 +85,7 @@ func load_game() -> void:
 		return
 
 	data = json.get_data()
+	_merge_missing_defaults(["settings"])
 	_migrate_save()
 	print("[SaveManager] Save loaded. Player level: %d, Coins: %d" % [
 		data["player"]["spool_level"],
@@ -109,6 +113,18 @@ func _migrate_save() -> void:
 	# Future: add migration logic here when SAVE_VERSION increments
 	data["version"] = SAVE_VERSION
 	save_game()
+
+func _merge_missing_defaults(keys: Array) -> void:
+	for key in keys:
+		if not key in _defaults:
+			continue
+		if not data.has(key) or typeof(data[key]) != typeof(_defaults[key]):
+			data[key] = _defaults[key].duplicate(true)
+			continue
+		if typeof(_defaults[key]) == TYPE_DICTIONARY:
+			for sub_key in _defaults[key]:
+				if not sub_key in data[key]:
+					data[key][sub_key] = _defaults[key][sub_key]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DAILY LOGIN
@@ -172,10 +188,24 @@ func get_xp_for_next_level() -> int:
 		return 999999
 	return XP_THRESHOLDS[lvl]
 
+func get_xp_into_current_level() -> int:
+	var lvl = get_level()
+	var floor_xp = XP_THRESHOLDS[lvl - 1] if lvl > 0 and lvl - 1 < XP_THRESHOLDS.size() else 0
+	return max(0, get_xp() - floor_xp)
+
+func get_xp_span_for_current_level() -> int:
+	var lvl = get_level()
+	if lvl >= XP_THRESHOLDS.size():
+		return 1
+	var floor_xp = XP_THRESHOLDS[lvl - 1] if lvl > 0 else 0
+	return max(1, get_xp_for_next_level() - floor_xp)
+
 func _check_level_up() -> void:
 	while get_level() < XP_THRESHOLDS.size() and get_xp() >= get_xp_for_next_level():
 		data["player"]["spool_level"] += 1
 		print("[SaveManager] LEVEL UP! Now level %d" % get_level())
+		AudioManager.play_sfx("levelup")
+		SteamManager.on_level_up(get_level())
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STARTER SELECTION
@@ -188,11 +218,13 @@ func choose_starter(creature_id: String) -> void:
 	data["player"]["starter_chosen"] = true
 	# Give the player the blueprint and one printed copy
 	add_blueprint(creature_id)
-	var print_inst = _make_print_instance(creature_id)
-	data["prints_owned"].append(print_inst)
+	for i in range(3):
+		data["prints_owned"].append(_make_print_instance(creature_id))
 	# Mark in forgedex
 	data["forgedex"][creature_id] = "owned"
 	save_game()
+	SteamManager.on_print_created()
+	SteamManager.on_forgedex_update()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BLUEPRINTS (permanent ownership)
@@ -210,6 +242,8 @@ func add_blueprint(id: String) -> void:
 			else:
 				data["forgedex"][id] = "owned"
 		save_game()
+		SteamManager.on_blueprint_acquired(id)
+		SteamManager.on_forgedex_update()
 
 func buy_blueprint(id: String) -> bool:
 	var cost: int = 0
@@ -252,6 +286,7 @@ func print_creature(creature_id: String) -> bool:
 	var inst = _make_print_instance(creature_id)
 	data["prints_owned"].append(inst)
 	save_game()
+	SteamManager.on_print_created()
 	return true
 
 func get_print_by_instance_id(instance_id: String) -> Dictionary:
@@ -263,14 +298,48 @@ func get_print_by_instance_id(instance_id: String) -> Dictionary:
 func restore_print_hp(instance_id: String) -> void:
 	for p in data["prints_owned"]:
 		if p["instance_id"] == instance_id:
-			var creature = GameData.CREATURES[p["creature_id"]]
-			p["hp_current"] = creature["hp_base"]
-			# Add armor HP bonus if equipped
-			if p["equipment"]["armor"] != "":
-				var armor = GameData.EQUIPMENT[p["equipment"]["armor"]]
-				p["hp_current"] += armor["hp_bonus"]
+			p["hp_current"] = get_print_max_hp(p)
 			save_game()
 			return
+
+func get_equipment_blueprint_id(equipment_instance_id: String) -> String:
+	if equipment_instance_id == "":
+		return ""
+	# Legacy saves may store blueprint keys directly in slots.
+	if equipment_instance_id in GameData.EQUIPMENT:
+		return equipment_instance_id
+	var inst = _get_equipment_instance(equipment_instance_id)
+	if inst.is_empty():
+		return ""
+	return inst["equipment_id"]
+
+func get_equipment_name(equipment_instance_id: String) -> String:
+	var blueprint_id = get_equipment_blueprint_id(equipment_instance_id)
+	if blueprint_id == "" or not blueprint_id in GameData.EQUIPMENT:
+		return ""
+	return GameData.EQUIPMENT[blueprint_id]["name"]
+
+func get_print_max_hp(print_inst: Dictionary) -> int:
+	var creature = GameData.CREATURES[print_inst["creature_id"]]
+	var max_hp: int = creature["hp_base"]
+	var armor_bp = get_equipment_blueprint_id(print_inst["equipment"].get("armor", ""))
+	if armor_bp != "" and armor_bp in GameData.EQUIPMENT:
+		max_hp += GameData.EQUIPMENT[armor_bp].get("hp_bonus", 0)
+	return max_hp
+
+func unequip_slot(print_instance_id: String, slot: String) -> void:
+	var print_inst = get_print_by_instance_id(print_instance_id)
+	if print_inst.is_empty():
+		return
+	var slot_iid: String = print_inst["equipment"].get(slot, "")
+	if slot_iid == "":
+		return
+	var eq_inst = _get_equipment_instance(slot_iid)
+	if not eq_inst.is_empty():
+		eq_inst["attached_to"] = ""
+	print_inst["equipment"][slot] = ""
+	save_game()
+	SteamManager.on_equipment_equipped()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EQUIPMENT INSTANCES
@@ -316,6 +385,7 @@ func equip_item(equipment_instance_id: String, print_instance_id: String) -> boo
 	print_inst["equipment"][slot] = equipment_instance_id
 	eq_inst["attached_to"] = print_instance_id
 	save_game()
+	SteamManager.on_equipment_equipped()
 	return true
 
 func _get_equipment_instance(instance_id: String) -> Dictionary:
@@ -340,6 +410,7 @@ func mark_seen(creature_id: String) -> void:
 	if not data["forgedex"].has(creature_id):
 		data["forgedex"][creature_id] = "seen"
 		save_game()
+		SteamManager.on_forgedex_update()
 
 func get_forgedex_status(creature_id: String) -> String:
 	return data["forgedex"].get(creature_id, "unknown")
@@ -347,6 +418,15 @@ func get_forgedex_status(creature_id: String) -> String:
 # ─────────────────────────────────────────────────────────────────────────────
 # BATTLE HISTORY
 # ─────────────────────────────────────────────────────────────────────────────
+func record_print_battle(instance_id: String, won: bool) -> void:
+	for p in data["prints_owned"]:
+		if p["instance_id"] == instance_id:
+			p["times_battled"] = p.get("times_battled", 0) + 1
+			if won:
+				p["times_won"] = p.get("times_won", 0) + 1
+			save_game()
+			return
+
 func record_battle(trainer_id: String, won: bool, xp: int, coins: int, drop_id: String = "") -> void:
 	data["player"]["total_battles"] += 1
 	if won:
@@ -415,7 +495,7 @@ func _max_rarity_for_level(level: int) -> int:
 # ─────────────────────────────────────────────────────────────────────────────
 # ACADEMY PROGRESS
 # ─────────────────────────────────────────────────────────────────────────────
-func record_academy_quest(quest_type: String, stars: int, coins_earned: int) -> void:
+func record_academy_quest(quest_type: String, stars: int, coins_earned: int) -> int:
 	var today = Time.get_date_string_from_system()
 	if not data["academy_progress"].has(quest_type):
 		data["academy_progress"][quest_type] = {"best_stars": 0, "plays_today": 0, "last_played": ""}
@@ -429,13 +509,15 @@ func record_academy_quest(quest_type: String, stars: int, coins_earned: int) -> 
 	if stars > p["best_stars"]:
 		p["best_stars"] = stars
 
-	# Diminishing returns after 3 replays
+	# Diminishing returns starting on the 4th play of the same quest today
 	var actual_coins = coins_earned
 	if p["plays_today"] > 3:
 		actual_coins = int(coins_earned * 0.25)
 
 	add_coins(actual_coins)
 	save_game()
+	SteamManager.on_academy_quest_completed(quest_type, stars)
+	return actual_coins
 
 # ─────────────────────────────────────────────────────────────────────────────
 # UTILITIES

@@ -18,7 +18,9 @@ Build instructions / phase plan: `CURSOR_HANDOFF.md`
 
 **Phase 1 complete** — core game loop playable with polished placeholder UI.
 
-**Phase 2 in progress** — generating real starter creature sprites (needs PixelLab API key).
+**Phase 3 complete** — all creatures + equipment UI + placeholder audio.
+
+**Phase 4 in progress** — Steam achievements wired, store copy drafted. Needs Steamworks account + GodotSteam.
 
 See `CURSOR_HANDOFF.md` → **CURRENT BUILD STATUS** for the live progress log.
 
@@ -26,7 +28,7 @@ See `CURSOR_HANDOFF.md` → **CURRENT BUILD STATUS** for the live progress log.
 
 ## How to Run (Developer)
 
-1. Install **Godot 4.3 (.NET)** from https://godotengine.org/download
+1. Install **Godot 4.7** from https://godotengine.org/download
 2. Open Godot → **Import** → select this folder's `project.godot` → **Import & Edit**
 3. Press **F5** (Run Project). The game boots into `Main.tscn`, which routes to
    Starter Selection on first run, or the Workshop if a starter is already chosen.
@@ -57,24 +59,41 @@ scripts/
   Academy.gd                  Math mini-game quests
   Forgedex.gd                 Creature discovery log
   PrintYard.gd                Owned prints wander a diorama
-  GearLocker.gd / Settings.gd Phase 3/4 (scenes not built yet)
+  GearLocker.gd               Equip armor/weapons/accessories
+  Settings.gd                 Volume, fullscreen, reset save
 scenes/
   Main / StarterSelection / Workshop / TrainerSelect / Battle /
-  Shop / Academy / Forgedex / PrintYard   (.tscn — built in Phase 1)
+  Shop / Academy / Forgedex / PrintYard / GearLocker / Settings   (.tscn)
 assets/
   ui/PrintForgeTheme.tres     Global UI theme (purple/amber workshop look)
-  sprites/  audio/  steam/    Populated in Phases 2–4
+  sprites/                    All 14 creature idle PNGs + hit frame sequences
+  audio/                      Placeholder WAV music + SFX (regenerate via tools/)
+  steam/                      Populated in Phase 4
 ```
+
+Re-sync sprites from PixelLab CDN (no API key):
+
+```bash
+python3 tools/sync_all_sprites.py
+```
+
+Regenerate placeholder audio (no API key):
+
+```bash
+python3 tools/generate_placeholder_audio.py
+```
+
+Mapping lives in `data/pixellab_sprite_map.json`.
 
 ## Build Phases (summary)
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 0 | Environment setup (tools, keys, MCP, GitHub) | partial — PixelLab key next |
+| 0 | Environment setup (tools, keys, MCP, GitHub) | partial |
 | 1 | Core game loop, placeholder art | **complete** |
-| 2 | Starter sprites + blueprint art (PixelLab/Scenario) | **in progress** |
-| 3 | All 15 creatures, equipment, Print Yard, full content | not started |
-| 4 | Audio (ElevenLabs), Steam integration, store page, QA | not started |
+| 2 | Starter sprites + blueprint art (PixelLab) | **complete** |
+| 3 | All 14 creatures, equipment UI, placeholder audio | **complete** |
+| 4 | ElevenLabs audio upgrade, Steam, store page, QA | not started |
 | 5 | Post-launch: multiplayer, trading, mobile | future |
 
 ## Art / Audio Tooling (later phases)

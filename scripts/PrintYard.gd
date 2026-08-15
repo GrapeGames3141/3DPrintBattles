@@ -58,6 +58,7 @@ func _ready() -> void:
 	stat_popup.visible = false
 	_spawn_prints()
 	_update_count_label()
+	AudioManager.play_for_scene("PrintYard")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SPAWN ALL OWNED PRINTS
@@ -77,25 +78,11 @@ func _spawn_single_print(inst: Dictionary) -> void:
 	yp.creature_id = inst["creature_id"]
 
 	# Try real sprite first, fall back to colored rect
-	var sprite_path = "res://assets/sprites/%s" % creature["sprite"]
-	if ResourceLoader.exists(sprite_path):
-		var tex_rect = TextureRect.new()
-		tex_rect.texture = load(sprite_path)
-		tex_rect.custom_minimum_size = Vector2(64, 64)
-		tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tex_rect.mouse_filter = Control.MOUSE_FILTER_STOP
-		tex_rect.gui_input.connect(_on_print_clicked.bind(inst["instance_id"]))
-		add_child(tex_rect)
-		yp.node = tex_rect
-	else:
-		var rect = ColorRect.new()
-		rect.custom_minimum_size = Vector2(56, 56)
-		rect.color = creature["placeholder_color"]
-		rect.mouse_filter = Control.MOUSE_FILTER_STOP
-		rect.gui_input.connect(_on_print_clicked.bind(inst["instance_id"]))
-		add_child(rect)
-		yp.node = rect
+	var visual = UIStyle.make_creature_sprite(creature, Vector2(64, 64))
+	visual.mouse_filter = Control.MOUSE_FILTER_STOP
+	visual.gui_input.connect(_on_print_clicked.bind(inst["instance_id"]))
+	add_child(visual)
+	yp.node = visual
 
 	# Random starting position within yard bounds
 	yp.node.position = Vector2(
@@ -206,7 +193,7 @@ func _show_stat_popup(inst: Dictionary) -> void:
 	var creature = GameData.CREATURES[inst["creature_id"]]
 	var ability = GameData.ABILITIES[creature["ability"]]
 
-	popup_sprite.color = creature["placeholder_color"]
+	UIStyle.apply_creature_sprite(popup_sprite, creature)
 	popup_name.text = creature["name"]
 	popup_element.text = "Element: %s" % creature["element"].capitalize()
 	popup_bend.text = "Bend Score: %d" % creature["bend_score"]

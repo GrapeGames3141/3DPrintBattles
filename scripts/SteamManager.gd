@@ -144,9 +144,9 @@ func on_academy_quest_completed(quest_type: String, stars: int) -> void:
 	unlock("FIRST_QUEST")
 	if stars == 3:
 		unlock("THREE_STARS")
-	# Check if all quest types attempted
+	# Check if all quest types have been attempted
 	var progress = SaveManager.data["academy_progress"]
-	if progress.size() >= 4:
+	if progress.size() >= 5:
 		unlock("ACADEMY_ALL")
 
 func on_level_up(new_level: int) -> void:

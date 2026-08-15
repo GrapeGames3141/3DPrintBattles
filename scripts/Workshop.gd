@@ -28,11 +28,13 @@ extends Node2D
 @onready var xp_bar: ProgressBar = $UI/Root/TopBarPanel/TopBar/XPBar
 @onready var coin_label: Label = $UI/Root/TopBarPanel/TopBar/CoinLabel
 @onready var daily_popup: Panel = $UI/Root/DailyLoginPopup
+@onready var settings_btn: Button = $UI/Root/TopBarPanel/TopBar/SettingsBtn
 
 func _ready() -> void:
 	_refresh_hud()
 	_check_daily_login()
 	_check_starter()
+	AudioManager.play_for_scene("Workshop")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SCENE DATA (passed from SceneTransition)
@@ -45,8 +47,8 @@ func receive_data(_data: Dictionary) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 func _refresh_hud() -> void:
 	level_label.text = "Lv. %d" % SaveManager.get_level()
-	xp_bar.value = SaveManager.get_xp()
-	xp_bar.max_value = SaveManager.get_xp_for_next_level()
+	xp_bar.max_value = SaveManager.get_xp_span_for_current_level()
+	xp_bar.value = SaveManager.get_xp_into_current_level()
 	coin_label.text = "%d" % SaveManager.get_coins()
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ func _check_daily_login() -> void:
 	var reward = SaveManager.claim_daily_login()
 	if reward > 0:
 		daily_popup.visible = true
+		AudioManager.play_sfx("coin")
 		var popup_label: Label = daily_popup.get_node("Label")
 		if popup_label:
 			popup_label.text = "Daily Login Bonus!\n+%d Forge Coins" % reward
@@ -88,3 +91,9 @@ func _on_forgedex_btn_pressed() -> void:
 
 func _on_print_yard_btn_pressed() -> void:
 	SceneTransition.go_to("res://scenes/PrintYard.tscn")
+
+func _on_gear_locker_btn_pressed() -> void:
+	SceneTransition.go_to("res://scenes/GearLocker.tscn")
+
+func _on_settings_btn_pressed() -> void:
+	SceneTransition.go_to("res://scenes/Settings.tscn")

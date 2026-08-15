@@ -14,7 +14,7 @@ on:
   workflow_dispatch:   # Allow manual trigger from GitHub Actions tab
 
 env:
-  GODOT_VERSION: "4.3"
+  GODOT_VERSION: "4.7"
   EXPORT_NAME: "PrintForgeLegends"
   PROJECT_PATH: "."
 

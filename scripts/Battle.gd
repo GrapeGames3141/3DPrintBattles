@@ -44,7 +44,7 @@ extends Node2D
 @onready var coin_flip_panel: Panel      = $UI/CoinFlipPanel
 @onready var flip_result_label: Label    = $UI/CoinFlipPanel/FlipResultLabel
 
-@onready var player_sprite: ColorRect    = $UI/PlayerSide/PrintSprite
+@onready var player_sprite: TextureRect    = $UI/PlayerSide/PrintSprite
 @onready var player_name_lbl: Label      = $UI/PlayerSide/PrintNameLabel
 @onready var player_hp_bar: ProgressBar  = $UI/PlayerSide/HPBar
 @onready var player_hp_lbl: Label        = $UI/PlayerSide/HPLabel
@@ -54,7 +54,7 @@ extends Node2D
 @onready var card_hand: HBoxContainer    = $UI/PlayerSide/CardHand
 @onready var end_turn_btn: Button        = $UI/PlayerSide/EndTurnBtn
 
-@onready var ai_sprite: ColorRect        = $UI/AISide/PrintSprite
+@onready var ai_sprite: TextureRect        = $UI/AISide/PrintSprite
 @onready var ai_name_lbl: Label          = $UI/AISide/PrintNameLabel
 @onready var ai_hp_bar: ProgressBar      = $UI/AISide/HPBar
 @onready var ai_hp_lbl: Label            = $UI/AISide/HPLabel
@@ -70,9 +70,10 @@ extends Node2D
 @onready var rewards_label: Label        = $UI/ResultPanel/RewardsLabel
 
 # ── State ──
-var _player_hand: Array = []     # Array of card_ids currently in hand
+var _player_hand: Array = []
 var _timer_tween: Tween
 var _is_player_turn = false
+var _player_bench_buttons: Array[Button] = []
 
 const TURN_SECONDS = 15.0
 const CARD_POOL = ["raw_filament", "heated_spool", "reinforced_layer",
@@ -88,6 +89,7 @@ func receive_data(data: Dictionary) -> void:
 		SceneTransition.go_to("res://scenes/Workshop.tscn")
 		return
 	_connect_signals()
+	AudioManager.play_for_scene("Battle")
 	BattleManager.start_battle(team, trainer)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -139,14 +141,20 @@ func _on_turn_started(is_player_turn: bool, turn_number: int) -> void:
 	_log("\n— Turn %d: %s —" % [turn_number, "Your turn" if is_player_turn else "Opponent's turn"])
 
 	if is_player_turn:
+		if BattleManager.is_side_stunned("player"):
+			_log("You're stunned and lose this turn!")
+			_set_player_buttons_enabled(false)
+			_refresh_bench_buttons()
+			return
 		_deal_card()
 		_set_player_buttons_enabled(true)
 		_update_ability_btn()
+		_refresh_bench_buttons()
 		_start_turn_timer()
 	else:
 		_set_player_buttons_enabled(false)
+		_refresh_bench_buttons()
 		_stop_turn_timer()
-		# AI acts after a short delay for readability
 		await get_tree().create_timer(1.2).timeout
 		BattleManager.ai_take_turn()
 
@@ -183,17 +191,20 @@ func _on_attack_landed(attacker_side: String, damage: int, is_super: bool, is_no
 	elif is_not:
 		effectiveness = " [Not very effective...]"
 	_log("%s attacks for %d damage!%s" % [attacker_name, damage, effectiveness])
+	AudioManager.play_sfx("hit")
 	_animate_hit(attacker_side)
 
 func _on_ability_used(user_side: String, ability_id: String, _result: Dictionary) -> void:
 	var ability = GameData.ABILITIES[ability_id]
 	var name = _get_active_name(user_side)
 	_log("%s uses %s! %s" % [name, ability["name"], ability["description"]])
+	AudioManager.play_sfx("ability")
 	_update_ability_btn()
 
 func _on_card_played(card_id: String, result: Dictionary) -> void:
 	var card = GameData.FILAMENT_CARDS[card_id]
 	_log("Card played: %s — %s" % [card["name"], card["description"]])
+	AudioManager.play_sfx("card")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HP & FORGE UPDATES
@@ -212,6 +223,7 @@ func _on_forge_changed(side: String, new_value: float) -> void:
 	if side == "player":
 		player_forge_bar.value = new_value
 		player_forge_lbl.text = "Forge: %.1f / 10" % new_value
+		_refresh_bench_buttons()
 	else:
 		ai_forge_bar.value = new_value
 		ai_forge_lbl.text = "Forge: %.1f / 10" % new_value
@@ -223,6 +235,7 @@ func _on_print_defeated(side: String, creature_id: String) -> void:
 	var name = GameData.CREATURES[creature_id]["name"]
 	_log("%s has been defeated! The printer breaks apart!" % name)
 	_play_defeat_animation(side)
+	_refresh_bench_buttons()
 
 func _on_print_summoned(side: String, print_data: Dictionary) -> void:
 	var creature = GameData.CREATURES[print_data["creature_id"]]
@@ -230,8 +243,10 @@ func _on_print_summoned(side: String, print_data: Dictionary) -> void:
 		"You" if side == "player" else BattleManager.current_trainer["name"],
 		creature["name"]
 	])
+	if side == "player":
+		AudioManager.play_sfx("summon")
 	_update_active_sprite(side, print_data)
-	# Mark in forgedex if we see an AI creature we haven't seen
+	_refresh_bench_buttons()
 	if side == "ai":
 		SaveManager.mark_seen(print_data["creature_id"])
 
@@ -250,6 +265,7 @@ func _on_battle_ended(player_won: bool, rewards: Dictionary) -> void:
 	result_panel.visible = true
 
 	if player_won:
+		AudioManager.play_sfx("victory")
 		result_label.text = "⚙ Victory! ⚙"
 		var drop_text = ""
 		if rewards.get("drop", "") != "":
@@ -264,6 +280,7 @@ func _on_battle_ended(player_won: bool, rewards: Dictionary) -> void:
 			rewards["xp"], rewards["coins"], drop_text
 		]
 	else:
+		AudioManager.play_sfx("defeat")
 		result_label.text = "⚙ Defeated! ⚙"
 		rewards_label.text = "+%d XP   +%d Forge Coins\nKeep forging — you'll get there!" % [
 			rewards["xp"], rewards["coins"]
@@ -290,7 +307,7 @@ func _set_player_buttons_enabled(enabled: bool) -> void:
 
 func _update_ability_btn() -> void:
 	var print_inst = BattleManager.get_player_active_print()
-	if print_inst == null or print_inst.is_empty():
+	if print_inst.is_empty():
 		ability_btn.text = "No Active Print"
 		ability_btn.disabled = true
 		return
@@ -340,66 +357,141 @@ func _on_card_btn_pressed(index: int) -> void:
 # BENCH DISPLAY
 # ─────────────────────────────────────────────────────────────────────────────
 func _build_bench(player_team: Array, ai_team: Array) -> void:
+	_player_bench_buttons.clear()
 	for child in bench_panel.get_children():
 		child.queue_free()
 	for child in ai_bench_panel.get_children():
 		child.queue_free()
 
-	for inst in player_team:
+	for i in range(player_team.size()):
+		var inst = player_team[i]
 		var creature = GameData.CREATURES[inst["creature_id"]]
-		var swatch = ColorRect.new()
-		swatch.custom_minimum_size = Vector2(48, 48)
-		swatch.color = creature["placeholder_color"]
-		swatch.tooltip_text = creature["name"]
-		bench_panel.add_child(swatch)
+		var btn = _make_bench_button(creature, inst, i)
+		bench_panel.add_child(btn)
+		_player_bench_buttons.append(btn)
 
 	for inst in ai_team:
 		var creature = GameData.CREATURES[inst["creature_id"]]
-		var swatch = ColorRect.new()
-		swatch.custom_minimum_size = Vector2(48, 48)
-		swatch.color = creature["placeholder_color"]
-		swatch.tooltip_text = "???"
-		ai_bench_panel.add_child(swatch)
+		var icon = UIStyle.make_bench_icon(creature)
+		icon.tooltip_text = "???"
+		if inst["hp_current"] <= 0:
+			icon.modulate = Color(0.4, 0.4, 0.4, 0.6)
+		ai_bench_panel.add_child(icon)
 
-	# Initialize active sprites for the first prints
 	if not player_team.is_empty():
 		_update_active_sprite("player", player_team[0])
 	if not ai_team.is_empty():
 		_update_active_sprite("ai", ai_team[0])
+	_refresh_bench_buttons()
+
+func _make_bench_button(creature: Dictionary, inst: Dictionary, bench_index: int) -> Button:
+	var btn = Button.new()
+	btn.custom_minimum_size = Vector2(56, 56)
+	btn.tooltip_text = "%s — tap to summon (costs forge)" % creature["name"]
+	var icon = UIStyle.make_creature_sprite(creature, Vector2(48, 48))
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(icon)
+	icon.set_anchors_preset(Control.PRESET_CENTER)
+	btn.pressed.connect(_on_bench_pressed.bind(bench_index))
+	return btn
+
+func _on_bench_pressed(bench_index: int) -> void:
+	if not _is_player_turn or BattleManager.phase != BattleManager.BattlePhase.PLAYER_TURN:
+		return
+	var team = BattleManager.player_team
+	if bench_index >= team.size():
+		return
+	var inst = team[bench_index]
+	if inst["hp_current"] <= 0:
+		_log("That print is defeated and can't be summoned.")
+		return
+	if bench_index == BattleManager.player_active_idx:
+		_log("That print is already active.")
+		return
+	var creature = GameData.CREATURES[inst["creature_id"]]
+	var cost = float(creature["forge_cost"])
+	if BattleManager.player_forge < cost:
+		_log("Need %.1f forge to summon %s (have %.1f)." % [cost, creature["name"], BattleManager.player_forge])
+		return
+	BattleManager.player_summon_print(bench_index)
+
+func _refresh_bench_buttons() -> void:
+	for i in range(_player_bench_buttons.size()):
+		var btn = _player_bench_buttons[i]
+		if i >= BattleManager.player_team.size():
+			continue
+		var inst = BattleManager.player_team[i]
+		var creature = GameData.CREATURES[inst["creature_id"]]
+		var cost = float(creature["forge_cost"])
+		var dead = inst["hp_current"] <= 0
+		var active = i == BattleManager.player_active_idx
+		btn.disabled = dead or active or not _is_player_turn \
+			or BattleManager.phase != BattleManager.BattlePhase.PLAYER_TURN
+		if dead:
+			btn.modulate = Color(0.35, 0.35, 0.35, 0.7)
+		elif active:
+			btn.modulate = Color(1.2, 1.1, 0.85)
+		elif BattleManager.player_forge >= cost:
+			btn.modulate = Color(0.9, 1.0, 0.9)
+		else:
+			btn.modulate = Color(0.75, 0.75, 0.8)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SPRITE UPDATES
 # ─────────────────────────────────────────────────────────────────────────────
 func _update_active_sprite(side: String, print_data: Dictionary) -> void:
 	var creature = GameData.CREATURES[print_data["creature_id"]]
-	if side == "player":
-		player_sprite.color = creature["placeholder_color"]
-		player_name_lbl.text = creature["name"]
-		var max_hp: int = creature["hp_base"]
-		player_hp_bar.max_value = max_hp
-		player_hp_bar.value = print_data["hp_current"]
-		player_hp_lbl.text = "%d / %d" % [print_data["hp_current"], max_hp]
+	var sprite: TextureRect = player_sprite if side == "player" else ai_sprite
+	var name_lbl: Label = player_name_lbl if side == "player" else ai_name_lbl
+	var hp_bar: ProgressBar = player_hp_bar if side == "player" else ai_hp_bar
+	var hp_lbl: Label = player_hp_lbl if side == "player" else ai_hp_lbl
+
+	var tex = UIStyle.creature_texture(creature)
+	if tex:
+		sprite.texture = tex
+		sprite.modulate = Color.WHITE
 	else:
-		ai_sprite.color = creature["placeholder_color"]
-		ai_name_lbl.text = creature["name"]
-		var max_hp: int = creature["hp_base"]
-		ai_hp_bar.max_value = max_hp
-		ai_hp_bar.value = print_data["hp_current"]
-		ai_hp_lbl.text = "%d / %d" % [print_data["hp_current"], max_hp]
+		sprite.texture = null
+		sprite.modulate = creature["placeholder_color"]
+
+	name_lbl.text = creature["name"]
+	var max_hp: int = BattleManager.get_battle_max_hp(print_data)
+	hp_bar.max_value = max_hp
+	hp_bar.value = print_data["hp_current"]
+	hp_lbl.text = "%d / %d" % [print_data["hp_current"], max_hp]
 
 func _animate_hit(attacker_side: String) -> void:
-	# Simple shake tween on the defender sprite
+	var defender_side = "ai" if attacker_side == "player" else "player"
+	var inst = BattleManager.get_player_active_print() if defender_side == "player" \
+		else BattleManager.get_ai_active_print()
+	var creature_id = inst.get("creature_id", "") if not inst.is_empty() else ""
 	var target_sprite = ai_sprite if attacker_side == "player" else player_sprite
-	var original_pos = target_sprite.position
-	var tween = create_tween()
-	tween.tween_property(target_sprite, "position",
-		original_pos + Vector2(8, 0), 0.05)
-	tween.tween_property(target_sprite, "position",
-		original_pos - Vector2(8, 0), 0.05)
-	tween.tween_property(target_sprite, "position",
-		original_pos + Vector2(6, 0), 0.04)
-	tween.tween_property(target_sprite, "position",
-		original_pos, 0.04)
+	_play_hit_reaction(target_sprite, creature_id)
+
+func _play_hit_reaction(sprite: TextureRect, creature_id: String) -> void:
+	var frames = UIStyle.load_hit_frames(creature_id)
+	var original_pos = sprite.position
+	var original_modulate = sprite.modulate
+	var idle_tex = sprite.texture
+
+	if frames.is_empty():
+		var tween = create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(sprite, "modulate", Color(1.0, 0.35, 0.35), 0.06)
+		tween.tween_property(sprite, "position", original_pos + Vector2(10, 0), 0.05)
+		tween.chain().set_parallel(true)
+		tween.tween_property(sprite, "position", original_pos - Vector2(8, 0), 0.05)
+		tween.tween_property(sprite, "modulate", original_modulate, 0.08)
+		tween.chain().tween_property(sprite, "position", original_pos, 0.04)
+		return
+
+	sprite.modulate = Color(1.15, 0.9, 0.9)
+	for tex in frames:
+		sprite.texture = tex
+		await get_tree().create_timer(0.07).timeout
+	sprite.texture = idle_tex
+	sprite.modulate = original_modulate
+	sprite.position = original_pos
 
 func _play_defeat_animation(side: String) -> void:
 	var sprite = player_sprite if side == "player" else ai_sprite
@@ -414,7 +506,7 @@ func _play_defeat_animation(side: String) -> void:
 func _get_active_name(side: String) -> String:
 	var inst = BattleManager.get_player_active_print() if side == "player" \
 		else BattleManager.get_ai_active_print()
-	if inst == null or inst.is_empty():
+	if inst.is_empty():
 		return "???"
 	return GameData.CREATURES[inst["creature_id"]]["name"]
 

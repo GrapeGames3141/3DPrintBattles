@@ -56,6 +56,13 @@ const QUESTS = {
 		"max_reward": 80,
 		"question_fn": "_gen_percentage",
 	},
+	"forge_masters_gauntlet": {
+		"name": "The Forge Master's Gauntlet",
+		"description": "Order of operations (advanced)",
+		"reward_per_star": 45,
+		"max_reward": 100,
+		"question_fn": "_gen_order_of_ops",
+	},
 }
 
 const QUESTIONS_PER_QUEST = 10
@@ -98,6 +105,7 @@ func _ready() -> void:
 	quest_panel.visible = false
 	_refresh_coin_label()
 	_build_quest_menu()
+	AudioManager.play_for_scene("Academy")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # QUEST MENU
@@ -109,6 +117,8 @@ func _build_quest_menu() -> void:
 	var header = Label.new()
 	header.text = "Choose a Quest to earn Forge Coins!"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 20)
+	header.add_theme_color_override("font_color", UIStyle.ACCENT_AMBER)
 	quest_menu.add_child(header)
 
 	for qid in QUESTS:
@@ -118,26 +128,58 @@ func _build_quest_menu() -> void:
 		var plays_today: int = progress.get("plays_today", 0)
 		var diminished = plays_today >= 3
 
-		var hbox = HBoxContainer.new()
+		var card = PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.custom_minimum_size = Vector2(0, 96)
+		var card_style = StyleBoxFlat.new()
+		card_style.bg_color = Color(0.07, 0.07, 0.13, 0.95)
+		card_style.border_color = UIStyle.ACCENT_PURPLE.darkened(0.2)
+		card_style.set_border_width_all(1)
+		card_style.set_corner_radius_all(10)
+		card_style.content_margin_left = 16
+		card_style.content_margin_top = 12
+		card_style.content_margin_right = 16
+		card_style.content_margin_bottom = 12
+		card.add_theme_stylebox_override("panel", card_style)
 
-		var info_lbl = Label.new()
-		info_lbl.text = "%s\n%s\nReward: up to %d 🪙  |  Best: %s  |  Plays today: %d" % [
-			q["name"],
-			q["description"],
+		var hbox = HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 20)
+		card.add_child(hbox)
+
+		var info = VBoxContainer.new()
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_theme_constant_override("separation", 4)
+		hbox.add_child(info)
+
+		var title_lbl = Label.new()
+		title_lbl.text = q["name"]
+		title_lbl.add_theme_font_size_override("font_size", 20)
+		title_lbl.add_theme_color_override("font_color", UIStyle.ACCENT_AMBER)
+		info.add_child(title_lbl)
+
+		var desc_lbl = Label.new()
+		desc_lbl.text = q["description"]
+		desc_lbl.add_theme_color_override("font_color", UIStyle.TEXT_MUTED)
+		desc_lbl.add_theme_font_size_override("font_size", 16)
+		info.add_child(desc_lbl)
+
+		var stats_lbl = Label.new()
+		stats_lbl.text = "Reward: up to %d 🪙  |  Best: %s  |  Plays today: %d" % [
 			q["max_reward"],
 			"⭐".repeat(best_stars) if best_stars > 0 else "Not attempted",
 			plays_today,
 		]
-		info_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		hbox.add_child(info_lbl)
+		stats_lbl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+		stats_lbl.add_theme_font_size_override("font_size", 14)
+		info.add_child(stats_lbl)
 
 		var play_btn = Button.new()
-		play_btn.text = "Play" if not diminished else "Play (reduced coins)"
+		play_btn.custom_minimum_size = Vector2(150, 48)
+		play_btn.text = "Play" if not diminished else "Play (reduced)"
 		play_btn.pressed.connect(_start_quest.bind(qid))
 		hbox.add_child(play_btn)
 
-		quest_menu.add_child(hbox)
+		quest_menu.add_child(card)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # START QUEST
@@ -233,8 +275,7 @@ func _end_quest() -> void:
 	var base_coins = int(q["max_reward"] * (float(_correct_answers) / float(QUESTIONS_PER_QUEST)))
 	base_coins = max(base_coins, 3)  # Always give at least 3 coins
 
-	# Record in save (diminishing returns handled inside SaveManager)
-	SaveManager.record_academy_quest(_active_quest_id, stars, base_coins)
+	var actual_coins = SaveManager.record_academy_quest(_active_quest_id, stars, base_coins)
 	SaveManager.add_xp(stars * 10)
 
 	question_label.text = "Quest Complete!"
@@ -243,7 +284,8 @@ func _end_quest() -> void:
 		"⭐".repeat(stars) if stars > 0 else "Keep practicing!"
 	]
 	gizmo_label.text = "Gizmo says: %s" % _end_message(stars)
-	feedback_label.text = "Coins earned: %d 🪙" % base_coins
+	feedback_label.text = "Coins earned: %d 🪙" % actual_coins
+	AudioManager.play_sfx("coin")
 
 	for child in answer_grid.get_children():
 		child.queue_free()
@@ -315,6 +357,32 @@ func _gen_percentage() -> Dictionary:
 	var correct: int = int(float(pct) / 100.0 * float(base))
 	var question = "What is %d%% of %d?" % [pct, base]
 	return _make_question(question, correct, 4, 0, base)
+
+func _gen_order_of_ops() -> Dictionary:
+	var a = randi_range(2, 12)
+	var b = randi_range(2, 9)
+	var c = randi_range(2, 9)
+	var correct = a + b * c
+	var question = "%d + %d × %d = ?  (multiply first!)" % [a, b, c]
+	var choices = [correct]
+	var wrong_patterns = [
+		(a + b) * c,
+		a + b + c,
+		a * b + c,
+		correct + randi_range(1, 5),
+		correct - randi_range(1, 5),
+	]
+	for wrong in wrong_patterns:
+		if wrong != correct and wrong > 0 and not wrong in choices:
+			choices.append(wrong)
+		if choices.size() >= 4:
+			break
+	while choices.size() < 4:
+		var filler = correct + randi_range(-8, 8)
+		if filler > 0 and filler != correct and not filler in choices:
+			choices.append(filler)
+	choices.shuffle()
+	return {"question": question, "correct": correct, "choices": choices}
 
 func _make_question(question: String, correct: int, num_choices: int,
 					min_val: int, max_val: int) -> Dictionary:

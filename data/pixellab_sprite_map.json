@@ -1,0 +1,92 @@
+{
+  "_comment": "Maps each GameData creature to existing PixelLab art. No new generations required.",
+  "characters": {
+    "cinderpaw": {
+      "pixellab_id": "5f3df52a-9b0e-4196-a3dc-c2800fc15849",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/5f3df52a-9b0e-4196-a3dc-c2800fc15849/rotations/south.png",
+      "hit_creature": "cinderpaw"
+    },
+    "aquafin": {
+      "pixellab_id": "9fa458a1-fc30-4f85-a262-2e0c057d22ac",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/9fa458a1-fc30-4f85-a262-2e0c057d22ac/rotations/south.png",
+      "hit_creature": "aquafin"
+    },
+    "voltwig": {
+      "pixellab_id": "b4d89520-f08e-4390-877d-e8545ca78960",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/rotations/south.png",
+      "hit_creature": "voltwig"
+    },
+    "stonepup": {
+      "pixellab_id": "aff56e84-b8b6-42c7-9638-7d417b6169ff",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/aff56e84-b8b6-42c7-9638-7d417b6169ff/rotations/south.png",
+      "hit_creature": "cinderpaw"
+    },
+    "leafling": {
+      "pixellab_id": "837a525e-578f-43e5-aa99-3c5535364eb8",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/837a525e-578f-43e5-aa99-3c5535364eb8/rotations/south.png",
+      "hit_creature": "aquafin"
+    },
+    "frostkit": {
+      "pixellab_id": "2968551c-1ad2-4944-b98f-13ec8cfd854e",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/2968551c-1ad2-4944-b98f-13ec8cfd854e/rotations/south.png",
+      "hit_creature": "voltwig"
+    }
+  },
+  "objects": {
+    "galebird": {
+      "pixellab_id": "3ee1d43b-d2f8-4901-8dc2-329830b9c3e1",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/3ee1d43b-d2f8-4901-8dc2-329830b9c3e1/rotations/unknown.png",
+      "hit_creature": "voltwig",
+      "note": "Review batch frame 0 — winged dragon"
+    },
+    "magmaback": {
+      "pixellab_id": "228b5d00-2b9f-4a14-8ce2-b22341ff2291",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/228b5d00-2b9f-4a14-8ce2-b22341ff2291/rotations/unknown.png",
+      "hit_creature": "cinderpaw"
+    },
+    "coralwing": {
+      "pixellab_id": "c29e37bc-4d6a-4116-9aa5-ca0abe778915",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/c29e37bc-4d6a-4116-9aa5-ca0abe778915/rotations/unknown.png",
+      "hit_creature": "aquafin"
+    },
+    "thornmantle": {
+      "pixellab_id": "39a1b9b5-e612-4e54-99d9-e75acd19bb80",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/39a1b9b5-e612-4e54-99d9-e75acd19bb80/rotations/unknown.png",
+      "hit_creature": "cinderpaw"
+    },
+    "boltfang": {
+      "pixellab_id": "5e18446c-39b8-40ee-9de8-80ef36e25e45",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/5e18446c-39b8-40ee-9de8-80ef36e25e45/rotations/unknown.png",
+      "hit_creature": "voltwig",
+      "note": "Review batch frame 1"
+    },
+    "vortexhorn": {
+      "pixellab_id": "40d68b77-f1b9-4281-8049-8ca26449751c",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/40d68b77-f1b9-4281-8049-8ca26449751c/rotations/unknown.png",
+      "hit_creature": "voltwig",
+      "note": "Review batch frame 3"
+    },
+    "obsidianwyrm": {
+      "pixellab_id": "08b30c5f-6e85-417a-93ac-95ca0694c90e",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/08b30c5f-6e85-417a-93ac-95ca0694c90e/rotations/unknown.png",
+      "hit_creature": "cinderpaw",
+      "note": "Review batch frame 6"
+    },
+    "aurorathane": {
+      "pixellab_id": "129760b5-b458-4258-a073-cb516a5f1fb6",
+      "image_url": "https://backblaze.pixellab.ai/file/pixellab-characters/objects/12a8f0a6-fe03-486b-93c5-a2fc8425f695/129760b5-b458-4258-a073-cb516a5f1fb6/rotations/unknown.png",
+      "hit_creature": "aquafin",
+      "note": "Review batch frame 10 — legendary dragon"
+    }
+  },
+  "hit_animations": {
+    "voltwig": [
+      "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/animations/128b88ee-1b98-4f4f-b2ce-85653249d3c7/south/0.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/animations/128b88ee-1b98-4f4f-b2ce-85653249d3c7/south/1.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/animations/128b88ee-1b98-4f4f-b2ce-85653249d3c7/south/2.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/animations/128b88ee-1b98-4f4f-b2ce-85653249d3c7/south/3.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/animations/128b88ee-1b98-4f4f-b2ce-85653249d3c7/south/4.png",
+      "https://backblaze.pixellab.ai/file/pixellab-characters/12a8f0a6-fe03-486b-93c5-a2fc8425f695/b4d89520-f08e-4390-877d-e8545ca78960/animations/128b88ee-1b98-4f4f-b2ce-85653249d3c7/south/5.png"
+    ]
+  }
+}

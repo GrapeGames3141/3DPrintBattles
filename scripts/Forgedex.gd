@@ -40,6 +40,7 @@ func _ready() -> void:
 	detail_panel.visible = false
 	_build_grid()
 	_update_count()
+	AudioManager.play_for_scene("Forgedex")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GRID
@@ -68,20 +69,17 @@ func _make_entry_card(cid: String, creature: Dictionary, status: String, _idx: i
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card.add_child(vbox)
 
-	# Sprite or silhouette
-	var swatch = ColorRect.new()
-	swatch.custom_minimum_size = Vector2(80, 80)
-	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-
+	var sprite_mode = "full"
 	match status:
 		"owned":
-			swatch.color = creature["placeholder_color"]
+			sprite_mode = "full"
 		"seen":
-			swatch.color = Color(0.1, 0.1, 0.1)  # Dark silhouette
+			sprite_mode = "seen"
 		_:
-			swatch.color = Color(0.2, 0.2, 0.2)  # Unknown
-
-	vbox.add_child(swatch)
+			sprite_mode = "unknown"
+	var sprite_slot = UIStyle.make_creature_sprite(creature, Vector2(80, 80), sprite_mode)
+	sprite_slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(sprite_slot)
 
 	var name_lbl = Label.new()
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -121,7 +119,7 @@ func _show_detail(cid: String, status: String) -> void:
 	var creature = GameData.CREATURES[cid]
 
 	if status == "owned":
-		detail_sprite.color = creature["placeholder_color"]
+		UIStyle.apply_creature_sprite(detail_sprite, creature)
 		detail_name.text = creature["name"]
 		detail_element.text = "Element: %s" % creature["element"].capitalize()
 		detail_rarity.text = GameData.RARITY_NAMES.get(creature["rarity"], "")
@@ -133,7 +131,7 @@ func _show_detail(cid: String, status: String) -> void:
 		detail_lore.text = creature["lore"]
 	else:
 		# Seen — partial info
-		detail_sprite.color = Color(0.1, 0.1, 0.1)
+		UIStyle.apply_creature_sprite(detail_sprite, creature, "seen")
 		detail_name.text = "???"
 		detail_element.text = "Element: %s" % creature["element"].capitalize()
 		detail_rarity.text = "???"
