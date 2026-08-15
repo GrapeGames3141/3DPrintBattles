@@ -1,23 +1,30 @@
 ; Engine configuration file.
-; PrintForge Legends vertical slice
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
+
 config/name="PrintForge Legends"
-config/icon="res://assets/ui/printforge_launcher_icon.png"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-
-[application/boot_splash]
-image="res://assets/ui/workshop_boot_splash.png"
-bg_color=Color(0.027, 0.075, 0.14, 1)
+boot_splash/bg_color=Color(0.027, 0.075, 0.14, 1)
+boot_splash/image="res://assets/ui/workshop_boot_splash.png"
+config/icon="res://assets/ui/printforge_launcher_icon.png"
 
 [autoload]
+
 Catalog="*res://scripts/core/catalog.gd"
 GameManager="*res://scripts/core/game_manager.gd"
 SaveService="*res://scripts/core/save_service.gd"
 
 [display]
+
 window/size/viewport_width=720
 window/size/viewport_height=720
 window/size/window_width_override=1280
@@ -26,10 +33,19 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=6
 
-[rendering]
-textures/default_filters/use_nearest_mipmap_filter=false
-textures/vram_compression/import_etc2_astc=true
-
 [input]
-confirm={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":4194309)]}
-cancel={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":4194305)]}
+
+confirm={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":16,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194309,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+cancel={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":16,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194305,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true

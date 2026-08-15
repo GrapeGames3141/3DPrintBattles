@@ -1,10 +1,23 @@
 extends Control
 ## Reference-driven workshop presentation; final character art remains approval-gated.
 const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-reference.jpg")
+const WORKSHOP_OVERVIEW_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_v2.png")
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
+# Approved perspective-matched workshop station close-ups. Each keeps its visible
+# props aligned with the normalized, accessible object hotspots below.
+const WORKSHOP_CLOSEUP_PATHS := {
+	"printer": "res://assets/ui/workshop/workshop_printer_closeup_v2.png",
+	"maker": "res://assets/ui/workshop/workshop_maker_closeup_v2.png",
+	"terminal": "res://assets/ui/workshop/workshop_terminal_closeup_v2.png",
+	"proving": "res://assets/ui/workshop/workshop_proving_closeup_v2.png",
+	"yard": "res://assets/ui/workshop/workshop_yard_closeup_v2.png"
+}
 
 var screen := "workshop"
-var workshop_selected := "forge"
+var workshop_selected := "printer"
+var workshop_view := "overview"
+var workshop_drawer_object := ""
+var workshop_return_view := "overview"
 var pending_starter_id := ""
 var shop_day_key := ""
 var team_draft: Array = []
@@ -30,6 +43,7 @@ var printer_tick_accumulator := 0.0
 var printer_presentation_seconds := 0.0
 var printer_capture_freeze := false
 var printer_failure := ""
+var printer_return_screen := "collection"
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -68,20 +82,38 @@ func _process(delta: float) -> void:
 	render()
 
 func navigate_to(target: String) -> void:
+	if screen == "workshop" and target != "workshop":
+		workshop_return_view = workshop_view
+	if target == "workshop":
+		workshop_view = workshop_return_view
+		workshop_drawer_object = ""
 	screen = target
 	render()
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE): return
+	if screen == "workshop":
+		if not workshop_drawer_object.is_empty():
+			close_workshop_drawer()
+		elif workshop_view != "overview":
+			open_workshop_view("overview")
+		else:
+			return
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen == "printer":
 		if printer_sequence != null and printer_sequence.phase == ArcaneForgeSequence.IDLE:
 			printer_sequence.cancel()
 			printer_creature_id = ""
-			screen = "collection"
+			screen = printer_return_screen
+			if screen == "workshop": workshop_view = workshop_return_view
 			render()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen != "onboarding" and screen != "workshop":
 		screen = "workshop"
+		workshop_view = workshop_return_view
+		workshop_drawer_object = ""
 		local_ready_seat = -1
 		render()
 		get_viewport().set_input_as_handled()
@@ -331,7 +363,7 @@ func render_workshop_legacy() -> void:
 	trade_station.add_child(label("Credential-free local escrow demo. No chat or typed codes.", 14, Color("c9d8e6")))
 	trade_station.add_child(make_button("Open Local Trade", func(): local_trade=null; trade_creator_choice=""; trade_partner_choice=""; screen="trade"; render(), Color("4d7898")))
 
-func render_workshop() -> void:
+func render_workshop_button_tray() -> void:
 	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
 	var hero := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(hero.get_parent())
 	hero.add_child(label("Makers Guild Workshop", 26, Color("ffd36c")))
@@ -353,6 +385,271 @@ func render_workshop() -> void:
 	for entry in actions:
 		var action: Dictionary = entry
 		tray.add_child(make_button(str(action.label), _run_workshop_station.bind(str(action.target)), Color("a86b2e") if str(action.target) in ["printer", "calibration", "proving", "local_vs"] else Color("2f93a8")))
+
+func render_workshop() -> void:
+	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
+	var used_today: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
+	if workshop_view == "overview":
+		render_workshop_overview()
+	else:
+		render_workshop_closeup(used_today)
+	var strip := PanelContainer.new()
+	strip.name = "WorkshopProgressionStrip"
+	strip.custom_minimum_size = Vector2(0, 44)
+	strip.add_theme_stylebox_override("panel", panel_style(Color("102940e8"), Color("f1be69")))
+	body.add_child(strip)
+	var strip_text := label("%s | XP %d / %d | Calibration %d / %d" % [starter_name, int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 14, Color("9beaff"))
+	strip_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	strip.add_child(strip_text)
+
+func _workshop_views() -> Array:
+	return [
+		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "description":"The left Arcane Forge holds learned blueprints and printed companions.", "rect":Rect2(0.08, 0.32, 0.28, 0.44), "objects":[{"id":"forge_machine", "name":"Arcane Forge", "description":"Prepare a learned blueprint for a safe, witnessed print.", "target":"printer", "rect":Rect2(0.34, 0.27, 0.36, 0.56)}, {"id":"collection_case", "name":"Collection Case", "description":"Review your learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.08, 0.06, 0.25, 0.66)}]},
+		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"armor_tools", "name":"Armor Tools", "description":"Learn, print, fit, unequip, and reassign armor.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
+		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "description":"Browse fixed daily offers, records, and a local kid-safe trade demo.", "rect":Rect2(0.65, 0.30, 0.23, 0.34), "objects":[{"id":"offer_screen", "name":"Forge Offers", "description":"Review today's deterministic blueprint, card, and armor offers.", "target":"shop", "rect":Rect2(0.57, 0.35, 0.10, 0.29)}, {"id":"forgedex_screen", "name":"Forgedex Terminal", "description":"Track every discovered creature blueprint.", "target":"codex", "rect":Rect2(0.67, 0.35, 0.11, 0.29)}, {"id":"trade_terminal", "name":"Guild Trade Table", "description":"Open a credential-free two-profile escrow demonstration.", "target":"trade", "rect":Rect2(0.78, 0.35, 0.12, 0.29)}]},
+		{"id":"proving", "name":"Proving Door", "callout":"Training and Local Versus", "description":"Step through the center door for a deterministic training rival or private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Training Match", "description":"Face today's deterministic rival with your active team and deck.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
+		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "description":"Visit printed companions for one calm, limited XP lesson each day.", "rect":Rect2(0.37, 0.63, 0.27, 0.29), "objects":[{"id":"yard_companions", "name":"Daily Print Yard", "description":"Share today's local filament lesson with your current collection.", "target":"yard", "rect":Rect2(0.31, 0.44, 0.34, 0.28)}]}
+	]
+
+func _workshop_view_data(view_id: String) -> Dictionary:
+	for view in _workshop_views():
+		if str(view.id) == view_id: return view
+	return {}
+
+func _workshop_texture(view_id: String) -> Texture2D:
+	var path: String = str(WORKSHOP_CLOSEUP_PATHS.get(view_id, "res://docs/art/reference/workshop-theme-reference.jpg"))
+	var resource := load(path)
+	return resource as Texture2D if resource is Texture2D else REFERENCE_TEXTURE
+
+func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: float, host: Control = null) -> Control:
+	var map_frame := PanelContainer.new()
+	map_frame.custom_minimum_size = Vector2(0, minimum_height)
+	map_frame.add_theme_stylebox_override("panel", panel_style(Color("071526e8"), Color("6bd6ed")))
+	(host if host != null else body).add_child(map_frame)
+	var map := Control.new()
+	map.name = name_value
+	map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_frame.add_child(map)
+	var art_plane := Control.new()
+	art_plane.name = "%sArtPlane" % name_value
+	map.add_child(art_plane)
+	var texture_size := texture.get_size()
+	map.set_meta("workshop_art_aspect", texture_size.x / texture_size.y if texture_size.y > 0.0 else 1.5)
+	map.resized.connect(_fit_workshop_art_plane.bind(map, art_plane))
+	call_deferred("_fit_workshop_art_plane", map, art_plane)
+	var image := TextureRect.new()
+	image.texture = texture
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# The visible room is an aspect-fit map: normalized hotspot anchors stay on
+	# their physical props in portrait instead of drifting under a cover crop.
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	image.modulate = Color(0.94, 0.97, 1.0, 0.96)
+	art_plane.add_child(image)
+	var tint := ColorRect.new()
+	tint.color = Color("07132658")
+	tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_plane.add_child(tint)
+	if not bool(settings().get("reduced_motion", false)):
+		var veil := ColorRect.new()
+		veil.color = Color("b7efff80")
+		veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art_plane.add_child(veil)
+		var tween := create_tween()
+		tween.tween_property(veil, "modulate:a", 0.0, 0.18)
+	return art_plane
+
+func _fit_workshop_art_plane(map: Control, art_plane: Control) -> void:
+	var available := map.size
+	if available.x <= 0.0 or available.y <= 0.0: return
+	var aspect: float = float(map.get_meta("workshop_art_aspect", 1.5))
+	var fitted_width := minf(available.x, available.y * aspect)
+	var fitted_size := Vector2(fitted_width, fitted_width / aspect)
+	art_plane.size = fitted_size
+	art_plane.position = (available - fitted_size) * 0.5
+
+func _workshop_zone_button(view: Dictionary) -> Button:
+	var rect: Rect2 = view.rect
+	var button := Button.new()
+	button.name = "WorkshopZone%s" % str(view.id).capitalize()
+	button.text = ""
+	button.tooltip_text = "%s: %s" % [str(view.name), str(view.callout)]
+	button.accessibility_name = "%s work area" % str(view.name)
+	button.anchor_left = rect.position.x; button.anchor_top = rect.position.y; button.anchor_right = rect.end.x; button.anchor_bottom = rect.end.y
+	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
+	button.custom_minimum_size = Vector2(44, 44)
+	button.focus_mode = Control.FOCUS_ALL
+	button.add_theme_stylebox_override("normal", panel_style(Color("07132600"), Color("6bd6ed00")))
+	button.add_theme_stylebox_override("hover", panel_style(Color("39b7d112"), Color("fff0a1")))
+	button.add_theme_stylebox_override("focus", panel_style(Color("07132600"), Color("ffffff")))
+	_add_workshop_rune(button, Color("9beaff"))
+	button.focus_entered.connect(func(): _toast(str(view.name)))
+	button.pressed.connect(open_workshop_view.bind(str(view.id)))
+	return button
+
+func _workshop_object_button(object: Dictionary) -> Button:
+	var rect: Rect2 = object.rect
+	var button := Button.new()
+	button.name = "WorkshopObject%s" % str(object.id).capitalize()
+	button.text = ""
+	button.tooltip_text = "%s: %s" % [str(object.name), str(object.description)]
+	button.accessibility_name = str(object.name)
+	button.anchor_left = rect.position.x; button.anchor_top = rect.position.y; button.anchor_right = rect.end.x; button.anchor_bottom = rect.end.y
+	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
+	button.custom_minimum_size = Vector2(44, 44)
+	button.focus_mode = Control.FOCUS_ALL
+	button.add_theme_stylebox_override("normal", panel_style(Color("07132600"), Color("f1be6900")))
+	button.add_theme_stylebox_override("hover", panel_style(Color("a86b2e12"), Color("fff0a1")))
+	button.add_theme_stylebox_override("focus", panel_style(Color("07132600"), Color("ffffff")))
+	_add_workshop_rune(button, Color("ffd36c"))
+	button.focus_entered.connect(func(): _toast(str(object.name)))
+	button.pressed.connect(select_workshop_object.bind(str(object.id)))
+	return button
+
+func _add_workshop_rune(button: Button, color: Color) -> void:
+	var rune := label("\u25C7", 22, color)
+	rune.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rune.position = Vector2(4, 2)
+	rune.tooltip_text = ""
+	button.add_child(rune)
+
+func _workshop_settings_button() -> Button:
+	var button := make_button("\u2699", navigate_to.bind("settings"), Color("536c8d"))
+	button.name = "WorkshopSettingsButton"
+	button.tooltip_text = "Settings: text scale, contrast, motion, and training difficulty"
+	button.accessibility_name = "Workshop settings"
+	button.anchor_left = 0.91; button.anchor_top = 0.035; button.anchor_right = 0.975; button.anchor_bottom = 0.145
+	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
+	button.add_theme_font_size_override("font_size", scaled_font(23))
+	button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	return button
+
+func _workshop_overview_button() -> Button:
+	var button := make_button("\u2190", open_workshop_view.bind("overview"), Color("536c8d"))
+	button.name = "WorkshopOverviewButton"
+	button.tooltip_text = "Return to the full workshop overview"
+	button.accessibility_name = "Return to Workshop Overview"
+	button.anchor_left = 0.025; button.anchor_top = 0.035; button.anchor_right = 0.09; button.anchor_bottom = 0.145
+	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
+	button.add_theme_font_size_override("font_size", scaled_font(23))
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	return button
+
+func render_workshop_overview() -> void:
+	var map := _workshop_surface("WorkshopMap", WORKSHOP_OVERVIEW_TEXTURE, 470 if is_portrait_layout() else 560)
+	map.add_child(_workshop_settings_button())
+	for view in _workshop_views(): map.add_child(_workshop_zone_button(view))
+	var callout := make_panel(Color("102940e8"), Color("6bd6ed"))
+	body.add_child(callout.get_parent())
+	callout.add_child(label("Explore the Workshop", 21, Color("9beaff")))
+	callout.add_child(label("Focus or tap a subtle rune marker in the room to move closer to a work area. Each close-up keeps only its real tools in view.", 15, Color("dce8f4")))
+
+func render_workshop_closeup(used_today: int) -> void:
+	var view := _workshop_view_data(workshop_view)
+	if view.is_empty():
+		open_workshop_view("overview")
+		return
+	# A selected tool gets a dedicated right-hand blueprint tray on desktop.
+	# Portrait deliberately keeps the proven art-over-tray composition instead.
+	if not is_portrait_layout() and not workshop_drawer_object.is_empty():
+		var split := HBoxContainer.new()
+		split.name = "WorkshopCloseupSplit"
+		split.custom_minimum_size = Vector2(0, 500)
+		split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		split.add_theme_constant_override("separation", 16)
+		body.add_child(split)
+		var art_column := VBoxContainer.new()
+		art_column.name = "WorkshopCloseupArt"
+		art_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		art_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		art_column.size_flags_stretch_ratio = 7.0
+		split.add_child(art_column)
+		var tray_column := VBoxContainer.new()
+		tray_column.name = "WorkshopBlueprintTrayColumn"
+		tray_column.custom_minimum_size = Vector2(300, 0)
+		tray_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tray_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		tray_column.size_flags_stretch_ratio = 3.0
+		split.add_child(tray_column)
+		var split_map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), 500, art_column)
+		split_map.add_child(_workshop_overview_button())
+		split_map.add_child(_workshop_settings_button())
+		for object in view.objects: split_map.add_child(_workshop_object_button(object))
+		render_workshop_drawer(view, tray_column)
+		return
+	var closeup_height := 430 if is_portrait_layout() else 330
+	if workshop_drawer_object.is_empty(): closeup_height = 470 if is_portrait_layout() else 560
+	var map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), closeup_height)
+	map.add_child(_workshop_overview_button())
+	map.add_child(_workshop_settings_button())
+	for object in view.objects: map.add_child(_workshop_object_button(object))
+	var controls := HBoxContainer.new()
+	controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	controls.add_theme_constant_override("separation", 10)
+	body.add_child(controls)
+	var callout := label("%s - %s" % [str(view.name), str(view.callout)], 18, Color("ffd36c"))
+	callout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	callout.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	controls.add_child(callout)
+	if workshop_drawer_object.is_empty():
+		var hint := make_panel(Color("102940e8"), Color("f1be69"))
+		body.add_child(hint.get_parent())
+		hint.add_child(label(str(view.name), 22, Color("9beaff")))
+		hint.add_child(label("Focus or tap a highlighted tool in this close-up to open its action drawer.", 15, Color("dce8f4")))
+		if workshop_view == "maker": hint.add_child(label("Calibration remaining today: %d of %d." % [maxi(0, ProgressionRules.DAILY_CALIBRATION_LIMIT - used_today), ProgressionRules.DAILY_CALIBRATION_LIMIT], 14, Color("fff0a1")))
+		if workshop_view == "yard": hint.add_child(label("%d companions are ready for one calm filament lesson today." % GameManager.profile.creatures.size(), 14, Color("a8e3a5")))
+		return
+	render_workshop_drawer(view)
+
+func _workshop_object_data(view: Dictionary, object_id: String) -> Dictionary:
+	for object in view.objects:
+		if str(object.id) == object_id: return object
+	return {}
+
+func render_workshop_drawer(view: Dictionary, host: Control = null) -> void:
+	var object := _workshop_object_data(view, workshop_drawer_object)
+	if object.is_empty():
+		workshop_drawer_object = ""
+		return
+	var drawer := make_panel(Color("15344bea"), Color("f1be69"))
+	drawer.get_parent().name = "WorkshopContextDrawer"
+	(host if host != null else body).add_child(drawer.get_parent())
+	drawer.add_child(label("Blueprint Tray - %s" % str(object.name), 20, Color("ffd36c")))
+	drawer.add_child(label(str(object.description), 15, Color("e4edf7")))
+	var target: String = str(object.target)
+	var action_tiles := GridContainer.new()
+	action_tiles.name = "WorkshopDrawerActions"
+	action_tiles.columns = 2
+	action_tiles.add_theme_constant_override("h_separation", 10)
+	action_tiles.add_theme_constant_override("v_separation", 10)
+	drawer.add_child(action_tiles)
+	action_tiles.add_child(make_button(_workshop_action_label(target), _run_workshop_station.bind(target), Color("a86b2e") if target in ["printer", "calibration", "proving", "local_vs"] else Color("2f93a8")))
+	action_tiles.add_child(make_button("Close Tray", close_workshop_drawer, Color("536c8d")))
+
+func _workshop_action_label(target: String) -> String:
+	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Start Training", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
+	return str(names.get(target, "Open Station"))
+
+func open_workshop_view(view_id: String) -> void:
+	workshop_view = view_id if view_id == "overview" or not _workshop_view_data(view_id).is_empty() else "overview"
+	workshop_selected = workshop_view
+	workshop_drawer_object = ""
+	render()
+
+func select_workshop_object(object_id: String) -> void:
+	var object := _workshop_object_data(_workshop_view_data(workshop_view), object_id)
+	if object.is_empty(): return
+	workshop_drawer_object = object_id
+	_toast(str(object.name))
+	render()
+
+func close_workshop_drawer() -> void:
+	if workshop_drawer_object.is_empty(): return
+	workshop_drawer_object = ""
+	render()
 
 func _workshop_stations() -> Array:
 	return [
@@ -395,6 +692,7 @@ func start_local_vs() -> void:
 	local_authority = LocalBattleAuthority.create(team, ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
 	local_ready_seat = -1
 	local_concede_armed = false
+	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "local_vs"
 	render()
 
@@ -573,6 +871,8 @@ func open_printer(creature_id: String) -> void:
 	printer_tick_accumulator = 0.0
 	printer_presentation_seconds = 0.0
 	printer_failure = ""
+	printer_return_screen = screen
+	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "printer"
 	render()
 
@@ -648,7 +948,8 @@ func skip_printer() -> void:
 func cancel_printer_preview() -> void:
 	if printer_sequence != null: printer_sequence.cancel()
 	printer_creature_id = ""
-	screen = "collection"
+	screen = printer_return_screen
+	if screen == "workshop": workshop_view = workshop_return_view
 	render()
 
 func render_collection() -> void:
@@ -799,6 +1100,7 @@ func start_battle() -> void:
 	battle_last_event = ""
 	battle_last_actor = 0
 	battle_concede_armed = false
+	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "battle"
 	render()
 

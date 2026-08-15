@@ -1,6 +1,10 @@
 # PrintForge Legends
 
-Steam-first Godot 4.7.1 vertical slice for a cozy, winter-lit magical 3D-print workshop battler. It provides a playable solo battle loop, workshop navigation, blueprint/printing progression, Forge Coins, Forgedex, safe local trade contract, offline journal, 24-creature / 8-rarity catalog, 30 support cards, 7 armor definitions, and TypeScript Nakama-authority scaffolding.
+Steam-first Godot 4.7.1 vertical slice for a cozy, winter-lit magical 3D-print workshop battler. It provides a playable solo battle loop, spatial workshop navigation, blueprint/printing progression, Forge Coins, Forgedex, safe local trade contract, offline journal, 24-creature / 8-rarity catalog, 30 support cards, 7 armor definitions, and TypeScript Nakama-authority scaffolding.
+
+## Workshop navigation
+
+The Workshop is a spatial, accessible 2D hub rather than a button menu: its five subtle rune zones move to art-led close-ups, where physical props open compact Blueprint Trays for the relevant actions. Escape closes a tray, returns a close-up to the overview, then returns a launched game screen to its originating close-up. The native-3:2 workshop art and normalized hotspot rationale are documented in `docs/WORKSHOP_NAV_ART.md`.
 
 ## First-run flow
 
