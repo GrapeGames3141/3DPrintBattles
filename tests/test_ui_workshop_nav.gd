@@ -43,6 +43,7 @@ func _ready() -> void:
 	require(main.screen == "workshop" and main.workshop_view == "overview", "new selected profile opens the workshop overview")
 	var map := main.find_child("WorkshopMap", true, false) as Control
 	require(map != null, "overview has a dedicated spatial workshop map")
+	require(main.find_child("WorkshopStationLiveLayer", true, false) == null and main.find_child("WorkshopAmbientLayer", true, false) == null, "static overview has no live printer, team, or ambient artifact")
 	var zone_names := ["WorkshopZonePrinter", "WorkshopZoneMaker", "WorkshopZoneTerminal", "WorkshopZoneProving", "WorkshopZoneYard"]
 	for zone_name in zone_names:
 		var zone := main.find_child(str(zone_name), true, false) as Button
@@ -89,9 +90,18 @@ func _ready() -> void:
 		main.open_workshop_view("overview")
 		await get_tree().process_frame
 		await get_tree().process_frame
+		map = main.find_child("WorkshopMap", true, false) as Control
+		var expected_overview_path := "res://assets/ui/workshop/workshop_overview_portrait_v3.png" if viewport_size.y > viewport_size.x else "res://assets/ui/workshop/workshop_overview_landscape_v3.png"
+		require(map != null and str(map.get_meta("workshop_stage_texture", "")) == expected_overview_path, "overview selects the distinct v3 stage plate for %s" % viewport_size)
+		main.open_workshop_view("printer")
+		await get_tree().process_frame
+		var live_layer := main.find_child("WorkshopStationLiveLayer", true, false)
+		require(live_layer != null and live_layer.station_id == "printer" and live_layer.is_processing(), "normal-motion live Printer station processes presentation only at %s" % viewport_size)
+		main.open_workshop_view("overview")
+		await get_tree().process_frame
 		for zone_name in zone_names:
 			var zone := main.find_child(str(zone_name), true, false) as Control
-			require(zone != null and control_in_view(zone, viewport_size), "%s stays in bounds at %s" % [zone_name, viewport_size])
+			require(zone != null and control_in_view(zone, viewport_size), "%s stays in bounds at %s (rect %s)" % [zone_name, viewport_size, zone.get_global_rect() if zone != null else Rect2()])
 		main.open_workshop_view("maker")
 		await get_tree().process_frame
 		await get_tree().process_frame
@@ -125,6 +135,13 @@ func _ready() -> void:
 			await get_tree().process_frame
 		require(get_viewport().gui_get_focus_owner() is Button, "render provides deterministic keyboard focus at %s" % viewport_size)
 	GameManager.profile.settings.reduced_motion = true
+	main.screen = "workshop"
+	main.workshop_view = "printer"
+	main.render()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var reduced_live := main.find_child("WorkshopStationLiveLayer", true, false)
+	require(reduced_live != null and not reduced_live.is_processing(), "reduced motion freezes the Printer station presentation (setting %s, layer %s, capture %s, processing %s)" % [main.settings().get("reduced_motion", false), reduced_live.reduced_motion if reduced_live != null else false, reduced_live.capture_frozen if reduced_live != null else false, reduced_live.is_processing() if reduced_live != null else false])
 	main.workshop_view = "printer"
 	main.workshop_drawer_object = ""
 	main.render()

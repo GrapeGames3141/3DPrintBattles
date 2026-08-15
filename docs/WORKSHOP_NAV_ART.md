@@ -24,6 +24,15 @@ not baked text or button plaques in the art.
 
 ## Ambient and responsive presentation
 
-The Workshop overview and close-ups use the approved 3:2 art planes. Close-ups use a clipped cover plane in portrait so the room fills the usable viewport; hotspots remain children of that same mapped foreground plane. Their horizontal crop is boundedly pannable by swipe/drag, and keyboard focus pans the target fully into the clipped scene before it activates. The portrait overview keeps a contained foreground for all-station discoverability over a brighter cover backdrop; its zone positions therefore stay attached to the contained plane rather than the backdrop.
+The Workshop overview and close-ups use the approved art planes. Close-ups use a clipped cover plane in portrait so the room fills the usable viewport; hotspots remain children of that same mapped foreground plane. Their horizontal crop is boundedly pannable by swipe/drag, and keyboard focus pans the target fully into the clipped scene before it activates. The v3 overview chooses a dedicated landscape or portrait plate and uses a static full-plane establishing shot; its five zones map directly to the matching plate rather than to a cover-backdrop workaround.
 
-`WorkshopHotspotOverlay` supplies soft cyan or amber physical-item corner light and never darkens the underlying art. `WorkshopAmbientLayer` adds slow, code-native printer and hologram movement only. It owns no profile, printer, or game state and freezes at a deterministic readable phase when reduced motion or capture freeze is enabled.
+`WorkshopHotspotOverlay` supplies soft cyan or amber physical-item corner light and never darkens the underlying art. `WorkshopAmbientLayer` supplies slow, code-native station-local hologram movement only; the overview remains static. It owns no profile, printer, or game state and freezes at a deterministic readable phase when reduced motion or capture freeze is enabled.
+
+## v3 static overview and station-live plates
+
+| Runtime asset | Generated-asset purpose | Dynamic overlay region |
+| --- | --- | --- |
+| [`workshop_overview_landscape_v3.png`](../assets/ui/workshop/workshop_overview_landscape_v3.png) | 2026-08-15 built-in image-generation stage plate for the 16:9 Workshop overview, informed by the winter workshop reference and canonical Arcane Forge/raw/living references. | Static establishing shot with physical illuminated navigation zones. The empty left bench and right plinths are used only by focused station crops, never by the overview. |
+| [`workshop_overview_portrait_v3.png`](../assets/ui/workshop/workshop_overview_portrait_v3.png) | 2026-08-15 built-in image-generation stage plate for the portrait Workshop overview, composed independently rather than cropped from landscape. | Static portrait establishing shot. Focused Printer and Maker crops have independent landmark transforms so live overlays remain physically seated. |
+
+`WorkshopStationLiveLayer` composites the existing alpha Arcane Forge printer frames, catalog raw-print forms, living idle cells, and current active-team instances only into focused Printer and Maker station crops. Its integer-clock sequence is deterministic for capture/testing: ten seconds of bottom-up raw reveal, a raw hold, calm awakening/crossfade, departure, then a seeded choice among learned blueprint IDs. It never calls `GameManager`, saves, journals, changes coins, or changes the team. Reduced Motion is a static, readable raw-print frame. The empty plate regions are deliberate station integration space, not missing generated art.

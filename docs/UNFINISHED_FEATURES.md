@@ -12,7 +12,7 @@
 - [x] Responsive sensor-orientation shell and portrait Forge captures are present in `project.godot`, `tests/capture_checkpoint2.gd`, and `docs/VALIDATION.md`; this is not a complete device/accessibility matrix.
 - [x] Revisioned local hot-seat and credential-free local escrow trade are covered by `scripts/battle/local_battle_authority.gd`, `scripts/online/local_trade_authority.gd`, `tests/test_checkpoint5.tscn`, `tests/test_ui_checkpoint5.tscn`, and `tests/test_save_recovery.tscn`.
 - [x] Offline primary/backup save recovery and journal acknowledgement are covered by `scripts/core/save_service.gd` and `tests/test_save_recovery.tscn`.
-- [x] Spatial Workshop navigation is complete for the current 2D direction: five accessible physical-item glow zones, brighter 3:2 station close-ups with bounded portrait panning/focus reveal, compact prop drawers, slow reduced-motion-safe ambient presentation, and nested Back/Escape behavior are covered by `tests/test_ui_workshop_nav.tscn`; see `docs/WORKSHOP_NAV_ART.md` and the current Workshop navigation section in `docs/VALIDATION.md`.
+- [x] Spatial Workshop navigation is complete for the current 2D direction: five accessible physical-item glow zones, brighter 3:2 station close-ups with bounded portrait panning/focus reveal, compact prop drawers, slow reduced-motion-safe ambient presentation, and nested Back/Escape behavior are covered by `tests/test_ui_workshop_nav.tscn`. Independent v3 landscape/portrait overview plates are static establishing shots; the focused Printer and Maker stations host the presentation-only Forge and team shelf verified by `tests/test_workshop_live.tscn`. See `docs/WORKSHOP_NAV_ART.md` and the current Workshop navigation section in `docs/VALIDATION.md`.
 
 ## Critical path and ordering
 

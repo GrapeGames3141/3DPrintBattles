@@ -1,10 +1,12 @@
 extends Control
 ## Reference-driven workshop presentation; final character art remains approval-gated.
 const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-reference.jpg")
-const WORKSHOP_OVERVIEW_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_v2.png")
+const WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_landscape_v3.png")
+const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_portrait_v3.png")
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
+const WORKSHOP_STATION_LIVE_LAYER := preload("res://scripts/ui/workshop_station_live_layer.gd")
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -48,6 +50,9 @@ var printer_capture_freeze := false
 var printer_failure := ""
 var printer_return_screen := "collection"
 var workshop_ambient_capture_freeze := false
+var workshop_station_live_capture_progress := -1
+var workshop_station_live_capture_seed := 17
+var overview_layout_portrait := false
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -70,7 +75,10 @@ func _ready() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and is_inside_tree():
-		# Containers perform the responsive layout; redraw only the decorative background.
+		# Containers handle ordinary resize. An orientation flip needs its matching
+		# v3 overview plate and fresh normalized hotspot layout.
+		if screen == "workshop" and workshop_view == "overview" and is_portrait_layout() != overview_layout_portrait:
+			call_deferred("render")
 		queue_redraw()
 
 func _process(delta: float) -> void:
@@ -424,12 +432,66 @@ func _workshop_view_data(view_id: String) -> Dictionary:
 		if str(view.id) == view_id: return view
 	return {}
 
+func _workshop_overview_texture() -> Texture2D:
+	return WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE if is_portrait_layout() else WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE
+
+func _workshop_overview_zones() -> Array:
+	# v3 plates are separate compositions, not crops. Rectangles are normalized
+	# directly against each plate's pictured props.
+	if is_portrait_layout():
+		return [
+			{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "rect":Rect2(0.06, 0.51, 0.37, 0.25)},
+			{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "rect":Rect2(0.58, 0.50, 0.36, 0.25)},
+			{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "rect":Rect2(0.61, 0.23, 0.31, 0.25)},
+			{"id":"proving", "name":"Proving Door", "callout":"Training and Local Versus", "rect":Rect2(0.42, 0.13, 0.18, 0.35)},
+			# Keep the portrait yard zone above the compact in-map status tray so it
+			# remains reachable without a body scroll on small 576x1024 devices.
+			{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "rect":Rect2(0.40, 0.59, 0.20, 0.14)}
+		]
+	return [
+		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "rect":Rect2(0.06, 0.48, 0.36, 0.34)},
+		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "rect":Rect2(0.60, 0.57, 0.35, 0.28)},
+		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "rect":Rect2(0.59, 0.29, 0.22, 0.29)},
+		{"id":"proving", "name":"Proving Door", "callout":"Training and Local Versus", "rect":Rect2(0.44, 0.16, 0.14, 0.46)},
+		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "rect":Rect2(0.40, 0.63, 0.16, 0.14)}
+	]
+
 func _workshop_texture(view_id: String) -> Texture2D:
 	var path: String = str(WORKSHOP_CLOSEUP_PATHS.get(view_id, "res://docs/art/reference/workshop-theme-reference.jpg"))
 	var resource := load(path)
 	return resource as Texture2D if resource is Texture2D else REFERENCE_TEXTURE
 
-func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: float, host: Control = null, cover_art := false, ambient_view := "overview", cover_backdrop := false) -> Control:
+func _workshop_station_texture(view_id: String) -> Texture2D:
+	if view_id in ["printer", "maker"]:
+		return _workshop_overview_texture()
+	return _workshop_texture(view_id)
+
+func _workshop_station_focus(view_id: String) -> Vector2:
+	if view_id == "printer":
+		return Vector2(0.26, 0.52) if is_portrait_layout() else Vector2(0.25, 0.63)
+	if view_id == "maker":
+		return Vector2(0.75, 0.52) if is_portrait_layout() else Vector2(0.80, 0.78)
+	return Vector2(0.5, 0.5)
+
+func _workshop_station_zoom(view_id: String) -> float:
+	if view_id not in ["printer", "maker"]:
+		return 1.0
+	if is_portrait_layout():
+		return 1.50
+	return 1.70 if view_id == "printer" else 2.00
+
+func _add_workshop_station_live(art_plane: Control) -> void:
+	if workshop_view not in ["printer", "maker"]:
+		return
+	var layer := WORKSHOP_STATION_LIVE_LAYER.new()
+	layer.name = "WorkshopStationLiveLayer"
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.configure(GameManager.profile, workshop_view, is_portrait_layout(), bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), workshop_station_live_capture_seed, workshop_station_live_capture_progress >= 0 or workshop_ambient_capture_freeze)
+	if workshop_station_live_capture_progress >= 0:
+		layer.set_capture_progress(workshop_station_live_capture_progress)
+	art_plane.add_child(layer)
+
+func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: float, host: Control = null, cover_art := false, ambient_view := "overview", cover_backdrop := false, allow_portrait_pan := true, focus := Vector2(0.5, 0.5), art_zoom := 1.0) -> Control:
 	var map_frame := PanelContainer.new()
 	map_frame.custom_minimum_size = Vector2(0, minimum_height)
 	map_frame.add_theme_stylebox_override("panel", panel_style(Color("071526e8"), Color("6bd6ed")))
@@ -463,13 +525,17 @@ func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: f
 	var texture_size := texture.get_size()
 	map.set_meta("workshop_art_aspect", texture_size.x / texture_size.y if texture_size.y > 0.0 else 1.5)
 	map.set_meta("workshop_art_cover", cover_art)
-	map.set_meta("workshop_pan_enabled", cover_art and is_portrait_layout())
+	map.set_meta("workshop_stage_texture", texture.resource_path)
+	map.set_meta("workshop_pan_enabled", cover_art and allow_portrait_pan and is_portrait_layout())
+	map.set_meta("workshop_art_focus", focus)
+	map.set_meta("workshop_art_zoom", art_zoom)
 	map.resized.connect(_fit_workshop_art_plane.bind(map, art_plane))
 	if bool(map.get_meta("workshop_pan_enabled", false)):
 		map.gui_input.connect(_on_workshop_pan_gui_input.bind(map, art_plane))
 		_add_workshop_pan_affordance(map, art_plane)
 	call_deferred("_fit_workshop_art_plane", map, art_plane)
 	var image := TextureRect.new()
+	image.name = "WorkshopArtTexture"
 	image.texture = texture
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if cover_art else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -482,13 +548,14 @@ func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: f
 	tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_plane.add_child(tint)
-	var ambient := WORKSHOP_AMBIENT_LAYER.new()
-	ambient.name = "WorkshopAmbientLayer"
-	ambient.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ambient.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ambient.configure(ambient_view, not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze, 0.35)
-	art_plane.add_child(ambient)
-	if not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze:
+	if ambient_view != "overview":
+		var ambient := WORKSHOP_AMBIENT_LAYER.new()
+		ambient.name = "WorkshopAmbientLayer"
+		ambient.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		ambient.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ambient.configure(ambient_view, not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze, 0.35)
+		art_plane.add_child(ambient)
+	if ambient_view != "overview" and not bool(settings().get("reduced_motion", false)) and not workshop_ambient_capture_freeze:
 		var veil := ColorRect.new()
 		veil.color = Color("b7efff80")
 		veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -504,8 +571,15 @@ func _fit_workshop_art_plane(map: Control, art_plane: Control) -> void:
 	var aspect: float = float(map.get_meta("workshop_art_aspect", 1.5))
 	var fitted_width := maxf(available.x, available.y * aspect) if bool(map.get_meta("workshop_art_cover", false)) else minf(available.x, available.y * aspect)
 	var fitted_size := Vector2(fitted_width, fitted_width / aspect)
+	fitted_size *= float(map.get_meta("workshop_art_zoom", 1.0))
 	art_plane.size = fitted_size
-	var centered_position := (available - fitted_size) * 0.5
+	var focus: Vector2 = map.get_meta("workshop_art_focus", Vector2(0.5, 0.5))
+	var centered_position := available * 0.5 - fitted_size * focus
+	if not bool(map.get_meta("workshop_art_cover", false)):
+		centered_position = (available - fitted_size) * 0.5
+	else:
+		centered_position.x = clampf(centered_position.x, available.x - fitted_size.x, 0.0)
+		centered_position.y = clampf(centered_position.y, available.y - fitted_size.y, 0.0)
 	art_plane.position = centered_position
 	if bool(map.get_meta("workshop_pan_enabled", false)):
 		var saved_pan: float = float(map.get_meta("workshop_pan_x", centered_position.x))
@@ -623,8 +697,28 @@ func _workshop_zone_button(view: Dictionary) -> Button:
 	button.pressed.connect(open_workshop_view.bind(str(view.id)))
 	return button
 
+func _workshop_object_rect(object: Dictionary) -> Rect2:
+	var object_id := str(object.id)
+	# v3 live stations use landmark rectangles on the same cropped art plane as
+	# their drawn printer/team display, so focus glow never crosses a live figure.
+	if workshop_view == "printer":
+		if object_id == "forge_machine":
+			return Rect2(0.10, 0.38, 0.34, 0.26) if is_portrait_layout() else Rect2(0.08, 0.42, 0.24, 0.42)
+		if object_id == "collection_case":
+			return Rect2(0.02, 0.18, 0.20, 0.22) if is_portrait_layout() else Rect2(0.02, 0.18, 0.22, 0.24)
+	if workshop_view == "maker":
+		if object_id == "team_board":
+			return Rect2(0.57, 0.43, 0.36, 0.17) if is_portrait_layout() else Rect2(0.63, 0.61, 0.31, 0.25)
+		if object_id == "deck_blueprints":
+			return Rect2(0.48, 0.34, 0.13, 0.12) if is_portrait_layout() else Rect2(0.53, 0.28, 0.12, 0.12)
+		if object_id == "armor_tools":
+			return Rect2(0.76, 0.36, 0.14, 0.13) if is_portrait_layout() else Rect2(0.84, 0.24, 0.12, 0.14)
+		if object_id == "calibration_dial":
+			return Rect2(0.63, 0.42, 0.12, 0.11) if is_portrait_layout() else Rect2(0.68, 0.34, 0.12, 0.12)
+	return object.rect
+
 func _workshop_object_button(object: Dictionary) -> Button:
-	var rect: Rect2 = object.rect
+	var rect: Rect2 = _workshop_object_rect(object)
 	var button := Button.new()
 	button.name = "WorkshopObject%s" % str(object.id).capitalize()
 	button.text = ""
@@ -686,10 +780,13 @@ func _workshop_overview_button() -> Button:
 	return button
 
 func render_workshop_overview(used_today: int) -> void:
-	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 215.0) if is_portrait_layout() else 560.0
-	var map := _workshop_surface("WorkshopMap", WORKSHOP_OVERVIEW_TEXTURE, overview_height, null, false, "overview", is_portrait_layout())
-	_workshop_scene_map(map).add_child(_workshop_settings_button())
-	for view in _workshop_views(): map.add_child(_workshop_zone_button(view))
+	overview_layout_portrait = is_portrait_layout()
+	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 215.0) if overview_layout_portrait else maxf(500.0, get_viewport().get_visible_rect().size.y - 150.0)
+	# v3 overview plates are aspect-specific, static establishing shots. They never
+	# host mutable-looking printer/team overlays or motion; those belong in stations.
+	var map := _workshop_surface("WorkshopMap", _workshop_overview_texture(), overview_height, null, true, "overview", false, false)
+	map.add_child(_workshop_settings_button())
+	for view in _workshop_overview_zones(): map.add_child(_workshop_zone_button(view))
 	_add_workshop_overview_status(map, used_today)
 
 func render_workshop_closeup(used_today: int) -> void:
@@ -719,9 +816,11 @@ func render_workshop_closeup(used_today: int) -> void:
 		tray_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		tray_column.size_flags_stretch_ratio = 3.0
 		split.add_child(tray_column)
-		var split_map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), 500, art_column, true, workshop_view)
-		_workshop_scene_map(split_map).add_child(_workshop_overview_button())
-		_workshop_scene_map(split_map).add_child(_workshop_settings_button())
+		var split_map := _workshop_surface("WorkshopCloseupMap", _workshop_station_texture(workshop_view), 500, art_column, true, workshop_view, false, true, _workshop_station_focus(workshop_view), _workshop_station_zoom(workshop_view))
+		_add_workshop_station_live(split_map)
+		var split_chrome := _workshop_scene_map(split_map)
+		split_chrome.add_child(_workshop_overview_button())
+		split_chrome.add_child(_workshop_settings_button())
 		for object in view.objects: split_map.add_child(_workshop_object_button(object))
 		render_workshop_drawer(view, tray_column)
 		return
@@ -729,9 +828,12 @@ func render_workshop_closeup(used_today: int) -> void:
 	var closeup_height := 430.0 if portrait else 330.0
 	if workshop_drawer_object.is_empty():
 		closeup_height = maxf(720.0, get_viewport().get_visible_rect().size.y - 250.0) if portrait else 560.0
-	var map := _workshop_surface("WorkshopCloseupMap", _workshop_texture(workshop_view), closeup_height, null, portrait, workshop_view)
-	_workshop_scene_map(map).add_child(_workshop_overview_button())
-	_workshop_scene_map(map).add_child(_workshop_settings_button())
+	var live_station := workshop_view in ["printer", "maker"]
+	var map := _workshop_surface("WorkshopCloseupMap", _workshop_station_texture(workshop_view), closeup_height, null, portrait or live_station, workshop_view, false, true, _workshop_station_focus(workshop_view), _workshop_station_zoom(workshop_view))
+	_add_workshop_station_live(map)
+	var chrome := _workshop_scene_map(map)
+	chrome.add_child(_workshop_overview_button())
+	chrome.add_child(_workshop_settings_button())
 	for object in view.objects: map.add_child(_workshop_object_button(object))
 	_add_workshop_scene_status(map, view, used_today)
 	if workshop_drawer_object.is_empty():
@@ -745,8 +847,21 @@ func _add_workshop_scene_status(art_plane: Control, view: Dictionary, used_today
 	var strip := PanelContainer.new()
 	strip.name = "WorkshopSceneStatus"
 	strip.anchor_left = 0.025; strip.anchor_right = 0.975
-	strip.anchor_top = 1.0; strip.anchor_bottom = 1.0
-	strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = -94; strip.offset_bottom = -14
+	if workshop_view == "maker" and not is_portrait_layout():
+		# The landscape three-plinth row rises into the upper-right. Keep its
+		# compact explanatory tray on the unused lower-left rug/floor instead.
+		strip.anchor_left = 0.04; strip.anchor_right = 0.40
+		strip.anchor_top = 0.78; strip.anchor_bottom = 0.78
+		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = 0; strip.offset_bottom = 58
+	elif workshop_view in ["printer", "maker"]:
+		# Live v3 station scenes reserve their lower landmarks for the printer bed or
+		# three plinths. A compact top strip leaves both controls and prop bases clear.
+		strip.anchor_left = 0.14; strip.anchor_right = 0.84
+		strip.anchor_top = 0.025; strip.anchor_bottom = 0.025
+		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = 0; strip.offset_bottom = 58
+	else:
+		strip.anchor_top = 1.0; strip.anchor_bottom = 1.0
+		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = -94; strip.offset_bottom = -14
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	strip.add_theme_stylebox_override("panel", panel_style(Color("102940e8"), Color("f1be69")))
 	scene_map.add_child(strip)

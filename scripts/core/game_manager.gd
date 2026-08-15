@@ -15,6 +15,15 @@ func _ready() -> void:
 		if migrated != profile:
 			profile = migrated
 			SaveService.commit_snapshot(profile)
+	apply_android_review_coin_floor(OS.has_feature("android_review"))
+
+func apply_android_review_coin_floor(review_enabled: bool) -> bool:
+	var result := ReviewBuildRules.apply_coin_floor(profile, review_enabled)
+	if not bool(result.get("ok", false)):
+		return false
+	profile = result.profile
+	mutated("android_review_coin_floor", result.payload)
+	return true
 
 func default_profile() -> Dictionary:
 	return ProfileRules.new_profile()
