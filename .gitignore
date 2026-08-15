@@ -1,0 +1,10 @@
+.godot/
+.import/
+*.tmp
+*.log
+export/
+build/
+.env
+backend/node_modules/
+backend/dist/
+user-data/
