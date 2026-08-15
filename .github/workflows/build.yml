@@ -1,0 +1,151 @@
+name: Build game
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.1"
+
+jobs:
+  desktop:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: Windows
+            preset: Windows Steam
+            output: build/windows/PrintForgeLegends.exe
+            artifact_path: build/windows/
+            artifact: PrintForgeLegends-Windows
+          - target: Linux
+            preset: Linux
+            output: build/linux/PrintForgeLegends.x86_64
+            artifact_path: build/linux/
+            artifact: PrintForgeLegends-Linux
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Godot and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Create output directory
+        run: mkdir -p "$(dirname '${{ matrix.output }}')"
+
+      - name: Export ${{ matrix.target }}
+        run: >-
+          godot --headless --path .
+          --export-release "${{ matrix.preset }}"
+          "${{ matrix.output }}"
+
+      - name: Upload ${{ matrix.target }} build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-${{ github.sha }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+  mobile:
+    name: Build mobile (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Add an iOS entry here in the future. iOS will require a macOS
+        # runner, an iOS export preset, Xcode, and Apple signing credentials.
+        include:
+          - target: Android
+            runner: ubuntu-latest
+            preset: Android
+            output: build/android/PrintForgeLegends.apk
+            artifact: PrintForgeLegends-Android
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: >-
+          sdkmanager
+          "platform-tools"
+          "platforms;android-35"
+          "build-tools;35.0.0"
+
+      - name: Install Godot and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Configure Godot Android tools
+        run: |
+          mkdir -p "$HOME/.config/godot" "$HOME/.android"
+          cat > "$HOME/.config/godot/editor_settings-4.7.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Create output directory
+        run: mkdir -p "$(dirname '${{ matrix.output }}')"
+
+      - name: Export Android debug APK
+        run: >-
+          godot --headless --path .
+          --export-debug "${{ matrix.preset }}"
+          "${{ matrix.output }}"
+
+      - name: Upload Android build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-${{ github.sha }}
+          path: ${{ matrix.output }}
+          if-no-files-found: error
+          retention-days: 14
