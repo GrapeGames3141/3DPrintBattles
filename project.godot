@@ -20,6 +20,7 @@ window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 
 [rendering]
+textures/vram_compression/import_etc2_astc=true
 textures/default_filters/use_nearest_mipmap_filter=false
 
 [input]
