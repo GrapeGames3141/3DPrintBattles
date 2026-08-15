@@ -4,16 +4,20 @@ const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-refe
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 
 var screen := "workshop"
+var workshop_selected := "forge"
 var pending_starter_id := ""
 var shop_day_key := ""
 var team_draft: Array = []
 var deck_draft: Array = []
+var deck_slot_id := ProgressionRules.STARTER_DECK_ID
 var battle: BattleState
 var body: VBoxContainer
 var status: Label
 var battle_last_event := ""
 var battle_last_actor := 0
 var ai_pending := false
+var battle_concede_armed := false
+var local_concede_armed := false
 var local_authority: LocalBattleAuthority
 var local_ready_seat := -1
 var local_trade: LocalTradeAuthority
@@ -190,6 +194,8 @@ func render() -> void:
 		"team": render_team()
 		"armor": render_armor()
 		"deck": render_deck()
+		"yard": render_print_yard()
+		"calibration": render_calibration_bench()
 		"printer": render_printer()
 		"settings": render_settings()
 		"local_vs": render_local_vs()
@@ -279,7 +285,7 @@ func confirm_starter() -> void:
 	screen = "onboarding"
 	render()
 
-func render_workshop() -> void:
+func render_workshop_legacy() -> void:
 	var hero := make_panel(Color("19334de8"), Color("f1be69"))
 	body.add_child(hero.get_parent())
 	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
@@ -321,11 +327,70 @@ func render_workshop() -> void:
 	trade_station.add_child(label("Credential-free local escrow demo. No chat or typed codes.", 14, Color("c9d8e6")))
 	trade_station.add_child(make_button("Open Local Trade", func(): local_trade=null; trade_creator_choice=""; trade_partner_choice=""; screen="trade"; render(), Color("4d7898")))
 
+func render_workshop() -> void:
+	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
+	var hero := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(hero.get_parent())
+	hero.add_child(label("Makers Guild Workshop", 26, Color("ffd36c")))
+	hero.add_child(label("%s watches the warm tools glow beneath the snowlight. Choose a place in the workshop, then use the station tray below." % starter_name, 16, Color("e2edf6")))
+	var used_today: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
+	hero.add_child(label("Progress: %d Forge Coins | Spool %d / 10 | XP %d / %d | Calibration %d / %d" % [int(GameManager.profile.coins), GameManager.filament_cap(), int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 15, Color("9beaff")))
+	var map_frame := PanelContainer.new(); map_frame.custom_minimum_size = Vector2(0, 250); map_frame.add_theme_stylebox_override("panel", panel_style(Color("071526e8"), Color("6bd6ed"))); body.add_child(map_frame)
+	var map := Control.new(); map.name = "WorkshopMap"; map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); map_frame.add_child(map)
+	var image := TextureRect.new(); image.texture = REFERENCE_TEXTURE; image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED; image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); image.mouse_filter = Control.MOUSE_FILTER_IGNORE; image.modulate = Color(0.88, 0.94, 1.0, 0.88); map.add_child(image)
+	var tint := ColorRect.new(); tint.color = Color("07132675"); tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); tint.mouse_filter = Control.MOUSE_FILTER_IGNORE; map.add_child(tint)
+	for station in _workshop_stations(): map.add_child(_workshop_hotspot(station))
+	var tray := make_panel(Color("152d49ed"), Color("f1be69")); body.add_child(tray.get_parent())
+	var selected := _workshop_station(workshop_selected)
+	tray.add_child(label(str(selected.name), 22, Color("ffd36c") if workshop_selected == "maker" else Color("9beaff")))
+	tray.add_child(label(str(selected.description), 16, Color("dce8f4")))
+	if workshop_selected == "yard": tray.add_child(label("%d companions are ready for one calm filament lesson today." % GameManager.profile.creatures.size(), 14, Color("a8e3a5")))
+	if workshop_selected == "maker": tray.add_child(label("Calibration remaining today: %d of %d." % [maxi(0, ProgressionRules.DAILY_CALIBRATION_LIMIT - used_today), ProgressionRules.DAILY_CALIBRATION_LIMIT], 14, Color("fff0a1")))
+	var actions: Array = selected.get("actions", [])
+	for entry in actions:
+		var action: Dictionary = entry
+		tray.add_child(make_button(str(action.label), _run_workshop_station.bind(str(action.target)), Color("a86b2e") if str(action.target) in ["printer", "calibration", "proving", "local_vs"] else Color("2f93a8")))
+
+func _workshop_stations() -> Array:
+	return [
+		{"id":"forge","name":"Printer Bench","description":"The left Arcane Forge holds every learned blueprint and printed companion.","actions":[{"label":"Open Arcane Forge","target":"printer"},{"label":"Open Collection","target":"collection"}],"rect":Rect2(0.05,0.48,0.17,0.23)},
+		{"id":"maker","name":"Maker Bench","description":"Shape the active team, named deck slots, fitted armor, and daily calibration patterns at one maker table.","actions":[{"label":"Edit Team","target":"team"},{"label":"Edit Deck Slots","target":"deck"},{"label":"Open Armor","target":"armor"},{"label":"Run Calibration","target":"calibration"}],"rect":Rect2(0.27,0.68,0.25,0.17)},
+		{"id":"terminal","name":"Forge Terminal","description":"Browse deterministic offers, track creature records, or open the kid-safe local trade table.","actions":[{"label":"Open Forge Offers","target":"shop"},{"label":"Open Forgedex","target":"codex"},{"label":"Open Trade Table","target":"trade"}],"rect":Rect2(0.76,0.50,0.19,0.23)},
+		{"id":"door","name":"Proving Door","description":"Challenge today’s deterministic training rival or pass the device for a local match.","actions":[{"label":"Start Training","target":"proving"},{"label":"Start Local Versus","target":"local_vs"}],"rect":Rect2(0.41,0.25,0.19,0.33)},
+		{"id":"yard","name":"Print Yard","description":"Visit companions for one daily XP filament lesson.","actions":[{"label":"Visit Print Yard","target":"yard"}],"rect":Rect2(0.05,0.77,0.18,0.13)},
+		{"id":"settings","name":"Settings","description":"Adjust text, contrast, motion, and AI training difficulty.","actions":[{"label":"Open Settings","target":"settings"}],"rect":Rect2(0.84,0.08,0.12,0.11)}]
+
+func _workshop_station(id: String) -> Dictionary:
+	for station in _workshop_stations():
+		if str(station.id) == id: return station
+	return _workshop_stations()[0]
+
+func _workshop_hotspot(station: Dictionary) -> Button:
+	var rect: Rect2 = station.rect
+	var button := Button.new(); button.text = str(station.name); button.tooltip_text = str(station.description)
+	button.anchor_left = rect.position.x; button.anchor_top = rect.position.y; button.anchor_right = rect.end.x; button.anchor_bottom = rect.end.y
+	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0; button.custom_minimum_size = Vector2(44, 44)
+	button.add_theme_font_size_override("font_size", scaled_font(13))
+	var chosen := str(station.id) == workshop_selected
+	button.add_theme_stylebox_override("normal", panel_style(Color("a86b2ed0") if chosen else Color("142840d8"), Color("fff0a1") if chosen else Color("8deaff")))
+	button.add_theme_stylebox_override("hover", panel_style(Color("2f93a8ed"), Color("ffffff")))
+	button.pressed.connect(func(): workshop_selected = str(station.id); render())
+	return button
+
+func _run_workshop_station(id: String) -> void:
+	match id:
+		"printer": open_printer(str(GameManager.profile.onboarding.starter_id))
+		"collection", "shop", "codex", "team", "deck", "armor", "settings": navigate_to(id)
+		"proving": start_battle()
+		"local_vs": start_local_vs()
+		"trade": local_trade = null; trade_creator_choice = ""; trade_partner_choice = ""; navigate_to("trade")
+		"yard", "calibration": navigate_to(id)
+
 func start_local_vs() -> void:
 	var team := GameManager.current_team_loadout()
 	if team.is_empty(): _toast("Choose a starter before starting local versus."); return
 	local_authority = LocalBattleAuthority.create(team, ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
 	local_ready_seat = -1
+	local_concede_armed = false
 	screen = "local_vs"
 	render()
 
@@ -339,6 +404,7 @@ func render_local_vs() -> void:
 	panel.add_child(label("Authority revision %d  |  Match seed %d  |  No rewards in local versus" % [local_authority.revision, state.seed], 15, Color("9beaff")))
 	var seat := state.active_player
 	if not state.finished and local_ready_seat != seat:
+		local_concede_armed = false
 		panel.add_child(label("Private handoff", 20, Color("fff0a1")))
 		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
 		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
@@ -362,14 +428,36 @@ func render_local_vs() -> void:
 	for index in state.players[seat].team.size():
 		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
 			navigation.add_child(make_button("Switch to %s" % str(state.players[seat].team[index].name), func(): submit_local_intent({"type":"switch","index":index}), Color("4d7898")))
+	if local_concede_armed:
+		navigation.add_child(make_button("Confirm Concede", toggle_local_concede, Color("9a5b6f")))
+		navigation.add_child(make_button("Cancel Concede", cancel_local_concede, Color("536c8d")))
+	else:
+		navigation.add_child(make_button("Concede", toggle_local_concede, Color("9a5b6f")))
 	navigation.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func submit_local_intent(intent: Dictionary) -> void:
 	if local_authority == null: return
+	if str(intent.get("type", "")) != "concede": local_concede_armed = false
 	var seat := local_authority.state.active_player
 	var result := local_authority.submit({"seat":seat,"expected_revision":local_authority.revision,"intent":intent})
 	if not bool(result.ok): _toast(str(result.error)); return
 	battle_last_event = str(intent.type); battle_last_actor = seat; local_ready_seat = -1; render()
+
+func toggle_local_concede() -> void:
+	if local_authority == null or local_authority.state.finished: return
+	if not local_concede_armed:
+		local_concede_armed = true
+		_toast("Press Confirm Concede to end this local match.")
+		render()
+		return
+	local_concede_armed = false
+	submit_local_intent({"type":"concede"})
+
+func cancel_local_concede() -> void:
+	if not local_concede_armed: return
+	local_concede_armed = false
+	_toast("Concede cancelled.")
+	render()
 
 func _guildmate_profile() -> Dictionary:
 	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "aquafin").profile
@@ -433,6 +521,28 @@ func render_shop() -> void:
 		card.add_child(label(str(offer.name), 19, Color("8deaff")))
 		card.add_child(label(str(offer.kind).replace("_", " ").capitalize() + " • " + str(offer.price) + " FC", 14, Color("dce8f4")))
 		card.add_child(make_button("Acquire", func(): GameManager.buy_shop_offer(shop_day_key, str(offer.offer_id))))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func render_print_yard() -> void:
+	var panel := make_panel(Color("19334de8"), Color("7bcf89")); body.add_child(panel.get_parent())
+	panel.add_child(label("Print Yard", 25, Color("a8e3a5")))
+	panel.add_child(label("Your printed companions practice one calm filament lesson together each day. This activity is local, deterministic, and cannot be repeated today.", 16, Color("dce8f4")))
+	panel.add_child(label("Companions present: %d | Current XP: %d | Spool threshold: %d XP" % [GameManager.profile.creatures.size(), int(GameManager.profile.xp), GameManager.filament_cap() * 100], 15, Color("9beaff")))
+	var already := str(GameManager.profile.get("last_yard_day", "")) == shop_day_key
+	panel.add_child(make_button("Lesson already shared today" if already else "Share Filament Lesson (+XP)", func():
+		var xp := GameManager.visit_print_yard(shop_day_key)
+		if xp > 0: _toast("Print Yard lesson complete: +%d XP." % xp), Color("588d73") if not already else Color("536c8d")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func render_calibration_bench() -> void:
+	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
+	var used: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
+	panel.add_child(label("Calibration Bench", 25, Color("ffd36c")))
+	panel.add_child(label("Tune a fixed 72% pattern for a reliable Forge Coin reward. A fresh day resets the three-pattern limit.", 16, Color("dce8f4")))
+	panel.add_child(label("Today: %d / %d patterns complete | Reward at 72%%: 22 Forge Coins" % [used, ProgressionRules.DAILY_CALIBRATION_LIMIT], 15, Color("9beaff")))
+	panel.add_child(make_button("Calibration complete for today" if used >= ProgressionRules.DAILY_CALIBRATION_LIMIT else "Run Calibration Pattern", func():
+		var reward := GameManager.complete_workshop_job(72, shop_day_key)
+		if reward > 0: _toast("Calibration pattern complete: +%d Forge Coins." % reward), Color("a86b2e") if used < ProgressionRules.DAILY_CALIBRATION_LIMIT else Color("536c8d")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_settings() -> void:
@@ -570,7 +680,7 @@ func render_team() -> void:
 	intro.add_child(make_button("Save Team", func(): GameManager.save_team(team_draft), Color("a86b2e")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
-func render_armor() -> void:
+func render_armor_legacy() -> void:
 	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
 	intro.add_child(label("Armor Workbench", 25, Color("ffd36c")))
 	for armor in Catalog.ARMOR:
@@ -586,7 +696,30 @@ func render_armor() -> void:
 				intro.add_child(make_button("Equip %s to %s" % [str(armor_instance.armor_id), str(Catalog.creature(str(creature.creature_id)).name)], func(): GameManager.equip_armor(target_id, armor_instance_id), Color("588d73")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
-func render_deck() -> void:
+func render_armor() -> void:
+	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
+	panel.add_child(label("Armor Workbench", 25, Color("ffd36c")))
+	panel.add_child(label("Each print wears at most one armor piece. Move or remove an equipped piece without losing either item.", 15, Color("dce8f4")))
+	for definition in Catalog.ARMOR:
+		var known: bool = definition.id in GameManager.profile.armor_blueprints
+		panel.add_child(make_button(("Print " if known else "Learn ") + str(definition.name) + " (%d FC)" % int(definition.print if known else definition.blueprint), func():
+			if known: GameManager.print_armor(str(definition.id))
+			else: GameManager.learn_armor_blueprint(str(definition.id))))
+	for creature in GameManager.profile.creatures:
+		var creature_id := str(creature.instance_id); var creature_name := str(Catalog.creature(str(creature.creature_id)).name); var equipped := str(creature.get("armor_id", ""))
+		panel.add_child(label("%s: %s" % [creature_name, "Unarmored" if equipped.is_empty() else equipped.replace("_", " ").capitalize()], 15, Color("a8e3a5") if not equipped.is_empty() else Color("dce8f4")))
+		if not equipped.is_empty(): panel.add_child(make_button("Unequip from %s" % creature_name, func(): GameManager.unequip_armor(creature_id), Color("536c8d")))
+	for armor_instance in GameManager.profile.armor:
+		var armor_id := str(armor_instance.armor_instance_id); var armor_name := str(armor_instance.armor_id).replace("_", " ").capitalize()
+		for creature in GameManager.profile.creatures:
+			var target_id := str(creature.instance_id); var target_name := str(Catalog.creature(str(creature.creature_id)).name)
+			var moving := not str(armor_instance.get("equipped_to", "")).is_empty()
+			panel.add_child(make_button(("Move " if moving else "Equip ") + armor_name + " to " + target_name, func():
+				if moving: GameManager.reassign_armor(target_id, armor_id)
+				else: GameManager.equip_armor(target_id, armor_id), Color("588d73")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func render_deck_legacy() -> void:
 	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
 	if deck_draft.is_empty(): deck_draft = GameManager.active_deck_cards()
 	var active := GameManager.active_deck_cards()
@@ -613,6 +746,32 @@ func render_deck() -> void:
 		intro.add_child(label("Add %d more cards to make a legal 15-card deck." % [15 - deck_draft.size()], 14, Color("fff0a1")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
+func render_deck() -> void:
+	var panel := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(panel.get_parent())
+	if deck_slot_id.is_empty(): deck_slot_id = str(GameManager.profile.get("active_deck_id", ProgressionRules.STARTER_DECK_ID))
+	if deck_draft.is_empty(): deck_draft = GameManager.active_deck_cards()
+	panel.add_child(label("15-Card Deck Builder", 25, Color("d3a7ff")))
+	panel.add_child(label("Selected slot: %s | Draft: %d / 15. Only owned support cards can be saved." % [str(ProgressionRules.DECK_SLOT_NAMES.get(deck_slot_id, "Forge Deck")), deck_draft.size()], 15, Color("dce8f4")))
+	for slot_id in ProgressionRules.DECK_SLOT_IDS:
+		var saved_cards: Array = []
+		for saved in GameManager.profile.get("decks", []):
+			if str(saved.get("id", "")) == slot_id: saved_cards = saved.get("cards", []).duplicate()
+		var action := "Active" if str(GameManager.profile.active_deck_id) == slot_id else "Select"
+		panel.add_child(make_button("%s: %d cards - %s" % [str(ProgressionRules.DECK_SLOT_NAMES[slot_id]), saved_cards.size(), action], func():
+			deck_slot_id = slot_id
+			deck_draft = saved_cards.duplicate() if not saved_cards.is_empty() else GameManager.active_deck_cards()
+			if not saved_cards.is_empty(): GameManager.select_deck(slot_id)
+			render(), Color("588d73") if str(GameManager.profile.active_deck_id) == slot_id else Color("526e93")))
+	for card in Catalog.SUPPORT_CARDS:
+		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0)); var copies: int = deck_draft.count(card_id)
+		if owned <= 0: continue
+		var row := HBoxContainer.new(); panel.add_child(row)
+		var info := label("%s | owned %d | slot %d" % [str(card.name), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
+		row.add_child(make_button("-", func(): deck_draft.erase(card_id); render(), Color("536c8d")))
+		row.add_child(make_button("+", func(): if deck_draft.size() < 15 and deck_draft.count(card_id) < owned: deck_draft.append(card_id); render(), Color("2f93a8")))
+	panel.add_child(make_button("Save %s as active (%d / 15)" % [str(ProgressionRules.DECK_SLOT_NAMES.get(deck_slot_id, "Forge Deck")), deck_draft.size()], func(): GameManager.save_deck_slot(deck_draft, deck_slot_id), Color("a86b2e")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
 func render_codex() -> void:
 	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
 	intro.add_child(label("Forgedex", 25, Color("d3a7ff")))
@@ -631,11 +790,18 @@ func start_battle() -> void:
 		_toast("Choose a starter before entering the Proving Grounds.")
 		return
 	# Training begins with the currently selected/available team; one print is valid.
-	battle = BattleState.create(player_team, ["mossmunk"], GameManager.filament_cap(), 3, int(Time.get_ticks_msec()), GameManager.active_deck_cards())
+	var rival_team := GameManager.training_opponent(shop_day_key)
+	battle = BattleState.create(player_team, rival_team, GameManager.filament_cap(), 3, _training_seed(shop_day_key), GameManager.active_deck_cards())
 	battle_last_event = ""
 	battle_last_actor = 0
+	battle_concede_armed = false
 	screen = "battle"
 	render()
+
+func _training_seed(day_key: String) -> int:
+	var seed := 0
+	for byte in day_key.to_utf8_buffer(): seed = (seed * 31 + int(byte)) % 2147483647
+	return seed
 
 func render_battle() -> void:
 	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
@@ -660,6 +826,11 @@ func render_battle() -> void:
 		actions.add_child(make_button("Signature Ability", func(): intent({"type":"ability"})))
 		actions.add_child(make_button("Defend", func(): intent({"type":"defend"})))
 		actions.add_child(make_button("End Turn", func(): intent({"type":"end_turn"}), Color("536c8d")))
+		if battle_concede_armed:
+			actions.add_child(make_button("Confirm Concede", toggle_battle_concede, Color("9a5b6f")))
+			actions.add_child(make_button("Cancel Concede", cancel_battle_concede, Color("536c8d")))
+		else:
+			actions.add_child(make_button("Concede", toggle_battle_concede, Color("9a5b6f")))
 		var switches := HBoxContainer.new(); body.add_child(switches); switches.add_child(label("Bench:",15))
 		for bench_index in battle.players[0].team.size():
 			if bench_index == int(battle.players[0].active): continue
@@ -673,12 +844,29 @@ func render_battle() -> void:
 		call_deferred("run_ai" if bool(settings().get("reduced_motion", false)) else "run_ai_after_presentation")
 
 func intent(action: Dictionary) -> void:
+	if str(action.get("type", "")) != "concede": battle_concede_armed = false
 	var result := BattleRules.apply_intent(battle, 0, action)
 	if not result.ok: _toast(str(result.error))
 	else:
+		battle_concede_armed = false
 		battle_last_event = str(action.get("type", ""))
 		battle_last_actor = 0
 		render()
+
+func toggle_battle_concede() -> void:
+	if battle == null or battle.finished: return
+	if not battle_concede_armed:
+		battle_concede_armed = true
+		_toast("Press Confirm Concede to end this training match.")
+		render()
+		return
+	intent({"type":"concede"})
+
+func cancel_battle_concede() -> void:
+	if not battle_concede_armed: return
+	battle_concede_armed = false
+	_toast("Concede cancelled.")
+	render()
 
 func run_ai_after_presentation() -> void:
 	await get_tree().create_timer(0.5).timeout

@@ -67,6 +67,12 @@ func save_team(instance_ids: Array) -> bool:
 func save_deck(cards: Array) -> bool:
 	return apply_transition(ProgressionRules.save_deck(profile, cards), "save_deck")
 
+func save_deck_slot(cards: Array, deck_id: String) -> bool:
+	return apply_transition(ProgressionRules.save_deck_slot(profile, cards, deck_id), "save_deck")
+
+func select_deck(deck_id: String) -> bool:
+	return apply_transition(ProgressionRules.select_deck(profile, deck_id), "select_deck")
+
 func save_settings(values: Dictionary) -> bool:
 	return apply_transition(AccessibilityRules.save(profile, values), "save_settings")
 
@@ -90,10 +96,9 @@ func award_battle(win: bool) -> void:
 	var coins: int = 20 if win else 8
 	var xp: int = 30 if win else 10
 	profile.coins = int(profile.coins) + coins
-	profile.xp = int(profile.xp) + xp
-	if int(profile.xp) >= filament_cap() * 100 and filament_cap() < 10:
-		profile.xp = int(profile.xp) - filament_cap() * 100
-		profile.spool_level = filament_cap() + 1
+	var xp_result := ProgressionRules.grant_xp(profile, xp)
+	profile = xp_result.profile
+	if int(xp_result.payload.spool_gained) > 0:
 		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
 	mutated("battle_reward", {"win":win,"coins":coins,"xp":xp})
 
@@ -103,11 +108,29 @@ func claim_battle_reward(state: BattleState) -> bool:
 	award_battle(state.winner == 0)
 	return true
 
-func complete_workshop_job(performance: int) -> int:
-	# Non-educational calibration/pattern job: 0..100 performance.
-	var reward := clampi(8 + performance / 5, 8, 28)
-	earn_coins(reward, "workshop_job")
-	return reward
+func complete_workshop_job(performance: int, day_key: String = "") -> int:
+	# Non-educational calibration/pattern job. The pure rules own rollover/limits;
+	# UI supplies the day, while legacy callers safely use the local calendar.
+	var resolved_day := Time.get_date_string_from_system() if day_key.is_empty() else day_key
+	var result := ProgressionRules.complete_calibration(profile, resolved_day, performance)
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "Calibration is unavailable.")))
+		return 0
+	profile = result.profile
+	mutated("calibration_job", result.payload)
+	return int(result.payload.reward)
+
+func visit_print_yard(day_key: String = "") -> int:
+	var resolved_day := Time.get_date_string_from_system() if day_key.is_empty() else day_key
+	var result := ProgressionRules.visit_print_yard(profile, resolved_day)
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "The Print Yard is unavailable.")))
+		return 0
+	profile = result.profile
+	if int(result.payload.get("spool_gained", 0)) > 0:
+		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
+	mutated("print_yard_visit", result.payload)
+	return int(result.payload.xp)
 
 func learn_blueprint(creature_id: String) -> bool:
 	return apply_transition(ProgressionRules.purchase_creature_blueprint(profile, creature_id), "learn_blueprint")
@@ -123,6 +146,15 @@ func learn_armor_blueprint(armor_id: String) -> bool:
 
 func equip_armor(creature_instance_id: String, armor_instance_id: String) -> bool:
 	return apply_transition(ProgressionRules.equip_armor(profile, creature_instance_id, armor_instance_id), "equip_armor")
+
+func unequip_armor(creature_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.unequip_armor(profile, creature_instance_id), "unequip_armor")
+
+func reassign_armor(creature_instance_id: String, armor_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.reassign_armor(profile, creature_instance_id, armor_instance_id), "reassign_armor")
+
+func training_opponent(day_key: String) -> Array:
+	return ProgressionRules.training_opponent(day_key, current_team_creature_ids())
 
 func apply_transition(result: Dictionary, kind: String) -> bool:
 	if not bool(result.get("ok", false)):

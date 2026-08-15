@@ -31,13 +31,11 @@
   - **DoD:** CI runs Godot parser/tests and `backend` checks from clean caches; secret scanner blocks known test patterns; release logs redact keystore/token material; no real secret is committed.
   - **Depends on:** P0 incident containment.
 
-- [ ] **Repair the workshop calibration-job route and define daily limits.** `GameManager.complete_workshop_job()` exists in `scripts/core/game_manager.gd`, but the Workshop station list in `scripts/ui/main.gd` has no matching `Workbench` action. Profile fields `daily_job_count` and `last_job_day` in `scripts/core/profile_rules.gd` are currently unused.
-  - **DoD:** a visible, reachable calibration job has a deterministic reward and explicit day key; one atomic profile/journal transition updates the two fields; repeat/rollover, migration, and insufficient/invalid inputs have pure and UI tests.
-  - **Depends on:** none; this should precede economy balancing.
+- [x] **Repair the workshop calibration-job route and define daily limits.** `ProgressionRules.complete_calibration()` and `GameManager.complete_workshop_job()` now use `last_job_day`/`daily_job_count`, a supplied YYYY-MM-DD key, a three-pattern daily cap, and a reachable Calibration Bench in `scripts/ui/main.gd`.
+  - **Evidence:** `tests/test_checkpoint_a.tscn` covers atomic reward/cap/rollover and `tests/test_ui_checkpoint_a.tscn` covers Workshop reachability; economy balancing remains P3 work.
 
-- [ ] **Expose legal battle concede in the UI.** `scripts/battle/battle_rules.gd` and `backend/src/contracts.ts` support `concede`, but `scripts/ui/main.gd` does not offer it.
-  - **DoD:** player can confirm/cancel a concede from solo and local-versus UI; result/log/winner are canonical; local-versus handoff and reward rules remain correct; regression tests cover it.
-  - **Depends on:** none.
+- [x] **Expose legal battle concede in the UI.** Solo and local-versus screens now require a second Concede press before submitting the existing legal rule intent, expose Cancel Concede while armed, and disarm on any other intent or private handoff; local-versus remains no-reward.
+  - **Evidence:** `scripts/ui/main.gd`, `tests/test_ui_checkpoint_a.tscn`, and existing `tests/test_battle_rules.tscn` preserve canonical concede resolution.
 
 - [ ] **Harden profile/save migration compatibility.** Schema migrations must preserve current saves across future profile, deck, armor, shop, settings, journal, and server-revision changes.
   - **DoD:** versioned fixtures for every released schema migrate idempotently; unsupported future versions fail safely with recovery guidance; backup, temp-write, journal acknowledgement, and interrupted-write tests remain green.
@@ -75,23 +73,21 @@
 
 ## P1 — game-loop depth
 
-- [ ] **Turn Print Yard into a playable progression station.** It is listed in `scripts/ui/main.gd` but currently display-only.
-  - **DoD:** at least one bounded, deterministic interaction feeds a documented resource, training, discovery, or social-free collection loop; it cannot duplicate awards on rerender/reload; tutorial/UI/capture/test evidence explains it.
-  - **Depends on:** repaired daily-job semantics and economy targets.
+- [x] **Turn Print Yard into a playable progression station.** `ProgressionRules.visit_print_yard()` grants one bounded, deterministic daily XP lesson using `last_yard_day`; `GameManager` journals it and the Workshop hub reaches the activity.
+  - **Evidence:** `tests/test_checkpoint_a.tscn` covers repeat refusal and `tests/test_ui_checkpoint_a.tscn` covers navigation. Reward tuning/tutorial work remains P3.
 
-- [ ] **Make XP and spool progress legible and consequential.** Current profile/battle values exist, but progression feedback and advancement goals are weak.
-  - **DoD:** Workshop and battle clearly show XP/spool current/max/change text; documented thresholds unlock or improve a tested non-paywalled loop; no progress is awarded twice on reload or repeated result render.
-  - **Depends on:** economy and rewards policy.
+- [x] **Make XP and spool progress legible and consequential.** The Workshop progression strip and Print Yard show XP/current threshold; `ProgressionRules.grant_xp()` immediately converts threshold crossings into spool capacity used by battle.
+  - **Evidence:** the checkpoint-A pure test forces a Print Yard threshold crossing and asserts the spool increase. Broader economy targets remain P3.
 
-- [ ] **Add opponent/team diversity and balance passes.** Training currently uses narrow fixed rival loadouts in `scripts/ui/main.gd` and `scripts/battle/local_battle_authority.gd`.
+- [ ] **Complete opponent/team diversity and balance passes.** Training now uses the deterministic date-keyed `ProgressionRules.training_opponent()` seam rather than one hard-coded rival, with same-day/repeatable variety tests. Unlock bands, telemetry, and balance targets are still required.
   - **DoD:** seeded rival roster/team generator covers catalog elements/rarities within intended unlock bands; deterministic fixtures test legal decks/loadouts; balance sheet tracks win rate, turn length, opening fairness, and ability/card usage.
   - **Depends on:** stable XP/spool economy and catalog balance targets.
 
-- [ ] **Support multiple named deck slots and active-deck selection.** Rules have `decks`/`active_deck_id` in `scripts/core/progression_rules.gd`, while UI saves only the active draft.
+- [ ] **Complete multiple named deck slots and active-deck selection.** Three safe named slots can save/select legal 15-card decks and battle reads the active deck. Slot creation, duplication, deletion, and a product-approved naming policy remain unfinished.
   - **DoD:** player can create, rename from fixed/safe choices or an approved text policy, duplicate/delete/select slots, see validity/owned-copy feedback, and battle consumes the selected saved deck; migration and controller tests pass.
   - **Depends on:** product decision on freeform naming/localization.
 
-- [ ] **Complete armor lifecycle and presentation.** Equipping exists, but no unequip/reassign path or polished visual treatment is complete.
+- [ ] **Complete armor lifecycle and presentation.** The Armor Workbench now supports atomic unequip and reassignment, with rules and UI coverage. Detailed collection/team/battle visual presentation remains unfinished.
   - **DoD:** player can unequip, move an equipped item safely, see every armor modifier in collection/team/battle, and never leaves duplicate/missing assignments; pure/profile/UI regressions cover all transitions.
   - **Depends on:** armor visual/UI pass.
 
