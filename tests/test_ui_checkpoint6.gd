@@ -19,11 +19,22 @@ func _ready() -> void:
 	var base_revision: int = int(GameManager.profile.revision)
 	main.open_printer("cinderpaw")
 	await get_tree().process_frame
+	var persistent_forge := main.find_child("ArcaneForgeStage", true, false) as ArcaneForgeStage
+	main.render()
+	await get_tree().process_frame
+	require(persistent_forge != null and main.find_child("ArcaneForgeStage", true, false) == persistent_forge, "Forge screen component reattaches one persistent compositor across shell refresh")
 	require(main.screen == "printer" and GameManager.profile.creatures.size() == base_count and int(GameManager.profile.coins) == base_coins, "printer preview and render do not mutate")
 	main.cancel_printer_preview()
 	await get_tree().process_frame
 	require(GameManager.profile.creatures.size() == base_count and int(GameManager.profile.coins) == base_coins, "preview cancel is zero mutation")
-	main.open_printer("cinderpaw"); main.begin_printer(); main.advance_printer_for_test(7000)
+	main.open_printer("cinderpaw"); main.begin_printer(); await get_tree().process_frame
+	var printing_stage := main.find_child("ArcaneForgeStage", true, false) as ArcaneForgeStage
+	var printing_shell := printing_stage.get_parent() if printing_stage != null else null
+	var progress_label := main.find_child("PrinterProgressStatus", true, false) as Label
+	var progress_before := progress_label.text if progress_label != null else ""
+	main.advance_printer_for_test(70); await get_tree().process_frame
+	require(printing_stage != null and main.find_child("ArcaneForgeStage", true, false) == printing_stage and printing_stage.get_parent() == printing_shell and progress_label != null and progress_label.text != progress_before, "same-phase printer advance preserves shell/stage identity and updates retained progress text")
+	main.advance_printer_for_test(6930)
 	await get_tree().process_frame
 	require(GameManager.profile.creatures.size() == base_count + 1 and int(GameManager.profile.coins) == base_coins - 20 and int(GameManager.profile.revision) == base_revision + 1, "raw-complete commit creates exactly one print and debit")
 	main.advance_printer_for_test(7000); main.skip_printer(); main.render(); await get_tree().process_frame

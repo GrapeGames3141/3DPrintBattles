@@ -6,7 +6,6 @@ const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/wo
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
-const WORKSHOP_STATION_LIVE_LAYER := preload("res://scripts/ui/workshop_station_live_layer.gd")
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -52,10 +51,14 @@ var printer_presentation_seconds := 0.0
 var printer_capture_freeze := false
 var printer_failure := ""
 var printer_return_screen := "collection"
+var printer_progress_label: Label
 var workshop_ambient_capture_freeze := false
 var workshop_station_live_capture_progress := -1
 var workshop_station_live_capture_seed := 17
 var overview_layout_portrait := false
+var _workshop_screen_component := WorkshopScreenComponent.new()
+var _battle_screen_component := BattleScreenComponent.new()
+var _forge_screen_component := ArcaneForgeScreenComponent.new()
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -92,9 +95,18 @@ func _process(delta: float) -> void:
 	printer_tick_accumulator += delta
 	if printer_tick_accumulator < ArcaneForgeSequence.presentation_interval_seconds(printer_sequence.reduced_motion): return
 	printer_tick_accumulator = 0.0
-	printer_sequence.advance(ArcaneForgeSequence.presentation_step_bps(printer_sequence.reduced_motion, printer_sequence.phase))
-	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
-	render()
+	var phase_before := printer_sequence.phase
+	printer_sequence.advance(ArcaneForgeSequence.presentation_step_bps(printer_sequence.reduced_motion, phase_before))
+	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE:
+		_commit_printer_once()
+		render()
+	elif printer_sequence.phase != phase_before:
+		# A phase change changes controls/status hierarchy, so rebuild the shell.
+		render()
+	else:
+		# Same-phase progress is visual-only. Keep the surrounding shell and the
+		# persistent compositor alive while updating their presentation in place.
+		_refresh_printer_presentation()
 
 func navigate_to(target: String) -> void:
 	if screen == "workshop" and target != "workshop":
@@ -198,6 +210,7 @@ func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	return value
 
 func render() -> void:
+	_detach_persistent_screen_components()
 	clear_children(self)
 	var backdrop := TextureRect.new()
 	backdrop.texture = REFERENCE_TEXTURE
@@ -253,7 +266,6 @@ func render() -> void:
 	body.add_child(status)
 	match screen:
 		"onboarding": render_onboarding()
-		"battle": render_battle()
 		"shop": render_shop()
 		"codex": render_codex()
 		"collection": render_collection()
@@ -268,6 +280,14 @@ func render() -> void:
 		"trade": render_local_trade()
 		_: render_workshop()
 	call_deferred("focus_first_button")
+
+func _detach_persistent_screen_components() -> void:
+	# Main's shell is intentionally rebuilt for responsive text/contrast. Detach
+	# expensive presentation nodes first so their imported textures and animation
+	# state survive the ancestor queue_free operation.
+	_battle_screen_component.detach()
+	_forge_screen_component.detach()
+	_workshop_screen_component.detach()
 
 func focus_first_button() -> void:
 	for node in find_children("*", "Button", true, false):
@@ -351,71 +371,6 @@ func confirm_starter() -> void:
 	screen = "onboarding"
 	render()
 
-func render_workshop_legacy() -> void:
-	var hero := make_panel(Color("19334de8"), Color("f1be69"))
-	body.add_child(hero.get_parent())
-	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
-	hero.add_child(label("Welcome back, Forge Apprentice", 26, Color("ffd36c")))
-	hero.add_child(label("%s watches the printer glow while snowlight frames your warm workshop. Choose a station to continue your legend." % starter_name, 16, Color("e2edf6")))
-	var grid := GridContainer.new()
-	grid.columns = 3 if size.x >= 900 else 1
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	body.add_child(grid)
-	for item in [["Main Printer","Print blueprints you have mastered.","Print %s (20 FC)" % starter_name],["Extruder Forge","Browse today’s forge offers.","Open Shop"],["Forgedex","Track discovered blueprints.","Open Forgedex"],["Proving Grounds","Take your current team into training.","Start Training Match"],["Team Builder","Choose one to three prints.","Edit Team"],["Deck Builder","Tune a 15-card support deck.","Edit Deck"],["Armor Workbench","Learn, print, and equip armor.","Open Armor"],["Collection","Review printed companions.","Open Collection"],["Print Yard","See your companions at play.","Visit Print Yard"]]:
-		var station := make_panel(Color("152842e8"), Color("5e99b4"))
-		grid.add_child(station.get_parent())
-		station.add_child(label(item[0], 20, Color("8deaff")))
-		station.add_child(label(item[1], 14, Color("c9d8e6")))
-		match item[0]:
-			"Main Printer": station.add_child(make_button(item[2], func(): open_printer(str(GameManager.profile.onboarding.starter_id))))
-			"Extruder Forge": station.add_child(make_button(item[2], navigate_to.bind("shop")))
-			"Forgedex": station.add_child(make_button(item[2], navigate_to.bind("codex")))
-			"Proving Grounds": station.add_child(make_button(item[2], start_battle, Color("9a5b6f")))
-			"Team Builder": station.add_child(make_button(item[2], navigate_to.bind("team")))
-			"Deck Builder": station.add_child(make_button(item[2], navigate_to.bind("deck")))
-			"Armor Workbench": station.add_child(make_button(item[2], navigate_to.bind("armor")))
-			"Collection": station.add_child(make_button(item[2], navigate_to.bind("collection")))
-			"Workbench": station.add_child(make_button(item[2], func(): _toast("Calibration complete: +%d Forge Coins" % GameManager.complete_workshop_job(72)), Color("588d73")))
-			"Print Yard": station.add_child(label("%d printed companion%s are wandering." % [GameManager.profile.creatures.size(), "" if GameManager.profile.creatures.size()==1 else "s"], 14, Color("a8e3a5")))
-
-	var settings_station := make_panel(Color("152842e8"), Color("ffd36c"))
-	grid.add_child(settings_station.get_parent())
-	settings_station.add_child(label("Settings", 20, Color("ffd36c")))
-	settings_station.add_child(label("Text, contrast, motion, and training AI.", 14, Color("c9d8e6")))
-	settings_station.add_child(make_button("Open Settings", navigate_to.bind("settings")))
-	var versus_station := make_panel(Color("203348ed"), Color("f1be69")); grid.add_child(versus_station.get_parent())
-	versus_station.add_child(label("Local Versus", 20, Color("ffd36c")))
-	versus_station.add_child(label("Private hot-seat match with revisioned local authority.", 14, Color("c9d8e6")))
-	versus_station.add_child(make_button("Begin Local Versus", start_local_vs, Color("a86b2e")))
-	var trade_station := make_panel(Color("203348ed"), Color("a8edff")); grid.add_child(trade_station.get_parent())
-	trade_station.add_child(label("Guild Trade Table", 20, Color("a8edff")))
-	trade_station.add_child(label("Credential-free local escrow demo. No chat or typed codes.", 14, Color("c9d8e6")))
-	trade_station.add_child(make_button("Open Local Trade", func(): local_trade=null; trade_creator_choice=""; trade_partner_choice=""; screen="trade"; render(), Color("4d7898")))
-
-func render_workshop_button_tray() -> void:
-	var starter_name: String = str(Catalog.creature(str(GameManager.profile.onboarding.starter_id)).name)
-	var hero := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(hero.get_parent())
-	hero.add_child(label("Makers Guild Workshop", 26, Color("ffd36c")))
-	hero.add_child(label("%s watches the warm tools glow beneath the snowlight. Choose a place in the workshop, then use the station tray below." % starter_name, 16, Color("e2edf6")))
-	var used_today: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
-	hero.add_child(label("Progress: %d Forge Coins | Spool %d / 10 | XP %d / %d | Calibration %d / %d" % [int(GameManager.profile.coins), GameManager.filament_cap(), int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 15, Color("9beaff")))
-	var map_frame := PanelContainer.new(); map_frame.custom_minimum_size = Vector2(0, 250); map_frame.add_theme_stylebox_override("panel", panel_style(Color("071526e8"), Color("6bd6ed"))); body.add_child(map_frame)
-	var map := Control.new(); map.name = "WorkshopMap"; map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); map_frame.add_child(map)
-	var image := TextureRect.new(); image.texture = REFERENCE_TEXTURE; image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED; image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); image.mouse_filter = Control.MOUSE_FILTER_IGNORE; image.modulate = Color(0.88, 0.94, 1.0, 0.88); map.add_child(image)
-	var tint := ColorRect.new(); tint.color = Color("07132675"); tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); tint.mouse_filter = Control.MOUSE_FILTER_IGNORE; map.add_child(tint)
-	for station in _workshop_stations(): map.add_child(_workshop_hotspot(station))
-	var tray := make_panel(Color("152d49ed"), Color("f1be69")); body.add_child(tray.get_parent())
-	var selected := _workshop_station(workshop_selected)
-	tray.add_child(label(str(selected.name), 22, Color("ffd36c") if workshop_selected == "maker" else Color("9beaff")))
-	tray.add_child(label(str(selected.description), 16, Color("dce8f4")))
-	if workshop_selected == "yard": tray.add_child(label("%d companions are ready for one calm filament lesson today." % GameManager.profile.creatures.size(), 14, Color("a8e3a5")))
-	if workshop_selected == "maker": tray.add_child(label("Calibration remaining today: %d of %d." % [maxi(0, ProgressionRules.DAILY_CALIBRATION_LIMIT - used_today), ProgressionRules.DAILY_CALIBRATION_LIMIT], 14, Color("fff0a1")))
-	var actions: Array = selected.get("actions", [])
-	for entry in actions:
-		var action: Dictionary = entry
-		tray.add_child(make_button(str(action.label), _run_workshop_station.bind(str(action.target)), Color("a86b2e") if str(action.target) in ["printer", "calibration", "proving", "local_vs"] else Color("2f93a8")))
-
 func render_workshop() -> void:
 	var used_today: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
 	if workshop_view == "overview":
@@ -489,13 +444,8 @@ func _workshop_station_zoom(view_id: String) -> float:
 func _add_workshop_station_live(art_plane: Control) -> void:
 	if workshop_view not in ["printer", "maker"]:
 		return
-	var layer := WORKSHOP_STATION_LIVE_LAYER.new()
-	layer.name = "WorkshopStationLiveLayer"
-	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	layer.configure(GameManager.profile, workshop_view, is_portrait_layout(), bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), workshop_station_live_capture_seed, workshop_station_live_capture_progress >= 0 or workshop_ambient_capture_freeze)
-	if workshop_station_live_capture_progress >= 0:
-		layer.set_capture_progress(workshop_station_live_capture_progress)
-	art_plane.add_child(layer)
+	_workshop_screen_component.refresh(GameManager.profile, workshop_view, is_portrait_layout(), bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), workshop_station_live_capture_seed, workshop_station_live_capture_progress >= 0 or workshop_ambient_capture_freeze, workshop_station_live_capture_progress)
+	_workshop_screen_component.attach(art_plane)
 
 func _workshop_surface(name_value: String, texture: Texture2D, minimum_height: float, host: Control = null, cover_art := false, ambient_view := "overview", cover_backdrop := false, allow_portrait_pan := true, focus := Vector2(0.5, 0.5), art_zoom := 1.0) -> Control:
 	var map_frame := PanelContainer.new()
@@ -1322,24 +1272,23 @@ func render_printer() -> void:
 		screen = "collection"
 		render()
 		return
+	printer_progress_label = null
 	var panel := make_panel(Color("152d49ec"), Color("f1be69"))
 	body.add_child(panel.get_parent())
 	panel.add_child(label("Arcane Forge", 27, Color("ffd36c")))
 	panel.add_child(label("%s blueprint - %s - %d Forge Coins" % [str(definition.name), str(definition.element), printer_price], 16, Color("9beaff")))
 	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
-	var stage := ArcaneForgeStage.new()
-	stage.configure(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)))
-	stage.set_preview_phase(printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps())
-	stage.set_presentation_time(printer_presentation_seconds)
-	stage.custom_minimum_size = Vector2(0, 540 if size.y > size.x else 330)
-	panel.add_child(stage)
+	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330)
+	_forge_screen_component.attach(panel)
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
 			panel.add_child(label("Preview the dormant print on the build plate. Begin only when ready.", 16, Color("fff0a1")))
 			panel.add_child(make_button("Begin Print (%d FC)" % printer_price, begin_printer, Color("a86b2e")))
 			panel.add_child(make_button("Cancel Preview", cancel_printer_preview, Color("536c8d")))
 		ArcaneForgeSequence.PRINTING:
-			panel.add_child(label("Printing layers: %d%%. The nozzle and reveal are presentation only." % (printer_sequence.layer_reveal_bps() / 100), 16, Color("9beaff")))
+			printer_progress_label = label(_printer_progress_text(), 16, Color("9beaff"))
+			printer_progress_label.name = "PrinterProgressStatus"
+			panel.add_child(printer_progress_label)
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.RAW_COMPLETE:
 			panel.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
@@ -1362,6 +1311,16 @@ func render_printer() -> void:
 		_:
 			panel.add_child(label("Preview closed without changing your profile.", 16, Color("dce8f4")))
 
+func _printer_progress_text() -> String:
+	if printer_sequence == null: return ""
+	return "Printing layers: %d%%. The nozzle and reveal are presentation only." % (printer_sequence.layer_reveal_bps() / 100)
+
+func _refresh_printer_presentation() -> void:
+	if screen != "printer" or printer_sequence == null: return
+	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330)
+	if is_instance_valid(printer_progress_label):
+		printer_progress_label.text = _printer_progress_text()
+
 func begin_printer() -> void:
 	if printer_sequence == null or not printer_sequence.begin(): return
 	printer_tick_accumulator = 0.0
@@ -1370,9 +1329,15 @@ func begin_printer() -> void:
 
 func advance_printer_for_test(step_bps: int) -> void:
 	if printer_sequence == null: return
+	var phase_before := printer_sequence.phase
 	printer_sequence.advance(step_bps)
-	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE: _commit_printer_once()
-	render()
+	if printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE:
+		_commit_printer_once()
+		render()
+	elif printer_sequence.phase != phase_before:
+		render()
+	else:
+		_refresh_printer_presentation()
 
 func _commit_printer_once() -> void:
 	if printer_sequence == null or not printer_sequence.request_commit(): return
@@ -1442,22 +1407,6 @@ func render_team() -> void:
 	intro.add_child(make_button("Save Team", func(): GameManager.save_team(team_draft), Color("a86b2e")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
-func render_armor_legacy() -> void:
-	var intro := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(intro.get_parent())
-	intro.add_child(label("Armor Workbench", 25, Color("ffd36c")))
-	for armor in Catalog.ARMOR:
-		var known: bool = armor.id in GameManager.profile.armor_blueprints
-		intro.add_child(make_button(("Print " if known else "Learn ") + str(armor.name) + " (%d FC)" % int(armor.print if known else armor.blueprint), func():
-			if known: GameManager.print_armor(str(armor.id))
-			else: GameManager.learn_armor_blueprint(str(armor.id))))
-	for armor_instance in GameManager.profile.armor:
-		if str(armor_instance.equipped_to).is_empty():
-			for creature in GameManager.profile.creatures:
-				var target_id := str(creature.instance_id)
-				var armor_instance_id := str(armor_instance.armor_instance_id)
-				intro.add_child(make_button("Equip %s to %s" % [str(armor_instance.armor_id), str(Catalog.creature(str(creature.creature_id)).name)], func(): GameManager.equip_armor(target_id, armor_instance_id), Color("588d73")))
-	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
-
 func render_armor() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
 	panel.add_child(label("Armor Workbench", 25, Color("ffd36c")))
@@ -1479,33 +1428,6 @@ func render_armor() -> void:
 			panel.add_child(make_button(("Move " if moving else "Equip ") + armor_name + " to " + target_name, func():
 				if moving: GameManager.reassign_armor(target_id, armor_id)
 				else: GameManager.equip_armor(target_id, armor_id), Color("588d73")))
-	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
-
-func render_deck_legacy() -> void:
-	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
-	if deck_draft.is_empty(): deck_draft = GameManager.active_deck_cards()
-	var active := GameManager.active_deck_cards()
-	intro.add_child(label("15-Card Deck Builder", 25, Color("d3a7ff")))
-	intro.add_child(label("Draft deck: %d / 15 cards. Owned counts are checked before the Forge saves it." % deck_draft.size(), 15, Color("dce8f4")))
-	for card in Catalog.SUPPORT_CARDS:
-		var owned: int = int(GameManager.profile.support_cards.get(str(card.id), 0))
-		if owned > 0: intro.add_child(label("%s — owned %d, active %d" % [str(card.name), owned, active.count(card.id)], 14, Color("dce8f4")))
-	if active.size() == 15: intro.add_child(make_button("Save Active Deck", func(): GameManager.save_deck(active), Color("588d73")))
-	for card in Catalog.SUPPORT_CARDS:
-		var owned_draft: int = int(GameManager.profile.support_cards.get(str(card.id), 0))
-		if owned_draft > 0:
-			var card_id := str(card.id)
-			var copies: int = deck_draft.count(card_id)
-			var row := HBoxContainer.new(); intro.add_child(row)
-			var details := label("%s: owned %d, draft %d" % [str(card.name), owned_draft, copies], 14, Color("dce8f4")); details.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(details)
-			var remove := Button.new(); remove.text = "-"; remove.disabled = copies == 0; row.add_child(remove)
-			remove.pressed.connect(func(): deck_draft.erase(card_id); render())
-			var add := Button.new(); add.text = "+"; add.disabled = copies >= owned_draft or deck_draft.size() >= 15; row.add_child(add)
-			add.pressed.connect(func(): deck_draft.append(card_id); render())
-	if deck_draft.size() == 15:
-		intro.add_child(make_button("Save Draft as Active Deck", func(): GameManager.save_deck(deck_draft), Color("588d73")))
-	else:
-		intro.add_child(label("Add %d more cards to make a legal 15-card deck." % [15 - deck_draft.size()], 14, Color("fff0a1")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_deck() -> void:
@@ -1568,14 +1490,6 @@ func _training_seed(day_key: String) -> int:
 	for byte in day_key.to_utf8_buffer(): seed = (seed * 31 + int(byte)) % 2147483647
 	return seed
 
-func render_battle() -> void:
-	# Kept as the screen entry point for callers/tests; render() installs the
-	# explicit full-height battle composition above the generic scroll shell.
-	var root := VBoxContainer.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(root)
-	render_battle_fullscreen(root)
-
 func render_battle_fullscreen(host: Container) -> void:
 	var frame := PanelContainer.new()
 	frame.name = "BattleFullscreenPanel"
@@ -1594,13 +1508,10 @@ func render_battle_fullscreen(host: Container) -> void:
 	status.name = "BattleStatus"
 	intro.add_child(status)
 	intro.add_child(label("Proving Grounds - %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 22, Color("ffd36c")))
-	var stage := BattleSpriteStage.new()
-	stage.name = "BattleStage"
-	stage.configure(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)))
 	var compact_secondary := battle_secondary_open and not is_portrait_layout()
-	stage.custom_minimum_size = Vector2(0, 188 if is_portrait_layout() else (96 if compact_secondary else 172))
+	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 188 if is_portrait_layout() else (96 if compact_secondary else 172))
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
-	intro.add_child(stage)
+	_battle_screen_component.attach(intro)
 	if battle.active_player == 0 and not battle.finished:
 		render_battle_action_dock(intro)
 		render_battle_secondary(intro)

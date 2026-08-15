@@ -1,5 +1,62 @@
 # Validation record
 
+## 2026-08-15 refactor/optimization staging validation
+
+- Staging-only refactor validation used Godot 4.7.1 `a13da4feb` with isolated
+  E-cache app-data roots and OpenGL compatibility. Parser PID 22012 exited 0.
+  The retained 16-scene suite then passed with PIDs
+  `15972/22828/22928/20812/21184/2340/25760/23336/5428/24256/20492/22512/18296/19700/9412/19608`,
+  all exit 0 (profile, progression, battle, checkpoints 4-6, checkpoint A,
+  save/UI coverage, art contract, alpha loop, and workshop live).
+- Focused lifecycle/cache coverage confirms a persistent Battle stage, Forge
+  stage, and Workshop live layer retain identity across Main renders; the
+  checkpoint-4 sprite cache regression reports one texture load and one alpha
+  bounds scan for a reused creature path. Battle snapshot import also accepts
+  malformed non-array `players`/`log` values safely and active-unit lookup is
+  side-effect-free.
+- Inspected fresh OpenGL captures were written under
+  `E:/CodexCache/printforge-validation/`: workshop at 576x1024 (PID 22632),
+  720x1280 (2096), and 1280x720 (22436); Voidmanta battle at 576x1024 (20352),
+  720x1280 (5872), and 1280x720 (10216); and Arcane Forge printing at 576x1024
+  (23088), 720x1280 (20632), and 1280x720 (17196). Each exited 0 and was
+  checked for the persisted stage presentation, visible action dock, and
+  in-frame Forge controls. Android export evidence is recorded only after the
+  final staging export below.
+- Final post-cleanup parser PID 1932 exited 0. The repeat retained suite passed
+  profile/progression/battle/checkpoint4/checkpoint5/checkpoint6/checkpoint-A/
+  save/UI5/UI6/UI-A/UI-A1/workshop-nav/art/alpha/workshop-live as PIDs
+  `11656/17980/1624/1516/19356/1064/20096/5968/3152/16164/16948/17988/22892/24060/1440/21664`,
+  all exit 0. The PowerShell text-integrity audit exited 0.
+- Final staging Android review export after the Forge lifecycle optimization was
+  PID 24900, exit 0:
+  `E:/CodexCache/printforge-refactor-export-final/PrintForge-Legends-0.5.9-alpha-battle-runtime-refactor-final-arm64.apk`
+  is 104,088,711 bytes, SHA-256
+  `FD6095F92B7248A61ACE0512533FC01993A70B1F7C8C973B0292D09DFB87A12D`.
+  `apksigner` verified debug v2/v3 signing; `aapt` reported package
+  `com.tak.printforge.legends.review`, version code 59/name
+  `0.5.9-alpha-battle-runtime`, then returned 1 on the known
+  `android:required` manifest reader warning. Archive inspection found no
+  backend, node_modules, tests, tmp, or .git entries; the runtime workshop
+  reference import is an intentional documented asset exception.
+- Follow-up Forge lifecycle polish: parser PID 24648 exited 0; checkpoint-6,
+  printer UI, and composed alpha-loop tests PIDs 21832/24144/21040 all exited
+  0. The UI regression advances a printing sequence without changing phase and
+  proves both the retained shell/stage identity and live progress-label update.
+  `ArcaneForgeStage` now processes only during printing carriage motion;
+  deterministic awakening/departure updates need no per-frame processing.
+  Fresh inspected portrait printing capture
+  `printer_printing_720x1280_refactor-polish.png` was PID 22884, exit 0.
+- Durable verification followed SHA-256-checked synchronization of the 29
+  reviewed source/test/document files. The authorized parser used console PID
+  23544 and worker PID 19252, exit 0. Focused durable regressions then passed:
+  battle rules 21080/7564, checkpoint-4 cache coverage 22028/7716, printer UI
+  lifecycle 19292/16944, and the composed alpha loop 25624/6228
+  (console/worker PIDs, all exit 0). An earlier restricted-shell parser attempt
+  was discarded because it could not refresh generated import metadata; it was
+  not used as acceptance evidence. Its generated sidecars were removed after
+  the authorized run, raw tracked import diffs remained empty, and no Godot
+  process remained.
+
 ## 2026-08-15 Checkpoint 0.5.9 - battle runtime normalization (staging only)
 
 - Local staging clone `E:/CodexCache/printforge-battle-runtime-20260815` was created from durable local commit `d3c592a`. No durable synchronization, Drive delivery, staging, commit, push, or remote operation occurred.

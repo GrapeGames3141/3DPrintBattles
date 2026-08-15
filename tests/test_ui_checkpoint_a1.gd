@@ -42,10 +42,14 @@ func _ready() -> void:
 		# must advertise a nonzero, touch-safe action grid rather than becoming an
 		# empty Android first frame.
 		var initial_grid := main.find_child("BattleActionGrid", true, false) as GridContainer
+		var persistent_stage := main.find_child("BattleStage", true, false) as BattleSpriteStage
 		require(initial_grid != null and initial_grid.custom_minimum_size.y >= (104.0 if size.y > size.x else 48.0), "BattleActionGrid has an explicit pre-settle height at %s" % size)
 		for control_name in ["BattleActionBasicAttack", "BattleActionSignatureAbility", "BattleActionDefend", "BattleActionEndTurn"]:
 			var initial_control := main.find_child(control_name, true, false) as Button
 			require(initial_control != null and not initial_control.text.is_empty() and initial_control.custom_minimum_size.y >= 48.0, "%s has a pre-settle readable 48px contract at %s" % [control_name, size])
+		main.render()
+		await get_tree().process_frame
+		require(persistent_stage != null and main.find_child("BattleStage", true, false) == persistent_stage, "Battle screen component reattaches one persistent stage at %s" % size)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		var frame := main.find_child("BattleFullscreenPanel", true, false) as PanelContainer
@@ -92,10 +96,12 @@ func _ready() -> void:
 	main.screen = "battle"
 	main.battle_secondary_open = false
 	main.battle = BattleState.create(GameManager.current_team_loadout(), ["voidmanta"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
-	main.battle.players[0].team[0] = {"creature_id":"cinderpaw", "health":34}
-	main.battle.turn = 2
-	main.battle.active_player = 0
-	main.battle.opening_player = 1
+	var legacy_snapshot: Dictionary = main.battle.serialize().duplicate(true)
+	legacy_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":34}
+	legacy_snapshot.turn = 2
+	legacy_snapshot.active_player = 0
+	legacy_snapshot.opening_player = 1
+	main.battle = BattleState.from_snapshot(legacy_snapshot)
 	main.render()
 	await get_tree().process_frame
 	await get_tree().process_frame

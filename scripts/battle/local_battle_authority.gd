@@ -34,8 +34,4 @@ func _reject(message: String) -> Dictionary:
 	return {"ok":false,"error":message,"revision":revision,"snapshot":state.serialize().duplicate(true)}
 
 func _state_from_snapshot(snapshot: Dictionary) -> BattleState:
-	var restored := BattleState.new()
-	restored.match_id = str(snapshot.match_id); restored.turn = int(snapshot.turn); restored.active_player = int(snapshot.active_player)
-	restored.opening_player = int(snapshot.opening_player); restored.finished = bool(snapshot.finished); restored.winner = int(snapshot.winner)
-	restored.players = snapshot.players.duplicate(true); restored.log.assign(snapshot.log); restored.seed = int(snapshot.seed); restored.reward_claimed = bool(snapshot.get("reward_claimed", false))
-	return restored
+	return BattleState.from_snapshot(snapshot)

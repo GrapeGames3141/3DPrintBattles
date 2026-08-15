@@ -24,6 +24,7 @@ var printer_frames: Array[Texture2D] = []
 var raw_textures: Dictionary = {}
 var living_textures: Dictionary = {}
 var tick_remainder := 0.0
+var _last_draw_signature := ""
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -36,6 +37,7 @@ func configure(profile: Dictionary, station: String, is_portrait: bool, reduce_m
 	high_contrast = contrast
 	capture_frozen = freeze_for_capture
 	sequence = WorkshopLiveSequence.create(fixed_seed)
+	_last_draw_signature = ""
 	unlocked_ids.clear()
 	for creature_id in profile.get("blueprints", []):
 		var id := str(creature_id)
@@ -51,8 +53,15 @@ func _update_motion_processing() -> void:
 	process_mode = Node.PROCESS_MODE_INHERIT if moving else Node.PROCESS_MODE_DISABLED
 	set_process(moving)
 
+func suspend() -> void:
+	set_process(false)
+
+func resume() -> void:
+	_update_motion_processing()
+
 func set_capture_progress(value_bps: int) -> void:
 	sequence.set_capture_progress(value_bps)
+	_last_draw_signature = _presentation_signature()
 	queue_redraw()
 
 func selected_creature_id() -> String:
@@ -66,7 +75,10 @@ func _process(delta: float) -> void:
 		return
 	tick_remainder -= float(ticks) / 1000.0
 	sequence.advance(ticks, unlocked_ids.size())
-	queue_redraw()
+	var next_signature := _presentation_signature()
+	if next_signature != _last_draw_signature:
+		_last_draw_signature = next_signature
+		queue_redraw()
 
 func _load_assets() -> void:
 	printer_frames.clear()
@@ -74,7 +86,7 @@ func _load_assets() -> void:
 	living_textures.clear()
 	if station_id == PRINTER:
 		for path in PRINTER_FRAME_PATHS:
-			var printer := ResourceLoader.load(path) as Texture2D
+			var printer := CreatureSpriteCache.texture_for_path(path)
 			if printer != null:
 				printer_frames.append(printer)
 	for id in unlocked_ids + team_ids:
@@ -83,8 +95,12 @@ func _load_assets() -> void:
 		var definition := Catalog.creature(id)
 		var raw_path := str(definition.get("raw_print", ""))
 		var living_path := str(definition.get("sprite_sheet", ""))
-		raw_textures[id] = ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
-		living_textures[id] = ResourceLoader.load(living_path) as Texture2D if not living_path.is_empty() else null
+		raw_textures[id] = CreatureSpriteCache.texture_for_path(raw_path) if not raw_path.is_empty() else null
+		living_textures[id] = CreatureSpriteCache.texture_for_path(living_path) if not living_path.is_empty() else null
+
+func _presentation_signature() -> String:
+	if station_id != PRINTER: return "maker:%d" % team_ids.size()
+	return "%s:%d:%d:%d" % [sequence.phase(), sequence.phase_progress_bps() / 100, sequence.printer_frame_index(reduced_motion), sequence.selected_index(unlocked_ids.size())]
 
 func _team_creature_ids(profile: Dictionary) -> Array[String]:
 	var instances: Dictionary = {}

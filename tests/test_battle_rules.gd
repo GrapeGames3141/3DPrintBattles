@@ -16,9 +16,19 @@ func _ready() -> void:
 	require(state.players[0].hand.size() == 4 and state.players[0].deck.size() == 11, "starter loadout deals four cards from a fifteen-card deck")
 	var armored_legacy: Dictionary = BattleState.normalize_unit({"creature_id":"cinderpaw", "health":44, "armor_id":"helm"})
 	require(int(armored_legacy.get("hp", 0)) == 44 and int(armored_legacy.get("max_hp", 0)) == 44 and int(armored_legacy.get("speed", 0)) == 7 and int(armored_legacy.get("armor", -1)) == 0 and str(armored_legacy.get("armor_name", "")) == "Layered Helm", "legacy armor derives catalog combat defaults without clamping health")
+	var legacy_snapshot: Dictionary = state.serialize().duplicate(true)
+	legacy_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":34}
+	var restored := BattleState.from_snapshot(legacy_snapshot)
+	var restored_before: Dictionary = restored.serialize().duplicate(true)
+	var restored_unit: Dictionary = restored.active_unit(0)
+	require(str(restored_unit.get("name", "")) == "Cinderpaw" and int(restored_unit.get("attack", 0)) == 9 and restored.serialize() == restored_before, "snapshot restore normalizes legacy unit once and active_unit is side-effect-free")
+	var malformed_restore := BattleState.from_snapshot({"players":"not-an-array", "log":42})
+	require(malformed_restore.players.is_empty() and malformed_restore.log.is_empty() and malformed_restore.active_unit(0).is_empty(), "snapshot restore rejects malformed player and log containers safely")
 	var armored_state := BattleState.create(["cinderpaw"],["mossmunk"],3,3,2)
-	armored_state.players[0].team[0] = {"creature_id":"cinderpaw", "health":44, "armor_id":"helm"}
-	armored_state.turn = 2; armored_state.active_player = 0; armored_state.opening_player = 1
+	var armored_snapshot: Dictionary = armored_state.serialize().duplicate(true)
+	armored_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":44, "armor_id":"helm"}
+	armored_snapshot.turn = 2; armored_snapshot.active_player = 0; armored_snapshot.opening_player = 1
+	armored_state = BattleState.from_snapshot(armored_snapshot)
 	var armored_attack := BattleRules.apply_intent(armored_state, 0, {"type":"attack"})
 	require(armored_attack.ok and int(armored_state.active_unit(0).get("attack", 0)) == 9 and int(armored_state.active_unit(1).get("hp", 0)) < int(armored_state.active_unit(1).get("max_hp", 0)), "normalized armored legacy unit still has legal catalog attack moves")
 	require(state.players[0].hand.count("raw_filament") == 4, "starter loadout has deterministic opening hand")

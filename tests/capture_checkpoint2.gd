@@ -3,6 +3,7 @@ extends Node
 const OUTPUT_DIR := "E:/CodexCache/printforge-validation"
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 const ART_GALLERY := preload("res://scripts/ui/creature_art_gallery.gd")
+const CAPTURE_FEATURE_SETUP := preload("res://tests/capture_feature_setup.gd")
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -36,36 +37,12 @@ func _ready() -> void:
 	if capture_mode == "station_live_reduced": GameManager.profile.settings.reduced_motion = true
 	workshop = MAIN_SCENE.instantiate()
 	workshop.shop_day_key = "2026-08-14"
-	if capture_mode in ["battle", "battle_review", "battle_secondary", "battle_voidmanta", "high_contrast_battle"]:
-		workshop.screen = "battle"
-		var rival := "voidmanta" if capture_mode == "battle_voidmanta" else "mossmunk"
-		workshop.battle = BattleState.create(GameManager.current_team_loadout(), [rival], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
-		workshop.battle_secondary_open = capture_mode == "battle_secondary"
-	elif capture_mode == "local_vs":
-		workshop.screen = "local_vs"
-		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
-	elif capture_mode == "local_vs_ready":
-		workshop.screen = "local_vs"
-		workshop.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
-		workshop.local_ready_seat = workshop.local_authority.state.active_player
-	elif capture_mode in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]:
-		workshop.screen = "printer"
-		workshop.printer_creature_id = "mossmunk" if capture_mode == "printer_mossmunk_raw_complete" else "cinderpaw"
-		workshop.printer_price = int(Catalog.rarity(str(Catalog.creature(workshop.printer_creature_id).rarity)).print)
-		workshop.printer_sequence = ArcaneForgeSequence.create(capture_mode == "printer_reduced")
-		if capture_mode != "printer_preview":
-			workshop.printer_sequence.begin()
-		if capture_mode == "printer_printing": workshop.printer_sequence.advance(3600)
-		elif capture_mode in ["printer_raw_complete", "printer_mossmunk_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
-			workshop.printer_sequence.advance(7000)
-			if capture_mode in ["printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
-				workshop.printer_sequence.request_commit()
-				workshop.printer_sequence.resolve_commit(true)
-				if capture_mode in ["printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
-					workshop.printer_sequence.advance(ArcaneForgeSequence.RAW_HOLD_BPS)
-					workshop.printer_sequence.advance(900 if capture_mode == "printer_awakening" else ArcaneForgeSequence.AWAKEN_BPS)
-				if capture_mode in ["printer_departing", "printer_awakened", "printer_reduced"]:
-					workshop.printer_sequence.advance(450 if capture_mode == "printer_departing" else ArcaneForgeSequence.DEPART_BPS)
+	if CAPTURE_FEATURE_SETUP.configure_battle(workshop, capture_mode):
+		pass
+	elif CAPTURE_FEATURE_SETUP.configure_forge(workshop, capture_mode):
+		pass
+	elif CAPTURE_FEATURE_SETUP.configure_workshop(workshop, capture_mode):
+		pass
 	elif capture_mode in ["trade", "trade_draft", "trade_settled"]:
 		workshop.screen = "trade"
 		workshop.local_trade = LocalTradeAuthority.create(GameManager.profile, workshop._guildmate_profile())
@@ -78,24 +55,6 @@ func _ready() -> void:
 			if capture_mode == "trade_settled":
 				var settled: Dictionary = workshop.local_trade.confirm(1, workshop.local_trade.creator_revision, workshop.local_trade.partner_revision)
 				if bool(settled.get("settled", false)): GameManager.profile = settled.creator
-	elif capture_mode in ["station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review"]:
-		workshop.screen = "workshop"
-		workshop.workshop_view = "maker" if capture_mode == "station_live_maker_team" else "printer"
-		workshop.workshop_station_live_capture_progress = {"station_live_printer_start":0, "station_live_printer_mid":4400, "station_live_printer_hold":11000, "station_live_printer_awakening":14000, "station_live_printer_departing":15500, "station_live_maker_team":11000, "station_live_reduced":11000, "station_live_review":11000}.get(capture_mode, 0)
-	elif capture_mode in ["workshop_printer_picker", "printer_picker_preview_mossmunk"]:
-		if capture_mode == "workshop_printer_picker":
-			workshop.screen = "workshop"
-			workshop.workshop_view = "printer"
-			workshop.printer_picker_open = true
-		else:
-			workshop.screen = "printer"
-			workshop.printer_creature_id = "mossmunk"
-			workshop.printer_price = int(Catalog.rarity(str(Catalog.creature("mossmunk").rarity)).print)
-			workshop.printer_sequence = ArcaneForgeSequence.create(false)
-	elif capture_mode in ["workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer"]:
-		workshop.screen = "workshop"
-		workshop.workshop_view = "maker" if capture_mode == "workshop_maker_drawer" else ("proving" if capture_mode == "workshop_proving_drawer" else ("terminal" if capture_mode.begins_with("workshop_terminal_") else str(capture_mode).trim_prefix("workshop_")))
-		workshop.workshop_drawer_object = "armor_tools" if capture_mode == "workshop_maker_drawer" else ("training_door" if capture_mode == "workshop_proving_drawer" else "")
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	# Capture explicit deterministic phase snapshots; never let Main's live printer timer
 	# advance an awakening state while the header settles.

@@ -1,0 +1,70 @@
+class_name CaptureFeatureSetup
+extends RefCounted
+## Feature-local deterministic capture setup. The harness remains responsible
+## only for process arguments, fixture profile, settle checks, and PNG output.
+
+static func configure_battle(main, mode: String) -> bool:
+	if mode in ["battle", "battle_review", "battle_secondary", "battle_voidmanta", "high_contrast_battle"]:
+		main.screen = "battle"
+		var rival := "voidmanta" if mode == "battle_voidmanta" else "mossmunk"
+		main.battle = BattleState.create(GameManager.current_team_loadout(), [rival], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+		main.battle_secondary_open = mode == "battle_secondary"
+		return true
+	if mode == "local_vs":
+		main.screen = "local_vs"
+		main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+		return true
+	if mode == "local_vs_ready":
+		main.screen = "local_vs"
+		main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+		main.local_ready_seat = main.local_authority.state.active_player
+		return true
+	return false
+
+static func configure_forge(main, mode: String) -> bool:
+	if mode not in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]:
+		return false
+	main.screen = "printer"
+	main.printer_creature_id = "mossmunk" if mode == "printer_mossmunk_raw_complete" else "cinderpaw"
+	main.printer_price = int(Catalog.rarity(str(Catalog.creature(main.printer_creature_id).rarity)).print)
+	main.printer_sequence = ArcaneForgeSequence.create(mode == "printer_reduced")
+	if mode == "printer_preview": return true
+	main.printer_sequence.begin()
+	if mode == "printer_printing":
+		main.printer_sequence.advance(3600)
+		return true
+	main.printer_sequence.advance(7000)
+	if mode not in ["printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
+		return true
+	main.printer_sequence.request_commit()
+	main.printer_sequence.resolve_commit(true)
+	if mode in ["printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
+		main.printer_sequence.advance(ArcaneForgeSequence.RAW_HOLD_BPS)
+		main.printer_sequence.advance(900 if mode == "printer_awakening" else ArcaneForgeSequence.AWAKEN_BPS)
+	if mode in ["printer_departing", "printer_awakened", "printer_reduced"]:
+		main.printer_sequence.advance(450 if mode == "printer_departing" else ArcaneForgeSequence.DEPART_BPS)
+	return true
+
+static func configure_workshop(main, mode: String) -> bool:
+	if mode in ["station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review"]:
+		main.screen = "workshop"
+		main.workshop_view = "maker" if mode == "station_live_maker_team" else "printer"
+		main.workshop_station_live_capture_progress = {"station_live_printer_start":0, "station_live_printer_mid":4400, "station_live_printer_hold":11000, "station_live_printer_awakening":14000, "station_live_printer_departing":15500, "station_live_maker_team":11000, "station_live_reduced":11000, "station_live_review":11000}.get(mode, 0)
+		return true
+	if mode in ["workshop_printer_picker", "printer_picker_preview_mossmunk"]:
+		if mode == "workshop_printer_picker":
+			main.screen = "workshop"
+			main.workshop_view = "printer"
+			main.printer_picker_open = true
+		else:
+			main.screen = "printer"
+			main.printer_creature_id = "mossmunk"
+			main.printer_price = int(Catalog.rarity(str(Catalog.creature("mossmunk").rarity)).print)
+			main.printer_sequence = ArcaneForgeSequence.create(false)
+		return true
+	if mode in ["workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer"]:
+		main.screen = "workshop"
+		main.workshop_view = "maker" if mode == "workshop_maker_drawer" else ("proving" if mode == "workshop_proving_drawer" else ("terminal" if mode.begins_with("workshop_terminal_") else str(mode).trim_prefix("workshop_")))
+		main.workshop_drawer_object = "armor_tools" if mode == "workshop_maker_drawer" else ("training_door" if mode == "workshop_proving_drawer" else "")
+		return true
+	return false

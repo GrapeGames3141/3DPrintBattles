@@ -20,12 +20,14 @@ var elapsed := 0.0
 var printer_frames: Array[Texture2D] = []
 var raw: Texture2D
 var living: Texture2D
+var _last_frame_index := -1
 
 func _ready() -> void:
 	# The portrait caller deliberately gives the forge more vertical room.
 	# Landscape stays compact enough that its primary controls are on-screen.
 	custom_minimum_size = Vector2(0, 330)
 	_load_assets()
+	_update_motion_processing()
 	queue_redraw()
 
 func configure(id: String, reduce_motion: bool, contrast: bool) -> void:
@@ -33,17 +35,32 @@ func configure(id: String, reduce_motion: bool, contrast: bool) -> void:
 	reduced_motion = reduce_motion
 	high_contrast = contrast
 	_load_assets()
+	_last_frame_index = -1
+	_update_motion_processing()
 	queue_redraw()
 
 func set_preview_phase(value: String, value_bps: int, local_phase_bps := 0) -> void:
+	var changed := phase != value or progress_bps != clampi(value_bps, 0, 10000) or phase_progress_bps != clampi(local_phase_bps, 0, 10000)
 	phase = value
 	progress_bps = clampi(value_bps, 0, 10000)
 	phase_progress_bps = clampi(local_phase_bps, 0, 10000)
-	queue_redraw()
+	_update_motion_processing()
+	if changed: queue_redraw()
+
+func _update_motion_processing() -> void:
+	# Main advances awakening/departing by deterministic bps and calls
+	# set_preview_phase(). Only printing consumes this node's elapsed time for
+	# the moving carriage frame, so it is the only phase that needs _process.
+	set_process(not reduced_motion and phase == ArcaneForgeSequence.PRINTING)
 
 func set_presentation_time(seconds: float) -> void:
-	elapsed = maxf(0.0, seconds)
-	queue_redraw()
+	var next_time := maxf(0.0, seconds)
+	if elapsed == next_time: return
+	elapsed = next_time
+	var next_frame := printer_frame_index()
+	if next_frame != _last_frame_index:
+		_last_frame_index = next_frame
+		queue_redraw()
 
 func printer_frame_index() -> int:
 	if printer_frames.is_empty(): return 0
@@ -53,20 +70,23 @@ func printer_frame_index() -> int:
 	return int(pattern[int(floor(elapsed * 2.4)) % pattern.size()])
 
 func _process(delta: float) -> void:
-	if not reduced_motion and phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING]:
-		elapsed += delta
+	if reduced_motion or not is_visible_in_tree() or phase != ArcaneForgeSequence.PRINTING: return
+	elapsed += delta
+	var next_frame := printer_frame_index()
+	if next_frame != _last_frame_index:
+		_last_frame_index = next_frame
 		queue_redraw()
 
 func _load_assets() -> void:
 	printer_frames.clear()
 	for path in PRINTER_FRAME_PATHS:
-		var texture := ResourceLoader.load(path) as Texture2D
+		var texture := CreatureSpriteCache.texture_for_path(path)
 		if texture != null: printer_frames.append(texture)
 	var definition := Catalog.creature(creature_id)
 	var raw_path := str(definition.get("raw_print", ""))
 	if raw_path.is_empty() or not ResourceLoader.exists(raw_path): raw_path = str(Catalog.creature("mossmunk").get("raw_print", ""))
-	raw = ResourceLoader.load(raw_path) as Texture2D
-	living = ResourceLoader.load(BattleSpriteStage.sprite_path_for(creature_id)) as Texture2D
+	raw = CreatureSpriteCache.texture_for_path(raw_path)
+	living = CreatureSpriteCache.texture_for_creature(creature_id)
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("081526d9") if not high_contrast else Color("000000f5"), true)

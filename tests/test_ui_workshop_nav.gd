@@ -142,6 +142,9 @@ func _ready() -> void:
 		await get_tree().process_frame
 		var live_layer := main.find_child("WorkshopStationLiveLayer", true, false)
 		require(live_layer != null and live_layer.station_id == "printer" and live_layer.is_processing(), "normal-motion live Printer station processes presentation only at %s" % viewport_size)
+		main.render()
+		await get_tree().process_frame
+		require(live_layer != null and main.find_child("WorkshopStationLiveLayer", true, false) == live_layer, "Workshop component reattaches one persistent live layer at %s" % viewport_size)
 		var responsive_picker := main.find_child("PrinterBlueprintTrayButton", true, false) as Control
 		require(responsive_picker != null and control_in_view(responsive_picker, viewport_size), "Choose a Print remains visible and touch-safe at %s" % viewport_size)
 		main.open_workshop_view("overview")
