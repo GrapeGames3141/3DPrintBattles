@@ -22,6 +22,9 @@ func _ready() -> void:
 	var main := MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
+	# This scenario asserts player-turn Bench and concede controls.  Keep the
+	# repeatable training seed fixed rather than deriving it from today's date.
+	main.shop_day_key = "2026-08-15"
 	require(main.screen == "workshop" and main.find_child("WorkshopMap", true, false) != null and get_viewport().gui_get_focus_owner() is Button, "workshop map has an accessible initial station focus")
 	main._run_workshop_station("calibration")
 	await get_tree().process_frame

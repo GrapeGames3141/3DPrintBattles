@@ -323,7 +323,48 @@ No Godot editor processes are required for the test scene.
   devices` started an empty daemon and found no attached device, so physical
   Android smoke remains blocked rather than passed.
 
-## Checkpoint 0.5.16 Trial recovery, touch scroll, and armor atlas (staging)
+## Checkpoint 0.5.17 Trial team integrity (staging)
+
+- `SoloBattleFactory.player_loadout` first returns the authoritative
+  `ProfileRules.team_loadout` unchanged. Only an empty authoritative result
+  falls back to deterministic catalog-valid raw owned records, including
+  legacy `creature_id`, `species_id`, `creature`, `species`, and `id` aliases
+  without an instance ID. The fallback never writes the profile and preserves
+  an armor only when that catalog-valid armor is owned.
+- Isolated parser PID 26520, focused factory PID 20444, and Trials UI PID
+  20000 exited 0. The focused tests cover Team Builder precedence, raw
+  `{id:"cinderpaw"}` / `{species:"cinderpaw"}` input, invalid deck fallback,
+  no-owned refusal, deep input immutability, visible repair notice, and the
+  Warm Nozzle start path.
+- Inspected true-portrait OpenGL captures: legacy Trial lineup
+  `trials_legacy_576x1024_trialteam-final-lineup2.png` (PID 12760, exit 0)
+  shows the temporary-use wording and 44px Edit Current Team route; successful
+  Warm Nozzle `trial_battle_legacy_576x1024_trialteam-final-warmnozzle.png`
+  (PID 19248, exit 0) shows the persistent in-battle lineup notice and visible
+  opening Defend/End Turn controls.
+- Final isolated parser/import scan PID `18216` exited 0. The retained 23-scene
+  suite passed (all exit 0): alpha `12504`, art `1852`, battle `2712`, campaign
+  `19980`, checkpoint-A `2820`, checkpoint4 `9420`, checkpoint5 `21200`,
+  checkpoint6 `1244`, offline QA `15652`, presentation `23752`, profile
+  `25008`, progression `25748`, save recovery `7420`, signatures `10712`, solo
+  factory `3412`, UI-A `17092`, UI-A1 `19788`, UI5 `22892`, UI6 `16296`, Trials
+  `2772`, Workshop navigation `25160`, depth `3752`, and Workshop live `15416`.
+  `test_ui_checkpoint_a` now fixes its training day key to the player-first
+  deterministic seed required by its Bench/concede assertions; it no longer
+  depends on the host calendar.
+- Final Android review export PID `25196` exited 0. The staged artifact
+  `build/android/PrintForge-Legends-0.5.17-alpha-trial-team-arm64.apk` is
+  `105,427,012` bytes, SHA-256
+  `AA5D756B4C6EB68BDAF22BD278DFAF72952347CE686046FE4B8A9AE8EBFA6476`.
+  `apksigner` verified v2/v3 using the Android Debug certificate; `aapt` reports
+  package `com.tak.printforge.legends.review`, version code `67`, version name
+  `0.5.17-alpha-trial-team`, min SDK `24`, target SDK `36`, then emits its known
+  `android:required` parser warning. Archive audit retained arm64 libraries and
+  runtime workshop/creature resources, excluded backend/tests/tools/tmp/
+  node_modules/.git, and contains only the intentionally runtime-referenced
+  workshop reference import under `docs/`. No physical device was attached.
+
+## Checkpoint 0.5.16 Trial recovery, touch scroll, and armor atlas (historical staging)
 
 - The shared `SoloBattleFactory` accepts a legal saved team/deck when present,
   otherwise builds a deterministic temporary owned-print lineup for a

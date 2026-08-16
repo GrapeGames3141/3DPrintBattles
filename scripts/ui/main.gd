@@ -45,6 +45,7 @@ var battle_secondary_tab := "bench"
 var battle_mode := "training"
 var trial_encounter_id := ""
 var battle_ai_difficulty := "Craftsman"
+var battle_launch_notice := ""
 var local_concede_armed := false
 var local_authority: LocalBattleAuthority
 var local_ready_seat := -1
@@ -1780,6 +1781,11 @@ func render_trials() -> void:
 	var intro := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(intro.get_parent())
 	intro.add_child(label("Workshop Trials", 25, Color("ffd36c")))
 	intro.add_child(label("Each tier unlocks in order. Clear three encounters, then the boss, to open the next workshop test. First-clear rewards are claimed only on victory.", 15, Color("dce8f4")))
+	var lineup := _trial_lineup_preview()
+	intro.add_child(label(str(lineup.get("text", "Trial lineup: choose a Team Builder lineup.")), 14, Color("a9ecff") if not bool(lineup.get("temporary", false)) else Color("fff0a1")))
+	var edit_team := make_button("Edit Current Team", navigate_to.bind("team"), Color("526e93"))
+	edit_team.name = "EditCurrentTrialTeam"
+	intro.add_child(edit_team)
 	for tier in Catalog.WORKSHOP_TRIAL_TIERS:
 		var tier_number: int = int(tier.get("tier", 0))
 		var card := make_panel(Color("142b42e8"), Color("f1be69") if tier_number <= int(GameManager.profile.get("solo_campaign", {}).get("unlocked_tier", 1)) else Color("536273"))
@@ -1804,6 +1810,24 @@ func render_trials() -> void:
 			card.add_child(start)
 	body.add_child(make_button("Back to Proving Door", navigate_to.bind("proving"), Color("536c8d")))
 
+func _trial_lineup_preview() -> Dictionary:
+	var current: Array = GameManager.current_team_loadout()
+	if not current.is_empty():
+		return {"text":"Trial lineup: %s" % _trial_lineup_names(current), "temporary":false}
+	var fallback := SoloBattleFactory.player_loadout(GameManager.profile)
+	var temporary: Array = fallback.get("team", [])
+	if not temporary.is_empty():
+		return {"text":"Trial lineup: Legacy owned prints will be used temporarily: %s. Save a Team Builder lineup after the match." % _trial_lineup_names(temporary), "temporary":true}
+	return {"text":"Trial lineup: No catalog-valid owned print is ready. Use the Printer Bench, then Team Builder.", "temporary":true}
+
+func _trial_lineup_names(lineup: Array) -> String:
+	var names: Array[String] = []
+	for entry in lineup:
+		var creature_id := str(entry.get("creature_id", "")) if entry is Dictionary else str(entry)
+		var definition := Catalog.creature(creature_id)
+		if not definition.is_empty(): names.append(str(definition.get("name", creature_id)))
+	return ", ".join(names)
+
 func start_trial(encounter_id: String) -> void:
 	var state := GameManager.campaign_encounter_state(encounter_id)
 	if not bool(state.get("ok", false)) or not bool(state.get("unlocked", false)):
@@ -1818,7 +1842,7 @@ func start_trial(encounter_id: String) -> void:
 		_toast(str(setup.get("error", "The Workshop Trial team is not ready.")))
 		return
 	battle = setup.get("battle", null) as BattleState
-	if bool(setup.get("temporary_repair", false)): _toast(str(setup.get("repair_message", "")))
+	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) else ""
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_mode = "trial"
@@ -1841,7 +1865,7 @@ func start_battle() -> void:
 		_toast(str(setup.get("error", "The training team is not ready.")))
 		return
 	battle = setup.get("battle", null) as BattleState
-	if bool(setup.get("temporary_repair", false)): _toast(str(setup.get("repair_message", "")))
+	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) else ""
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_last_event = ""
@@ -1897,6 +1921,8 @@ func render_battle_fullscreen(host: Container) -> void:
 	if battle_mode == "trial" and not trial_encounter_id.is_empty():
 		battle_title += " - Trial: %s" % str(Catalog.workshop_trial_encounter(trial_encounter_id).get("name", "Workshop Trial"))
 	intro.add_child(label("%s - %s" % [battle_title, "Your turn" if battle.active_player == 0 else "Rival is thinking"], 22, Color("ffd36c")))
+	if not battle_launch_notice.is_empty():
+		intro.add_child(label("Lineup notice: " + battle_launch_notice, 13, Color("fff0a1")))
 	var compact_secondary := battle_secondary_open and not is_portrait_layout()
 	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() else (96 if compact_secondary else 172))
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL

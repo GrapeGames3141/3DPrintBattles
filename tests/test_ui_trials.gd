@@ -54,16 +54,23 @@ func _ready() -> void:
 	var locked_control := find_named(main, "TrialStartfirst_layers_2") as Control
 	var rect := locked_control.get_global_rect() if locked_control != null else Rect2()
 	require(rect.size.y >= 44.0 and rect.position.x >= 0.0 and rect.end.x <= 576.0, "portrait trial action remains touch-safe and in bounds")
-	# Phone symptom: a current-schema profile can retain stale legacy species refs
-	# and a missing active deck. Start must build a temporary, catalog-valid match.
+	# Phone symptom: a current-schema profile can retain only a raw catalog alias
+	# with no instance ID, a species team ref, and a missing active deck. Start
+	# must build a temporary match without persisting a repair.
 	var stale_profile := GameManager.profile.duplicate(true)
-	stale_profile["team"] = ["cinderpaw"]
+	stale_profile["creatures"] = [{"id":"cinderpaw"}]
+	stale_profile["team"] = [{"species":"cinderpaw"}]
 	stale_profile["active_deck_id"] = "missing-review-deck"
 	stale_profile["decks"] = []
+	var stale_before: Dictionary = stale_profile.duplicate(true)
 	GameManager.profile = stale_profile
 	main.screen = "trials"; main.render(); await get_tree().process_frame
+	require(tree_has_text(main, "Legacy owned prints will be used temporarily") and find_named(main, "EditCurrentTrialTeam") != null, "Trials exposes a temporary legacy lineup preview and touch-safe Team Builder route")
 	main.start_trial("first_layers_1")
-	require(main.screen == "battle" and main.battle != null and not Catalog.creature(str(main.battle.active_unit(0).get("id", ""))).is_empty(), "migrated review profile launches Warm Nozzle using a temporary owned-team repair")
+	await get_tree().process_frame
+	require(main.screen == "battle" and main.battle != null and str(main.battle.active_unit(0).get("id", "")) == "cinderpaw", "migrated review profile launches Warm Nozzle using a temporary owned-team repair")
+	require(tree_has_text(main, "Lineup notice:") and tree_has_text(main, "temporarily uses"), "temporary repair message remains visible after Battle render instead of a discarded toast")
+	require(GameManager.profile == stale_before, "temporary Warm Nozzle repair leaves the legacy profile deeply unchanged")
 	main.queue_free()
 	await get_tree().process_frame
 	if failures.is_empty(): print("PASS: Workshop Trial navigation, locks, victory return, and mastery UI")

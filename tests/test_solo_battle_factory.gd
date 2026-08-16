@@ -10,18 +10,33 @@ func require(value: bool, message: String) -> void:
 
 func _ready() -> void:
 	var selected: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").get("profile", {})
-	selected["team"] = ["cinderpaw"] # plausible old species-reference, not an instance ID.
 	selected["active_deck_id"] = "missing-deck"
 	selected["decks"] = []
-	var before := selected.duplicate(true)
-	var repaired := FACTORY.create(selected, ["mossmunk"], 99, 99, 42)
-	require(bool(repaired.get("ok", false)), "stale species team reference launches a solo match from deterministic owned fallback")
-	require(bool(repaired.get("temporary_repair", false)), "stale team reference reports a temporary repair instead of silently persisting one")
+	# The Team Builder loadout wins over fallback ordering even when profile
+	# creatures are in another order.
+	var printed := ProgressionRules.purchase_creature_blueprint(selected, "mossmunk")
+	printed = ProgressionRules.print_creature(printed.get("profile", {}), "mossmunk")
+	var authored: Dictionary = printed.get("profile", {})
+	var starter_instance: String = str(authored.get("creatures", [])[0].get("instance_id", ""))
+	var moss_instance: String = str(authored.get("creatures", [])[1].get("instance_id", ""))
+	authored["team"] = [moss_instance, starter_instance]
+	var authored_before: Dictionary = authored.duplicate(true)
+	var current := FACTORY.player_loadout(authored)
+	require(current.get("team", []) == ProfileRules.team_loadout(authored) and not bool(current.get("temporary_repair", true)), "authoritative Team Builder loadout is returned unchanged before fallback ordering")
+	require(authored == authored_before, "authoritative team lookup does not mutate profile input")
+	# Phone-like raw records can retain a catalog species alias but no instance ID.
+	var legacy: Dictionary = selected.duplicate(true)
+	legacy["creatures"] = [{"id":"cinderpaw"}]
+	legacy["team"] = [{"species":"cinderpaw"}]
+	var before: Dictionary = legacy.duplicate(true)
+	var repaired := FACTORY.create(legacy, ["mossmunk"], 99, 99, 42)
+	require(bool(repaired.get("ok", false)), "legacy raw id/species records launch a solo match from deterministic owned fallback")
+	require(bool(repaired.get("temporary_repair", false)), "legacy raw team reference reports a temporary repair instead of silently persisting one")
 	var state := repaired.get("battle", null) as BattleState
 	require(state != null and str(state.active_unit(0).get("id", "")) == "cinderpaw", "fallback unit is catalog-valid Cinderpaw")
 	require(state != null and state.players[0].hand.size() == 4 and state.players[0].deck.size() == 11, "invalid saved deck uses canonical legal starter loadout")
-	require(selected == before, "solo setup does not persist or mutate a repaired temporary lineup")
-	var invalid := selected.duplicate(true)
+	require(legacy == before, "solo setup does not persist or mutate a repaired temporary lineup")
+	var invalid := legacy.duplicate(true)
 	invalid["creatures"] = []
 	invalid["team"] = ["missing-print"]
 	var rejected := FACTORY.create(invalid, ["mossmunk"], 3, 3, 42)

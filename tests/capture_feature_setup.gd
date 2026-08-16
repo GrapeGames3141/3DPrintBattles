@@ -4,11 +4,13 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
-	if mode in ["battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "high_contrast_battle", "reduced_motion_battle", "trial_battle"]:
+	if mode in ["battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "high_contrast_battle", "reduced_motion_battle", "trial_battle", "trial_battle_legacy"]:
 		main.screen = "battle"
-		if mode == "trial_battle":
+		if mode in ["trial_battle", "trial_battle_legacy"]:
 			var encounter := Catalog.workshop_trial_encounter("first_layers_1")
-			main.battle = BattleState.create(GameManager.current_team_loadout(), encounter.get("team", []), GameManager.filament_cap(), int(encounter.get("spool", 3)), 2, GameManager.active_deck_cards())
+			var setup := GameManager.create_solo_battle(encounter.get("team", []), int(encounter.get("spool", 3)), 2)
+			main.battle = setup.get("battle", null) as BattleState
+			main.battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) else ""
 			main.battle_mode = "trial"
 			main.trial_encounter_id = "first_layers_1"
 			main.battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
@@ -57,7 +59,7 @@ static func configure_forge(main, mode: String) -> bool:
 	return true
 
 static func configure_workshop(main, mode: String) -> bool:
-	if mode in ["trials", "trials_scrolled"]:
+	if mode in ["trials", "trials_scrolled", "trials_legacy"]:
 		main.screen = "trials"
 		if mode == "trials_scrolled": main.set_meta("capture_scroll_trials", true)
 		return true

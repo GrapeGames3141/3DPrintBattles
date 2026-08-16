@@ -30,6 +30,8 @@ func _ready() -> void:
 func _prepare_capture() -> void:
 	await get_tree().process_frame
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
+	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
+		GameManager.profile = legacy_trial_profile()
 	# Explicit capture-only injection proves the Android review custom-feature
 	# economy floor without pretending the desktop process has that feature.
 	if capture_mode in ["station_live_review", "battle_review"]:
@@ -94,6 +96,14 @@ func fixture_profile() -> Dictionary:
 	fixture.support_cards.coolant = 1
 	return fixture
 
+func legacy_trial_profile() -> Dictionary:
+	var legacy: Dictionary = fixture_profile()
+	legacy["creatures"] = [{"id":"cinderpaw"}]
+	legacy["team"] = [{"species":"cinderpaw"}]
+	legacy["active_deck_id"] = "missing-review-deck"
+	legacy["decks"] = []
+	return legacy
+
 func capture() -> void:
 	# Capture an actual accessible impact cue after the first Battle route. The
 	# director is capture-muted, so this only exercises visible presentation.
@@ -104,7 +114,7 @@ func capture() -> void:
 	# The trial screen is deliberately scrollable on a phone.  Pin the capture
 	# position after all deferred focus/layout work so the evidence proves both
 	# the initial list and a genuine lower-list scroll state.
-	if capture_mode in ["trials", "trials_scrolled"]:
+	if capture_mode in ["trials", "trials_scrolled", "trials_legacy"]:
 		var trial_scroll := workshop.find_child("TouchFirstScroll", true, false) as ScrollContainer
 		if trial_scroll != null:
 			if capture_mode == "trials_scrolled":
@@ -170,7 +180,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "trial_battle_legacy", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

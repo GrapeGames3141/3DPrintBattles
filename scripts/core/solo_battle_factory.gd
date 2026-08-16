@@ -22,32 +22,81 @@ static func create(profile: Dictionary, rival_team: Array, player_cap: int, riva
 	return {"ok":true, "battle":battle, "error":"", "temporary_repair":bool(team_result.get("temporary_repair", false)), "repair_message":str(team_result.get("repair_message", "")), "deck_fallback":bool(deck_result.get("fallback", false))}
 
 static func player_loadout(profile: Dictionary) -> Dictionary:
-	var owned_by_instance := {}
-	var owned_order: Array = []
+	# Team Builder is authoritative whenever it can produce a normalized lineup.
+	# Do not reorder, fill, or otherwise reinterpret a valid saved team here.
+	var authoritative: Array = ProfileRules.team_loadout(profile)
+	if not authoritative.is_empty():
+		return {"team":authoritative, "temporary_repair":false, "repair_message":""}
+	# Some pre-integrity local saves contain a perfectly plausible raw species but
+	# no printable instance ID.  A solo match may use that owned record for this
+	# launch only; it never writes a repaired team, ID, inventory row, or armor.
+	var owned_records := _owned_records(profile)
+	if owned_records.is_empty():
+		return {"team":[], "error":"No catalog-valid owned print is available. Print or recover a creature before starting a solo battle.", "temporary_repair":false}
+	var repaired: Array = []
+	var used := {}
+	for raw_ref in profile.get("team", []):
+		var wanted_instance := _instance_reference(raw_ref)
+		var wanted_species := _species_reference(raw_ref)
+		for candidate in owned_records:
+			var key: String = str(candidate.get("key", ""))
+			if used.has(key): continue
+			if (not wanted_instance.is_empty() and wanted_instance == str(candidate.get("instance_id", ""))) or (not wanted_species.is_empty() and wanted_species == str(candidate.get("creature_id", ""))):
+				used[key] = true
+				repaired.append(_battle_entry(candidate))
+				break
+		if repaired.size() == 3: break
+	for candidate in owned_records:
+		if repaired.size() == 3: break
+		var key: String = str(candidate.get("key", ""))
+		if used.has(key): continue
+		used[key] = true
+		repaired.append(_battle_entry(candidate))
+	return {"team":repaired, "temporary_repair":true, "repair_message":"Your saved team references were stale. This solo match temporarily uses your matching owned print(s); update Team Builder after the match."}
+
+static func _owned_records(profile: Dictionary) -> Array:
+	var owned_armor := _owned_armor_ids(profile)
+	var records: Array = []
+	var order := 0
 	for raw in profile.get("creatures", []):
 		if not raw is Dictionary: continue
-		var instance_id := str(raw.get("instance_id", ""))
-		var creature_id := str(raw.get("creature_id", raw.get("id", "")))
-		if instance_id.is_empty() or Catalog.creature(creature_id).is_empty(): continue
-		owned_by_instance[instance_id] = {"creature_id":creature_id, "armor_id":str(raw.get("armor_id", ""))}
-		owned_order.append(instance_id)
-	owned_order.sort()
-	if owned_order.is_empty():
-		return {"team":[], "error":"No catalog-valid owned print is available. Print or recover a creature before starting a solo battle.", "temporary_repair":false}
-	var intended: Array = []
-	var seen := {}
-	for raw_ref in profile.get("team", []):
-		var instance_id := str(raw_ref.get("instance_id", raw_ref.get("id", ""))) if raw_ref is Dictionary else str(raw_ref)
-		if owned_by_instance.has(instance_id) and not seen.has(instance_id) and intended.size() < 3:
-			seen[instance_id] = true
-			intended.append(owned_by_instance[instance_id])
-	if not intended.is_empty():
-		return {"team":intended, "temporary_repair":false, "repair_message":""}
-	var repaired: Array = []
-	for instance_id in owned_order:
-		repaired.append(owned_by_instance[instance_id])
-		if repaired.size() == 3: break
-	return {"team":repaired, "temporary_repair":true, "repair_message":"Your saved team references were stale. This solo match temporarily uses your first ready owned print(s); update Team Builder after the match."}
+		var creature_id := _species_reference(raw)
+		if Catalog.creature(creature_id).is_empty(): continue
+		var instance_id := _instance_reference(raw)
+		var armor_id := str(raw.get("armor_id", ""))
+		if ProgressionRules.armor_def(armor_id).is_empty() or not owned_armor.has(armor_id): armor_id = ""
+		var stable_key := instance_id if not instance_id.is_empty() else "legacy-%06d" % order
+		records.append({"key":stable_key, "instance_id":instance_id, "creature_id":creature_id, "armor_id":armor_id, "order":order})
+		order += 1
+	records.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.get("key", "")) < str(b.get("key", "")))
+	return records
+
+static func _owned_armor_ids(profile: Dictionary) -> Dictionary:
+	var result := {}
+	for raw in profile.get("armor", []):
+		if not raw is Dictionary: continue
+		var armor_id := str(raw.get("armor_id", ""))
+		if not ProgressionRules.armor_def(armor_id).is_empty(): result[armor_id] = true
+	return result
+
+static func _species_reference(raw) -> String:
+	if raw is Dictionary:
+		for key in ["creature_id", "species_id", "creature", "species", "id"]:
+			var candidate := str(raw.get(key, ""))
+			if not Catalog.creature(candidate).is_empty(): return candidate
+		return ""
+	var candidate := str(raw)
+	return candidate if not Catalog.creature(candidate).is_empty() else ""
+
+static func _instance_reference(raw) -> String:
+	if not raw is Dictionary: return str(raw)
+	for key in ["instance_id", "instance", "uid", "instance_key"]:
+		var candidate := str(raw.get(key, ""))
+		if not candidate.is_empty(): return candidate
+	return ""
+
+static func _battle_entry(candidate: Dictionary) -> Dictionary:
+	return {"creature_id":str(candidate.get("creature_id", "")), "armor_id":str(candidate.get("armor_id", ""))}
 
 static func player_deck(profile: Dictionary) -> Dictionary:
 	var deck := ProgressionRules.active_deck(profile)
