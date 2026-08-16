@@ -16,6 +16,12 @@ The Collection, Team Builder, Armor Workbench, Deck Builder, and Extruder Forge 
 
 Starter completion owns only the 15 cards needed for the legal starter deck, never the full catalog. The active saved deck is dealt into training matches. Equipped armor applies its catalog-defined maximum-HP, speed, and guard modifiers to the training loadout.
 
+## Workshop depth
+
+Calibration Bench now presents three deterministic day-keyed target bands per attempt. Confirming the three selected values calculates an integer distance score and uses the existing capped 8-28 Forge Coin curve; three patterns remain available per day. Print Yard offers one daily choice: Field Practice (+12 account XP), Team Bond (+5 mastery to each saved-team instance), or, at spool capacity 4+, one non-stacking Spool Warmup consumed only after a valid Daily Training or Workshop Trial begins.
+
+Armor blueprints print through the same transaction-safe Arcane Forge timing as creatures: ten seconds of layer printing, one raw-completed-part hold, then an armor-only completion transfer. Forgedex records base stats, signature, per-instance mastery, inventory and print counts. Five fixed-label deck slots support create, duplicate, rename, activate, and delete; the starter slot remains protected and every active deck remains legal.
+
 The Proving Door deliberately separates repeatable Daily Training from five ordered Workshop Trial tiers: **First Layers**, **Element Bench**, **Reinforced Run**, **Masterwork Circuit**, and **Primordial Proof**. Every tier has three fixed encounters and a three-print boss. First clears use an authored integer reward curve and grant coins, account XP, and mastery to every instance in the currently saved team; duplicate claims cannot grant rewards again. A faster replay can improve only its recorded best turn count. Mastery is per printed instance and is shown in Collection, Team Builder, Forgedex, and Trial rewards; it is presentation/progression only and does not alter combat stats in this build.
 
 ## Accessibility and battle presentation

@@ -124,9 +124,9 @@ func complete_workshop_job(performance: int, day_key: String = "") -> int:
 	mutated("calibration_job", result.payload)
 	return int(result.payload.reward)
 
-func visit_print_yard(day_key: String = "") -> int:
+func visit_print_yard(day_key: String = "", drill_id: String = "field_practice") -> int:
 	var resolved_day := Time.get_date_string_from_system() if day_key.is_empty() else day_key
-	var result := ProgressionRules.visit_print_yard(profile, resolved_day)
+	var result := ProgressionRules.visit_print_yard(profile, resolved_day, drill_id)
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "The Print Yard is unavailable.")))
 		return 0
@@ -134,7 +134,19 @@ func visit_print_yard(day_key: String = "") -> int:
 	if int(result.payload.get("spool_gained", 0)) > 0:
 		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
 	mutated("print_yard_visit", result.payload)
-	return int(result.payload.xp)
+	return int(result.payload.get("xp", 0))
+
+func consume_solo_spool_warmup() -> int:
+	var result := ProgressionRules.consume_spool_warmup(profile)
+	if not bool(result.get("ok", false)): return 0
+	var bonus := int(result.get("payload", {}).get("bonus", 0))
+	if bonus <= 0: return 0
+	profile = result.profile
+	mutated("consume_spool_warmup", result.payload)
+	return bonus
+
+func pending_solo_spool_warmup() -> int:
+	return clampi(int(profile.get("pending_spool_warmup", 0)), 0, 1)
 
 func learn_blueprint(creature_id: String) -> bool:
 	return apply_transition(ProgressionRules.purchase_creature_blueprint(profile, creature_id), "learn_blueprint")
@@ -144,6 +156,18 @@ func print_creature(creature_id: String) -> bool:
 
 func print_armor(armor_id: String) -> bool:
 	return apply_transition(ProgressionRules.print_armor(profile, armor_id), "print_armor")
+
+func create_deck(deck_id: String, name: String) -> bool:
+	return apply_transition(ProgressionRules.create_deck(profile, deck_id, name), "create_deck")
+
+func duplicate_deck(source_id: String, target_id: String) -> bool:
+	return apply_transition(ProgressionRules.duplicate_deck(profile, source_id, target_id), "duplicate_deck")
+
+func rename_deck(deck_id: String, name: String) -> bool:
+	return apply_transition(ProgressionRules.rename_deck(profile, deck_id, name), "rename_deck")
+
+func delete_deck(deck_id: String) -> bool:
+	return apply_transition(ProgressionRules.delete_deck(profile, deck_id), "delete_deck")
 
 func learn_armor_blueprint(armor_id: String) -> bool:
 	return apply_transition(ProgressionRules.learn_armor_blueprint(profile, armor_id), "learn_armor_blueprint")

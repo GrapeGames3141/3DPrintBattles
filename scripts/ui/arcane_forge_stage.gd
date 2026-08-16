@@ -11,6 +11,7 @@ const PRINTER_FRAME_PATHS := [
 const CELL := Vector2i(384, 512)
 
 var creature_id := "cinderpaw"
+var armor_id := ""
 var phase := ArcaneForgeSequence.IDLE
 var progress_bps := 0
 var phase_progress_bps := 0
@@ -30,8 +31,9 @@ func _ready() -> void:
 	_update_motion_processing()
 	queue_redraw()
 
-func configure(id: String, reduce_motion: bool, contrast: bool) -> void:
+func configure(id: String, reduce_motion: bool, contrast: bool, armor_definition_id: String = "") -> void:
 	creature_id = id
+	armor_id = armor_definition_id
 	reduced_motion = reduce_motion
 	high_contrast = contrast
 	_load_assets()
@@ -97,9 +99,9 @@ func _draw() -> void:
 	var printer_rect := _fit_rect(printer, printer_bounds)
 	if printer != null: draw_texture_rect(printer, printer_rect, false)
 	var plate := Rect2(printer_rect.position.x + printer_rect.size.x * 0.28, printer_rect.position.y + printer_rect.size.y * 0.57, printer_rect.size.x * 0.50, printer_rect.size.y * 0.13)
-	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING]:
+	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase == ArcaneForgeSequence.AWAKENED):
 		_draw_raw(plate)
-	if phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
+	if armor_id.is_empty() and phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
 	if high_contrast: draw_rect(Rect2(2, 2, size.x - 4, size.y - 4), Color.WHITE, false, 3.0)
@@ -111,6 +113,9 @@ func _fit_rect(texture: Texture2D, bounds: Rect2) -> Rect2:
 	return Rect2(bounds.position + (bounds.size - fitted) * 0.5, fitted)
 
 func _draw_raw(plate: Rect2) -> void:
+	if not armor_id.is_empty():
+		_draw_armor_part(plate)
+		return
 	if raw == null: return
 	# The raw source has a small raft at its bottom. Align that raft to the actual
 	# plate surface and keep the physical print at about one fifth of printer height.
@@ -129,6 +134,18 @@ func _draw_raw(plate: Rect2) -> void:
 	if phase == ArcaneForgeSequence.PRINTING:
 		var scan_y := destination.position.y
 		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("69efff"), 2.0)
+
+func _draw_armor_part(plate: Rect2) -> void:
+	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
+	var height := plate.size.y * 1.25
+	var center := Vector2(plate.get_center().x, _plate_surface_y(plate) - height * 0.48)
+	var points := PackedVector2Array([center + Vector2(-height * 0.30, -height * 0.42), center + Vector2(height * 0.30, -height * 0.42), center + Vector2(height * 0.38, -height * 0.08), center + Vector2(0, height * 0.48), center + Vector2(-height * 0.38, -height * 0.08)])
+	var clip_y := center.y + height * 0.50 - height * float(reveal) / 10000.0
+	if reveal > 0:
+		draw_colored_polygon(points, Color("d7b16a"))
+		draw_polyline(points + PackedVector2Array([points[0]]), Color("f7e7a1"), 2.0)
+		draw_rect(Rect2(center.x - height * 0.5, center.y - height * 0.5, height, clip_y - (center.y - height * 0.5)), Color("081526"), true)
+	if phase == ArcaneForgeSequence.PRINTING: draw_line(Vector2(plate.position.x, clip_y), Vector2(plate.end.x, clip_y), Color("69efff"), 2.0)
 
 func _draw_living(plate: Rect2) -> void:
 	if living == null: return

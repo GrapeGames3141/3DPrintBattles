@@ -49,6 +49,8 @@ var trade_creator_choice := ""
 var trade_partner_choice := ""
 var printer_sequence: ArcaneForgeSequence
 var printer_creature_id := ""
+var printer_armor_id := ""
+var printer_is_armor := false
 var printer_price := 0
 var printer_tick_accumulator := 0.0
 var printer_presentation_seconds := 0.0
@@ -57,6 +59,8 @@ var printer_failure := ""
 var printer_return_screen := "collection"
 var printer_progress_label: Label
 var team_draft_dirty := false
+var calibration_values: Array[int] = [50, 50, 50]
+var calibration_step := 0
 var _focus_after_render := true
 var workshop_ambient_capture_freeze := false
 var workshop_station_live_capture_progress := -1
@@ -1252,24 +1256,56 @@ func render_shop() -> void:
 func render_print_yard() -> void:
 	var panel := make_panel(Color("19334de8"), Color("7bcf89")); body.add_child(panel.get_parent())
 	panel.add_child(label("Print Yard", 25, Color("a8e3a5")))
-	panel.add_child(label("Your printed companions practice one calm filament lesson together each day. This activity is local, deterministic, and cannot be repeated today.", 16, Color("dce8f4")))
-	panel.add_child(label("Companions present: %d | Current XP: %d | Spool threshold: %d XP" % [GameManager.profile.creatures.size(), int(GameManager.profile.xp), GameManager.filament_cap() * 100], 15, Color("9beaff")))
+	panel.add_child(label("Choose one calm, deterministic drill for today. Each choice can be claimed only once.", 16, Color("dce8f4")))
+	panel.add_child(label("Companions present: %d | Current XP: %d | Pending warmup: +%d starting filament" % [GameManager.profile.creatures.size(), int(GameManager.profile.xp), int(GameManager.profile.get("pending_spool_warmup", 0))], 15, Color("9beaff")))
 	var already := str(GameManager.profile.get("last_yard_day", "")) == shop_day_key
-	panel.add_child(make_button("Lesson already shared today" if already else "Share Filament Lesson (+XP)", func():
-		var xp := GameManager.visit_print_yard(shop_day_key)
-		if xp > 0: _toast("Print Yard lesson complete: +%d XP." % xp), Color("588d73") if not already else Color("536c8d")))
+	var chosen := str(GameManager.profile.get("yard_choice", ""))
+	panel.add_child(label("Today's drill: %s" % (chosen.replace("_", " ").capitalize() if already else "Choose one below"), 15, Color("a8e3a5") if already else Color("fff0a1")))
+	for drill_id in ["field_practice", "team_bond", "spool_warmup"]:
+		var unavailable: bool = drill_id == "spool_warmup" and GameManager.filament_cap() <= 3
+		var copy: String = str({"field_practice":"Field Practice - +12 account XP", "team_bond":"Team Bond - +5 mastery to each saved team print", "spool_warmup":"Spool Warmup - +1 starting filament for next solo match (Requires spool capacity 4+)" if unavailable else "Spool Warmup - +1 starting filament for next solo match"}[drill_id])
+		var drill_button := make_button(copy, run_print_yard_drill.bind(drill_id), Color("588d73") if not already and not unavailable else Color("536c8d"))
+		drill_button.disabled = already or unavailable
+		panel.add_child(drill_button)
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func run_print_yard_drill(drill_id: String) -> void:
+	var before := int(GameManager.profile.get("revision", 0))
+	GameManager.visit_print_yard(shop_day_key, drill_id)
+	if int(GameManager.profile.get("revision", 0)) > before: _toast("Print Yard drill complete.")
 
 func render_calibration_bench() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
 	var used: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
 	panel.add_child(label("Calibration Bench", 25, Color("ffd36c")))
-	panel.add_child(label("Tune a fixed 72% pattern for a reliable Forge Coin reward. A fresh day resets the three-pattern limit.", 16, Color("dce8f4")))
-	panel.add_child(label("Today: %d / %d patterns complete | Reward at 72%%: 22 Forge Coins" % [used, ProgressionRules.DAILY_CALIBRATION_LIMIT], 15, Color("9beaff")))
-	panel.add_child(make_button("Calibration complete for today" if used >= ProgressionRules.DAILY_CALIBRATION_LIMIT else "Run Calibration Pattern", func():
-		var reward := GameManager.complete_workshop_job(72, shop_day_key)
-		if reward > 0: _toast("Calibration pattern complete: +%d Forge Coins." % reward), Color("a86b2e") if used < ProgressionRules.DAILY_CALIBRATION_LIMIT else Color("536c8d")))
+	var targets: Array = ProgressionRules.calibration_pattern(shop_day_key, used)
+	if calibration_step >= 3 or used >= ProgressionRules.DAILY_CALIBRATION_LIMIT: calibration_step = 0; calibration_values = [50, 50, 50]
+	panel.add_child(label("Today: %d / %d patterns complete. Confirm all three values to score this pattern." % [used, ProgressionRules.DAILY_CALIBRATION_LIMIT], 15, Color("9beaff")))
+	if used < ProgressionRules.DAILY_CALIBRATION_LIMIT:
+		var target: int = int(targets[calibration_step])
+		var value: int = int(calibration_values[calibration_step])
+		panel.add_child(label("Step %d / 3 - target band %d to %d | selected %d" % [calibration_step + 1, maxi(0, target - 5), mini(100, target + 5), value], 18, Color("fff0a1")))
+		var adjust := HBoxContainer.new(); panel.add_child(adjust)
+		adjust.add_child(make_button("-10", adjust_calibration.bind(-10), Color("536c8d")))
+		adjust.add_child(make_button("+10", adjust_calibration.bind(10), Color("2f93a8")))
+		panel.add_child(make_button("Confirm Step %d" % (calibration_step + 1), confirm_calibration_step, Color("a86b2e")))
+	else: panel.add_child(label("All three calibration patterns are complete for today.", 16, Color("a8e3a5")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func adjust_calibration(delta: int) -> void:
+	calibration_values[calibration_step] = clampi(int(calibration_values[calibration_step]) + delta, 0, 100)
+	render()
+
+func confirm_calibration_step() -> void:
+	calibration_step += 1
+	if calibration_step < 3:
+		render()
+		return
+	var used: int = int(GameManager.profile.daily_job_count) if str(GameManager.profile.last_job_day) == shop_day_key else 0
+	var performance := ProgressionRules.calibration_performance(ProgressionRules.calibration_pattern(shop_day_key, used), calibration_values)
+	var reward := GameManager.complete_workshop_job(performance, shop_day_key)
+	if reward > 0: _toast("Calibration result %d%%: +%d Forge Coins." % [performance, reward])
+	calibration_step = 0; calibration_values = [50, 50, 50]
 
 func render_settings() -> void:
 	var panel := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(panel.get_parent())
@@ -1290,6 +1326,8 @@ func open_printer(creature_id: String) -> void:
 		_toast("That blueprint is not learned yet.")
 		return
 	printer_creature_id = creature_id
+	printer_armor_id = ""
+	printer_is_armor = false
 	printer_price = int(Catalog.rarity(str(definition.rarity)).print)
 	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)))
 	printer_tick_accumulator = 0.0
@@ -1302,7 +1340,7 @@ func open_printer(creature_id: String) -> void:
 
 func render_printer() -> void:
 	var definition := Catalog.creature(printer_creature_id)
-	if definition.is_empty() or printer_sequence == null:
+	if (definition.is_empty() and not printer_is_armor) or printer_sequence == null:
 		screen = "collection"
 		render()
 		return
@@ -1310,9 +1348,11 @@ func render_printer() -> void:
 	var panel := make_panel(Color("152d49ec"), Color("f1be69"))
 	body.add_child(panel.get_parent())
 	panel.add_child(label("Arcane Forge", 27, Color("ffd36c")))
-	panel.add_child(label("%s blueprint - %s - %d Forge Coins" % [str(definition.name), str(definition.element), printer_price], 16, Color("9beaff")))
+	var print_name := str(ProgressionRules.armor_def(printer_armor_id).get("name", "Armor Part")) if printer_is_armor else str(definition.name)
+	var print_type := "Armor part" if printer_is_armor else str(definition.element)
+	panel.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
 	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
-	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330)
+	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "")
 	_forge_screen_component.attach(panel)
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
@@ -1327,18 +1367,21 @@ func render_printer() -> void:
 		ArcaneForgeSequence.RAW_COMPLETE:
 			panel.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
 		ArcaneForgeSequence.RAW_HOLD:
-			panel.add_child(label("Raw print complete. The Forge record is secure; the dormant form rests for a moment before awakening.", 16, Color("fff0a1")))
+			var hold_text := "Completed armor part rests for a moment before transfer to the Armor Workbench." if printer_is_armor else "Raw print complete. The Forge record is secure; the dormant form rests for a moment before awakening."
+			panel.add_child(label(hold_text, 16, Color("fff0a1")))
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENING:
 			panel.add_child(label("Filament awakening in progress. The new print is already safely recorded.", 16, Color("9beaff")))
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.DEPARTING:
-			panel.add_child(label("%s takes its first steps away from the build plate." % str(definition.name), 16, Color("a8e3a5")))
+			var departing_name := print_name
+			panel.add_child(label("%s leaves the build plate for the workbench." % departing_name, 16, Color("a8e3a5")))
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENED:
-			panel.add_child(label("Welcome, %s! Your living print is ready for the Collection." % str(definition.name), 20, Color("a8e3a5")))
-			panel.add_child(make_button("Print Another", return_to_printer_picker, Color("a86b2e")))
-			panel.add_child(make_button("Return to Printer Bench", return_to_printer_station, Color("536c8d")))
+			var completion_text := "Armor part secured: %s is ready for the Armor Workbench." % print_name if printer_is_armor else "Welcome, %s! Your living print is ready for the Collection." % str(definition.name)
+			panel.add_child(label(completion_text, 20, Color("a8e3a5")))
+			panel.add_child(make_button("Print Another" if not printer_is_armor else "Print Another Armor Part", return_to_printer_picker, Color("a86b2e")))
+			panel.add_child(make_button("Return to Printer Bench" if not printer_is_armor else "Return to Armor Workbench", return_to_printer_station, Color("536c8d")))
 		ArcaneForgeSequence.FAILED:
 			panel.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
 			panel.add_child(make_button("Return to Collection", navigate_to.bind("collection"), Color("536c8d")))
@@ -1351,7 +1394,7 @@ func _printer_progress_text() -> String:
 
 func _refresh_printer_presentation() -> void:
 	if screen != "printer" or printer_sequence == null: return
-	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330)
+	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "")
 	if is_instance_valid(printer_progress_label):
 		printer_progress_label.text = _printer_progress_text()
 
@@ -1375,7 +1418,7 @@ func advance_printer_for_test(step_bps: int) -> void:
 
 func _commit_printer_once() -> void:
 	if printer_sequence == null or not printer_sequence.request_commit(): return
-	var success := GameManager.print_creature(printer_creature_id)
+	var success := GameManager.print_armor(printer_armor_id) if printer_is_armor else GameManager.print_creature(printer_creature_id)
 	if not success: printer_failure = "The blueprint, coins, or inventory no longer passed validation."
 	printer_sequence.resolve_commit(success)
 
@@ -1387,11 +1430,16 @@ func skip_printer() -> void:
 func cancel_printer_preview() -> void:
 	if printer_sequence != null: printer_sequence.cancel()
 	printer_creature_id = ""
+	printer_armor_id = ""
+	printer_is_armor = false
 	screen = printer_return_screen
 	if screen == "workshop": workshop_view = workshop_return_view
 	render()
 
 func return_to_printer_station() -> void:
+	if printer_return_screen == "armor":
+		navigate_to("armor")
+		return
 	if printer_return_screen == "workshop":
 		screen = "workshop"
 		workshop_view = "printer"
@@ -1402,6 +1450,9 @@ func return_to_printer_station() -> void:
 	navigate_to("collection")
 
 func return_to_printer_picker() -> void:
+	if printer_return_screen == "armor":
+		open_armor_printer(printer_armor_id)
+		return
 	if printer_return_screen == "workshop":
 		printer_picker_open = true
 		return_to_printer_station()
@@ -1500,7 +1551,22 @@ func render_armor() -> void:
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func print_armor_blueprint(armor_id: String) -> void:
-	GameManager.print_armor(armor_id)
+	open_armor_printer(armor_id)
+
+func open_armor_printer(armor_id: String) -> void:
+	var definition := ProgressionRules.armor_def(armor_id)
+	if definition.is_empty() or armor_id not in GameManager.profile.get("armor_blueprints", []):
+		_toast("That armor blueprint is not learned yet.")
+		return
+	printer_is_armor = true
+	printer_armor_id = armor_id
+	printer_creature_id = "cinderpaw"
+	printer_price = int(definition.get("print", 0))
+	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)), true)
+	printer_tick_accumulator = 0.0; printer_presentation_seconds = 0.0; printer_failure = ""
+	printer_return_screen = "armor"
+	screen = "printer"
+	render()
 
 func unequip_armor_from(creature_instance_id: String) -> void:
 	GameManager.unequip_armor(creature_instance_id)
@@ -1519,13 +1585,13 @@ func render_deck() -> void:
 	if deck_slot_id.is_empty(): deck_slot_id = str(GameManager.profile.get("active_deck_id", ProgressionRules.STARTER_DECK_ID))
 	if deck_draft.is_empty(): deck_draft = GameManager.active_deck_cards()
 	panel.add_child(label("15-Card Deck Builder", 25, Color("d3a7ff")))
-	panel.add_child(label("Selected slot: %s | Draft: %d / 15. Only owned support cards can be saved." % [str(ProgressionRules.DECK_SLOT_NAMES.get(deck_slot_id, "Forge Deck")), deck_draft.size()], 15, Color("dce8f4")))
+	panel.add_child(label("Selected slot: %s | Draft: %d / 15. Only owned support cards can be saved." % [_saved_deck_name(deck_slot_id), deck_draft.size()], 15, Color("dce8f4")))
 	for slot_id in ProgressionRules.DECK_SLOT_IDS:
-		var saved_cards: Array = []
-		for saved in GameManager.profile.get("decks", []):
-			if str(saved.get("id", "")) == slot_id: saved_cards = saved.get("cards", []).duplicate()
+		var saved_cards: Array = _saved_deck_cards(slot_id)
+		var exists := _saved_deck_exists(slot_id)
 		var action := "Active" if str(GameManager.profile.active_deck_id) == slot_id else "Select"
-		var slot_button := make_button("%s: %d cards - %s" % [str(ProgressionRules.DECK_SLOT_NAMES[slot_id]), saved_cards.size(), action], select_deck_slot.bind(slot_id), Color("588d73") if str(GameManager.profile.active_deck_id) == slot_id else Color("526e93"))
+		var slot_copy := "%d cards - %s" % [saved_cards.size(), action] if exists else "Available slot"
+		var slot_button := make_button("%s: %s" % [_saved_deck_name(slot_id), slot_copy], select_deck_slot.bind(slot_id), Color("588d73") if str(GameManager.profile.active_deck_id) == slot_id else Color("526e93"))
 		slot_button.name = "DeckSlot%s" % slot_id.capitalize()
 		panel.add_child(slot_button)
 	for card in Catalog.SUPPORT_CARDS:
@@ -1539,7 +1605,18 @@ func render_deck() -> void:
 		var add_card := make_button("+", change_deck_draft.bind(card_id, true), Color("2f93a8"))
 		add_card.name = "DeckAdd%s" % card_id.capitalize()
 		row.add_child(add_card)
-	panel.add_child(make_button("Save %s as active (%d / 15)" % [str(ProgressionRules.DECK_SLOT_NAMES.get(deck_slot_id, "Forge Deck")), deck_draft.size()], save_active_deck_draft, Color("a86b2e")))
+	panel.add_child(make_button("Save %s as active (%d / 15)" % [_saved_deck_name(deck_slot_id), deck_draft.size()], save_active_deck_draft, Color("a86b2e")))
+	var missing_slot := ""
+	for candidate in ProgressionRules.DECK_SLOT_IDS:
+		if candidate == ProgressionRules.STARTER_DECK_ID: continue
+		if not _saved_deck_exists(candidate): missing_slot = candidate; break
+	if not missing_slot.is_empty(): panel.add_child(make_button("Create %s Slot" % str(ProgressionRules.DECK_SLOT_NAMES.get(missing_slot, "Forge Deck")), create_deck_slot.bind(missing_slot), Color("2f93a8")))
+	if not missing_slot.is_empty() and _saved_deck_exists(deck_slot_id) and not _saved_deck_cards(deck_slot_id).is_empty():
+		panel.add_child(make_button("Duplicate Selected into %s" % str(ProgressionRules.DECK_SLOT_NAMES.get(missing_slot, "Forge Deck")), duplicate_selected_deck.bind(missing_slot), Color("2f93a8")))
+	if deck_slot_id != ProgressionRules.STARTER_DECK_ID:
+		panel.add_child(make_button("Delete Selected Slot", delete_selected_deck, Color("9a5b6f")))
+		for fixed_name in ProgressionRules.DECK_NAME_OPTIONS:
+			panel.add_child(make_button("Rename as %s" % fixed_name, rename_selected_deck.bind(fixed_name), Color("526e93")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func _saved_deck_cards(deck_id: String) -> Array:
@@ -1548,6 +1625,17 @@ func _saved_deck_cards(deck_id: String) -> Array:
 			var cards = saved.get("cards", [])
 			return cards.duplicate() if cards is Array else []
 	return []
+
+func _saved_deck_exists(deck_id: String) -> bool:
+	for saved in GameManager.profile.get("decks", []):
+		if saved is Dictionary and str(saved.get("id", "")) == deck_id: return true
+	return false
+
+func _saved_deck_name(deck_id: String) -> String:
+	for saved in GameManager.profile.get("decks", []):
+		if saved is Dictionary and str(saved.get("id", "")) == deck_id:
+			return str(saved.get("name", ProgressionRules.DECK_SLOT_NAMES.get(deck_id, "Forge Deck")))
+	return str(ProgressionRules.DECK_SLOT_NAMES.get(deck_id, "Forge Deck"))
 
 func select_deck_slot(deck_id: String) -> void:
 	deck_slot_id = deck_id
@@ -1569,6 +1657,23 @@ func change_deck_draft(card_id: String, add: bool) -> void:
 func save_active_deck_draft() -> void:
 	GameManager.save_deck_slot(deck_draft.duplicate(), deck_slot_id)
 
+func create_deck_slot(deck_id: String) -> void:
+	deck_slot_id = deck_id; deck_draft = []
+	if not GameManager.create_deck(deck_id, str(ProgressionRules.DECK_SLOT_NAMES.get(deck_id, "Forge Deck"))): render()
+
+func duplicate_selected_deck(target_id: String) -> void:
+	if GameManager.duplicate_deck(deck_slot_id, target_id):
+		deck_slot_id = target_id; deck_draft = _saved_deck_cards(target_id)
+	else: render()
+
+func delete_selected_deck() -> void:
+	var deleted := deck_slot_id
+	deck_slot_id = ProgressionRules.STARTER_DECK_ID; deck_draft = GameManager.active_deck_cards()
+	if not GameManager.delete_deck(deleted): render()
+
+func rename_selected_deck(name: String) -> void:
+	if not GameManager.rename_deck(deck_slot_id, name): render()
+
 func render_codex() -> void:
 	var intro := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(intro.get_parent())
 	intro.add_child(label("Forgedex", 25, Color("d3a7ff")))
@@ -1578,12 +1683,19 @@ func render_codex() -> void:
 		var known: bool = creature.id in GameManager.profile.discovered
 		var card := make_panel(Color("152842e8"), Color(Catalog.rarity(creature.rarity).color if known else "4b5d72")); grid.add_child(card.get_parent())
 		card.add_child(label(str(creature.name) if known else "???", 17, Color(Catalog.rarity(creature.rarity).color if known else "8492a1")))
-		var mastery_total := 0
+		var mastery_total := 0; var owned_count := 0
 		for owned in GameManager.profile.get("creatures", []):
-			if owned is Dictionary and str(owned.get("creature_id", "")) == str(creature.id): mastery_total += GameManager.creature_mastery(str(owned.get("instance_id", "")))
-		card.add_child(label("%s - %d bends - Mastery %d" % [creature.element, int(creature.bend), mastery_total] if known else "Undiscovered", 13, Color("dce8f4")))
+			if owned is Dictionary and str(owned.get("creature_id", "")) == str(creature.id): mastery_total += GameManager.creature_mastery(str(owned.get("instance_id", ""))); owned_count += 1
+		var print_count := int(GameManager.profile.get("print_history", {}).get("creatures", {}).get(str(creature.id), 0))
+		card.add_child(label("%s | HP %d | Attack %d | Speed %d\nOwned %d | Mastery %d | Printed %d" % [str(creature.element), int(creature.hp), int(creature.attack), int(creature.speed), owned_count, mastery_total, print_count] if known else "Undiscovered", 13, Color("dce8f4")))
 		if known:
 			card.add_child(label("%s: %s" % [str(creature.ability), Catalog.signature_description(str(creature.id))], 12, Color("b9d3e8")))
+	intro.add_child(label("Armor catalog", 20, Color("ffd36c")))
+	for armor in Catalog.ARMOR:
+		var armor_id := str(armor.get("id", "")); var owned := 0
+		for row in GameManager.profile.get("armor", []): if row is Dictionary and str(row.get("armor_id", "")) == armor_id: owned += 1
+		var printed := int(GameManager.profile.get("print_history", {}).get("armor", {}).get(armor_id, 0))
+		intro.add_child(label("%s - +%d HP | +%d speed | %d guard | owned %d | printed %d" % [str(armor.get("name", armor_id)), int(armor.get("hp", 0)), int(armor.get("speed", 0)), int(armor.get("armor", 0)), owned, printed], 14, Color("dce8f4")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_proving_door() -> void:
@@ -1643,8 +1755,10 @@ func start_trial(encounter_id: String) -> void:
 	battle_session_generation += 1
 	ai_pending = false
 	battle = BattleState.create(player_team, encounter.get("team", []), GameManager.filament_cap(), int(encounter.get("spool", 3)), _trial_seed(encounter_id), GameManager.active_deck_cards())
-	if not battle.validation_error(true).is_empty():
-		_toast(battle.validation_error(true)); battle = null; return
+	if battle == null or not battle.validation_error(true).is_empty():
+		_toast("The Workshop Trial team is not ready."); battle = null; return
+	var warmup := GameManager.consume_solo_spool_warmup()
+	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_mode = "trial"
 	trial_encounter_id = encounter_id
 	battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
@@ -1664,11 +1778,13 @@ func start_battle() -> void:
 	battle_session_generation += 1
 	ai_pending = false
 	battle = BattleState.create(player_team, rival_team, GameManager.filament_cap(), 3, _training_seed(shop_day_key), GameManager.active_deck_cards())
-	var setup_error := battle.validation_error(true)
+	var setup_error := "The training team is not ready." if battle == null else battle.validation_error(true)
 	if not setup_error.is_empty():
 		battle = null
 		_toast(setup_error)
 		return
+	var warmup := GameManager.consume_solo_spool_warmup()
+	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_last_event = ""
 	battle_last_actor = 0
 	battle_mode = "training"

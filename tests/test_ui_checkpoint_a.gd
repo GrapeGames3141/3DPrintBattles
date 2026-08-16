@@ -64,6 +64,10 @@ func _ready() -> void:
 	require(GameManager.learn_armor_blueprint(armor_definition_id), "armor workbench fixture learns one catalog blueprint")
 	main.print_armor_blueprint(armor_definition_id)
 	await get_tree().process_frame
+	require(main.screen == "printer" and GameManager.profile.armor.is_empty(), "armor Forge preview is transaction-safe before printing")
+	main.begin_printer()
+	main.advance_printer_for_test(7000)
+	await get_tree().process_frame
 	var armor_instance_id := str(GameManager.profile.armor[0].get("armor_instance_id", ""))
 	main.equip_or_move_armor(starter_id, armor_instance_id)
 	await get_tree().process_frame

@@ -29,26 +29,28 @@ static func configure_battle(main, mode: String) -> bool:
 	return false
 
 static func configure_forge(main, mode: String) -> bool:
-	if mode not in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete"]:
+	if mode not in ["printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened"]:
 		return false
 	main.screen = "printer"
+	main.printer_is_armor = mode.begins_with("armor_")
+	main.printer_armor_id = "helm" if main.printer_is_armor else ""
 	main.printer_creature_id = "mossmunk" if mode == "printer_mossmunk_raw_complete" else "cinderpaw"
-	main.printer_price = int(Catalog.rarity(str(Catalog.creature(main.printer_creature_id).rarity)).print)
-	main.printer_sequence = ArcaneForgeSequence.create(mode == "printer_reduced")
-	if mode == "printer_preview": return true
+	main.printer_price = int(ProgressionRules.armor_def(main.printer_armor_id).get("print", 0)) if main.printer_is_armor else int(Catalog.rarity(str(Catalog.creature(main.printer_creature_id).rarity)).print)
+	main.printer_sequence = ArcaneForgeSequence.create(mode == "printer_reduced", main.printer_is_armor)
+	if mode in ["printer_preview", "armor_preview"]: return true
 	main.printer_sequence.begin()
-	if mode == "printer_printing":
+	if mode in ["printer_printing", "armor_printing"]:
 		main.printer_sequence.advance(3600)
 		return true
 	main.printer_sequence.advance(7000)
-	if mode not in ["printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
+	if mode not in ["printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "armor_raw_hold", "armor_awakened"]:
 		return true
 	main.printer_sequence.request_commit()
 	main.printer_sequence.resolve_commit(true)
-	if mode in ["printer_awakening", "printer_departing", "printer_awakened", "printer_reduced"]:
+	if mode in ["printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "armor_awakened"]:
 		main.printer_sequence.advance(ArcaneForgeSequence.RAW_HOLD_BPS)
 		main.printer_sequence.advance(900 if mode == "printer_awakening" else ArcaneForgeSequence.AWAKEN_BPS)
-	if mode in ["printer_departing", "printer_awakened", "printer_reduced"]:
+	if mode in ["printer_departing", "printer_awakened", "printer_reduced", "armor_awakened"]:
 		main.printer_sequence.advance(450 if mode == "printer_departing" else ArcaneForgeSequence.DEPART_BPS)
 	return true
 

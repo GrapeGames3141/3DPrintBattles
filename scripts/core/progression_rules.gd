@@ -5,8 +5,10 @@ extends RefCounted
 const STARTER_DECK_ID := "starter-deck"
 const STARTER_DECK: Array[String] = ["raw_filament","raw_filament","raw_filament","raw_filament","raw_filament","heated_spool","heated_spool","heated_spool","reinforced_layer","reinforced_layer","reinforced_layer","quick_patch","quick_patch","arcane_spark","arcane_spark"]
 const DAILY_CALIBRATION_LIMIT := 3
-const DECK_SLOT_IDS: Array[String] = ["starter-deck", "workshop-deck", "sparring-deck"]
-const DECK_SLOT_NAMES := {"starter-deck":"Starter Filament", "workshop-deck":"Workshop Patterns", "sparring-deck":"Sparring Patterns"}
+const DECK_SLOT_IDS: Array[String] = ["starter-deck", "workshop-deck", "sparring-deck", "guard-line", "rapid-build"]
+const DECK_SLOT_NAMES := {"starter-deck":"Starter Filament", "workshop-deck":"Forge Deck", "sparring-deck":"Field Kit", "guard-line":"Guard Line", "rapid-build":"Rapid Build"}
+const DECK_NAME_OPTIONS: Array[String] = ["Forge Deck", "Field Kit", "Guard Line", "Rapid Build", "Element Bench", "Masterwork"]
+const YARD_DRILLS := {"field_practice":{"name":"Field Practice","xp":12},"team_bond":{"name":"Team Bond","mastery":5},"spool_warmup":{"name":"Spool Warmup","warmup":1}}
 
 static func ensure_fields(source: Dictionary, grant_starter_deck: bool = false) -> Dictionary:
 	var p: Dictionary = source.duplicate(true)
@@ -18,6 +20,27 @@ static func ensure_fields(source: Dictionary, grant_starter_deck: bool = false) 
 	if not p.has("daily_job_count"): p.daily_job_count = 0
 	if not p.has("last_job_day"): p.last_job_day = ""
 	if not p.has("last_yard_day"): p.last_yard_day = ""
+	if not p.has("yard_choice"): p.yard_choice = ""
+	if not p.has("pending_spool_warmup"): p.pending_spool_warmup = 0
+	p.pending_spool_warmup = clampi(int(p.get("pending_spool_warmup", 0)), 0, 1)
+	if not p.has("creature_mastery") or not p.get("creature_mastery") is Dictionary: p.creature_mastery = {}
+	if not p.has("print_history") or not p.get("print_history") is Dictionary: p.print_history = {}
+	if not p.print_history.has("creatures") or not p.print_history.get("creatures") is Dictionary: p.print_history.creatures = {}
+	if not p.print_history.has("armor") or not p.print_history.get("armor") is Dictionary: p.print_history.armor = {}
+	for creature in p.get("creatures", []):
+		if creature is Dictionary:
+			var creature_id := str(creature.get("creature_id", ""))
+			if not Catalog.creature(creature_id).is_empty(): p.print_history.creatures[creature_id] = maxi(int(p.print_history.creatures.get(creature_id, 0)), _owned_creature_count(p, creature_id))
+	for armor_row in p.get("armor", []):
+		if armor_row is Dictionary:
+			var armor_id := str(armor_row.get("armor_id", ""))
+			if not armor_def(armor_id).is_empty(): p.print_history.armor[armor_id] = maxi(int(p.print_history.armor.get(armor_id, 0)), _owned_armor_count(p, armor_id))
+	var active_found := false
+	for deck in p.decks:
+		if str(deck.get("id", "")) == str(p.active_deck_id) and _deck_is_legal(p, deck.get("cards", [])): active_found = true
+	if not active_found:
+		_ensure_starter_deck(p)
+		p.active_deck_id = STARTER_DECK_ID
 	if grant_starter_deck: _ensure_starter_deck(p)
 	return p
 
@@ -53,6 +76,7 @@ static func print_creature(source: Dictionary, creature_id: String) -> Dictionar
 	var instance_id := _next_id(p, creature_id)
 	p.coins = int(p.coins) - price
 	p.creatures.append({"instance_id":instance_id,"creature_id":creature_id,"armor_id":"","bound":false,"tradable":true,"source":"printed"})
+	p.print_history.creatures[creature_id] = int(p.print_history.creatures.get(creature_id, 0)) + 1
 	return _ok(p, {"creature_id":creature_id,"instance_id":instance_id,"price":price})
 
 static func learn_armor_blueprint(source: Dictionary, armor_id: String) -> Dictionary:
@@ -72,6 +96,7 @@ static func print_armor(source: Dictionary, armor_id: String) -> Dictionary:
 	if not _can_pay(p, price): return _fail(p, "Not enough Forge Coins.")
 	var instance_id := _next_id(p, "armor-%s" % armor_id)
 	p.coins = int(p.coins) - price; p.armor.append({"armor_instance_id":instance_id,"armor_id":armor_id,"equipped_to":""})
+	p.print_history.armor[armor_id] = int(p.print_history.armor.get(armor_id, 0)) + 1
 	return _ok(p, {"armor_id":armor_id,"armor_instance_id":instance_id,"price":price})
 
 static func equip_armor(source: Dictionary, creature_instance_id: String, armor_instance_id: String) -> Dictionary:
@@ -121,7 +146,7 @@ static func save_deck(source: Dictionary, cards: Array, deck_id: String = STARTE
 
 static func save_deck_slot(source: Dictionary, cards: Array, deck_id: String) -> Dictionary:
 	var p := ensure_fields(source)
-	if not deck_id in DECK_SLOT_IDS: return _fail(p, "Choose one of the three Forge deck slots.")
+	if not deck_id in DECK_SLOT_IDS: return _fail(p, "Choose one of the five Forge deck slots.")
 	if cards.size() != 15: return _fail(p, "A support deck needs exactly 15 cards.")
 	var needed := {}
 	for card in cards:
@@ -137,6 +162,49 @@ static func save_deck_slot(source: Dictionary, cards: Array, deck_id: String) ->
 	p.active_deck_id = deck_id
 	return _ok(p, {"deck_id":deck_id,"cards":cards.duplicate()})
 
+static func create_deck(source: Dictionary, deck_id: String, name: String) -> Dictionary:
+	var p := ensure_fields(source)
+	if not deck_id in DECK_SLOT_IDS or deck_id == STARTER_DECK_ID: return _fail(p, "That Forge deck slot is unavailable.")
+	if not name in DECK_NAME_OPTIONS: return _fail(p, "Choose an approved Forge deck label.")
+	for deck in p.decks:
+		if str(deck.get("id", "")) == deck_id: return _fail(p, "That deck slot already exists.")
+	if p.decks.size() >= DECK_SLOT_IDS.size(): return _fail(p, "All five Forge deck slots are in use.")
+	p.decks.append({"id":deck_id,"name":name,"cards":[]})
+	return _ok(p, {"deck_id":deck_id,"name":name})
+
+static func duplicate_deck(source: Dictionary, source_id: String, target_id: String) -> Dictionary:
+	var p := ensure_fields(source)
+	if not target_id in DECK_SLOT_IDS or target_id == STARTER_DECK_ID: return _fail(p, "Choose an empty Forge deck slot.")
+	for deck in p.decks:
+		if str(deck.get("id", "")) == target_id: return _fail(p, "That deck slot already exists.")
+	var cards := active_deck_for_id(p, source_id)
+	if not _deck_is_legal(p, cards): return _fail(p, "Only a legal saved deck can be duplicated.")
+	p.decks.append({"id":target_id,"name":str(DECK_SLOT_NAMES.get(target_id, "Forge Deck")),"cards":cards})
+	return _ok(p, {"source_id":source_id,"deck_id":target_id})
+
+static func rename_deck(source: Dictionary, deck_id: String, name: String) -> Dictionary:
+	var p := ensure_fields(source)
+	if not name in DECK_NAME_OPTIONS: return _fail(p, "Choose an approved Forge deck label.")
+	for deck in p.decks:
+		if str(deck.get("id", "")) == deck_id:
+			deck.name = name
+			return _ok(p, {"deck_id":deck_id,"name":name})
+	return _fail(p, "That saved deck is unavailable.")
+
+static func delete_deck(source: Dictionary, deck_id: String) -> Dictionary:
+	var p := ensure_fields(source)
+	if deck_id == STARTER_DECK_ID: return _fail(p, "The starter deck cannot be deleted.")
+	var kept: Array = []; var found := false
+	for deck in p.decks:
+		if str(deck.get("id", "")) == deck_id: found = true
+		else: kept.append(deck)
+	if not found: return _fail(p, "That saved deck is unavailable.")
+	p.decks = kept
+	if str(p.active_deck_id) == deck_id:
+		p.active_deck_id = STARTER_DECK_ID
+		if active_deck_for_id(p, STARTER_DECK_ID).is_empty(): _ensure_starter_deck(p)
+	return _ok(p, {"deck_id":deck_id})
+
 static func select_deck(source: Dictionary, deck_id: String) -> Dictionary:
 	var p := ensure_fields(source)
 	for deck in p.decks:
@@ -146,9 +214,26 @@ static func select_deck(source: Dictionary, deck_id: String) -> Dictionary:
 	return _fail(p, "That saved deck is not ready to select.")
 
 static func active_deck(p: Dictionary) -> Array:
+	return active_deck_for_id(p, str(p.get("active_deck_id", "")))
+
+static func active_deck_for_id(p: Dictionary, deck_id: String) -> Array:
 	for deck in p.get("decks", []):
-		if str(deck.get("id", "")) == str(p.get("active_deck_id", "")): return deck.get("cards", []).duplicate()
+		if str(deck.get("id", "")) == deck_id and deck.get("cards", []) is Array: return deck.get("cards", []).duplicate()
 	return []
+
+static func calibration_pattern(day_key: String, attempt: int) -> Array:
+	var seed := _day_seed(day_key) + attempt * 97
+	var result: Array = []
+	for index in 3:
+		seed = _next_seed(seed + index * 31)
+		result.append(20 + (seed % 7) * 10)
+	return result
+
+static func calibration_performance(targets: Array, values: Array) -> int:
+	if targets.size() != 3 or values.size() != 3: return 0
+	var distance := 0
+	for index in 3: distance += absi(clampi(int(values[index]), 0, 100) - clampi(int(targets[index]), 0, 100))
+	return clampi(100 - (distance * 100) / 300, 0, 100)
 
 static func complete_calibration(source: Dictionary, day_key: String, performance: int) -> Dictionary:
 	var p := ensure_fields(source)
@@ -159,16 +244,34 @@ static func complete_calibration(source: Dictionary, day_key: String, performanc
 	p.last_job_day = day_key; p.daily_job_count = count + 1; p.coins = int(p.coins) + reward
 	return _ok(p, {"day_key":day_key,"performance":clampi(performance, 0, 100),"reward":reward,"count":int(p.daily_job_count),"limit":DAILY_CALIBRATION_LIMIT})
 
-static func visit_print_yard(source: Dictionary, day_key: String) -> Dictionary:
+static func visit_print_yard(source: Dictionary, day_key: String, drill_id: String = "field_practice") -> Dictionary:
 	var p := ensure_fields(source)
 	if not _valid_day(day_key): return _fail(p, "Use a valid Print Yard day.")
 	if str(p.last_yard_day) == day_key: return _fail(p, "The Print Yard companions have already shared today's filament lesson.")
+	if not YARD_DRILLS.has(drill_id): return _fail(p, "Choose one of today's three Print Yard drills.")
 	if p.creatures.is_empty(): return _fail(p, "Print a companion before visiting the Print Yard.")
-	var xp_reward: int = mini(12, 4 + p.creatures.size() * 2)
-	var xp_result := grant_xp(p, xp_reward)
-	p = xp_result.profile
+	var payload := {"day_key":day_key,"drill_id":drill_id,"xp":0,"mastery":0,"warmup":0,"spool_gained":0}
+	if drill_id == "field_practice":
+		var xp_result := grant_xp(p, 12); p = xp_result.profile; payload["xp"] = 12; payload["spool_gained"] = int(xp_result.payload.spool_gained)
+	elif drill_id == "team_bond":
+		var team_ids := _team_instance_ids(p)
+		if team_ids.is_empty(): return _fail(p, "Choose a saved training team before Team Bond.")
+		for instance_id in team_ids: p.creature_mastery[instance_id] = int(p.creature_mastery.get(instance_id, 0)) + 5
+		payload["mastery"] = 5; payload["team_instance_ids"] = team_ids
+	else:
+		if int(p.get("spool_level", 3)) <= 3: return _fail(p, "Requires spool capacity 4+.")
+		p.pending_spool_warmup = 1
+		payload["warmup"] = int(p.pending_spool_warmup)
 	p.last_yard_day = day_key
-	return _ok(p, {"day_key":day_key,"xp":xp_reward,"companions":p.creatures.size(),"spool_gained":int(xp_result.payload.spool_gained)})
+	p.yard_choice = drill_id
+	return _ok(p, payload)
+
+static func consume_spool_warmup(source: Dictionary) -> Dictionary:
+	var p := ensure_fields(source)
+	var bonus := clampi(int(p.get("pending_spool_warmup", 0)), 0, 1)
+	if bonus <= 0: return _ok(p, {"bonus":0})
+	p.pending_spool_warmup = 0
+	return _ok(p, {"bonus":bonus})
 
 static func grant_xp(source: Dictionary, amount: int) -> Dictionary:
 	var p := ensure_fields(source)
@@ -241,6 +344,10 @@ static func _rotation(day_key: String) -> Array:
 
 static func _next_seed(seed: int) -> int:
 	return int((seed * 1103515245 + 12345) % 2147483647)
+static func _day_seed(day_key: String) -> int:
+	var seed := 0
+	for byte in day_key.to_utf8_buffer(): seed = (seed * 31 + int(byte)) % 2147483647
+	return seed
 static func _valid_day(day: String) -> bool:
 	if day.length() != 10 or day[4] != "-" or day[7] != "-": return false
 	var compact := day.replace("-", "")
@@ -290,6 +397,23 @@ static func _armor(p: Dictionary, id: String) -> Dictionary:
 	for row in p.armor:
 		if str(row.get("armor_instance_id", "")) == id: return row
 	return {}
+static func _owned_creature_count(p: Dictionary, creature_id: String) -> int:
+	var count := 0
+	for row in p.get("creatures", []):
+		if row is Dictionary and str(row.get("creature_id", "")) == creature_id: count += 1
+	return count
+static func _owned_armor_count(p: Dictionary, armor_id: String) -> int:
+	var count := 0
+	for row in p.get("armor", []):
+		if row is Dictionary and str(row.get("armor_id", "")) == armor_id: count += 1
+	return count
+static func _team_instance_ids(p: Dictionary) -> Array:
+	var owned := {}; for row in p.get("creatures", []): if row is Dictionary: owned[str(row.get("instance_id", ""))] = true
+	var result: Array = []
+	for value in p.get("team", []):
+		var instance_id := str(value)
+		if owned.has(instance_id) and not instance_id in result: result.append(instance_id)
+	return result
 static func _ok(p: Dictionary, payload: Dictionary) -> Dictionary:
 	return {"ok":true,"profile":p,"payload":payload}
 static func _fail(p: Dictionary, error: String) -> Dictionary:

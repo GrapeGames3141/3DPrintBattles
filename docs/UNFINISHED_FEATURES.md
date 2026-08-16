@@ -74,8 +74,8 @@
 
 ## P1 — game-loop depth
 
-- [x] **Turn Print Yard into a playable progression station.** `ProgressionRules.visit_print_yard()` grants one bounded, deterministic daily XP lesson using `last_yard_day`; `GameManager` journals it and the Workshop hub reaches the activity.
-  - **Evidence:** `tests/test_checkpoint_a.tscn` covers repeat refusal and `tests/test_ui_checkpoint_a.tscn` covers navigation. Reward tuning/tutorial work remains P3.
+- [x] **Turn Print Yard into a playable progression station.** `ProgressionRules.visit_print_yard()` now grants one bounded deterministic day-keyed drill: Field Practice (+12 XP), Team Bond (+5 mastery to each saved-team instance), or a capacity-4+ one-shot solo Spool Warmup. `GameManager` journals the accepted choice.
+  - **Evidence:** `tests/test_workshop_depth.tscn` covers the transitions and `scripts/ui/main.gd` exposes explicit state/availability. Reward tuning/tutorial work remains P3.
 
 - [x] **Make XP and spool progress legible and consequential.** The Workshop progression strip and Print Yard show XP/current threshold; `ProgressionRules.grant_xp()` immediately converts threshold crossings into spool capacity used by battle.
   - **Evidence:** the checkpoint-A pure test forces a Print Yard threshold crossing and asserts the spool increase. Broader economy targets remain P3.

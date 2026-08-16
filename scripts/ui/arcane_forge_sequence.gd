@@ -22,12 +22,14 @@ var phase := IDLE
 var progress_bps := 0
 var phase_elapsed_bps := 0
 var reduced_motion := false
+var raw_only := false
 var commit_requested := false
 var resolved := false
 
-static func create(reduce_motion := false) -> ArcaneForgeSequence:
+static func create(reduce_motion := false, raw_only_presentation := false) -> ArcaneForgeSequence:
 	var sequence := ArcaneForgeSequence.new()
 	sequence.reduced_motion = reduce_motion
+	sequence.raw_only = raw_only_presentation
 	return sequence
 
 static func presentation_interval_seconds(reduce_motion: bool) -> float:
@@ -59,8 +61,12 @@ func advance(step_bps: int) -> bool:
 	if phase == RAW_HOLD:
 		phase_elapsed_bps = mini(RAW_HOLD_BPS, phase_elapsed_bps + step_bps)
 		if phase_elapsed_bps >= RAW_HOLD_BPS:
-			phase = AWAKENING
-			phase_elapsed_bps = 0
+			if raw_only:
+				phase = AWAKENED
+				progress_bps = FULL_BPS
+			else:
+				phase = AWAKENING
+				phase_elapsed_bps = 0
 		return true
 	if phase == AWAKENING:
 		phase_elapsed_bps = mini(AWAKEN_BPS, phase_elapsed_bps + step_bps)
