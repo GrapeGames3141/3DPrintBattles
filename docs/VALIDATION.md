@@ -1,5 +1,49 @@
 # Validation record
 
+## Checkpoint 0.5.18 Trial launch canonicalization (staging only)
+
+- The exact screenshot-style Team Builder path was reproduced on baseline with
+  Cinderpaw, Brambleowl, Verdantitan, and an equipped Helm: it already built a
+  valid three-print state (`TRIAL_LAUNCH_REPRO`, PID `3116`, exit 0). This means
+  the reported Android failure was not a standard current Team Builder record;
+  it is consistent with a legacy dictionary alias crossing the preview/battle
+  boundary. `SoloBattleFactory.preview()` and `create()` now share the same
+  catalog-valid canonical entries, while `BattleState.make_team()` accepts
+  `creature_id`, `id`, `species_id`, `creature`, `species`, and scalar IDs.
+  A failed dictionary build makes exactly one non-persisting catalog-ID retry
+  without optional armor; a double failure reports canonical/built IDs and the
+  Team Builder recovery route.
+- Isolated parser/import PID `15988` exited 0. Focused tests passed: canonical
+  UI save/start `20508`, solo factory `18736`, Trials UI `12620`, and Battle
+  rules `7996`. The new Trial-launch scene proves the actual Team Builder
+  save -> Trial preview -> Warm Nozzle launch preserves Cinderpaw/Brambleowl/
+  Verdantitan order, the owned Helm, active profile/deck/inventory/revision,
+  and no-owned refusal.
+- Fresh OpenGL captures were inspected at true `576x1024`: `trials_teamlaunch_
+  576x1024_triallaunch-final.png` (PID `24584`, exit 0) shows the exact
+  canonical lineup plus Edit Current Team; `trial_battle_teamlaunch_576x1024_
+  triallaunch-final.png` (PID `20324`, exit 0) shows a successful Warm Nozzle
+  first frame with the responsive opening dock. No clipping or invalid-team
+  screen was present.
+- Retained suite coverage passed with isolated E-cache app-data. The first 17
+  scenes passed with PIDs `22104,22080,5064,14320,25484,13652,5584,22672,
+  20900,25976,22148,4992,22468,15828,17720,6344,5440`; UI-A1 then printed its
+  PASS result but did not terminate before the generic 90-second wrapper, so it
+  was stopped as task-owned PID `14272` and rerun under an engine `--quit-after
+  12` bound as PID `24112`, exit 0. The remaining UI/depth/live tests passed:
+  `22620,8952,13172,14084,11064,22532`, all exit 0. This is a bounded harness
+  cleanup issue, not an assertion failure.
+- Final Android review export PID `22292` exited 0. Artifact
+  `build/android/PrintForge-Legends-0.5.18-alpha-trial-launch-arm64.apk` is
+  `105,431,108` bytes, SHA-256
+  `A3DA5A24ADF7C46AEBC84EAAD7BEDBC4801C971FC47416FE7F4D4BD2D8786BE4`.
+  `apksigner` verified v2/v3 debug signatures; `aapt` reports package
+  `com.tak.printforge.legends.review`, version code `68`, version name
+  `0.5.18-alpha-trial-launch`, SDK 24/36, then returns its known
+  `android:required` manifest-reader warning. Archive audit found 2 arm64
+  libraries, retained workshop and creature resources, and excluded backend,
+  tests, tools, tmp, node_modules, and `.git`. No physical device was attached.
+
 ## 2026-08-15 Checkpoint 4 - presentation and accessibility (staging only)
 
 - Added idempotent fixed-step audio settings (`master_bps`, `music_bps`, `sfx_bps`) through `AudioSettings` and `AccessibilityRules`; `AudioDirector` routes muted-in-capture procedural Workshop/Battle/Forge, press, impact, and card cues while the UI keeps an explicit text cue. Generated samples use bounded integer master-by-channel gain, and an unchanged route preserves the latest cue caption rather than replacing it with a generic state caption. Audio remains non-authoritative. Battle uses a compact outcome/HP/shield banner and exact catalog-derived support-card cost/effect/target details in Hand and Deck; disabled cards say how much Filament is missing. High contrast and reduced motion retain text feedback.

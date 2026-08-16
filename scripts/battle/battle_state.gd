@@ -22,8 +22,11 @@ const STARTER_LOADOUT: Array[String] = [
 static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array = []) -> Dictionary:
 	var team: Array = []
 	for entry in creature_ids:
-		var creature_id := str(entry.get("creature_id", "")) if entry is Dictionary else str(entry)
-		var armor_id := str(entry.get("armor_id", "")) if entry is Dictionary else ""
+		# Launch callers may carry older catalog aliases or a canonical string.  The
+		# runtime owns one tolerant conversion boundary instead of silently dropping
+		# a valid species because its key changed between profile/UI/battle layers.
+		var creature_id := creature_id_from_entry(entry)
+		var armor_id := armor_id_from_entry(entry)
 		var def := Catalog.creature(creature_id)
 		if def.is_empty(): continue
 		var armor_def: Dictionary = ProgressionRules.armor_def(armor_id)
@@ -37,6 +40,22 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 	for draw_index in 4:
 		hand.append(deck.pop_front())
 	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"switch_discount":0,"switch_discount_turns":0,"passed_turns":0}
+
+static func creature_id_from_entry(entry) -> String:
+	if entry is Dictionary:
+		for key in ["creature_id", "id", "species_id", "creature", "species"]:
+			var candidate := str(entry.get(key, ""))
+			if not Catalog.creature(candidate).is_empty(): return candidate
+		return ""
+	var candidate := str(entry)
+	return candidate if not Catalog.creature(candidate).is_empty() else ""
+
+static func armor_id_from_entry(entry) -> String:
+	if not entry is Dictionary: return ""
+	for key in ["armor_id", "armor", "armor_definition_id"]:
+		var candidate := str(entry.get(key, ""))
+		if not ProgressionRules.armor_def(candidate).is_empty(): return candidate
+	return ""
 
 static func _valid_supplied_deck(deck: Array) -> bool:
 	if deck.size() != 15: return false

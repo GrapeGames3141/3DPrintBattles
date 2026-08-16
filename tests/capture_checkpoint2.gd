@@ -32,6 +32,8 @@ func _prepare_capture() -> void:
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
 		GameManager.profile = legacy_trial_profile()
+	if capture_mode in ["trials_teamlaunch", "trial_battle_teamlaunch"]:
+		GameManager.profile = team_launch_profile()
 	# Explicit capture-only injection proves the Android review custom-feature
 	# economy floor without pretending the desktop process has that feature.
 	if capture_mode in ["station_live_review", "battle_review"]:
@@ -104,6 +106,26 @@ func legacy_trial_profile() -> Dictionary:
 	legacy["decks"] = []
 	return legacy
 
+func team_launch_profile() -> Dictionary:
+	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").get("profile", {})
+	profile["coins"] = 5000
+	for creature_id in ["brambleowl", "verdantitan"]:
+		var learned: Dictionary = ProgressionRules.purchase_creature_blueprint(profile, creature_id)
+		profile = learned.get("profile", profile)
+		var printed: Dictionary = ProgressionRules.print_creature(profile, creature_id)
+		profile = printed.get("profile", profile)
+	var armor_id: String = str(Catalog.ARMOR[0].get("id", ""))
+	var learned_armor: Dictionary = ProgressionRules.learn_armor_blueprint(profile, armor_id)
+	profile = learned_armor.get("profile", profile)
+	var printed_armor: Dictionary = ProgressionRules.print_armor(profile, armor_id)
+	profile = printed_armor.get("profile", profile)
+	var bramble_instance: String = str(profile.get("creatures", [])[1].get("instance_id", ""))
+	var armor_instance: String = str(profile.get("armor", [])[0].get("armor_instance_id", ""))
+	var equipped: Dictionary = ProgressionRules.reassign_armor(profile, bramble_instance, armor_instance)
+	profile = equipped.get("profile", profile)
+	profile["team"] = [str(profile.get("creatures", [])[0].get("instance_id", "")), bramble_instance, str(profile.get("creatures", [])[2].get("instance_id", ""))]
+	return profile
+
 func capture() -> void:
 	# Capture an actual accessible impact cue after the first Battle route. The
 	# director is capture-muted, so this only exercises visible presentation.
@@ -114,7 +136,7 @@ func capture() -> void:
 	# The trial screen is deliberately scrollable on a phone.  Pin the capture
 	# position after all deferred focus/layout work so the evidence proves both
 	# the initial list and a genuine lower-list scroll state.
-	if capture_mode in ["trials", "trials_scrolled", "trials_legacy"]:
+	if capture_mode in ["trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch"]:
 		var trial_scroll := workshop.find_child("TouchFirstScroll", true, false) as ScrollContainer
 		if trial_scroll != null:
 			if capture_mode == "trials_scrolled":
@@ -180,7 +202,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "trial_battle_legacy", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

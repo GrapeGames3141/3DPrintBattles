@@ -15,16 +15,44 @@ static func create(profile: Dictionary, rival_team: Array, player_cap: int, riva
 	if legal_rival.is_empty():
 		return {"ok":false, "battle":null, "error":"This rival setup has no catalog-valid creatures.", "temporary_repair":false}
 	var deck_result := player_deck(profile)
-	var battle := BattleState.create(player_team, legal_rival, clampi(player_cap, 3, 10), clampi(rival_cap, 3, 10), seed, deck_result.get("deck", []))
+	var capped_player: int = clampi(player_cap, 3, 10)
+	var capped_rival: int = clampi(rival_cap, 3, 10)
+	var battle := BattleState.create(player_team, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []))
 	var error := battle.validation_error(true)
+	# This is deliberately a second construction attempt, not a bypass: it only
+	# strips optional armor dictionaries when canonical creature IDs could not be
+	# constructed by a legacy/runtime boundary. It never writes the profile.
+	var unarmored_retry := false
+	var retry_built_ids: Array[String] = []
 	if not error.is_empty():
-		return {"ok":false, "battle":null, "error":error, "temporary_repair":bool(team_result.get("temporary_repair", false))}
-	return {"ok":true, "battle":battle, "error":"", "temporary_repair":bool(team_result.get("temporary_repair", false)), "repair_message":str(team_result.get("repair_message", "")), "deck_fallback":bool(deck_result.get("fallback", false))}
+		var canonical_ids := _team_ids(player_team)
+		if not canonical_ids.is_empty():
+			var retry := BattleState.create(canonical_ids, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []))
+			retry_built_ids = _built_ids(retry, 0)
+			var retry_error := retry.validation_error(true)
+			if retry_error.is_empty():
+				battle = retry
+				error = ""
+				unarmored_retry = true
+			else:
+				error = _launch_error(canonical_ids, _built_ids(battle, 0), retry_built_ids, retry_error)
+	if not error.is_empty():
+		return {"ok":false, "battle":null, "error":error, "temporary_repair":bool(team_result.get("temporary_repair", false)), "canonical_ids":_team_ids(player_team), "built_ids":_built_ids(battle, 0), "retry_built_ids":retry_built_ids}
+	var repair_message := str(team_result.get("repair_message", ""))
+	if unarmored_retry:
+		repair_message = (repair_message + " " if not repair_message.is_empty() else "") + "This match used catalog creature IDs without optional armor after a legacy setup retry; your saved team was not changed."
+	return {"ok":true, "battle":battle, "error":"", "temporary_repair":bool(team_result.get("temporary_repair", false)), "repair_message":repair_message, "deck_fallback":bool(deck_result.get("fallback", false)), "unarmored_retry":unarmored_retry, "canonical_ids":_team_ids(player_team), "built_ids":_built_ids(battle, 0)}
+
+## Presentation and launch call this same pure result so the displayed names are
+## exactly the entries that BattleState will receive.
+static func preview(profile: Dictionary) -> Dictionary:
+	return player_loadout(profile)
 
 static func player_loadout(profile: Dictionary) -> Dictionary:
 	# Team Builder is authoritative whenever it can produce a normalized lineup.
 	# Do not reorder, fill, or otherwise reinterpret a valid saved team here.
-	var authoritative: Array = ProfileRules.team_loadout(profile)
+	var owned_armor := _owned_armor_ids(profile)
+	var authoritative: Array = _canonicalize_entries(ProfileRules.team_loadout(profile), owned_armor)
 	if not authoritative.is_empty():
 		return {"team":authoritative, "temporary_repair":false, "repair_message":""}
 	# Some pre-integrity local saves contain a perfectly plausible raw species but
@@ -97,6 +125,42 @@ static func _instance_reference(raw) -> String:
 
 static func _battle_entry(candidate: Dictionary) -> Dictionary:
 	return {"creature_id":str(candidate.get("creature_id", "")), "armor_id":str(candidate.get("armor_id", ""))}
+
+static func _canonicalize_entries(entries: Array, owned_armor: Dictionary) -> Array:
+	var result: Array = []
+	for entry in entries:
+		var creature_id := _species_reference(entry)
+		if Catalog.creature(creature_id).is_empty(): continue
+		var armor_id := ""
+		if entry is Dictionary:
+			for armor_key in ["armor_id", "armor", "armor_definition_id"]:
+				var candidate := str(entry.get(armor_key, ""))
+				if not ProgressionRules.armor_def(candidate).is_empty() and owned_armor.has(candidate):
+					armor_id = candidate
+					break
+		result.append({"creature_id":creature_id, "armor_id":armor_id})
+	return result
+
+static func _team_ids(team: Array) -> Array[String]:
+	var ids: Array[String] = []
+	for entry in team:
+		var creature_id := _species_reference(entry)
+		if not creature_id.is_empty(): ids.append(creature_id)
+	return ids
+
+static func _built_ids(state: BattleState, player: int) -> Array[String]:
+	var ids: Array[String] = []
+	if state == null or player < 0 or player >= state.players.size(): return ids
+	var data = state.players[player]
+	if not data is Dictionary: return ids
+	var team = data.get("team", [])
+	if not team is Array: return ids
+	for entry in team:
+		if entry is Dictionary: ids.append(str(entry.get("id", "")))
+	return ids
+
+static func _launch_error(canonical_ids: Array[String], built_ids: Array[String], retry_built_ids: Array[String], underlying: String) -> String:
+	return "Battle setup could not build your player team. Canonical IDs: %s. First build: %s. Catalog-ID retry: %s. %s Open Team Builder and save the current lineup." % [", ".join(canonical_ids), ", ".join(built_ids), ", ".join(retry_built_ids), underlying]
 
 static func player_deck(profile: Dictionary) -> Dictionary:
 	var deck := ProgressionRules.active_deck(profile)

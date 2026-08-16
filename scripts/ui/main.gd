@@ -10,6 +10,7 @@ const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordan
 const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
+const REVIEW_BUILD_LABEL := "0.5.18-alpha-trial-launch"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -1348,6 +1349,7 @@ func render_settings() -> void:
 	var panel := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(panel.get_parent())
 	var current := settings()
 	panel.add_child(label("Workshop Settings", 25, Color("ffd36c")))
+	panel.add_child(label("Installed review build: " + REVIEW_BUILD_LABEL, 13, Color("9beaff")))
 	panel.add_child(label("Settings are saved to this profile. Text, contrast, and motion controls never change battle rules.", 15, Color("dce8f4")))
 	for scale in AccessibilityRules.TEXT_SCALES:
 		panel.add_child(make_button("Text size %d%%" % (int(scale) / 100), func(): GameManager.save_settings({"text_scale_bps":scale}), Color("588d73") if int(current.text_scale_bps) == int(scale) else Color("2f93a8")))
@@ -1811,13 +1813,14 @@ func render_trials() -> void:
 	body.add_child(make_button("Back to Proving Door", navigate_to.bind("proving"), Color("536c8d")))
 
 func _trial_lineup_preview() -> Dictionary:
-	var current: Array = GameManager.current_team_loadout()
-	if not current.is_empty():
-		return {"text":"Trial lineup: %s" % _trial_lineup_names(current), "temporary":false}
-	var fallback := SoloBattleFactory.player_loadout(GameManager.profile)
+	# Preview and launch intentionally use the same factory contract: no separate
+	# UI-only normalization can advertise a lineup BattleState will not receive.
+	var fallback := SoloBattleFactory.preview(GameManager.profile)
 	var temporary: Array = fallback.get("team", [])
 	if not temporary.is_empty():
-		return {"text":"Trial lineup: Legacy owned prints will be used temporarily: %s. Save a Team Builder lineup after the match." % _trial_lineup_names(temporary), "temporary":true}
+		if bool(fallback.get("temporary_repair", false)):
+			return {"text":"Trial lineup: Legacy owned prints will be used temporarily: %s. Save a Team Builder lineup after the match." % _trial_lineup_names(temporary), "temporary":true}
+		return {"text":"Trial lineup: %s" % _trial_lineup_names(temporary), "temporary":false}
 	return {"text":"Trial lineup: No catalog-valid owned print is ready. Use the Printer Bench, then Team Builder.", "temporary":true}
 
 func _trial_lineup_names(lineup: Array) -> String:
@@ -1842,7 +1845,7 @@ func start_trial(encounter_id: String) -> void:
 		_toast(str(setup.get("error", "The Workshop Trial team is not ready.")))
 		return
 	battle = setup.get("battle", null) as BattleState
-	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) else ""
+	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("unarmored_retry", false)) else ""
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_mode = "trial"
@@ -1865,7 +1868,7 @@ func start_battle() -> void:
 		_toast(str(setup.get("error", "The training team is not ready.")))
 		return
 	battle = setup.get("battle", null) as BattleState
-	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) else ""
+	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("unarmored_retry", false)) else ""
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_last_event = ""
