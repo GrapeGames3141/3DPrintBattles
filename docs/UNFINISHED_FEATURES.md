@@ -80,7 +80,7 @@
 - [x] **Make XP and spool progress legible and consequential.** The Workshop progression strip and Print Yard show XP/current threshold; `ProgressionRules.grant_xp()` immediately converts threshold crossings into spool capacity used by battle.
   - **Evidence:** the checkpoint-A pure test forces a Print Yard threshold crossing and asserts the spool increase. Broader economy targets remain P3.
 
-- [ ] **Complete opponent/team diversity and balance passes.** Training now uses the deterministic date-keyed `ProgressionRules.training_opponent()` seam rather than one hard-coded rival, with same-day/repeatable variety tests. Unlock bands, telemetry, and balance targets are still required.
+- [ ] **Complete opponent/team diversity and balance passes.** Training now uses the deterministic date-keyed `ProgressionRules.training_opponent()` seam rather than one hard-coded rival, with same-day/repeatable variety tests. Every catalog creature now has a deterministic signature and legal Apprentice/Craftsman/Master scoring path, but unlock bands, telemetry, and balance targets are still required.
   - **DoD:** seeded rival roster/team generator covers catalog elements/rarities within intended unlock bands; deterministic fixtures test legal decks/loadouts; balance sheet tracks win rate, turn length, opening fairness, and ability/card usage.
   - **Depends on:** stable XP/spool economy and catalog balance targets.
 

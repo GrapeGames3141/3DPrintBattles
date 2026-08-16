@@ -22,6 +22,12 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	capture_mode = requested_mode()
 	capture_tag = requested_tag()
+	# Autoload _ready() may still be pending on this same first frame. Configure
+	# deterministic fixtures one frame later so a save load cannot replace them.
+	call_deferred("_prepare_capture")
+
+func _prepare_capture() -> void:
+	await get_tree().process_frame
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
 	# Explicit capture-only injection proves the Android review custom-feature
 	# economy floor without pretending the desktop process has that feature.

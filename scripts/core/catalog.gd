@@ -2,7 +2,7 @@ extends Node
 ## Immutable launch catalog. Runtime objects store IDs only, never presentation nodes.
 
 const SCHEMA_VERSION := 4
-const CATALOG_VERSION := "0.1.0"
+const CATALOG_VERSION := "0.2.0"
 const RARITIES := [
 	{"id":"common", "name":"Common", "color":"#b7bcc7", "weight_bps":4500, "blueprint":50, "print":20},
 	{"id":"uncommon", "name":"Uncommon", "color":"#66d17a", "weight_bps":2500, "blueprint":120, "print":40},
@@ -27,30 +27,30 @@ const ELEMENT_CHART := {
 }
 
 const CREATURES := [
-	{"id":"cinderpaw","name":"Cinderpaw","rarity":"common","element":"Fire","bend":18,"hp":34,"attack":9,"speed":7,"cost":2,"ability":"Ember Pounce","ability_cost":2,"cooldown":2,"starter":true,"sprite_sheet":"res://assets/creatures/2d/cinderpaw_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/cinderpaw_raw_print.png"},
-	{"id":"aquafin","name":"Aquafin","rarity":"common","element":"Water","bend":17,"hp":36,"attack":8,"speed":6,"cost":2,"ability":"Tidal Patch","ability_cost":2,"cooldown":3,"starter":true,"sprite_sheet":"res://assets/creatures/2d/aquafin_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/aquafin_raw_print.png"},
-	{"id":"voltwig","name":"Voltwig","rarity":"common","element":"Lightning","bend":16,"hp":30,"attack":10,"speed":9,"cost":2,"ability":"Static Hop","ability_cost":2,"cooldown":2,"starter":true,"sprite_sheet":"res://assets/creatures/2d/voltwig_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/voltwig_raw_print.png"},
-	{"id":"mossmunk","name":"Mossmunk","rarity":"common","element":"Nature","bend":13,"hp":31,"attack":7,"speed":8,"cost":1,"ability":"Root Guard","ability_cost":1,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/mossmunk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/mossmunk_raw_print.png"},
-	{"id":"frostling","name":"Frostling","rarity":"uncommon","element":"Ice","bend":26,"hp":42,"attack":12,"speed":6,"cost":3,"ability":"Cold Snap","ability_cost":3,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/frostling_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/frostling_raw_print.png"},
-	{"id":"stoneback","name":"Stoneback","rarity":"uncommon","element":"Stone","bend":29,"hp":49,"attack":10,"speed":4,"cost":3,"ability":"Shell Brace","ability_cost":2,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/stoneback_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/stoneback_raw_print.png"},
-	{"id":"galehopper","name":"Galehopper","rarity":"uncommon","element":"Wind","bend":24,"hp":35,"attack":13,"speed":11,"cost":3,"ability":"Gust Step","ability_cost":2,"cooldown":2,"sprite_sheet":"res://assets/creatures/2d/galehopper_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/galehopper_raw_print.png"},
-	{"id":"sparkotter","name":"Sparkotter","rarity":"uncommon","element":"Lightning","bend":27,"hp":39,"attack":13,"speed":9,"cost":3,"ability":"Charge Current","ability_cost":3,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/sparkotter_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/sparkotter_raw_print.png"},
-	{"id":"glassdrake","name":"Glassdrake","rarity":"rare","element":"Fire","bend":42,"hp":56,"attack":17,"speed":8,"cost":4,"ability":"Molten Wing","ability_cost":4,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/glassdrake_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/glassdrake_raw_print.png"},
-	{"id":"coralisk","name":"Coralisk","rarity":"rare","element":"Water","bend":41,"hp":61,"attack":15,"speed":6,"cost":4,"ability":"Reef Repair","ability_cost":3,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/coralisk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/coralisk_raw_print.png"},
-	{"id":"runestag","name":"Runestag","rarity":"rare","element":"Arcane","bend":46,"hp":53,"attack":18,"speed":10,"cost":4,"ability":"Rune Burst","ability_cost":4,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/runestag_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/runestag_raw_print.png"},
-	{"id":"brambleowl","name":"Brambleowl","rarity":"rare","element":"Nature","bend":43,"hp":55,"attack":16,"speed":9,"cost":4,"ability":"Thorn Volley","ability_cost":3,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/brambleowl_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/brambleowl_raw_print.png"},
-	{"id":"ironmaw","name":"Ironmaw","rarity":"epic","element":"Stone","bend":61,"hp":75,"attack":20,"speed":5,"cost":5,"ability":"Forge Wall","ability_cost":3,"cooldown":4,"sprite_sheet":"res://assets/creatures/2d/ironmaw_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/ironmaw_raw_print.png"},
-	{"id":"aurorawing","name":"Aurorawing","rarity":"epic","element":"Ice","bend":58,"hp":64,"attack":22,"speed":12,"cost":5,"ability":"Aurora Chill","ability_cost":4,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/aurorawing_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/aurorawing_raw_print.png"},
-	{"id":"thunderelk","name":"Thunderelk","rarity":"epic","element":"Lightning","bend":63,"hp":67,"attack":23,"speed":11,"cost":5,"ability":"Stampede Arc","ability_cost":4,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/thunderelk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/thunderelk_raw_print.png"},
-	{"id":"coalgriffin","name":"Coalgriffin","rarity":"legendary","element":"Fire","bend":82,"hp":88,"attack":28,"speed":9,"cost":6,"ability":"Cinder Crown","ability_cost":5,"cooldown":4,"sprite_sheet":"res://assets/creatures/2d/coalgriffin_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/coalgriffin_raw_print.png"},
-	{"id":"tidewhale","name":"Tidewhale","rarity":"legendary","element":"Water","bend":86,"hp":100,"attack":24,"speed":5,"cost":6,"ability":"Deep Renewal","ability_cost":5,"cooldown":4,"sprite_sheet":"res://assets/creatures/2d/tidewhale_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/tidewhale_raw_print.png"},
-	{"id":"skyforge","name":"Skyforge","rarity":"legendary","element":"Wind","bend":80,"hp":80,"attack":29,"speed":14,"cost":6,"ability":"Jetstream","ability_cost":5,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/skyforge_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/skyforge_raw_print.png"},
-	{"id":"pyraxis","name":"Pyraxis","rarity":"mythic","element":"Arcane","bend":105,"hp":115,"attack":35,"speed":11,"cost":7,"ability":"Prism Nova","ability_cost":6,"cooldown":4,"sprite_sheet":"res://assets/creatures/2d/pyraxis_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/pyraxis_raw_print.png"},
-	{"id":"verdantitan","name":"Verdantitan","rarity":"mythic","element":"Nature","bend":108,"hp":128,"attack":31,"speed":7,"cost":7,"ability":"Ancient Bloom","ability_cost":6,"cooldown":4,"sprite_sheet":"res://assets/creatures/2d/verdantitan_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/verdantitan_raw_print.png"},
-	{"id":"miragefox","name":"Miragefox","rarity":"prismatic","element":"Ice","bend":126,"hp":118,"attack":39,"speed":15,"cost":8,"ability":"Layer Shift","ability_cost":6,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/miragefox_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/miragefox_raw_print.png"},
-	{"id":"voidmanta","name":"Voidmanta","rarity":"prismatic","element":"Arcane","bend":130,"hp":122,"attack":40,"speed":13,"cost":8,"ability":"Void Weave","ability_cost":6,"cooldown":3,"sprite_sheet":"res://assets/creatures/2d/voidmanta_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/voidmanta_raw_print.png"},
-	{"id":"worldcoil","name":"Worldcoil","rarity":"primordial","element":"Stone","bend":160,"hp":160,"attack":47,"speed":6,"cost":9,"ability":"Bedquake","ability_cost":7,"cooldown":5,"sprite_sheet":"res://assets/creatures/2d/worldcoil_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/worldcoil_raw_print.png"},
-	{"id":"starloom","name":"Starloom","rarity":"primordial","element":"Arcane","bend":165,"hp":145,"attack":51,"speed":12,"cost":9,"ability":"First Print","ability_cost":7,"cooldown":5,"sprite_sheet":"res://assets/creatures/2d/starloom_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/starloom_raw_print.png"}
+	{"id":"cinderpaw","name":"Cinderpaw","rarity":"common","element":"Fire","bend":18,"hp":34,"attack":9,"speed":7,"cost":2,"ability":"Ember Pounce","ability_cost":2,"cooldown":2,"starter":true,"signature":{"damage_bonus":5,"effects":[{"effect":"debuff","target":"foe","amount":1}]},"sprite_sheet":"res://assets/creatures/2d/cinderpaw_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/cinderpaw_raw_print.png"},
+	{"id":"aquafin","name":"Aquafin","rarity":"common","element":"Water","bend":17,"hp":36,"attack":8,"speed":6,"cost":2,"ability":"Tidal Patch","ability_cost":2,"cooldown":3,"starter":true,"signature":{"damage_bonus":1,"effects":[{"effect":"heal","target":"self","amount":8}]},"sprite_sheet":"res://assets/creatures/2d/aquafin_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/aquafin_raw_print.png"},
+	{"id":"voltwig","name":"Voltwig","rarity":"common","element":"Lightning","bend":16,"hp":30,"attack":10,"speed":9,"cost":2,"ability":"Static Hop","ability_cost":2,"cooldown":2,"starter":true,"signature":{"damage_bonus":3,"effects":[{"effect":"filament","target":"self","amount":1}]},"sprite_sheet":"res://assets/creatures/2d/voltwig_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/voltwig_raw_print.png"},
+	{"id":"mossmunk","name":"Mossmunk","rarity":"common","element":"Nature","bend":13,"hp":31,"attack":7,"speed":8,"cost":1,"ability":"Root Guard","ability_cost":1,"cooldown":3,"signature":{"damage_bonus":0,"effects":[{"effect":"shield","target":"self","amount":6},{"effect":"heal","target":"self","amount":3}]},"sprite_sheet":"res://assets/creatures/2d/mossmunk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/mossmunk_raw_print.png"},
+	{"id":"frostling","name":"Frostling","rarity":"uncommon","element":"Ice","bend":26,"hp":42,"attack":12,"speed":6,"cost":3,"ability":"Cold Snap","ability_cost":3,"cooldown":3,"signature":{"damage_bonus":4,"effects":[{"effect":"ability_lock","target":"foe","amount":1}]},"sprite_sheet":"res://assets/creatures/2d/frostling_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/frostling_raw_print.png"},
+	{"id":"stoneback","name":"Stoneback","rarity":"uncommon","element":"Stone","bend":29,"hp":49,"attack":10,"speed":4,"cost":3,"ability":"Shell Brace","ability_cost":2,"cooldown":3,"signature":{"damage_bonus":1,"effects":[{"effect":"shield","target":"self","amount":9},{"effect":"cleanse","target":"self","amount":0}]},"sprite_sheet":"res://assets/creatures/2d/stoneback_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/stoneback_raw_print.png"},
+	{"id":"galehopper","name":"Galehopper","rarity":"uncommon","element":"Wind","bend":24,"hp":35,"attack":13,"speed":11,"cost":3,"ability":"Gust Step","ability_cost":2,"cooldown":2,"signature":{"damage_bonus":3,"effects":[{"effect":"switch_discount","target":"self","amount":3}]},"sprite_sheet":"res://assets/creatures/2d/galehopper_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/galehopper_raw_print.png"},
+	{"id":"sparkotter","name":"Sparkotter","rarity":"uncommon","element":"Lightning","bend":27,"hp":39,"attack":13,"speed":9,"cost":3,"ability":"Charge Current","ability_cost":3,"cooldown":3,"signature":{"damage_bonus":5,"effects":[{"effect":"filament","target":"self","amount":2}]},"sprite_sheet":"res://assets/creatures/2d/sparkotter_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/sparkotter_raw_print.png"},
+	{"id":"glassdrake","name":"Glassdrake","rarity":"rare","element":"Fire","bend":42,"hp":56,"attack":17,"speed":8,"cost":4,"ability":"Molten Wing","ability_cost":4,"cooldown":3,"signature":{"damage_bonus":8,"effects":[{"effect":"attack_buff","target":"self","amount":3}]},"sprite_sheet":"res://assets/creatures/2d/glassdrake_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/glassdrake_raw_print.png"},
+	{"id":"coralisk","name":"Coralisk","rarity":"rare","element":"Water","bend":41,"hp":61,"attack":15,"speed":6,"cost":4,"ability":"Reef Repair","ability_cost":3,"cooldown":3,"signature":{"damage_bonus":2,"effects":[{"effect":"heal","target":"self","amount":12},{"effect":"shield","target":"self","amount":4}]},"sprite_sheet":"res://assets/creatures/2d/coralisk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/coralisk_raw_print.png"},
+	{"id":"runestag","name":"Runestag","rarity":"rare","element":"Arcane","bend":46,"hp":53,"attack":18,"speed":10,"cost":4,"ability":"Rune Burst","ability_cost":4,"cooldown":3,"signature":{"damage_bonus":6,"effects":[{"effect":"debuff","target":"foe","amount":3}]},"sprite_sheet":"res://assets/creatures/2d/runestag_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/runestag_raw_print.png"},
+	{"id":"brambleowl","name":"Brambleowl","rarity":"rare","element":"Nature","bend":43,"hp":55,"attack":16,"speed":9,"cost":4,"ability":"Thorn Volley","ability_cost":3,"cooldown":3,"signature":{"damage_bonus":4,"effects":[{"effect":"heal","target":"self","amount":5}]},"sprite_sheet":"res://assets/creatures/2d/brambleowl_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/brambleowl_raw_print.png"},
+	{"id":"ironmaw","name":"Ironmaw","rarity":"epic","element":"Stone","bend":61,"hp":75,"attack":20,"speed":5,"cost":5,"ability":"Forge Wall","ability_cost":3,"cooldown":4,"signature":{"damage_bonus":2,"effects":[{"effect":"shield","target":"self","amount":12},{"effect":"attack_buff","target":"self","amount":2}]},"sprite_sheet":"res://assets/creatures/2d/ironmaw_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/ironmaw_raw_print.png"},
+	{"id":"aurorawing","name":"Aurorawing","rarity":"epic","element":"Ice","bend":58,"hp":64,"attack":22,"speed":12,"cost":5,"ability":"Aurora Chill","ability_cost":4,"cooldown":3,"signature":{"damage_bonus":7,"effects":[{"effect":"ability_lock","target":"foe","amount":2}]},"sprite_sheet":"res://assets/creatures/2d/aurorawing_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/aurorawing_raw_print.png"},
+	{"id":"thunderelk","name":"Thunderelk","rarity":"epic","element":"Lightning","bend":63,"hp":67,"attack":23,"speed":11,"cost":5,"ability":"Stampede Arc","ability_cost":4,"cooldown":3,"signature":{"damage_bonus":8,"effects":[{"effect":"switch_discount","target":"self","amount":4}]},"sprite_sheet":"res://assets/creatures/2d/thunderelk_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/thunderelk_raw_print.png"},
+	{"id":"coalgriffin","name":"Coalgriffin","rarity":"legendary","element":"Fire","bend":82,"hp":88,"attack":28,"speed":9,"cost":6,"ability":"Cinder Crown","ability_cost":5,"cooldown":4,"signature":{"damage_bonus":10,"effects":[{"effect":"shield","target":"self","amount":6}]},"sprite_sheet":"res://assets/creatures/2d/coalgriffin_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/coalgriffin_raw_print.png"},
+	{"id":"tidewhale","name":"Tidewhale","rarity":"legendary","element":"Water","bend":86,"hp":100,"attack":24,"speed":5,"cost":6,"ability":"Deep Renewal","ability_cost":5,"cooldown":4,"signature":{"damage_bonus":2,"effects":[{"effect":"heal","target":"self","amount":16},{"effect":"cleanse","target":"self","amount":0}]},"sprite_sheet":"res://assets/creatures/2d/tidewhale_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/tidewhale_raw_print.png"},
+	{"id":"skyforge","name":"Skyforge","rarity":"legendary","element":"Wind","bend":80,"hp":80,"attack":29,"speed":14,"cost":6,"ability":"Jetstream","ability_cost":5,"cooldown":3,"signature":{"damage_bonus":8,"effects":[{"effect":"filament","target":"self","amount":4}]},"sprite_sheet":"res://assets/creatures/2d/skyforge_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/skyforge_raw_print.png"},
+	{"id":"pyraxis","name":"Pyraxis","rarity":"mythic","element":"Arcane","bend":105,"hp":115,"attack":35,"speed":11,"cost":7,"ability":"Prism Nova","ability_cost":6,"cooldown":4,"signature":{"damage_bonus":12,"effects":[{"effect":"debuff","target":"foe","amount":4}]},"sprite_sheet":"res://assets/creatures/2d/pyraxis_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/pyraxis_raw_print.png"},
+	{"id":"verdantitan","name":"Verdantitan","rarity":"mythic","element":"Nature","bend":108,"hp":128,"attack":31,"speed":7,"cost":7,"ability":"Ancient Bloom","ability_cost":6,"cooldown":4,"signature":{"damage_bonus":3,"effects":[{"effect":"heal","target":"self","amount":18},{"effect":"shield","target":"self","amount":8}]},"sprite_sheet":"res://assets/creatures/2d/verdantitan_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/verdantitan_raw_print.png"},
+	{"id":"miragefox","name":"Miragefox","rarity":"prismatic","element":"Ice","bend":126,"hp":118,"attack":39,"speed":15,"cost":8,"ability":"Layer Shift","ability_cost":6,"cooldown":3,"signature":{"damage_bonus":9,"effects":[{"effect":"cleanse","target":"self","amount":0},{"effect":"shield","target":"self","amount":5}]},"sprite_sheet":"res://assets/creatures/2d/miragefox_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/miragefox_raw_print.png"},
+	{"id":"voidmanta","name":"Voidmanta","rarity":"prismatic","element":"Arcane","bend":130,"hp":122,"attack":40,"speed":13,"cost":8,"ability":"Void Weave","ability_cost":6,"cooldown":3,"signature":{"damage_bonus":11,"effects":[{"effect":"ability_lock","target":"foe","amount":2}]},"sprite_sheet":"res://assets/creatures/2d/voidmanta_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/voidmanta_raw_print.png"},
+	{"id":"worldcoil","name":"Worldcoil","rarity":"primordial","element":"Stone","bend":160,"hp":160,"attack":47,"speed":6,"cost":9,"ability":"Bedquake","ability_cost":7,"cooldown":5,"signature":{"damage_bonus":14,"effects":[{"effect":"shield","target":"self","amount":10}]},"sprite_sheet":"res://assets/creatures/2d/worldcoil_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/worldcoil_raw_print.png"},
+	{"id":"starloom","name":"Starloom","rarity":"primordial","element":"Arcane","bend":165,"hp":145,"attack":51,"speed":12,"cost":9,"ability":"First Print","ability_cost":7,"cooldown":5,"signature":{"damage_bonus":15,"effects":[{"effect":"filament","target":"self","amount":5}]},"sprite_sheet":"res://assets/creatures/2d/starloom_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/starloom_raw_print.png"}
 ]
 const ARMOR := [
 	{"id":"helm","name":"Layered Helm","hp":10,"speed":0,"armor":0,"blueprint":80,"print":25},
@@ -74,6 +74,38 @@ func creature(id: String) -> Dictionary:
 	for item in CREATURES:
 		if item.id == id: return item.duplicate(true)
 	return {}
+
+## Signature effects are immutable catalog data. Keeping the description derived
+## here means UI wording and deterministic combat execution share one source.
+func signature_for_creature(id: String) -> Dictionary:
+	var definition := creature(id)
+	var raw: Variant = definition.get("signature", {})
+	if not raw is Dictionary: return {"damage_bonus":0,"effects":[]}
+	var signature: Dictionary = raw.duplicate(true)
+	signature["damage_bonus"] = clampi(int(signature.get("damage_bonus", 0)), 0, 99)
+	if not signature.get("effects", []) is Array: signature["effects"] = []
+	return signature
+
+func signature_description(id: String) -> String:
+	var signature := signature_for_creature(id)
+	var phrases: Array[String] = []
+	var damage_bonus: int = int(signature.get("damage_bonus", 0))
+	if damage_bonus > 0: phrases.append("+%d base damage before element and armor" % damage_bonus)
+	for raw_effect in signature.get("effects", []):
+		if not raw_effect is Dictionary: continue
+		var effect: String = str(raw_effect.get("effect", ""))
+		var amount: int = maxi(0, int(raw_effect.get("amount", 0)))
+		match effect:
+			"heal": phrases.append("restore %d HP" % amount)
+			"shield": phrases.append("gain %d shield" % amount)
+			"filament": phrases.append("gain %d Filament" % amount)
+			"attack_buff": phrases.append("gain +%d Attack" % amount)
+			"debuff": phrases.append("foe loses %d Attack and is locked 1 turn" % amount)
+			"cleanse": phrases.append("cleanse debuffs")
+			"switch_discount": phrases.append("next switch costs %d less" % amount)
+			"ability_lock": phrases.append("lock foe signatures %d turns" % amount)
+	if phrases.is_empty(): return "No added effect"
+	return "; ".join(phrases)
 
 func rarity(id: String) -> Dictionary:
 	for item in RARITIES:

@@ -3,6 +3,7 @@ extends RefCounted
 ## Deterministic integer-only rules. Client UI submits intents; server can use same contract.
 
 const IMPLEMENTED_CARD_EFFECTS: Array[String] = ["filament", "heal", "shield", "attack_buff", "cooldown", "draw", "switch_discount", "debuff", "cleanse"]
+const IMPLEMENTED_SIGNATURE_EFFECTS: Array[String] = ["heal", "shield", "filament", "attack_buff", "debuff", "cleanse", "switch_discount", "ability_lock"]
 
 static func apply_intent(state: BattleState, player: int, intent: Dictionary) -> Dictionary:
 	if state.finished or player != state.active_player: return {"ok":false,"error":"Not your turn."}
@@ -26,25 +27,69 @@ static func _attack(state: BattleState, player: int, ability: bool) -> Dictionar
 		return {"ok":false,"error":"The coin-flip winner cannot attack on the opening turn."}
 	if ability and attacker.cooling:
 		return {"ok":false,"error":"This print is cooling after a forced summon."}
+	var signature: Dictionary = {}
 	if ability:
 		if int(attacker.ability_lock_turns) > 0: return {"ok":false,"error":"Filament lock prevents signature abilities."}
 		if attacker.cooldown_remaining > 0: return {"ok":false,"error":"Ability is cooling down."}
 		var ability_cost: int = int(attacker.ability_cost)
 		if int(state.players[player].filament) < ability_cost: return {"ok":false,"error":"Need more filament."}
+		signature = Catalog.signature_for_creature(str(attacker.get("id", "")))
 		state.players[player].filament = int(state.players[player].filament) - ability_cost
 		attacker.cooldown_remaining = int(attacker.cooldown)
-	var base: int = int(attacker.attack) + int(attacker.attack_buff) - int(attacker.attack_debuff) + (5 if ability else 0)
+	var damage := estimate_damage(attacker, defender, ability)
+	var base: int = attack_base(attacker, ability)
 	var mult: int = Catalog.element_multiplier(str(attacker.element), str(defender.element))
 	var scaled_damage: int = (maxi(1, base) * mult) / 100
 	var incoming_shield: int = int(defender.shield)
 	var post_armor_damage: int = maxi(1, scaled_damage - int(defender.armor))
-	var damage: int = maxi(0, post_armor_damage - incoming_shield)
 	defender.shield = maxi(0, incoming_shield - post_armor_damage)
 	defender.hp = maxi(0, int(defender.hp) - damage)
-	state.log.append("%s %s for %d damage." % [attacker.name, attacker.ability if ability else "attacks", damage])
+	if ability:
+		_apply_signature_effects(state, player, signature)
+		state.log.append("%s used %s for %d damage: %s." % [attacker.name, attacker.ability, damage, Catalog.signature_description(str(attacker.get("id", "")))])
+	else:
+		state.log.append("%s attacks for %d damage." % [attacker.name, damage])
 	if defender.hp <= 0: _defeat(state, 1-player)
 	if not state.finished: _end_turn(state)
-	return {"ok":true,"damage":damage}
+	return {"ok":true,"damage":damage,"signature":signature.duplicate(true) if ability else {}}
+
+## Shared by the deterministic AI. This mirrors shield-after-minimum-armor rules.
+static func estimate_damage(attacker: Dictionary, defender: Dictionary, ability := false) -> int:
+	var base: int = attack_base(attacker, ability)
+	var mult: int = Catalog.element_multiplier(str(attacker.get("element", "")), str(defender.get("element", "")))
+	var scaled_damage: int = (maxi(1, base) * mult) / 100
+	var post_armor_damage: int = maxi(1, scaled_damage - int(defender.get("armor", 0)))
+	return maxi(0, post_armor_damage - int(defender.get("shield", 0)))
+
+static func attack_base(attacker: Dictionary, ability := false) -> int:
+	var bonus: int = 0
+	if ability:
+		bonus = int(Catalog.signature_for_creature(str(attacker.get("id", ""))).get("damage_bonus", 0))
+	return int(attacker.get("attack", 0)) + int(attacker.get("attack_buff", 0)) - int(attacker.get("attack_debuff", 0)) + bonus
+
+static func _apply_signature_effects(state: BattleState, player: int, signature: Dictionary) -> void:
+	for raw_effect in signature.get("effects", []):
+		if not raw_effect is Dictionary: continue
+		var target_player: int = player if str(raw_effect.get("target", "self")) == "self" else 1-player
+		var target := state.active_unit(target_player)
+		var amount: int = maxi(0, int(raw_effect.get("amount", 0)))
+		match str(raw_effect.get("effect", "")):
+			"heal": target.hp = mini(int(target.max_hp), int(target.hp) + amount)
+			"shield": target.shield = int(target.shield) + amount
+			"filament": state.players[player].filament = mini(int(state.players[player].spool_cap), int(state.players[player].filament) + amount)
+			"attack_buff": target.attack_buff = int(target.attack_buff) + amount
+			"debuff":
+				target.attack_debuff = int(target.attack_debuff) + amount
+				target.ability_lock_turns = maxi(int(target.ability_lock_turns), 1)
+			"cleanse":
+				target.attack_debuff = 0
+				target.ability_lock_turns = 0
+			"switch_discount":
+				# A signature ends its own turn. Preserve this discount through the
+				# opponent response so it is usable on the caster's next turn.
+				state.players[player].switch_discount = maxi(int(state.players[player].switch_discount), amount)
+				state.players[player].switch_discount_turns = maxi(int(state.players[player].get("switch_discount_turns", 0)), 2)
+			"ability_lock": target.ability_lock_turns = maxi(int(target.ability_lock_turns), amount)
 
 static func _defend(state: BattleState, player: int) -> Dictionary:
 	var unit := state.active_unit(player)
@@ -91,7 +136,9 @@ static func _switch(state: BattleState, player: int, index: int, forced: bool) -
 	var cost: int = 0 if forced else maxi(0, int(state.players[player].team[index].cost) - discount)
 	if int(state.players[player].filament) < cost: return {"ok":false,"error":"Not enough filament to switch."}
 	state.players[player].filament = int(state.players[player].filament) - cost
-	if not forced: state.players[player].switch_discount = 0
+	if not forced:
+		state.players[player].switch_discount = 0
+		state.players[player].switch_discount_turns = 0
 	state.players[player].active = index
 	state.active_unit(player).cooling = forced
 	state.log.append("%s printed %s." % ["You" if player == 0 else "Rival", state.active_unit(player).name])
@@ -114,7 +161,12 @@ static func _end_turn(state: BattleState) -> void:
 	unit.cooling = false
 	unit.cooldown_remaining = maxi(0, int(unit.cooldown_remaining) - 1)
 	unit.ability_lock_turns = maxi(0, int(unit.ability_lock_turns) - 1)
-	state.players[ending].switch_discount = 0
+	var discount_turns: int = int(state.players[ending].get("switch_discount_turns", 0))
+	if discount_turns > 0:
+		state.players[ending].switch_discount_turns = discount_turns - 1
+		if discount_turns <= 1: state.players[ending].switch_discount = 0
+	else:
+		state.players[ending].switch_discount = 0
 	state.active_player = 1 - ending
 	state.turn += 1
 	var next = state.players[state.active_player]

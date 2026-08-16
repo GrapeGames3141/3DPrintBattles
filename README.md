@@ -22,6 +22,8 @@ Profile settings persist text scale (100%, 125%, or 150%), high contrast, reduce
 
 Profiles receive an idempotent catalog-valid integrity pass even at the current schema. It repairs only unambiguous aliases and team references that already point to owned inventory; an irreparable team is blocked before battle instead of rendering an Unknown zero-stat unit. On a player-owned opening turn, Basic Attack and Signature are visibly disabled while Defend and End Turn remain available.
 
+Every catalog creature has a deterministic, catalog-authored Signature profile: an integer base-damage bonus (applied before element and armor) plus one or two fixed effects such as repair, shield, filament, attack buff, debuff/lock, cleanse, or switch discount. The exact derived effect sentence appears in the roster, Forgedex, and battle move dock, and the same data drives combat. Apprentice favors safe basics and survival cards; Craftsman scores legal damage, repair, defense, cards, and switches; Master additionally values lethal lines, element advantage, cooldown utility, and signature disruption. No signature or AI decision uses combat randomness.
+
 The presentation layer reuses imported creature textures and alpha bounds across
 screen refreshes. Battle, Forge, and Workshop keep their expensive stage nodes
 alive across Main shell rerenders; this does not alter combat, progression,

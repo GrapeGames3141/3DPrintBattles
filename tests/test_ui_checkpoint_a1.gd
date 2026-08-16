@@ -47,6 +47,7 @@ func _ready() -> void:
 		for control_name in ["BattleActionBasicAttack", "BattleActionSignatureAbility", "BattleActionDefend", "BattleActionEndTurn"]:
 			var initial_control := main.find_child(control_name, true, false) as Button
 			require(initial_control != null and not initial_control.text.is_empty() and initial_control.custom_minimum_size.y >= 48.0, "%s has a pre-settle readable 48px contract at %s" % [control_name, size])
+		require(tree_has_text(main, "Signature effect: +5 base damage before element and armor; foe loses 1 Attack and is locked 1 turn"), "battle dock exposes the exact catalog-derived Cinderpaw signature effect at %s" % size)
 		main.render()
 		await get_tree().process_frame
 		require(persistent_stage != null and main.find_child("BattleStage", true, false) == persistent_stage, "Battle screen component reattaches one persistent stage at %s" % size)

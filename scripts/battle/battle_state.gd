@@ -36,7 +36,7 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 	var hand: Array[String] = []
 	for draw_index in 4:
 		hand.append(deck.pop_front())
-	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"switch_discount":0,"passed_turns":0}
+	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"switch_discount":0,"switch_discount_turns":0,"passed_turns":0}
 
 static func _valid_supplied_deck(deck: Array) -> bool:
 	if deck.size() != 15: return false

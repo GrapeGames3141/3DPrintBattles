@@ -31,6 +31,9 @@ static func migrate(source: Dictionary) -> Dictionary:
 	var version: int = int(profile.get("schema_version", 1))
 	if version >= Catalog.SCHEMA_VERSION:
 		profile = normalize_integrity(profile)
+		# Signature definitions are catalog-only; preserve every saved ID/value while
+		# recording that this local profile now resolves the current catalog version.
+		profile["catalog_version"] = Catalog.CATALOG_VERSION
 		return AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile)))
 	# Schema 1 granted all three starters. Preserve every inventory record, then mark
 	# the legacy account as already onboarded to prevent an extra starter grant.

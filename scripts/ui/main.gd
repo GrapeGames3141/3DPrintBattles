@@ -359,6 +359,7 @@ func render_onboarding() -> void:
 		card.add_child(label("%s  •  %s" % [creature.element, Catalog.rarity(creature.rarity).name], 15, Color("dbe9f6")))
 		card.add_child(label("%d HP   %d ATK   %d SPD" % [int(creature.hp), int(creature.attack), int(creature.speed)], 16, Color("ffffff")))
 		card.add_child(label("Signature: %s\nFilament %d • Cooldown %d" % [creature.ability, int(creature.ability_cost), int(creature.cooldown)], 14, Color("b9d3e8")))
+		card.add_child(label(Catalog.signature_description(str(creature.id)), 13, Color("b9d3e8")))
 		card.add_child(make_button("Selected" if pending_starter_id == starter_id else "Choose %s" % creature.name, func(): pending_starter_id = starter_id; render(), element_color.darkened(0.35)))
 	var confirmation := make_panel(Color("352719ed"), Color("f1be69"))
 	body.add_child(confirmation.get_parent())
@@ -1566,6 +1567,8 @@ func render_codex() -> void:
 		var card := make_panel(Color("152842e8"), Color(Catalog.rarity(creature.rarity).color if known else "4b5d72")); grid.add_child(card.get_parent())
 		card.add_child(label(str(creature.name) if known else "???", 17, Color(Catalog.rarity(creature.rarity).color if known else "8492a1")))
 		card.add_child(label("%s • %d bends" % [creature.element, int(creature.bend)] if known else "Undiscovered", 13, Color("dce8f4")))
+		if known:
+			card.add_child(label("%s: %s" % [str(creature.ability), Catalog.signature_description(str(creature.id))], 12, Color("b9d3e8")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func start_battle() -> void:
@@ -1663,13 +1666,14 @@ func render_battle_summary(host: Container) -> void:
 		summary.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
 		summary.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), max_hp - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
 		summary.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
+		summary.add_child(label("Effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8")))
 	summary.add_child(label("Battle log: " + " | ".join(battle.log.slice(maxi(0, battle.log.size()-3))), 13, Color("d0dfeb")))
 
 func render_battle_action_dock(host: Container) -> void:
 	var dock := make_panel(Color("214969ee"), Color("6de4ff"))
 	dock.name = "BattleActionDock"
 	var dock_panel := dock.get_parent() as PanelContainer
-	dock_panel.custom_minimum_size = Vector2(0, 182 if is_portrait_layout() else 116)
+	dock_panel.custom_minimum_size = Vector2(0, 210 if is_portrait_layout() else 142)
 	dock_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	host.add_child(dock_panel)
 	var opening_locked := battle.turn == 1 and battle.active_player == 0 and battle.opening_player == 0
@@ -1707,6 +1711,10 @@ func render_battle_action_dock(host: Container) -> void:
 	end_turn.name = "BattleActionEndTurn"
 	end_turn.custom_minimum_size.y = 48
 	actions.add_child(end_turn)
+	var signature_effect := label("Signature effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8"))
+	signature_effect.name = "BattleSignatureDescription"
+	signature_effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dock.add_child(signature_effect)
 	var secondary := make_button("Hide Bench, Hand & Details" if battle_secondary_open else "Bench, Hand & Details", toggle_battle_secondary, Color("536c8d"))
 	secondary.name = "BattleSecondaryToggle"
 	secondary.custom_minimum_size = Vector2(0, 48)
@@ -1785,6 +1793,7 @@ func render_battle_details_tab(panel: Container) -> void:
 		panel.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 15, Color("ffaaa1") if player == 1 else Color("a9ecff")))
 		panel.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), max_hp - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
 		panel.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
+		panel.add_child(label("Signature effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8")))
 	panel.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-4))), 13, Color("d0dfeb")))
 
 func render_battle_concede_tab(panel: Container) -> void:

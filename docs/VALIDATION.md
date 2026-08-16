@@ -1,5 +1,66 @@
 # Validation record
 
+## 2026-08-15 Checkpoint 1 - catalog signatures and solo AI (staging only)
+
+- This staging-only checkpoint adds immutable `signature` records to all 24
+  entries in `scripts/core/catalog.gd`. Each record has an integer damage bonus
+  and ordered deterministic effects; no profile embeds signature data, so old
+  creature IDs, teams, decks, and saves continue to resolve through the catalog.
+  `ProfileRules.migrate()` only refreshes `catalog_version` during its existing
+  idempotent integrity pass and preserves owned records/team references.
+- `tests/test_signature_rules.tscn` passed with Godot console/worker PIDs
+  `14148/1376`, exit 0. It loops the full catalog, rejects unknown effects,
+  invalid targets, and negative amounts, requires materially distinct mappings,
+  exercises damage, self/foe effects, shield absorption, lethal resolution, and
+  filament/cooldown/ability-lock rejection. It also covers catalog-version
+  migration preservation plus Apprentice opening defense, Craftsman repair and
+  shield-card survival, Master signature/basic lethal choices, and an affordable
+  elemental switch.
+- Final parser/import scan used the isolated E-cache OpenGL command wrapper
+  (CMD PID `20128`, Godot console/worker PIDs `13392/6912`), exit 0. The full
+  retained 17-scene suite plus the new signature scene passed under isolated
+  E-cache app-data roots: profile `9176/19940`, progression `10224/22148`,
+  battle `12252/25148`, checkpoint4 `20352/5108`, checkpoint5 `13736/16024`,
+  checkpoint6 `2900/22512`, checkpoint-A `26136/5720`, UI5 `24380/7336`, UI6
+  `26104/2956`, UI-A `16424/24700`, UI-A1 `19912/1604`, workshop navigation
+  `18116/6228`, workshop live `20716/16792`, save recovery `25916/20452`, art
+  contract `13188/10484`, alpha loop `2012/2388`, and signatures `14148/1376`;
+  all exited 0. The only non-failing environment output was the known Windows
+  root-certificate-store warning.
+- Original-detail OpenGL capture evidence is
+  `E:/CodexCache/printforge-validation/battle_voidmanta_576x1024_signatures-final4.png`
+  (CMD PID `5112`, Godot `26112/1336`, exit 0) and
+  `E:/CodexCache/printforge-validation/battle_voidmanta_1280x720_signatures-final4.png`
+  (CMD PID `17992`, Godot `10844/19652`, exit 0). Both were inspected for the
+  opening lock, visible Defend/End Turn, full four-action dock, and exact
+  catalog-derived Cinderpaw/ Voidmanta effect lines.
+- Android arm64 review export used CMD PID `1864` and Godot console/worker
+  PIDs `12004/6652`, exit 0. The staging artifact
+  `build/android/PrintForge-Legends-0.5.11-alpha-signatures-arm64.apk` is
+  `104,100,999` bytes with SHA-256
+  `ADC0CF3E4EFE56EC4E47AA95C63A892C180601FC49CDBDAC0DAF4E9FE5FC2272`.
+  `apksigner verify --verbose` confirmed v2/v3 debug signing. `aapt dump
+  badging` reported package `com.tak.printforge.legends.review`, code `61`,
+  name `0.5.11-alpha-signatures`, min SDK 24/target 36, then returned 1 on the
+  known `android:required` manifest-reader warning. APK archive audit retained
+  arm64 libraries, the required workshop reference import, and creature sprite
+  imports, with no backend/tests/tmp/node_modules/.git entries; no physical
+  Android device install was performed.
+- Follow-up wording/contract refinement: `Catalog.signature_description()` now
+  states that each bonus is base damage before element and armor, and the
+  signature contract requires exactly 24 distinct mappings. Isolated parser
+  CMD/Godot PIDs `22280`/`23556/21748`, signature rules `20648`/`6828/5612`,
+  and responsive UI-A1 `10440`/`6516/15416` all exited 0. Fresh original-detail
+  captures `battle_voidmanta_576x1024_signatures-baseword-final.png`
+  (CMD/Godot `20272`/`10216/17756`) and
+  `battle_voidmanta_1280x720_signatures-baseword-final.png`
+  (`11000`/`8124/10268`) exited 0 and were inspected for readable, in-frame
+  exact signature wording plus the four-action opening dock.
+- Hash-synchronized durable follow-up verification repeated the parser
+  (`19912/25548`), signature contract (`18476/25020`), and responsive UI-A1
+  (`24200/26232`) directly from `E:/AI Projects/games/3d print battler`; each
+  Godot console/worker pair exited 0 with isolated E-cache app-data.
+
 ## 2026-08-15 refactor/optimization staging validation
 
 - Staging-only refactor validation used Godot 4.7.1 `a13da4feb` with isolated
