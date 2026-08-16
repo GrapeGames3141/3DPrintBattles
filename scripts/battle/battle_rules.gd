@@ -1,6 +1,7 @@
 class_name BattleRules
 extends RefCounted
 ## Deterministic integer-only rules. Client UI submits intents; server can use same contract.
+const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
 
 const IMPLEMENTED_CARD_EFFECTS: Array[String] = ["filament", "heal", "shield", "attack_buff", "cooldown", "draw", "switch_discount", "debuff", "cleanse"]
 const IMPLEMENTED_SIGNATURE_EFFECTS: Array[String] = ["heal", "shield", "filament", "attack_buff", "debuff", "cleanse", "switch_discount", "ability_lock"]
@@ -33,12 +34,12 @@ static func _attack(state: BattleState, player: int, ability: bool) -> Dictionar
 		if attacker.cooldown_remaining > 0: return {"ok":false,"error":"Ability is cooling down."}
 		var ability_cost: int = int(attacker.ability_cost)
 		if int(state.players[player].filament) < ability_cost: return {"ok":false,"error":"Need more filament."}
-		signature = Catalog.signature_for_creature(str(attacker.get("id", "")))
+		signature = BATTLE_CATALOG.signature_for_creature(str(attacker.get("id", "")))
 		state.players[player].filament = int(state.players[player].filament) - ability_cost
 		attacker.cooldown_remaining = int(attacker.cooldown)
 	var damage := estimate_damage(attacker, defender, ability)
 	var base: int = attack_base(attacker, ability)
-	var mult: int = Catalog.element_multiplier(str(attacker.element), str(defender.element))
+	var mult: int = BATTLE_CATALOG.element_multiplier(str(attacker.element), str(defender.element))
 	var scaled_damage: int = (maxi(1, base) * mult) / 100
 	var incoming_shield: int = int(defender.shield)
 	var post_armor_damage: int = maxi(1, scaled_damage - int(defender.armor))
@@ -46,7 +47,7 @@ static func _attack(state: BattleState, player: int, ability: bool) -> Dictionar
 	defender.hp = maxi(0, int(defender.hp) - damage)
 	if ability:
 		_apply_signature_effects(state, player, signature)
-		state.log.append("%s used %s for %d damage: %s." % [attacker.name, attacker.ability, damage, Catalog.signature_description(str(attacker.get("id", "")))])
+		state.log.append("%s used %s for %d damage: %s." % [attacker.name, attacker.ability, damage, BATTLE_CATALOG.signature_description(str(attacker.get("id", "")))])
 	else:
 		state.log.append("%s attacks for %d damage." % [attacker.name, damage])
 	if defender.hp <= 0: _defeat(state, 1-player)
@@ -56,7 +57,7 @@ static func _attack(state: BattleState, player: int, ability: bool) -> Dictionar
 ## Shared by the deterministic AI. This mirrors shield-after-minimum-armor rules.
 static func estimate_damage(attacker: Dictionary, defender: Dictionary, ability := false) -> int:
 	var base: int = attack_base(attacker, ability)
-	var mult: int = Catalog.element_multiplier(str(attacker.get("element", "")), str(defender.get("element", "")))
+	var mult: int = BATTLE_CATALOG.element_multiplier(str(attacker.get("element", "")), str(defender.get("element", "")))
 	var scaled_damage: int = (maxi(1, base) * mult) / 100
 	var post_armor_damage: int = maxi(1, scaled_damage - int(defender.get("armor", 0)))
 	return maxi(0, post_armor_damage - int(defender.get("shield", 0)))
@@ -64,7 +65,7 @@ static func estimate_damage(attacker: Dictionary, defender: Dictionary, ability 
 static func attack_base(attacker: Dictionary, ability := false) -> int:
 	var bonus: int = 0
 	if ability:
-		bonus = int(Catalog.signature_for_creature(str(attacker.get("id", ""))).get("damage_bonus", 0))
+		bonus = int(BATTLE_CATALOG.signature_for_creature(str(attacker.get("id", ""))).get("damage_bonus", 0))
 	return int(attacker.get("attack", 0)) + int(attacker.get("attack_buff", 0)) - int(attacker.get("attack_debuff", 0)) + bonus
 
 static func _apply_signature_effects(state: BattleState, player: int, signature: Dictionary) -> void:
@@ -102,7 +103,7 @@ static func _card(state: BattleState, player: int, card_id: String) -> Dictionar
 	var index: int = state.players[player].hand.find(card_id)
 	if index < 0: return {"ok":false,"error":"Card is not in hand."}
 	var card: Dictionary = {}
-	for item in Catalog.SUPPORT_CARDS:
+	for item in BATTLE_CATALOG.DATA.SUPPORT_CARDS:
 		if item.id == card_id: card = item; break
 	var card_cost: int = int(card.cost)
 	if card.is_empty() or int(state.players[player].filament) < card_cost: return {"ok":false,"error":"Cannot play this card."}

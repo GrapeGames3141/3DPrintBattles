@@ -1,5 +1,41 @@
 # Validation record
 
+## Checkpoint 0.5.20 Android static battle catalog (staging only)
+
+- The 0.5.19 phone result still produced empty first-build and catalog-ID retry
+  teams despite correct canonical Cinderpaw/Brambleowl/Verdantitan IDs. The
+  battle domain therefore no longer reads the `Catalog` Node autoload or
+  `ProgressionRules` in static code. `BattleCatalog` preloads immutable
+  `catalog.gd` constants and exposes creatures, armor, cards, elements, and
+  signatures without creating a Node or copying authored data. State/unit
+  normalization, rules, and AI all use this one export-safe accessor.
+- `test_battle_static_catalog.tscn` runs exact three-unit legacy aliases with a
+  Helm, rival build, raw-filament support card, Cinderpaw signature, legal AI,
+  and a deterministic completed match. It source-checks all battle-domain
+  scripts for zero `Catalog.` and `ProgressionRules.` references. Isolated run
+  PID `22596` exited 0 with PASS; parser PID `17336` exited 0. Focused rules,
+  signatures, Trial launch, and factory runs `4432,17420,11384,2992` exited 0.
+- Fresh OpenGL `576x1024` captures were inspected: `trials_teamlaunch_
+  576x1024_staticcatalog-final.png` (PID `24500`, exit 0) shows the exact
+  Cinderpaw/Brambleowl/Verdantitan lineup, and `trial_battle_teamlaunch_
+  576x1024_staticcatalog-final.png` (PID `15128`, exit 0) shows a populated
+  Cinderpaw-vs-Mossmunk Warm Nozzle opening with its action dock.
+- The isolated retained 25-scene suite exited 0: PIDs
+  `18876,23640,5756,7692,7196,13176,24224,20908,21040,23884,21860,21928,
+  13912,21180,1208,22972,3172,3980,7336,8640,13584,19372,20780,21320,25724`.
+  The UI-A1 and Workshop-navigation log files omit their print marker but both
+  processes exited cleanly; every other scene logged PASS.
+- Android export PID `24648` exited 0. Artifact
+  `build/android/PrintForge-Legends-0.5.20-alpha-battle-static-catalog-
+  arm64.apk` is `105,435,381` bytes, SHA-256
+  `E005D52F4BAC9560A455B92E98BC11A4079798B6DB4C5C4695C91267247B9779`.
+  `apksigner` verified v2/v3 with the Android Debug certificate. `aapt` listed
+  package `com.tak.printforge.legends.review`, code `70`, version
+  `0.5.20-alpha-battle-static-catalog`, SDK 24/36, then returned its known
+  `android:required` manifest-reader warning. Archive audit found two arm64
+  libraries, eight battle-script entries, and zero backend/tests/tools/tmp/
+  node_modules/.git paths. No physical device was attached.
+
 ## Checkpoint 0.5.19 Android battle export boundary (staging only)
 
 - Phone evidence showed `SoloBattleFactory` receiving canonical IDs

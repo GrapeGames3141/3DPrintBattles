@@ -1,6 +1,8 @@
 class_name BattleState
 extends RefCounted
 ## Pure mutable combat state; canonical serialization is safe to send to an authority.
+const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
+const UNIT_RUNTIME := preload("res://scripts/battle/battle_unit_runtime.gd")
 var match_id := "local"
 var turn: int = 1
 var active_player: int = 0
@@ -27,9 +29,9 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 		# a valid species because its key changed between profile/UI/battle layers.
 		var creature_id := creature_id_from_entry(entry)
 		var armor_id := armor_id_from_entry(entry)
-		var def := Catalog.creature(creature_id)
+		var def := BATTLE_CATALOG.creature(creature_id)
 		if def.is_empty(): continue
-		var armor_def: Dictionary = ProgressionRules.armor_def(armor_id)
+		var armor_def: Dictionary = BATTLE_CATALOG.armor(armor_id)
 		var hp_bonus: int = clampi(int(armor_def.get("hp", 0)), 0, 100)
 		var speed_bonus: int = clampi(int(armor_def.get("speed", 0)), -10, 10)
 		var armor_bonus: int = clampi(int(armor_def.get("armor", 0)), 0, 10)
@@ -64,7 +66,7 @@ static func armor_id_from_entry(entry) -> String:
 static func _valid_supplied_deck(deck: Array) -> bool:
 	if deck.size() != 15: return false
 	for card_id in deck:
-		if Catalog.support_card(str(card_id)).is_empty(): return false
+		if BATTLE_CATALOG.support_card(str(card_id)).is_empty(): return false
 	return true
 
 static func create(player_team: Array, opponent_team: Array, player_cap: int, opponent_cap: int, match_seed: int = 42, player_deck: Array = [], opponent_deck: Array = []) -> BattleState:
@@ -81,7 +83,7 @@ static func create(player_team: Array, opponent_team: Array, player_cap: int, op
 ## Legacy/local snapshots may only carry an ID and changing combat fields. Fill the
 ## stable catalog contract without inventing a unit for an invalid empty team.
 static func normalize_unit(unit: Dictionary) -> Dictionary:
-	return BattleUnitRuntime.from_dictionary(unit).to_dictionary()
+	return UNIT_RUNTIME.from_dictionary(unit).to_dictionary()
 
 static func from_snapshot(snapshot: Dictionary) -> BattleState:
 	var restored := BattleState.new()
@@ -125,7 +127,7 @@ func validation_error(require_ready := false) -> String:
 	if players.size() != 2: return "Battle setup is missing a complete pair of teams."
 	for player in [0, 1]:
 		var unit := active_unit(player)
-		if unit.is_empty() or Catalog.creature(str(unit.get("id", ""))).is_empty():
+		if unit.is_empty() or BATTLE_CATALOG.creature(str(unit.get("id", ""))).is_empty():
 			return "Battle setup has an invalid %s team." % ("player" if player == 0 else "rival")
 		if int(unit.get("max_hp", 0)) <= 0:
 			return "Battle setup has invalid %s vitality data." % ("player" if player == 0 else "rival")

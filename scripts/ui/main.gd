@@ -10,7 +10,7 @@ const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordan
 const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
-const REVIEW_BUILD_LABEL := "0.5.19-alpha-battle-export-boundary"
+const REVIEW_BUILD_LABEL := "0.5.20-alpha-battle-static-catalog"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.

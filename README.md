@@ -33,7 +33,11 @@ single existing catalog validation inside `BattleState.make_team()`. This avoids
 an exported nested static-helper lookup producing an empty valid team while
 preserving catalog validation, armor modifiers, deterministic order, and the
 non-persisting retry behavior. The current review label is
-`0.5.19-alpha-battle-export-boundary`.
+`0.5.20-alpha-battle-static-catalog`. The complete battle domain now reads the
+immutable `catalog.gd` constants through a preloaded static accessor rather
+than the application `Catalog` Node autoload, so battle construction,
+normalization, rules, signatures, support cards, and AI share export-safe data
+without duplicating authored catalog records.
 
 The Armor Forge uses seven processed transparent raw-part textures derived from the approved 4x2 armor atlas. Each remains seated on the Forge bed during the deterministic ten-second layer reveal and three-second completed-part hold; armor completes as a transfer, never as a creature awakening.
 

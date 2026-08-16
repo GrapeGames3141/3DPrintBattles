@@ -2,6 +2,7 @@ class_name AIOpponent
 extends RefCounted
 ## Deterministic legal-first solo policy. Scores are fixed integer heuristics;
 ## no gameplay RNG is introduced by difficulty choices.
+const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
 
 static func choose_intent(state: BattleState, difficulty: String = "Apprentice") -> Dictionary:
 	var setup_error := state.validation_error(true)
@@ -17,7 +18,7 @@ static func _choose_apprentice(state: BattleState, candidates: Array) -> Diction
 	var unit := state.active_unit(1)
 	if int(unit.get("hp", 0)) * 3 <= int(unit.get("max_hp", 1)):
 		for candidate in candidates:
-			if str(candidate.get("type", "")) == "card" and str(Catalog.support_card(str(candidate.get("card_id", ""))).get("effect", "")) in ["heal", "shield"]:
+			if str(candidate.get("type", "")) == "card" and str(BATTLE_CATALOG.support_card(str(candidate.get("card_id", ""))).get("effect", "")) in ["heal", "shield"]:
 				return candidate
 	for candidate in candidates:
 		if str(candidate.get("type", "")) == "attack": return candidate
@@ -51,11 +52,11 @@ static func _score_candidate(state: BattleState, candidate: Dictionary, master: 
 				score += _signature_utility(unit, foe, state, master)
 				# Spending scarce filament is only worthwhile when the signature has a payoff.
 				score -= int(unit.get("ability_cost", 0)) * 3
-			elif Catalog.element_multiplier(str(unit.get("element", "")), str(foe.get("element", ""))) >= 150:
+			elif BATTLE_CATALOG.element_multiplier(str(unit.get("element", "")), str(foe.get("element", ""))) >= 150:
 				score += 12
 			return score
 		"card":
-			var card: Dictionary = Catalog.support_card(str(candidate.get("card_id", "")))
+			var card: Dictionary = BATTLE_CATALOG.support_card(str(candidate.get("card_id", "")))
 			var amount: int = int(card.get("amount", 0))
 			match str(card.get("effect", "")):
 				"heal": return mini(health_missing, amount) * 14 + (160 if int(unit.get("hp", 0)) * 3 <= int(unit.get("max_hp", 1)) else 0)
@@ -70,7 +71,7 @@ static func _score_candidate(state: BattleState, candidate: Dictionary, master: 
 			return 0
 		"switch":
 			var candidate_unit: Dictionary = state.players[1].team[int(candidate.get("index", -1))]
-			var delta: int = Catalog.element_multiplier(str(candidate_unit.get("element", "")), str(foe.get("element", ""))) - Catalog.element_multiplier(str(unit.get("element", "")), str(foe.get("element", "")))
+			var delta: int = BATTLE_CATALOG.element_multiplier(str(candidate_unit.get("element", "")), str(foe.get("element", ""))) - BATTLE_CATALOG.element_multiplier(str(unit.get("element", "")), str(foe.get("element", "")))
 			return delta * 2 + (120 if int(unit.get("hp", 0)) * 3 <= int(unit.get("max_hp", 1)) else 0)
 		"defend": return 30 + (100 if incoming_basic >= int(unit.get("hp", 0)) else 0)
 		"end_turn": return 0
@@ -78,7 +79,7 @@ static func _score_candidate(state: BattleState, candidate: Dictionary, master: 
 
 static func _signature_utility(unit: Dictionary, foe: Dictionary, state: BattleState, master: bool) -> int:
 	var score := 0
-	for raw_effect in Catalog.signature_for_creature(str(unit.get("id", ""))).get("effects", []):
+	for raw_effect in BATTLE_CATALOG.signature_for_creature(str(unit.get("id", ""))).get("effects", []):
 		if not raw_effect is Dictionary: continue
 		var amount: int = int(raw_effect.get("amount", 0))
 		match str(raw_effect.get("effect", "")):
@@ -98,7 +99,7 @@ static func _legal_candidates(state: BattleState) -> Array:
 	var filament: int = int(state.players[1].get("filament", 0))
 	if _can_ability(unit, filament): result.append({"type":"ability"})
 	for card_id in state.players[1].get("hand", []):
-		var card := Catalog.support_card(str(card_id))
+		var card := BATTLE_CATALOG.support_card(str(card_id))
 		if not card.is_empty() and filament >= int(card.get("cost", 0)):
 			result.append({"type":"card","card_id":str(card_id)})
 	for index in state.players[1].get("team", []).size():
@@ -118,5 +119,5 @@ static func _best_switch(state: BattleState) -> int:
 		if index == int(state.players[1].active): continue
 		var candidate: Dictionary = state.players[1].team[index]
 		var cost: int = maxi(0, int(candidate.cost) - int(state.players[1].get("switch_discount", 0)))
-		if int(candidate.hp) > 0 and int(state.players[1].filament) >= cost and Catalog.element_multiplier(str(candidate.element), str(foe.element)) > Catalog.element_multiplier(str(active.element), str(foe.element)): return index
+		if int(candidate.hp) > 0 and int(state.players[1].filament) >= cost and BATTLE_CATALOG.element_multiplier(str(candidate.element), str(foe.element)) > BATTLE_CATALOG.element_multiplier(str(active.element), str(foe.element)): return index
 	return -1

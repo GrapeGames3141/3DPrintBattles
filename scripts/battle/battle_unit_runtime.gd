@@ -2,6 +2,7 @@ class_name BattleUnitRuntime
 extends RefCounted
 ## Typed, catalog-backed adapter at battle import boundaries. The public battle
 ## state deliberately remains Dictionary-shaped for save and intent compatibility.
+const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
 
 var source: Dictionary = {}
 var id: String = ""
@@ -24,10 +25,10 @@ static func from_dictionary(unit: Dictionary) -> BattleUnitRuntime:
 	var result := BattleUnitRuntime.new()
 	result.source = unit.duplicate(true)
 	result.id = str(unit.get("id", unit.get("creature_id", unit.get("species_id", ""))))
-	var definition: Dictionary = Catalog.creature(result.id)
+	var definition: Dictionary = BATTLE_CATALOG.creature(result.id)
 	if definition.is_empty(): return result
 	result.armor_id = str(unit.get("armor_id", unit.get("equipped_armor_id", "")))
-	var armor_definition: Dictionary = ProgressionRules.armor_def(result.armor_id)
+	var armor_definition: Dictionary = BATTLE_CATALOG.armor(result.armor_id)
 	var armor_hp: int = clampi(int(armor_definition.get("hp", 0)), 0, 100)
 	var armor_speed: int = clampi(int(armor_definition.get("speed", 0)), -10, 10)
 	var armor_guard: int = clampi(int(armor_definition.get("armor", 0)), 0, 10)
@@ -47,7 +48,7 @@ static func from_dictionary(unit: Dictionary) -> BattleUnitRuntime:
 	return result
 
 func is_valid() -> bool:
-	return not Catalog.creature(id).is_empty()
+	return not BATTLE_CATALOG.creature(id).is_empty()
 
 func to_dictionary() -> Dictionary:
 	if not is_valid(): return source.duplicate(true)
