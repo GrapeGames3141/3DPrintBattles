@@ -4,6 +4,7 @@ const OUTPUT_DIR := "E:/CodexCache/printforge-validation"
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 const ART_GALLERY := preload("res://scripts/ui/creature_art_gallery.gd")
 const CAPTURE_FEATURE_SETUP := preload("res://tests/capture_feature_setup.gd")
+const CAPTURE_OFFLINE_QA_SETUP := preload("res://tests/capture_offline_qa_setup.gd")
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -44,7 +45,9 @@ func _prepare_capture() -> void:
 	if capture_mode == "station_live_reduced": GameManager.profile.settings.reduced_motion = true
 	workshop = MAIN_SCENE.instantiate()
 	workshop.shop_day_key = "2026-08-14"
-	if CAPTURE_FEATURE_SETUP.configure_battle(workshop, capture_mode):
+	if CAPTURE_OFFLINE_QA_SETUP.configure(workshop, capture_mode):
+		pass
+	elif CAPTURE_FEATURE_SETUP.configure_battle(workshop, capture_mode):
 		pass
 	elif CAPTURE_FEATURE_SETUP.configure_forge(workshop, capture_mode):
 		pass
@@ -156,7 +159,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

@@ -38,8 +38,8 @@
 - [x] **Expose legal battle concede in the UI.** Solo and local-versus screens now require a second Concede press before submitting the existing legal rule intent, expose Cancel Concede while armed, and disarm on any other intent or private handoff; local-versus remains no-reward.
   - **Evidence:** `scripts/ui/main.gd`, `tests/test_ui_checkpoint_a.tscn`, `tests/test_ui_checkpoint_a1.tscn`, and existing `tests/test_battle_rules.tscn` preserve canonical concede resolution and first-render portrait move access.
 
-- [ ] **Harden profile/save migration compatibility.** Schema migrations must preserve current saves across future profile, deck, armor, shop, settings, journal, and server-revision changes.
-  - **DoD:** versioned fixtures for every released schema migrate idempotently; unsupported future versions fail safely with recovery guidance; backup, temp-write, journal acknowledgement, and interrupted-write tests remain green.
+- [x] **Harden profile/save migration compatibility.** Schema migrations preserve released profile, deck, armor, shop, settings, journal, and server-revision fields; profiles from a newer schema open read-only without a local overwrite.
+  - **Evidence:** `tests/test_offline_qa.tscn` migrates representative schemas 1 through 7 idempotently and verifies future-schema GameManager startup plus byte-preserving mutation refusal. `tests/test_save_recovery.tscn` retains backup, temp-write, and journal acknowledgement coverage.
   - **Depends on:** P0 CI for recurring validation.
 
 ## P1 — production backend and online authority

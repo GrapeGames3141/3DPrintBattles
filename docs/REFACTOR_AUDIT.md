@@ -37,6 +37,21 @@
 - Split `capture_checkpoint2.tscn` itself into separate feature scenes after
   existing retained evidence is retired; setup is already feature-local.
 
+## 2026-08-15 offline QA follow-up
+
+- Added narrow, typed `SupportCardPresenter` and `BattleFeedbackPresenter`
+  adapters. Main retains ownership of controls and state, while catalog effect,
+  target, outcome, HP, shield, and accessible cue copy is now pure/testable.
+- Added `CaptureOfflineQaSetup` for checkpoint-local future-save recovery
+  fixture state. The generic capture driver remains the process/viewport layer.
+- Added a schema-compatibility seam before migration/bootstrap. Future saves
+  remain deep-copied read-only values; the save writer is never called for them.
+- Added a deterministic all-roster offline simulation and decoded-source asset
+  budget guard. These are structural desktop QA checks, not wall-clock claims.
+
+The remaining monolith, typed-profile, persistent-printer-widget, and broader
+capture-scene extraction debt above remains intentionally deferred.
+
 ## Text integrity
 
 - Run `tools/check_text_encoding.ps1` from the project root to reject invalid

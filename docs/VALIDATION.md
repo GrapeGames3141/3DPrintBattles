@@ -273,6 +273,56 @@ No Godot editor processes are required for the test scene.
 
 ## Checkpoint 3 validation
 
+## Checkpoint 5 offline QA and compatibility (staging)
+
+- Staging clone `E:/CodexCache/printforge-offline-qa-20260815` began at durable
+  commit `59502c9`; no durable sync, staging, commit, push, or Drive delivery
+  was performed during this evidence pass. Schema 7 adds a pure future-save
+  compatibility block: bootstrap opens a newer profile read-only and does not
+  call the local snapshot writer.
+- Final Godot 4.7.1 parser/import scan console/worker PIDs 20292/23068,
+  exited 0. The final retained 22-scene suite exited 0, including new offline
+  QA console/worker PIDs 19916/25196; the full ordered console/worker pairs
+  were `21708/2336`, `20468/17776`, `7068/21184`, `13680/22364`,
+  `22624/8060`, `19304/9056`, `24208/14592`, `10216/21064`, `19916/25196`,
+  `19976/17360`, `19912/4048`, `20444/21040`, `19272/20764`, `6868/26276`,
+  `9336/3556`, `3256/18604`, `24388/25084`, `13416/8760`, `12472/21204`,
+  `23476/17716`, `12548/21896`, and `2956/24504`.
+  The coverage includes representative schema 1-7
+  fixtures, idempotence, future-save byte preservation, support/feedback
+  presenters, 72 same-seed catalog simulation matches across Apprentice,
+  Craftsman, and Master AI. Aggregate deterministic metrics are 72 terminated
+  matches, 25 player wins / 47 rival wins, 367 actions, 367 turns, 2-10 turns
+  per match, 213 basic attacks, and 74 signatures. Per difficulty: Apprentice
+  9/15 wins in 127 turns (2-10); Craftsman 8/16 in 120 (2-8); Master 8/16 in
+  120 (2-8). The scripted survival/attack driver intentionally uses no cards
+  (zero recorded); legal card resolution remains covered by retained
+  `test_battle_rules.tscn`. The decoded-source art estimate is 301,957,528
+  bytes, below the documented 360 MiB desktop QA ceiling.
+- Inspected isolated OpenGL captures all exited 0: future-save recovery
+  `future_save_recovery_576x1024_offlineqa-final.png` (console/worker
+  PIDs 7292/20324), battle Hand `battle_hand_576x1024_offlineqa-final.png`
+  (15788/23144), and impact `battle_impact_1280x720_offlineqa-final.png`
+  (19548/13592), under `E:/CodexCache/printforge-validation/`. They show
+  recovery guidance with no mutation controls, explicit card cost/effect/target
+  text, and an impact outcome/caption banner.
+- The corrected recovery capture
+  `future_save_recovery_576x1024_offlineqa-readonly-final.png` (console/worker
+  PIDs 13912/22712, exit 0) was inspected after the header fix: it explicitly
+  says `READ-ONLY COMPATIBILITY MODE` and never shows the onboarding ceremony.
+- Final Android review export console/worker PIDs 16080/17708 exited 0:
+  `build/android/PrintForge-Legends-0.5.15-alpha-offline-qa-arm64.apk`,
+  104,155,138 bytes, SHA-256
+  `1A2E31057218DED3F7B07E1F783BC037BF96ED0FB8D3402C45DDB6C31D838565`.
+  `apksigner verify --verbose` reports v2/v3 signatures and package inspection
+  reports `com.tak.printforge.legends.review`. Archive audit found no backend,
+  tests, tmp, node_modules, or Git entries; the sole docs match is the required
+  runtime workshop reference import. `aapt` still returns its known manifest
+  `android:required` parse warning after inspection; `aapt2 dump packagename`
+  succeeds with a harmless themed-icon reference warning. Read-only `adb
+  devices` started an empty daemon and found no attached device, so physical
+  Android smoke remains blocked rather than passed.
+
 ## Checkpoint 3 workshop depth (staging)
 
 - Staging implementation in `E:/CodexCache/printforge-workshop-depth-20260815` uses schema 6/catalog 0.5.13 and has not been committed, pushed, or Drive-delivered. It adds deterministic three-step Calibration Bench patterns, one-choice Print Yard drills, print history, five fixed-label deck slots, and the raw-only armor Forge presentation.

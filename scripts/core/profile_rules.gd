@@ -29,6 +29,9 @@ static func new_profile() -> Dictionary:
 
 static func migrate(source: Dictionary) -> Dictionary:
 	var profile: Dictionary = source.duplicate(true)
+	# A save produced by a newer build is not ours to repair.  Returning a deep
+	# copy makes this pure seam safe for callers while preventing a downgrade.
+	if is_future_schema(profile): return profile
 	if not profile.has("revision"): profile["revision"] = 0
 	var version: int = int(profile.get("schema_version", 1))
 	if version >= Catalog.SCHEMA_VERSION:
@@ -55,6 +58,16 @@ static func migrate(source: Dictionary) -> Dictionary:
 	profile.catalog_version = Catalog.CATALOG_VERSION
 	profile = normalize_integrity(profile)
 	return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile))))
+
+## Pure compatibility status used before any local migration or save write.
+static func compatibility(source: Dictionary) -> Dictionary:
+	var version: int = int(source.get("schema_version", 1))
+	if version > Catalog.SCHEMA_VERSION:
+		return {"compatible":false, "state":"future_schema", "schema_version":version, "supported_schema":Catalog.SCHEMA_VERSION, "message":"This save was created by a newer PrintForge build. It is open read-only and has not been changed."}
+	return {"compatible":true, "state":"ready", "schema_version":version, "supported_schema":Catalog.SCHEMA_VERSION, "message":""}
+
+static func is_future_schema(source: Dictionary) -> bool:
+	return int(source.get("schema_version", 1)) > Catalog.SCHEMA_VERSION
 
 ## Current-schema saves can still contain interrupted or hand-edited local data.
 ## This pass is deliberately conservative: it preserves catalog-valid records,

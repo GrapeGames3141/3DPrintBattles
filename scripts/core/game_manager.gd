@@ -6,9 +6,19 @@ const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 signal profile_changed
 signal toast_requested(message: String)
 var profile: Dictionary = {}
+var save_compatibility: Dictionary = {"compatible":true, "state":"ready", "message":""}
 
 func _ready() -> void:
-	profile = SaveService.load_profile()
+	_initialize_loaded_profile(SaveService.load_profile())
+
+## Kept narrow and callable by isolated save-compatibility tests. It is the only
+## bootstrap path that is allowed to migrate or persist a loaded profile.
+func _initialize_loaded_profile(loaded: Dictionary) -> void:
+	save_compatibility = ProfileRules.compatibility(loaded)
+	if not bool(save_compatibility.get("compatible", true)):
+		profile = loaded.duplicate(true)
+		return
+	profile = loaded.duplicate(true)
 	if profile.is_empty():
 		profile = ProfileRules.new_profile()
 		SaveService.commit_snapshot(profile)
@@ -19,7 +29,14 @@ func _ready() -> void:
 			SaveService.commit_snapshot(profile)
 	apply_android_review_coin_floor(OS.has_feature("android_review"))
 
+func is_save_read_only() -> bool:
+	return not bool(save_compatibility.get("compatible", true))
+
+func save_recovery_message() -> String:
+	return str(save_compatibility.get("message", ""))
+
 func apply_android_review_coin_floor(review_enabled: bool) -> bool:
+	if is_save_read_only(): return false
 	var result := ReviewBuildRules.apply_coin_floor(profile, review_enabled)
 	if not bool(result.get("ok", false)):
 		return false
@@ -34,6 +51,7 @@ func has_selected_starter() -> bool:
 	return ProfileRules.has_starter(profile)
 
 func choose_starter(creature_id: String) -> bool:
+	if _reject_read_only(): return false
 	var result := ProfileRules.choose_starter(profile, creature_id)
 	if not bool(result.ok):
 		toast_requested.emit(str(result.error))
@@ -56,6 +74,7 @@ func active_deck_cards() -> Array:
 	return ProgressionRules.active_deck(profile)
 
 func daily_shop(day_key: String) -> Array:
+	if _reject_read_only(): return []
 	var result := ProgressionRules.daily_shop(profile, day_key)
 	if not bool(result.ok): toast_requested.emit(str(result.error)); return []
 	profile = result.profile
@@ -84,11 +103,13 @@ func filament_cap() -> int:
 	return clampi(int(profile.spool_level), 3, 10)
 
 func earn_coins(amount: int, reason: String) -> void:
+	if _reject_read_only(): return
 	if amount <= 0: return
 	profile.coins = int(profile.coins) + amount
 	mutated("earn_coins", {"amount":amount,"reason":reason})
 
 func spend_coins(amount: int, reason: String) -> bool:
+	if _reject_read_only(): return false
 	if amount <= 0 or int(profile.coins) < amount:
 		toast_requested.emit("Not enough Forge Coins.")
 		return false
@@ -97,6 +118,7 @@ func spend_coins(amount: int, reason: String) -> bool:
 	return true
 
 func award_battle(win: bool) -> void:
+	if _reject_read_only(): return
 	var coins: int = 20 if win else 8
 	var xp: int = 30 if win else 10
 	profile.coins = int(profile.coins) + coins
@@ -107,12 +129,14 @@ func award_battle(win: bool) -> void:
 	mutated("battle_reward", {"win":win,"coins":coins,"xp":xp})
 
 func claim_battle_reward(state: BattleState) -> bool:
+	if _reject_read_only(): return false
 	if not state.finished or state.reward_claimed: return false
 	state.reward_claimed = true
 	award_battle(state.winner == 0)
 	return true
 
 func complete_workshop_job(performance: int, day_key: String = "") -> int:
+	if _reject_read_only(): return 0
 	# Non-educational calibration/pattern job. The pure rules own rollover/limits;
 	# UI supplies the day, while legacy callers safely use the local calendar.
 	var resolved_day := Time.get_date_string_from_system() if day_key.is_empty() else day_key
@@ -125,6 +149,7 @@ func complete_workshop_job(performance: int, day_key: String = "") -> int:
 	return int(result.payload.reward)
 
 func visit_print_yard(day_key: String = "", drill_id: String = "field_practice") -> int:
+	if _reject_read_only(): return 0
 	var resolved_day := Time.get_date_string_from_system() if day_key.is_empty() else day_key
 	var result := ProgressionRules.visit_print_yard(profile, resolved_day, drill_id)
 	if not bool(result.get("ok", false)):
@@ -137,6 +162,7 @@ func visit_print_yard(day_key: String = "", drill_id: String = "field_practice")
 	return int(result.payload.get("xp", 0))
 
 func consume_solo_spool_warmup() -> int:
+	if _reject_read_only(): return 0
 	var result := ProgressionRules.consume_spool_warmup(profile)
 	if not bool(result.get("ok", false)): return 0
 	var bonus := int(result.get("payload", {}).get("bonus", 0))
@@ -188,6 +214,7 @@ func campaign_encounter_state(encounter_id: String) -> Dictionary:
 	return CAMPAIGN_RULES.encounter_state(profile, encounter_id)
 
 func claim_campaign_victory(encounter_id: String, turns: int) -> bool:
+	if _reject_read_only(): return false
 	var result := CAMPAIGN_RULES.claim_victory(profile, encounter_id, turns)
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Workshop Trial reward is unavailable.")))
@@ -210,6 +237,7 @@ func creature_mastery(instance_id: String) -> int:
 	return CAMPAIGN_RULES.mastery_for(profile, instance_id)
 
 func apply_transition(result: Dictionary, kind: String) -> bool:
+	if _reject_read_only(): return false
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "That action is unavailable.")))
 		return false
@@ -218,6 +246,7 @@ func apply_transition(result: Dictionary, kind: String) -> bool:
 	return true
 
 func settle_local_trade(new_profile: Dictionary, audit: Dictionary) -> void:
+	if _reject_read_only(): return
 	# The guildmate profile is deliberately session-only; only this local profile persists.
 	profile = new_profile.duplicate(true)
 	mutated("local_trade_settled", audit)
@@ -228,6 +257,12 @@ func _creature_instance(instance_id: String) -> Dictionary:
 	return {}
 
 func mutated(kind: String, payload: Dictionary) -> void:
+	if is_save_read_only(): return
 	profile.revision = int(profile.revision) + 1
 	SaveService.commit_mutation(profile, kind, payload, int(profile.revision))
 	profile_changed.emit()
+
+func _reject_read_only() -> bool:
+	if not is_save_read_only(): return false
+	toast_requested.emit(save_recovery_message())
+	return true

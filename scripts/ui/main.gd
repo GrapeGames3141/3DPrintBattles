@@ -6,6 +6,8 @@ const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/wo
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
+const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
+const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -268,6 +270,9 @@ func render() -> void:
 	root.add_theme_constant_override("separation", 12)
 	margin.add_child(root)
 	render_header(root)
+	if GameManager.is_save_read_only():
+		render_save_recovery(root)
+		return
 	# Battle is a first-fold activity, not a list below a generic scrolling shell.
 	# Give it the remaining safe content area directly so mobile layout cannot
 	# collapse action rows to zero height before the scroll container settles.
@@ -324,6 +329,14 @@ func focus_first_button() -> void:
 			button.grab_focus()
 			return
 
+func render_save_recovery(root: VBoxContainer) -> void:
+	var panel := make_panel(Color("2f1f2be8"), Color("ffaaa1"))
+	root.add_child(panel.get_parent())
+	panel.add_child(label("Save opened read-only", 25, Color("ffcfbf")))
+	panel.add_child(label(GameManager.save_recovery_message(), 17, Color("fff3df")))
+	panel.add_child(label("Install the newer build that created this save, or copy the profile and backup files before trying an older build. This session has not changed your local save.", 15, Color("dce8f4")))
+	panel.add_child(label("No workshop, battle, or purchase actions are available while compatibility is blocked.", 14, Color("b9d3e8")))
+
 func render_header(root: VBoxContainer) -> void:
 	var header_box := PanelContainer.new()
 	header_box.name = "WorkshopHeader"
@@ -342,7 +355,15 @@ func render_header(root: VBoxContainer) -> void:
 	header.add_child(titles)
 	titles.add_child(label("PRINTFORGE LEGENDS", 29, Color("ffd36c")))
 	titles.add_child(label("Makers Guild Workshop", 14, Color("9beaff")))
-	if GameManager.has_selected_starter():
+	if GameManager.is_save_read_only():
+		var compatibility := label("READ-ONLY COMPATIBILITY MODE\nSave schema is newer than this build", 15, Color("ffcfbf"))
+		compatibility.name = "ReadOnlyCompatibilityHeader"
+		compatibility.custom_minimum_size = Vector2(0 if portrait else 250, 40 if portrait else 58)
+		compatibility.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
+		compatibility.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
+		compatibility.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		header.add_child(compatibility)
+	elif GameManager.has_selected_starter():
 		var account := label("Forge Coins  %d\nSpool  %d / 10" % [int(GameManager.profile.coins), GameManager.filament_cap()], 16, Color("d6f7ff"))
 		account.custom_minimum_size = Vector2(0 if portrait else 190, 40 if portrait else 58)
 		account.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
@@ -1631,8 +1652,8 @@ func render_deck() -> void:
 		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0)); var copies: int = deck_draft.count(card_id)
 		if owned <= 0: continue
 		var row := HBoxContainer.new(); panel.add_child(row)
-		var effect_copy := support_card_effect_text(card)
-		var info := label("%s | %d Filament | %s | Target: %s | owned %d | slot %d" % [str(card.name), int(card.get("cost", 0)), effect_copy, support_card_target_text(card), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
+		var effect_copy := SUPPORT_CARD_PRESENTER.effect_text(card)
+		var info := label("%s | %d Filament | %s | Target: %s | owned %d | slot %d" % [str(card.name), int(card.get("cost", 0)), effect_copy, SUPPORT_CARD_PRESENTER.target_text(card), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
 		var remove_card := make_button("-", change_deck_draft.bind(card_id, false), Color("536c8d"))
 		remove_card.name = "DeckRemove%s" % card_id.capitalize()
 		row.add_child(remove_card)
@@ -2040,7 +2061,7 @@ func render_battle_hand_tab(panel: Container) -> void:
 		var definition := Catalog.support_card(str(card_id))
 		var cost: int = int(definition.get("cost", 0))
 		var legal := int(battle.players[0].get("filament", 0)) >= cost
-		var detail := "%s x%d | %d Filament | %s | Target: %s" % [str(definition.get("name", card_id)), int(counts[card_id]), cost, support_card_effect_text(definition), support_card_target_text(definition)]
+		var detail := "%s x%d | %d Filament | %s | Target: %s" % [str(definition.get("name", card_id)), int(counts[card_id]), cost, SUPPORT_CARD_PRESENTER.effect_text(definition), SUPPORT_CARD_PRESENTER.target_text(definition)]
 		var reason := "" if legal else " | Needs %d more Filament" % (cost - int(battle.players[0].get("filament", 0)))
 		var card := make_button(detail + reason, submit_battle_card.bind(str(card_id)), Color("526e93"))
 		card.name = "BattleCard%s" % str(card_id).capitalize()
@@ -2051,31 +2072,8 @@ func submit_battle_card(card_id: String) -> void:
 	_audio_director.cue("card")
 	intent({"type":"card","card_id":card_id})
 
-func support_card_target_text(definition: Dictionary) -> String:
-	return "Foe active print" if str(definition.get("effect", "")) in ["debuff", "ability_lock"] else "Your active print"
-
-func support_card_effect_text(definition: Dictionary) -> String:
-	var effect := str(definition.get("effect", ""))
-	var amount := int(definition.get("amount", 0))
-	match effect:
-		"filament": return "Gain %d Filament" % amount
-		"heal": return "Restore %d HP" % amount
-		"shield": return "Gain %d shield" % amount
-		"attack_buff": return "Gain +%d Attack" % amount
-		"cooldown": return "Reduce signature cooldown by %d" % amount
-		"draw": return "Draw %d support card%s" % [amount, "s" if amount != 1 else ""]
-		"switch_discount": return "Next switch costs %d less" % amount
-		"debuff": return "Foe loses %d Attack and signature locks 1 turn" % amount
-		"cleanse": return "Cleanse debuffs"
-	return "Catalog effect unavailable"
-
 func battle_feedback_text() -> String:
-	var cue := _audio_director.last_caption.replace("Battle cue: ", "").replace("Impact: ", "").replace("Support card: ", "")
-	if battle_last_event.is_empty(): return "Outcome: choose a move. Cue: " + cue
-	var you := battle.active_unit(0)
-	var rival := battle.active_unit(1)
-	var action := battle_last_event.replace("_", " ").capitalize()
-	return "Outcome: %s. You %d/%d; Rival %d/%d HP; Shield %d/%d. Cue: %s" % [action, int(you.get("hp", 0)), int(you.get("max_hp", 0)), int(rival.get("hp", 0)), int(rival.get("max_hp", 0)), int(you.get("shield", 0)), int(rival.get("shield", 0)), cue]
+	return BATTLE_FEEDBACK_PRESENTER.format(battle, battle_last_event, _audio_director.last_caption)
 
 func render_battle_details_tab(panel: Container) -> void:
 	for player in [1, 0]:
