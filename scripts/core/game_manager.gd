@@ -1,4 +1,6 @@
 extends Node
+
+const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 ## Account state facade. All mutations pass through SaveService journal entries.
 
 signal profile_changed
@@ -157,6 +159,31 @@ func reassign_armor(creature_instance_id: String, armor_instance_id: String) -> 
 
 func training_opponent(day_key: String) -> Array:
 	return ProgressionRules.training_opponent(day_key, current_team_creature_ids())
+
+func campaign_encounter_state(encounter_id: String) -> Dictionary:
+	return CAMPAIGN_RULES.encounter_state(profile, encounter_id)
+
+func claim_campaign_victory(encounter_id: String, turns: int) -> bool:
+	var result := CAMPAIGN_RULES.claim_victory(profile, encounter_id, turns)
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "Workshop Trial reward is unavailable.")))
+		return false
+	profile = result.profile
+	var payload: Dictionary = result.payload
+	if not bool(payload.get("first_clear", false)) and not bool(payload.get("best_improved", false)):
+		# A completed replay with an equal/worse turn count is a true no-op: it
+		# neither journals nor bumps revision, but the result screen may return.
+		profile_changed.emit()
+		return true
+	if not bool(payload.get("first_clear", false)):
+		toast_requested.emit("New Workshop Trial best: %d turns. No additional rewards were granted." % int(payload.get("turns", 0)))
+	if int(payload.get("spool_gained", 0)) > 0:
+		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
+	mutated("workshop_trial_victory" if bool(payload.get("first_clear", false)) else "workshop_trial_best_turn", payload)
+	return true
+
+func creature_mastery(instance_id: String) -> int:
+	return CAMPAIGN_RULES.mastery_for(profile, instance_id)
 
 func apply_transition(result: Dictionary, kind: String) -> bool:
 	if not bool(result.get("ok", false)):

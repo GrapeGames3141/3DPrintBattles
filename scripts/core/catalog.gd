@@ -1,8 +1,8 @@
 extends Node
 ## Immutable launch catalog. Runtime objects store IDs only, never presentation nodes.
 
-const SCHEMA_VERSION := 4
-const CATALOG_VERSION := "0.2.0"
+const SCHEMA_VERSION := 5
+const CATALOG_VERSION := "0.3.0"
 const RARITIES := [
 	{"id":"common", "name":"Common", "color":"#b7bcc7", "weight_bps":4500, "blueprint":50, "print":20},
 	{"id":"uncommon", "name":"Uncommon", "color":"#66d17a", "weight_bps":2500, "blueprint":120, "print":40},
@@ -70,9 +70,59 @@ const SUPPORT_CARDS := [
 	{"id":"spool_siphon","name":"Spool Siphon","cost":2,"effect":"debuff","amount":1}, {"id":"soft_reset","name":"Soft Reset","cost":2,"effect":"cleanse","amount":1}, {"id":"print_preview","name":"Print Preview","cost":1,"effect":"draw","amount":1}, {"id":"anchor_bolt","name":"Anchor Bolt","cost":1,"effect":"shield","amount":5}, {"id":"final_pass","name":"Final Pass","cost":3,"effect":"attack_buff","amount":7}
 ]
 
+## Fixed Workshop Trial content. These are deterministic authored encounters,
+## not a loot table: profile state stores only stable IDs and completion data.
+const WORKSHOP_TRIAL_TIERS := [
+	{"tier":1,"id":"first_layers","name":"First Layers","encounters":[
+		{"id":"first_layers_1","name":"Warm Nozzle","team":["mossmunk"],"spool":3,"ai":"Apprentice","boss":false},
+		{"id":"first_layers_2","name":"Coolant Check","team":["aquafin"],"spool":3,"ai":"Apprentice","boss":false},
+		{"id":"first_layers_3","name":"Static Test","team":["voltwig"],"spool":3,"ai":"Apprentice","boss":false},
+		{"id":"first_layers_boss","name":"Layer Captain","team":["cinderpaw","mossmunk","aquafin"],"spool":4,"ai":"Apprentice","boss":true}
+	]},
+	{"tier":2,"id":"element_bench","name":"Element Bench","encounters":[
+		{"id":"element_bench_1","name":"Frost Fixture","team":["frostling","galehopper"],"spool":4,"ai":"Apprentice","boss":false},
+		{"id":"element_bench_2","name":"Stone Fixture","team":["stoneback","sparkotter"],"spool":4,"ai":"Craftsman","boss":false},
+		{"id":"element_bench_3","name":"Wind Fixture","team":["galehopper","frostling"],"spool":4,"ai":"Craftsman","boss":false},
+		{"id":"element_bench_boss","name":"Element Foreman","team":["frostling","stoneback","sparkotter"],"spool":5,"ai":"Craftsman","boss":true}
+	]},
+	{"tier":3,"id":"reinforced_run","name":"Reinforced Run","encounters":[
+		{"id":"reinforced_run_1","name":"Glass Gauge","team":["glassdrake","coralisk"],"spool":5,"ai":"Craftsman","boss":false},
+		{"id":"reinforced_run_2","name":"Rune Gauge","team":["runestag","brambleowl"],"spool":5,"ai":"Craftsman","boss":false},
+		{"id":"reinforced_run_3","name":"Infill Gauge","team":["ironmaw","aurorawing"],"spool":5,"ai":"Craftsman","boss":false},
+		{"id":"reinforced_run_boss","name":"Reinforced Marshal","team":["glassdrake","runestag","ironmaw"],"spool":6,"ai":"Craftsman","boss":true}
+	]},
+	{"tier":4,"id":"masterwork_circuit","name":"Masterwork Circuit","encounters":[
+		{"id":"masterwork_circuit_1","name":"Crown Circuit","team":["coalgriffin","tidewhale","skyforge"],"spool":6,"ai":"Master","boss":false},
+		{"id":"masterwork_circuit_2","name":"Prism Circuit","team":["pyraxis","verdantitan","miragefox"],"spool":6,"ai":"Master","boss":false},
+		{"id":"masterwork_circuit_3","name":"Void Circuit","team":["voidmanta","coalgriffin","skyforge"],"spool":6,"ai":"Master","boss":false},
+		{"id":"masterwork_circuit_boss","name":"Masterwork Warden","team":["tidewhale","pyraxis","voidmanta"],"spool":7,"ai":"Master","boss":true}
+	]},
+	{"tier":5,"id":"primordial_proof","name":"Primordial Proof","encounters":[
+		{"id":"primordial_proof_1","name":"World Proof","team":["worldcoil","miragefox","ironmaw"],"spool":7,"ai":"Master","boss":false},
+		{"id":"primordial_proof_2","name":"Star Proof","team":["starloom","voidmanta","verdantitan"],"spool":7,"ai":"Master","boss":false},
+		{"id":"primordial_proof_3","name":"Prime Proof","team":["worldcoil","starloom","pyraxis"],"spool":8,"ai":"Master","boss":false},
+		{"id":"primordial_proof_boss","name":"Primordial Keeper","team":["worldcoil","starloom","voidmanta"],"spool":8,"ai":"Master","boss":true}
+	]}
+]
+
 func creature(id: String) -> Dictionary:
 	for item in CREATURES:
 		if item.id == id: return item.duplicate(true)
+	return {}
+
+func workshop_trial_tier(tier_number: int) -> Dictionary:
+	for tier in WORKSHOP_TRIAL_TIERS:
+		if int(tier.get("tier", 0)) == tier_number: return tier.duplicate(true)
+	return {}
+
+func workshop_trial_encounter(encounter_id: String) -> Dictionary:
+	for tier in WORKSHOP_TRIAL_TIERS:
+		for encounter in tier.get("encounters", []):
+			if str(encounter.get("id", "")) == encounter_id:
+				var result: Dictionary = encounter.duplicate(true)
+				result["tier"] = int(tier.get("tier", 0))
+				result["tier_name"] = str(tier.get("name", "Workshop Trial"))
+				return result
 	return {}
 
 ## Signature effects are immutable catalog data. Keeping the description derived

@@ -38,6 +38,9 @@ var battle_session_generation := 0
 var battle_concede_armed := false
 var battle_secondary_open := false
 var battle_secondary_tab := "bench"
+var battle_mode := "training"
+var trial_encounter_id := ""
+var battle_ai_difficulty := "Craftsman"
 var local_concede_armed := false
 var local_authority: LocalBattleAuthority
 var local_ready_seat := -1
@@ -285,6 +288,8 @@ func render() -> void:
 		"calibration": render_calibration_bench()
 		"printer": render_printer()
 		"settings": render_settings()
+		"proving": render_proving_door()
+		"trials": render_trials()
 		"local_vs": render_local_vs()
 		"trade": render_local_trade()
 		_: render_workshop()
@@ -396,7 +401,7 @@ func _workshop_views() -> Array:
 		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "description":"The left Arcane Forge holds learned blueprints and printed companions.", "rect":Rect2(0.08, 0.32, 0.28, 0.44), "objects":[{"id":"forge_machine", "name":"Arcane Forge", "description":"Prepare a learned blueprint for a safe, witnessed print.", "target":"printer", "rect":Rect2(0.34, 0.27, 0.36, 0.56)}, {"id":"collection_case", "name":"Collection Case", "description":"Review your learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.08, 0.06, 0.25, 0.66)}]},
 		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"armor_tools", "name":"Armor Tools", "description":"Learn, print, fit, unequip, and reassign armor.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
 		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "description":"Browse fixed daily offers, records, and a local kid-safe trade demo.", "rect":Rect2(0.65, 0.30, 0.23, 0.34), "objects":[{"id":"offer_screen", "name":"Forge Offers", "description":"Review today's deterministic blueprint, card, and armor offers.", "target":"shop", "rect":Rect2(0.57, 0.35, 0.10, 0.29)}, {"id":"forgedex_screen", "name":"Forgedex Terminal", "description":"Track every discovered creature blueprint.", "target":"codex", "rect":Rect2(0.67, 0.35, 0.11, 0.29)}, {"id":"trade_terminal", "name":"Guild Trade Table", "description":"Open a credential-free two-profile escrow demonstration.", "target":"trade", "rect":Rect2(0.78, 0.35, 0.12, 0.29)}]},
-		{"id":"proving", "name":"Proving Door", "callout":"Training and Local Versus", "description":"Step through the center door for a deterministic training rival or private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Training Match", "description":"Face today's deterministic rival with your active team and deck.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
+		{"id":"proving", "name":"Proving Door", "callout":"Daily Training, Trials, Local Versus", "description":"Step through the center door for daily training, ordered Workshop Trials, or a private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Proving Door", "description":"Choose a repeatable daily rival or an ordered Workshop Trial with fixed first-clear rewards.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
 		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "description":"Visit printed companions for one calm, limited XP lesson each day.", "rect":Rect2(0.37, 0.63, 0.27, 0.29), "objects":[{"id":"yard_companions", "name":"Daily Print Yard", "description":"Share today's local filament lesson with your current collection.", "target":"yard", "rect":Rect2(0.31, 0.44, 0.34, 0.28)}]}
 	]
 
@@ -1014,7 +1019,7 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 	tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
 
 func _workshop_action_label(target: String) -> String:
-	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Start Training", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
+	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
 	return str(names.get(target, "Open Station"))
 
 func open_workshop_view(view_id: String) -> void:
@@ -1086,7 +1091,8 @@ func _run_workshop_station(id: String) -> void:
 	match id:
 		"printer": open_printer_picker()
 		"collection", "shop", "codex", "team", "deck", "armor", "settings": navigate_to(id)
-		"proving": start_battle()
+		"proving": navigate_to("proving")
+		"trials": navigate_to("trials")
 		"local_vs": start_local_vs()
 		"trade": local_trade = null; trade_creator_choice = ""; trade_partner_choice = ""; navigate_to("trade")
 		"yard", "calibration": navigate_to(id)
@@ -1210,7 +1216,11 @@ func render_local_trade() -> void:
 func confirm_local_trade(seat: int) -> void:
 	var result := local_trade.confirm(seat, local_trade.creator_revision, local_trade.partner_revision)
 	if not bool(result.ok): _toast(str(result.error)); return
-	if bool(result.get("settled", false)): GameManager.settle_local_trade(result.creator, result.audit)
+	if bool(result.get("settled", false)):
+		# A terminal keyboard/controller action should regain a predictable target.
+		# Ordinary touch-driven drafts deliberately leave focus untouched.
+		_focus_after_render = true
+		GameManager.settle_local_trade(result.creator, result.audit)
 	else: render()
 
 func select_trade_choice(seat: int, instance_id: String) -> void:
@@ -1409,7 +1419,8 @@ func render_collection() -> void:
 			intro.add_child(make_button("Print %s (%d FC)" % [str(blueprint.name), price], func(): open_printer(str(blueprint.id)), Color("a86b2e")))
 	for creature in GameManager.profile.creatures:
 		var row := make_panel(Color("152842e8"), Color("5e99b4")); body.add_child(row.get_parent())
-		row.add_child(label("%s  •  %s%s" % [str(Catalog.creature(str(creature.creature_id)).name), "Bound" if bool(creature.get("bound", false)) else "Printed", "  • Armor: %s" % str(creature.armor_id) if not str(creature.get("armor_id", "")).is_empty() else ""], 16, Color("dce8f4")))
+		var instance_id := str(creature.get("instance_id", ""))
+		row.add_child(label("%s - %s%s - Mastery %d" % [str(Catalog.creature(str(creature.creature_id)).name), "Bound" if bool(creature.get("bound", false)) else "Printed", " - Armor: %s" % str(creature.armor_id) if not str(creature.get("armor_id", "")).is_empty() else "", GameManager.creature_mastery(instance_id)], 16, Color("dce8f4")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_team() -> void:
@@ -1421,7 +1432,8 @@ func render_team() -> void:
 		var instance_id := str(creature.get("instance_id", ""))
 		if instance_id.is_empty(): continue
 		var selected: bool = instance_id in team_draft
-		intro.add_child(make_button(("Remove " if selected else "Add ") + str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown")), toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
+		var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
+		intro.add_child(make_button(("Remove " if selected else "Add ") + "%s (Mastery %d)" % [creature_name, GameManager.creature_mastery(instance_id)], toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
 	intro.add_child(make_button("Save Team", save_team_draft, Color("a86b2e")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
@@ -1566,10 +1578,80 @@ func render_codex() -> void:
 		var known: bool = creature.id in GameManager.profile.discovered
 		var card := make_panel(Color("152842e8"), Color(Catalog.rarity(creature.rarity).color if known else "4b5d72")); grid.add_child(card.get_parent())
 		card.add_child(label(str(creature.name) if known else "???", 17, Color(Catalog.rarity(creature.rarity).color if known else "8492a1")))
-		card.add_child(label("%s • %d bends" % [creature.element, int(creature.bend)] if known else "Undiscovered", 13, Color("dce8f4")))
+		var mastery_total := 0
+		for owned in GameManager.profile.get("creatures", []):
+			if owned is Dictionary and str(owned.get("creature_id", "")) == str(creature.id): mastery_total += GameManager.creature_mastery(str(owned.get("instance_id", "")))
+		card.add_child(label("%s - %d bends - Mastery %d" % [creature.element, int(creature.bend), mastery_total] if known else "Undiscovered", 13, Color("dce8f4")))
 		if known:
 			card.add_child(label("%s: %s" % [str(creature.ability), Catalog.signature_description(str(creature.id))], 12, Color("b9d3e8")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func render_proving_door() -> void:
+	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
+	panel.add_child(label("Proving Door", 25, Color("ffd36c")))
+	panel.add_child(label("Choose a repeatable daily sparring match, a fixed Workshop Trial ladder, or a private local match.", 15, Color("dce8f4")))
+	panel.add_child(label("Daily Training", 20, Color("8deaff")))
+	panel.add_child(label("Today\'s deterministic rival changes by date. Wins grant 20 Forge Coins and 30 XP; defeats grant 8 Forge Coins and 10 XP.", 14, Color("dce8f4")))
+	panel.add_child(make_button("Start Daily Training", start_battle, Color("2f93a8")))
+	panel.add_child(label("Workshop Trials", 20, Color("ffd36c")))
+	var campaign: Dictionary = GameManager.profile.get("solo_campaign", {})
+	panel.add_child(label("Five authored tiers, 20 fixed encounters. Tier %d is currently available; first clears grant one-time coins, XP, and team mastery." % int(campaign.get("unlocked_tier", 1)), 14, Color("dce8f4")))
+	var trials := make_button("Browse Workshop Trials", navigate_to.bind("trials"), Color("a86b2e"))
+	trials.name = "OpenWorkshopTrials"
+	panel.add_child(trials)
+	panel.add_child(make_button("Start Local Versus", start_local_vs, Color("526e93")))
+	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func render_trials() -> void:
+	var intro := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(intro.get_parent())
+	intro.add_child(label("Workshop Trials", 25, Color("ffd36c")))
+	intro.add_child(label("Each tier unlocks in order. Clear three encounters, then the boss, to open the next workshop test. First-clear rewards are claimed only on victory.", 15, Color("dce8f4")))
+	for tier in Catalog.WORKSHOP_TRIAL_TIERS:
+		var tier_number: int = int(tier.get("tier", 0))
+		var card := make_panel(Color("142b42e8"), Color("f1be69") if tier_number <= int(GameManager.profile.get("solo_campaign", {}).get("unlocked_tier", 1)) else Color("536273"))
+		body.add_child(card.get_parent())
+		card.add_child(label("Tier %d - %s" % [tier_number, str(tier.get("name", "Workshop Trial"))], 20, Color("ffd36c")))
+		for encounter in tier.get("encounters", []):
+			var encounter_id := str(encounter.get("id", ""))
+			var state := GameManager.campaign_encounter_state(encounter_id)
+			var unlocked: bool = bool(state.get("unlocked", false))
+			var completed: bool = bool(state.get("completed", false))
+			var reward: Dictionary = state.get("reward", {})
+			var rival_names: Array[String] = []
+			for creature_id in encounter.get("team", []): rival_names.append(str(Catalog.creature(str(creature_id)).get("name", creature_id)))
+			var best_turns: int = int(GameManager.profile.get("solo_campaign", {}).get("best_turn_counts", {}).get(encounter_id, 0))
+			var status_text := ("Complete - best %d turns" % best_turns) if completed and best_turns > 0 else ("Complete" if completed else ("Ready" if unlocked else "Locked - clear the prior encounter"))
+			card.add_child(label("%s%s - %s" % ["Boss: " if bool(encounter.get("boss", false)) else "", str(encounter.get("name", "Encounter")), status_text], 16, Color("a8e3a5") if completed else (Color("dce8f4") if unlocked else Color("8492a1"))))
+			card.add_child(label("Rival: %s | %s AI | spool %d" % [", ".join(rival_names), str(encounter.get("ai", "Apprentice")), int(encounter.get("spool", 3))], 13, Color("b9d3e8")))
+			card.add_child(label("First clear: %d Forge Coins, %d XP, +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))], 13, Color("fff0a1")))
+			var start := make_button("Replay %s" % str(encounter.get("name", "Trial")) if completed else "Start %s" % str(encounter.get("name", "Trial")), start_trial.bind(encounter_id), Color("588d73") if completed else Color("a86b2e"))
+			start.name = "TrialStart%s" % encounter_id
+			start.disabled = not unlocked
+			card.add_child(start)
+	body.add_child(make_button("Back to Proving Door", navigate_to.bind("proving"), Color("536c8d")))
+
+func start_trial(encounter_id: String) -> void:
+	var state := GameManager.campaign_encounter_state(encounter_id)
+	if not bool(state.get("ok", false)) or not bool(state.get("unlocked", false)):
+		_toast(str(state.get("error", "Clear the earlier Workshop Trial encounters first.")))
+		return
+	var player_team := GameManager.current_team_loadout()
+	if player_team.is_empty():
+		_toast("Your training team is incomplete. Choose a ready print in Team Builder.")
+		return
+	var encounter: Dictionary = state["encounter"]
+	battle_session_generation += 1
+	ai_pending = false
+	battle = BattleState.create(player_team, encounter.get("team", []), GameManager.filament_cap(), int(encounter.get("spool", 3)), _trial_seed(encounter_id), GameManager.active_deck_cards())
+	if not battle.validation_error(true).is_empty():
+		_toast(battle.validation_error(true)); battle = null; return
+	battle_mode = "trial"
+	trial_encounter_id = encounter_id
+	battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
+	battle_last_event = ""; battle_last_actor = 0; battle_concede_armed = false; battle_secondary_open = false; battle_secondary_tab = "bench"
+	if screen == "workshop": workshop_return_view = workshop_view
+	screen = "battle"
+	render()
 
 func start_battle() -> void:
 	var player_team := GameManager.current_team_loadout()
@@ -1589,6 +1671,9 @@ func start_battle() -> void:
 		return
 	battle_last_event = ""
 	battle_last_actor = 0
+	battle_mode = "training"
+	trial_encounter_id = ""
+	battle_ai_difficulty = str(settings().get("ai_difficulty", "Craftsman"))
 	battle_concede_armed = false
 	battle_secondary_open = false
 	battle_secondary_tab = "bench"
@@ -1599,6 +1684,11 @@ func start_battle() -> void:
 func _training_seed(day_key: String) -> int:
 	var seed := 0
 	for byte in day_key.to_utf8_buffer(): seed = (seed * 31 + int(byte)) % 2147483647
+	return seed
+
+func _trial_seed(encounter_id: String) -> int:
+	var seed := 97
+	for byte in encounter_id.to_utf8_buffer(): seed = (seed * 31 + int(byte)) % 2147483647
 	return seed
 
 func render_battle_fullscreen(host: Container) -> void:
@@ -1625,7 +1715,10 @@ func render_battle_fullscreen(host: Container) -> void:
 	status = label("", 14, Color("fff0a1"))
 	status.name = "BattleStatus"
 	intro.add_child(status)
-	intro.add_child(label("Proving Grounds - %s" % ("Your turn" if battle.active_player == 0 else "Rival is thinking"), 22, Color("ffd36c")))
+	var battle_title := "Proving Grounds"
+	if battle_mode == "trial" and not trial_encounter_id.is_empty():
+		battle_title += " - Trial: %s" % str(Catalog.workshop_trial_encounter(trial_encounter_id).get("name", "Workshop Trial"))
+	intro.add_child(label("%s - %s" % [battle_title, "Your turn" if battle.active_player == 0 else "Rival is thinking"], 22, Color("ffd36c")))
 	var compact_secondary := battle_secondary_open and not is_portrait_layout()
 	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 188 if is_portrait_layout() else (96 if compact_secondary else 172))
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
@@ -1634,8 +1727,13 @@ func render_battle_fullscreen(host: Container) -> void:
 		render_battle_action_dock(intro)
 		render_battle_secondary(intro)
 	if battle.finished:
-		intro.add_child(label("%s - Core Printer status resolved." % ("Victory!" if battle.winner == 0 else "Defeat."), 22, Color("ffd36c")))
-		intro.add_child(make_button("Return to Workshop", func(): GameManager.claim_battle_reward(battle); screen="workshop"; render()))
+		var outcome := "Victory!" if battle.winner == 0 else "Defeat."
+		intro.add_child(label("%s - Core Printer status resolved." % outcome, 22, Color("ffd36c")))
+		if battle_mode == "trial" and not trial_encounter_id.is_empty():
+			var trial_state := GameManager.campaign_encounter_state(trial_encounter_id)
+			var reward: Dictionary = trial_state.get("reward", {})
+			intro.add_child(label("Workshop Trial: %s\n%s" % [str(trial_state.get("encounter", {}).get("name", "Encounter")), "Victory claims %d Forge Coins, %d XP, and +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))] if battle.winner == 0 else "Defeats do not grant a Workshop Trial first-clear reward."], 15, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
+		intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Proving Door", finish_battle, Color("536c8d")))
 		return
 	# Portrait has room for the always-visible status summary. On compact
 	# landscape, let the presentation use that room so the first fold remains
@@ -1829,6 +1927,27 @@ func submit_battle_action(action_type: String) -> void:
 func submit_battle_switch(bench_index: int) -> void:
 	intent({"type":"switch", "index":bench_index})
 
+func finish_battle() -> void:
+	if battle == null or not battle.finished: return
+	var finished_state: BattleState = battle
+	var finished_mode := battle_mode
+	var finished_trial := trial_encounter_id
+	var won: bool = battle.winner == 0
+	var turns: int = battle.turn
+	battle_session_generation += 1
+	ai_pending = false
+	battle = null
+	battle_mode = "training"
+	trial_encounter_id = ""
+	battle_ai_difficulty = str(settings().get("ai_difficulty", "Craftsman"))
+	screen = "trials" if finished_mode == "trial" else "proving"
+	if finished_mode == "trial" and won and not finished_trial.is_empty():
+		if not GameManager.claim_campaign_victory(finished_trial, turns): render()
+	elif finished_mode == "training":
+		if not GameManager.claim_battle_reward(finished_state): render()
+	else:
+		render()
+
 func intent(action: Dictionary) -> void:
 	if str(action.get("type", "")) != "concede": battle_concede_armed = false
 	var result := BattleRules.apply_intent(battle, 0, action)
@@ -1867,7 +1986,7 @@ func run_ai(expected_state: BattleState = null, expected_generation := -1) -> vo
 		return
 	ai_pending = false
 	if battle == null or screen != "battle" or battle.active_player != 1 or battle.finished: return
-	var applied := AIOpponent.choose_intent(battle, str(settings().get("ai_difficulty", "Craftsman")))
+	var applied := AIOpponent.choose_intent(battle, battle_ai_difficulty)
 	var result := BattleRules.apply_intent(battle, 1, applied)
 	if not result.ok and battle.active_player == 1 and not battle.finished:
 		applied = {"type":"defend"}

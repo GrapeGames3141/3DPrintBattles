@@ -1,11 +1,13 @@
 class_name ProfileRules
 extends RefCounted
+
+const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 ## Pure profile transitions: safe to test without FileAccess or autoload state.
 
 const STARTER_IDS: Array[String] = ["cinderpaw", "aquafin", "voltwig"]
 
 static func new_profile() -> Dictionary:
-	return AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields({
+	return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields({
 		"schema_version": Catalog.SCHEMA_VERSION,
 		"catalog_version": Catalog.CATALOG_VERSION,
 		"revision": 0,
@@ -23,7 +25,7 @@ static func new_profile() -> Dictionary:
 		"last_job_day": "",
 		"shop": {},
 		"server_revision": 0
-	}))
+	})))
 
 static func migrate(source: Dictionary) -> Dictionary:
 	var profile: Dictionary = source.duplicate(true)
@@ -34,7 +36,7 @@ static func migrate(source: Dictionary) -> Dictionary:
 		# Signature definitions are catalog-only; preserve every saved ID/value while
 		# recording that this local profile now resolves the current catalog version.
 		profile["catalog_version"] = Catalog.CATALOG_VERSION
-		return AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile)))
+		return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile))))
 	# Schema 1 granted all three starters. Preserve every inventory record, then mark
 	# the legacy account as already onboarded to prevent an extra starter grant.
 	if version <= 1:
@@ -52,7 +54,7 @@ static func migrate(source: Dictionary) -> Dictionary:
 	profile.schema_version = Catalog.SCHEMA_VERSION
 	profile.catalog_version = Catalog.CATALOG_VERSION
 	profile = normalize_integrity(profile)
-	return AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile)))
+	return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile))))
 
 ## Current-schema saves can still contain interrupted or hand-edited local data.
 ## This pass is deliberately conservative: it preserves catalog-valid records,
@@ -177,7 +179,7 @@ static func choose_starter(source: Dictionary, creature_id: String) -> Dictionar
 	profile.creatures.append({"instance_id":instance_id, "creature_id":creature_id, "armor_id":"", "bound":true, "tradable":false, "source":"starter"})
 	profile.team = [instance_id]
 	profile.onboarding = {"state":"complete", "starter_id":creature_id, "starter_instance_id":instance_id}
-	profile = AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, true))
+	profile = CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, true)))
 	profile.schema_version = Catalog.SCHEMA_VERSION
 	profile.catalog_version = Catalog.CATALOG_VERSION
 	return {"ok":true, "profile":profile, "instance_id":instance_id}

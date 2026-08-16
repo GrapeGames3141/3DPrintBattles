@@ -4,10 +4,17 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
-	if mode in ["battle", "battle_review", "battle_secondary", "battle_voidmanta", "high_contrast_battle"]:
+	if mode in ["battle", "battle_review", "battle_secondary", "battle_voidmanta", "high_contrast_battle", "trial_battle"]:
 		main.screen = "battle"
-		var rival := "voidmanta" if mode == "battle_voidmanta" else "mossmunk"
-		main.battle = BattleState.create(GameManager.current_team_loadout(), [rival], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+		if mode == "trial_battle":
+			var encounter := Catalog.workshop_trial_encounter("first_layers_1")
+			main.battle = BattleState.create(GameManager.current_team_loadout(), encounter.get("team", []), GameManager.filament_cap(), int(encounter.get("spool", 3)), 2, GameManager.active_deck_cards())
+			main.battle_mode = "trial"
+			main.trial_encounter_id = "first_layers_1"
+			main.battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
+		else:
+			var rival := "voidmanta" if mode == "battle_voidmanta" else "mossmunk"
+			main.battle = BattleState.create(GameManager.current_team_loadout(), [rival], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
 		main.battle_secondary_open = mode == "battle_secondary"
 		return true
 	if mode == "local_vs":
@@ -46,6 +53,9 @@ static func configure_forge(main, mode: String) -> bool:
 	return true
 
 static func configure_workshop(main, mode: String) -> bool:
+	if mode == "trials":
+		main.screen = "trials"
+		return true
 	if mode in ["station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review"]:
 		main.screen = "workshop"
 		main.workshop_view = "maker" if mode == "station_live_maker_team" else "printer"

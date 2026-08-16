@@ -80,6 +80,9 @@
 - [x] **Make XP and spool progress legible and consequential.** The Workshop progression strip and Print Yard show XP/current threshold; `ProgressionRules.grant_xp()` immediately converts threshold crossings into spool capacity used by battle.
   - **Evidence:** the checkpoint-A pure test forces a Print Yard threshold crossing and asserts the spool increase. Broader economy targets remain P3.
 
+- [x] **Add an ordered offline Workshop Trial campaign.** Five authored tiers / 20 fixed encounters now unlock sequentially through `Catalog.WORKSHOP_TRIAL_TIERS` and `CampaignRules`; first clears atomically grant tier-scaled coins, XP, and per-instance current-team mastery, while replay only improves a lower best-turn record.
+  - **Evidence:** `tests/test_campaign_rules.tscn` covers schema migration, locks, rewards, idempotence, replay best turns, boss unlocks, mastery, and fixed boss teams; `tests/test_ui_trials.tscn` covers Proving Door separation, locked/start states, victory return, one revision, and mastery UI. Mastery combat effects and balance tuning remain explicitly out of scope.
+
 - [ ] **Complete opponent/team diversity and balance passes.** Training now uses the deterministic date-keyed `ProgressionRules.training_opponent()` seam rather than one hard-coded rival, with same-day/repeatable variety tests. Every catalog creature now has a deterministic signature and legal Apprentice/Craftsman/Master scoring path, but unlock bands, telemetry, and balance targets are still required.
   - **DoD:** seeded rival roster/team generator covers catalog elements/rarities within intended unlock bands; deterministic fixtures test legal decks/loadouts; balance sheet tracks win rate, turn length, opening fairness, and ability/card usage.
   - **Depends on:** stable XP/spool economy and catalog balance targets.
