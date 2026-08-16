@@ -1,5 +1,46 @@
 # Validation record
 
+## Checkpoint 0.5.19 Android battle export boundary (staging only)
+
+- Phone evidence showed `SoloBattleFactory` receiving canonical IDs
+  Cinderpaw/Brambleowl/Verdantitan while both dictionary and ID-only BattleState
+  construction yielded empty teams. The narrowed root cause was the 0.5.18
+  nested static alias helper resolving `Catalog` before `make_team()` reached
+  its established direct lookup. Alias extraction is now pure data extraction
+  (`creature_id`, `species_id`, `creature`, `species`, then ambiguous `id`),
+  and `make_team()` remains the only catalog validator. Armor aliases follow
+  the same extraction/validation separation. This does not write profiles or
+  relax invalid-team validation.
+- Isolated parser/import PID `24392` exited 0. Focused tests exited 0:
+  Trial launch `17992`, solo factory `13280`, Trials UI `18484`, and Battle
+  rules `22224`. The Trial launch regression proves a three-unit current
+  lineup, legacy aliases, scalar retry, equipped armor, rival construction,
+  no-owned refusal, and that helper extraction preserves even invalid raw
+  strings for the existing `make_team()` catalog rejection boundary.
+- Fresh isolated OpenGL captures were inspected at true `576x1024`:
+  `trials_teamlaunch_576x1024_exportboundary-final.png` (PID `24252`, exit 0)
+  shows the three-name Trial lineup and Start Warm Nozzle; `trial_battle_
+  teamlaunch_576x1024_exportboundary-final.png` (PID `9588`, exit 0) shows a
+  populated Cinderpaw-vs-Mossmunk opening with visible Defend/End Turn. Neither
+  contains an invalid-team toast or clipped action dock.
+- The 24-scene retained suite completed with isolated E app-data: PIDs
+  `23308,23064,5948,20144,15880,18940,23372,10448,24772,10484,17924,25500,
+  1608,18000,12652,21704,21748,25176,21108,5724,15844,19592,10276,17380`,
+  all exit 0. Two UI logs omit `print()` in their log-file but exited cleanly;
+  all other scene logs emitted their PASS marker.
+- Final Android export PID `25636` exited 0. Artifact
+  `build/android/PrintForge-Legends-0.5.19-alpha-battle-export-boundary-
+  arm64.apk` is `105,431,108` bytes, SHA-256
+  `572140B46EEFAF9F399EBE5212333F78226E043A59164A73E73CB5F0017176E2`.
+  `apksigner` verified v2/v3 with the Android Debug certificate. `aapt` listed
+  package `com.tak.printforge.legends.review`, version code `69`, version name
+  `0.5.19-alpha-battle-export-boundary`, SDK 24/36, then returned its known
+  `android:required` manifest-reader warning. Archive audit retained two arm64
+  libraries and BattleState/runtime scripts; backend/tests/tools/tmp/
+  node_modules/.git were absent. The intentionally runtime-used workshop
+  reference import remains under `assets/docs/`. No physical device was
+  attached.
+
 ## Checkpoint 0.5.18 Trial launch canonicalization (staging only)
 
 - The exact screenshot-style Team Builder path was reproduced on baseline with

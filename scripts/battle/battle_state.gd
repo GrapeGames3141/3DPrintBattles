@@ -43,18 +43,22 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 
 static func creature_id_from_entry(entry) -> String:
 	if entry is Dictionary:
-		for key in ["creature_id", "id", "species_id", "creature", "species"]:
+		# Keep alias extraction data-only.  This helper runs beneath the static
+		# launch boundary, where resolving the Catalog autoload in an exported
+		# Android build is not reliable.  make_team() is the one validator below.
+		# `id` is deliberately last because older instance records can use it for
+		# an instance key rather than a creature/species ID.
+		for key in ["creature_id", "species_id", "creature", "species", "id"]:
 			var candidate := str(entry.get(key, ""))
-			if not Catalog.creature(candidate).is_empty(): return candidate
+			if not candidate.is_empty(): return candidate
 		return ""
-	var candidate := str(entry)
-	return candidate if not Catalog.creature(candidate).is_empty() else ""
+	return str(entry)
 
 static func armor_id_from_entry(entry) -> String:
 	if not entry is Dictionary: return ""
 	for key in ["armor_id", "armor", "armor_definition_id"]:
 		var candidate := str(entry.get(key, ""))
-		if not ProgressionRules.armor_def(candidate).is_empty(): return candidate
+		if not candidate.is_empty(): return candidate
 	return ""
 
 static func _valid_supplied_deck(deck: Array) -> bool:

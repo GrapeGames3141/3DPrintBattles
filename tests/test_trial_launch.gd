@@ -73,6 +73,20 @@ func _ready() -> void:
 	var alias_ids: Array[String] = []
 	for unit in aliases.get("team", []): alias_ids.append(str(unit.get("id", "")))
 	require(alias_ids == expected_ids, "BattleState accepts catalog-valid id, species_id, creature, and scalar launch aliases consistently")
+	var scalar_team := BattleState.make_team(expected_ids, 3)
+	var scalar_ids: Array[String] = []
+	for unit in scalar_team.get("team", []): scalar_ids.append(str(unit.get("id", "")))
+	require(scalar_ids == expected_ids and BattleState.create(expected_ids, ["mossmunk"], 3, 3, 2).validation_error(true).is_empty(), "catalog-ID retry inputs construct a valid three-unit player team and rival")
+	# Static alias extractors must not resolve the Catalog singleton. They pass the
+	# raw candidate to make_team(), which retains the existing direct catalog
+	# validation boundary. This mirrors Android exported execution where a nested
+	# static global lookup was observed returning an empty team.
+	require(BattleState.creature_id_from_entry({"creature_id":"cinderpaw", "id":"instance-not-a-species"}) == "cinderpaw" and BattleState.creature_id_from_entry({"species":"brambleowl"}) == "brambleowl" and BattleState.creature_id_from_entry("verdantitan") == "verdantitan", "BattleState alias extraction is data-only and preserves canonical species candidates")
+	require(BattleState.creature_id_from_entry({"id":"unknown-legacy-instance"}) == "unknown-legacy-instance" and BattleState.armor_id_from_entry({"armor_id":"unknown-legacy-armor"}) == "unknown-legacy-armor", "BattleState alias extractors defer invalid catalog rejection to make_team")
+	var equipped_aliases := BattleState.make_team([{"creature_id":"cinderpaw", "armor_id":armor_id}, "brambleowl", {"species":"verdantitan"}], 4)
+	var equipped_ids: Array[String] = []
+	for unit in equipped_aliases.get("team", []): equipped_ids.append(str(unit.get("id", "")))
+	require(equipped_ids == expected_ids and str(equipped_aliases.get("team", [])[0].get("armor_id", "")) == armor_id and int(equipped_aliases.get("team", [])[0].get("max_hp", 0)) == int(Catalog.creature("cinderpaw").get("hp", 0)) + int(ProgressionRules.armor_def(armor_id).get("hp", 0)), "catalog validation still builds equipped aliases while rejecting only invalid data")
 	var no_owned: Dictionary = ProfileRules.new_profile()
 	no_owned["onboarding"] = {"state":"complete", "starter_id":"", "starter_instance_id":""}
 	var refused: Dictionary = SoloBattleFactory.create(no_owned, ["mossmunk"], 3, 3, 2)

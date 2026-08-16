@@ -28,6 +28,13 @@ Workshop Trials show the current Team Builder lineup before Start and provide an
 
 Trial preview and launch now share the same canonical factory lineup. Valid Team Builder order is preserved; the battle boundary also accepts catalog-valid legacy `id`, `species_id`, `creature`, and `species` aliases. If a legacy dictionary construction still cannot validate, the client makes one non-persisting catalog-ID-only retry without optional armor and keeps that recovery notice visible in battle. Settings displays the installed review-build label for support checks.
 
+The Android battle boundary keeps alias extraction data-only, then performs its
+single existing catalog validation inside `BattleState.make_team()`. This avoids
+an exported nested static-helper lookup producing an empty valid team while
+preserving catalog validation, armor modifiers, deterministic order, and the
+non-persisting retry behavior. The current review label is
+`0.5.19-alpha-battle-export-boundary`.
+
 The Armor Forge uses seven processed transparent raw-part textures derived from the approved 4x2 armor atlas. Each remains seated on the Forge bed during the deterministic ten-second layer reveal and three-second completed-part hold; armor completes as a transfer, never as a creature awakening.
 
 The Proving Door deliberately separates repeatable Daily Training from five ordered Workshop Trial tiers: **First Layers**, **Element Bench**, **Reinforced Run**, **Masterwork Circuit**, and **Primordial Proof**. Every tier has three fixed encounters and a three-print boss. First clears use an authored integer reward curve and grant coins, account XP, and mastery to every instance in the currently saved team; duplicate claims cannot grant rewards again. A faster replay can improve only its recorded best turn count. Mastery is per printed instance and is shown in Collection, Team Builder, Forgedex, and Trial rewards; it is presentation/progression only and does not alter combat stats in this build.
