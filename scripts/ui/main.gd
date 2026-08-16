@@ -69,6 +69,7 @@ var overview_layout_portrait := false
 var _workshop_screen_component := WorkshopScreenComponent.new()
 var _battle_screen_component := BattleScreenComponent.new()
 var _forge_screen_component := ArcaneForgeScreenComponent.new()
+var _audio_director := AudioDirector.new()
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -84,6 +85,8 @@ func _ready() -> void:
 	if shop_day_key.is_empty(): shop_day_key = Time.get_date_string_from_system()
 	GameManager.profile_changed.connect(render)
 	GameManager.toast_requested.connect(_toast)
+	add_child(_audio_director)
+	_audio_director.configure(settings(), false)
 	# A capture harness may select a non-default destination before this node enters
 	# the tree. Normal launches use the workshop default and route from profile state.
 	if screen == "workshop": screen = OnboardingState.screen_for_profile(GameManager.profile)
@@ -154,6 +157,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func clear_children(node: Node) -> void:
 	for child in node.get_children():
+		if child == _audio_director: continue
 		node.remove_child(child)
 		child.queue_free()
 
@@ -200,7 +204,9 @@ func make_button(text_value: String, callback: Callable, accent := Color("2f93a8
 	button.gui_input.connect(func(event: InputEvent):
 		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
 			_focus_after_render = true)
-	button.pressed.connect(callback)
+	button.pressed.connect(func():
+		_audio_director.cue("press")
+		callback.call())
 	return button
 
 func workshop_hotspot_style() -> StyleBoxFlat:
@@ -224,6 +230,8 @@ func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	return value
 
 func render() -> void:
+	_audio_director.configure(settings(), printer_capture_freeze or workshop_ambient_capture_freeze)
+	_audio_director.route("battle" if screen in ["battle", "local_vs"] else ("forge" if screen == "printer" else "workshop"))
 	_detach_persistent_screen_components()
 	clear_children(self)
 	var backdrop := TextureRect.new()
@@ -1316,9 +1324,34 @@ func render_settings() -> void:
 		panel.add_child(make_button("Text size %d%%" % (int(scale) / 100), func(): GameManager.save_settings({"text_scale_bps":scale}), Color("588d73") if int(current.text_scale_bps) == int(scale) else Color("2f93a8")))
 	panel.add_child(make_button("High contrast: %s" % ("On" if bool(current.high_contrast) else "Off"), func(): GameManager.save_settings({"high_contrast":not bool(current.high_contrast)})))
 	panel.add_child(make_button("Reduced motion: %s" % ("On" if bool(current.reduced_motion) else "Off"), func(): GameManager.save_settings({"reduced_motion":not bool(current.reduced_motion)})))
+	panel.add_child(label("Audio mix - procedural workshop tones only. Captions remain visible for gameplay cues.", 15, Color("9beaff")))
+	for audio_key in ["master_bps", "music_bps", "sfx_bps"]:
+		var title: String = str({"master_bps":"Master", "music_bps":"Music", "sfx_bps":"SFX"}[audio_key])
+		panel.add_child(label("%s: %s" % [title, AudioSettings.label_for(int(current.get(audio_key, 0)))], 15, Color("dce8f4")))
+		var row := HBoxContainer.new(); panel.add_child(row)
+		row.add_theme_constant_override("separation", 8)
+		var lower := make_button("Lower", adjust_audio_setting.bind(audio_key, -1), Color("536c8d"))
+		lower.name = "Audio%sLower" % title
+		lower.custom_minimum_size = Vector2(120, 48)
+		lower.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		row.add_child(lower)
+		var raise := make_button("Raise", adjust_audio_setting.bind(audio_key, 1), Color("2f93a8"))
+		raise.name = "Audio%sRaise" % title
+		raise.custom_minimum_size = Vector2(120, 48)
+		raise.size_flags_horizontal = Control.SIZE_SHRINK_END
+		row.add_child(raise)
 	for difficulty in AccessibilityRules.DIFFICULTIES:
 		panel.add_child(make_button("Training AI: %s" % difficulty, func(): GameManager.save_settings({"ai_difficulty":difficulty}), Color("588d73") if str(current.ai_difficulty) == difficulty else Color("2f93a8")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func adjust_audio_setting(key: String, direction: int) -> void:
+	var levels: Array[int] = AudioSettings.LEVELS
+	var current: int = int(settings().get(key, 0))
+	var index := levels.find(current)
+	if index < 0: index = levels.find(5000)
+	index = clampi(index + direction, 0, levels.size() - 1)
+	GameManager.save_settings({key:levels[index]})
+	_audio_director.configure(settings(), false)
 
 func open_printer(creature_id: String) -> void:
 	var definition := Catalog.creature(creature_id)
@@ -1598,7 +1631,8 @@ func render_deck() -> void:
 		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0)); var copies: int = deck_draft.count(card_id)
 		if owned <= 0: continue
 		var row := HBoxContainer.new(); panel.add_child(row)
-		var info := label("%s | owned %d | slot %d" % [str(card.name), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
+		var effect_copy := support_card_effect_text(card)
+		var info := label("%s | %d Filament | %s | Target: %s | owned %d | slot %d" % [str(card.name), int(card.get("cost", 0)), effect_copy, support_card_target_text(card), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
 		var remove_card := make_button("-", change_deck_draft.bind(card_id, false), Color("536c8d"))
 		remove_card.name = "DeckRemove%s" % card_id.capitalize()
 		row.add_child(remove_card)
@@ -1830,13 +1864,16 @@ func render_battle_fullscreen(host: Container) -> void:
 	frame.add_child(intro)
 	status = label("", 14, Color("fff0a1"))
 	status.name = "BattleStatus"
+	# Do not reserve a blank status row on the first action fold. Errors opt in
+	# through _toast(), keeping the visible move dock compact on small portrait.
+	status.visible = false
 	intro.add_child(status)
 	var battle_title := "Proving Grounds"
 	if battle_mode == "trial" and not trial_encounter_id.is_empty():
 		battle_title += " - Trial: %s" % str(Catalog.workshop_trial_encounter(trial_encounter_id).get("name", "Workshop Trial"))
 	intro.add_child(label("%s - %s" % [battle_title, "Your turn" if battle.active_player == 0 else "Rival is thinking"], 22, Color("ffd36c")))
 	var compact_secondary := battle_secondary_open and not is_portrait_layout()
-	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 188 if is_portrait_layout() else (96 if compact_secondary else 172))
+	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() else (96 if compact_secondary else 172))
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
 	_battle_screen_component.attach(intro)
 	if battle.active_player == 0 and not battle.finished:
@@ -1894,6 +1931,10 @@ func render_battle_action_dock(host: Container) -> void:
 	var dock_title := label("Moves - Opening: Defend or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"))
 	if opening_locked: dock_title.name = "BattleOpeningGuidance"
 	dock.add_child(dock_title)
+	var feedback := label(battle_feedback_text(), 14, Color("fff0a1") if not bool(settings().get("high_contrast", false)) else Color.WHITE)
+	feedback.name = "BattleImpactBanner"
+	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dock.add_child(feedback)
 	var actions := GridContainer.new()
 	actions.name = "BattleActionGrid"
 	actions.columns = 2 if is_portrait_layout() else 4
@@ -1993,10 +2034,48 @@ func render_battle_hand_tab(panel: Container) -> void:
 	cards.add_theme_constant_override("h_separation", 8)
 	cards.add_theme_constant_override("v_separation", 8)
 	panel.add_child(cards)
-	for card_id in battle.players[0].hand:
-		var card := make_button(str(card_id).replace("_", " ").capitalize(), func(): intent({"type":"card","card_id":card_id}), Color("526e93"))
+	var counts := {}
+	for raw_id in battle.players[0].hand: counts[str(raw_id)] = int(counts.get(str(raw_id), 0)) + 1
+	for card_id in counts:
+		var definition := Catalog.support_card(str(card_id))
+		var cost: int = int(definition.get("cost", 0))
+		var legal := int(battle.players[0].get("filament", 0)) >= cost
+		var detail := "%s x%d | %d Filament | %s | Target: %s" % [str(definition.get("name", card_id)), int(counts[card_id]), cost, support_card_effect_text(definition), support_card_target_text(definition)]
+		var reason := "" if legal else " | Needs %d more Filament" % (cost - int(battle.players[0].get("filament", 0)))
+		var card := make_button(detail + reason, submit_battle_card.bind(str(card_id)), Color("526e93"))
 		card.name = "BattleCard%s" % str(card_id).capitalize()
+		card.disabled = not legal
 		cards.add_child(card)
+
+func submit_battle_card(card_id: String) -> void:
+	_audio_director.cue("card")
+	intent({"type":"card","card_id":card_id})
+
+func support_card_target_text(definition: Dictionary) -> String:
+	return "Foe active print" if str(definition.get("effect", "")) in ["debuff", "ability_lock"] else "Your active print"
+
+func support_card_effect_text(definition: Dictionary) -> String:
+	var effect := str(definition.get("effect", ""))
+	var amount := int(definition.get("amount", 0))
+	match effect:
+		"filament": return "Gain %d Filament" % amount
+		"heal": return "Restore %d HP" % amount
+		"shield": return "Gain %d shield" % amount
+		"attack_buff": return "Gain +%d Attack" % amount
+		"cooldown": return "Reduce signature cooldown by %d" % amount
+		"draw": return "Draw %d support card%s" % [amount, "s" if amount != 1 else ""]
+		"switch_discount": return "Next switch costs %d less" % amount
+		"debuff": return "Foe loses %d Attack and signature locks 1 turn" % amount
+		"cleanse": return "Cleanse debuffs"
+	return "Catalog effect unavailable"
+
+func battle_feedback_text() -> String:
+	var cue := _audio_director.last_caption.replace("Battle cue: ", "").replace("Impact: ", "").replace("Support card: ", "")
+	if battle_last_event.is_empty(): return "Outcome: choose a move. Cue: " + cue
+	var you := battle.active_unit(0)
+	var rival := battle.active_unit(1)
+	var action := battle_last_event.replace("_", " ").capitalize()
+	return "Outcome: %s. You %d/%d; Rival %d/%d HP; Shield %d/%d. Cue: %s" % [action, int(you.get("hp", 0)), int(you.get("max_hp", 0)), int(rival.get("hp", 0)), int(rival.get("max_hp", 0)), int(you.get("shield", 0)), int(rival.get("shield", 0)), cue]
 
 func render_battle_details_tab(panel: Container) -> void:
 	for player in [1, 0]:
@@ -2069,6 +2148,7 @@ func intent(action: Dictionary) -> void:
 	var result := BattleRules.apply_intent(battle, 0, action)
 	if not result.ok: _toast(str(result.error))
 	else:
+		_audio_director.cue("impact")
 		battle_concede_armed = false
 		battle_last_event = str(action.get("type", ""))
 		battle_last_actor = 0
@@ -2116,4 +2196,6 @@ func run_ai(expected_state: BattleState = null, expected_generation := -1) -> vo
 	render()
 
 func _toast(message: String) -> void:
-	if status: status.text = message
+	if status:
+		status.visible = not message.is_empty()
+		status.text = message

@@ -101,15 +101,18 @@
   - **DoD:** each creature has approved raw/living presentation, consistent 4x2 frame semantics, combat readability, alpha/edge QA, Arcane Forge compatibility, and performance-budget evidence; no existing approved sheet is silently regenerated.
   - **Depends on:** current 2D direction remains accepted.
 
-- [ ] **Add a complete audio mix.** Workshop music, battle music, UI feedback, Forge layers/awakening, and accessibility controls are absent.
+
+- [ ] **Finish the approved audio mix.** The credential-free baseline now has fixed Master/Music/SFX levels plus captioned procedural Workshop/Battle/Forge/button/impact/card tones through `scripts/ui/audio_director.gd`; approved music and final SFX are still absent.
   - **DoD:** bus layout, mute/master/music/SFX controls, safe default levels, loop/transition behavior, subtitle/caption policy for gameplay-critical sound, and no unlicensed content are validated in a mix pass.
   - **Depends on:** approved audio assets and platform QA.
 
-- [ ] **Improve support-card details and art.** Thirty card definitions are functional, but card identity/detail presentation is sparse.
+
+- [ ] **Finish support-card art and collection presentation.** Deck and Battle Hand now show exact cost, target, derived effect, owned copies, and a Filament-disabled reason; approved card art and collection-card presentation remain incomplete.
   - **DoD:** every card has readable name, cost, text effect, target/legality explanation, status interaction, and approved visual/icon fallback; color is never the only signal; tests confirm all catalog cards still act.
   - **Depends on:** final card art direction and localization plan.
 
-- [ ] **Complete UI text and localization readiness.** Scan and remove mojibake from all user-facing text (including current strings in `scripts/ui/main.gd`), centralize strings, and prepare expandable layouts.
+
+- [ ] **Complete UI text and localization readiness.** A shipped-text scan found no current mojibake/replacement-character match in UI/docs, including `scripts/ui/main.gd`; strings are not yet centralized and no pseudolocale pass exists.
   - **DoD:** repository scan has no known mojibake/replacement characters in shipped text; pseudolocale capture has no clipping; fixed labels and future translation IDs cover onboarding, battle, trade, Forge, settings, and errors.
   - **Depends on:** localization language/product decision.
 

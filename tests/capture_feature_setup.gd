@@ -4,7 +4,7 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
-	if mode in ["battle", "battle_review", "battle_secondary", "battle_voidmanta", "high_contrast_battle", "trial_battle"]:
+	if mode in ["battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "high_contrast_battle", "reduced_motion_battle", "trial_battle"]:
 		main.screen = "battle"
 		if mode == "trial_battle":
 			var encounter := Catalog.workshop_trial_encounter("first_layers_1")
@@ -15,7 +15,9 @@ static func configure_battle(main, mode: String) -> bool:
 		else:
 			var rival := "voidmanta" if mode == "battle_voidmanta" else "mossmunk"
 			main.battle = BattleState.create(GameManager.current_team_loadout(), [rival], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
-		main.battle_secondary_open = mode == "battle_secondary"
+		main.battle_secondary_open = mode in ["battle_secondary", "battle_hand"]
+		main.battle_secondary_tab = "hand" if mode == "battle_hand" else "bench"
+		if mode == "battle_impact": main.battle_last_event = "attack"
 		return true
 	if mode == "local_vs":
 		main.screen = "local_vs"

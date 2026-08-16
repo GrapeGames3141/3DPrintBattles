@@ -1,0 +1,48 @@
+extends Node
+
+const MAIN := preload("res://scenes/main.tscn")
+var failures: Array[String] = []
+
+func require(value: bool, message: String) -> void:
+	if not value:
+		failures.append(message)
+		push_error(message)
+
+func _ready() -> void:
+	var migrated := AccessibilityRules.ensure_fields({"settings":{"text_scale_bps":12500,"high_contrast":true}})
+	require(int(migrated.settings.master_bps) == 5000 and int(migrated.settings.music_bps) == 3500 and int(migrated.settings.sfx_bps) == 5000, "audio settings migrate idempotently with quiet fixed defaults")
+	var saved := AccessibilityRules.save(migrated, {"master_bps":7500,"music_bps":0,"sfx_bps":2500})
+	require(bool(saved.ok) and int(saved.profile.settings.master_bps) == 7500 and int(saved.profile.settings.music_bps) == 0, "fixed audio levels validate and persist")
+	var director := AudioDirector.new()
+	director.configure(saved.profile.settings, true)
+	var silent_gain := AudioDirector.channel_gain_bps({"master_bps":0,"music_bps":10000,"sfx_bps":10000}, "music")
+	var quarter_gain := AudioDirector.channel_gain_bps({"master_bps":10000,"music_bps":2500,"sfx_bps":10000}, "music")
+	var full_gain := AudioDirector.channel_gain_bps({"master_bps":10000,"music_bps":10000,"sfx_bps":10000}, "music")
+	var compounded_gain := AudioDirector.channel_gain_bps({"master_bps":2500,"music_bps":5000,"sfx_bps":10000}, "music")
+	require(silent_gain == 0 and quarter_gain == 2500 and full_gain == 10000 and compounded_gain == 1250 and AudioDirector.sample_gain({"master_bps":10000,"music_bps":10000}, "music") <= 0.12, "audio gain uses bounded deterministic master-by-channel levels")
+	require(director.route("forge").contains("Forge cue") and director.cue("press").contains("Button press") and director.cue("impact").contains("Impact") and director.route("forge").contains("Impact") and director.route("battle").contains("Battle cue") and not director.audible("impact"), "audio director routes deterministic captions, preserves unchanged cues, and capture mutes")
+	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
+	profile.coins = 500
+	GameManager.profile = profile
+	var main := MAIN.instantiate()
+	add_child(main)
+	await get_tree().process_frame
+	main.start_battle()
+	await get_tree().process_frame
+	# The battle opening may belong to either seat; force a player-view state for the presentation seam.
+	main.battle.active_player = 0
+	main.battle_last_event = "defend"
+	main.battle_secondary_open = true
+	main.battle_secondary_tab = "hand"
+	main.render()
+	await get_tree().process_frame
+	var banner := main.find_child("BattleImpactBanner", true, false) as Label
+	var hand := main.find_child("BattleHandGrid", true, false) as GridContainer
+	var first_card := hand.get_child(0) as Button if hand != null and hand.get_child_count() > 0 else null
+	require(banner != null and banner.text.contains("Outcome:") and banner.text.contains("Cue:") and first_card != null and first_card.text.contains("Filament") and first_card.text.contains("Target:"), "battle impact banner, caption, and support-card cost/effect/target detail are explicit")
+	main.queue_free()
+	if failures.is_empty(): print("PASS: presentation audio settings, captions, battle feedback, and card detail")
+	call_deferred("finish")
+
+func finish() -> void:
+	get_tree().quit(0 if failures.is_empty() else 1)
