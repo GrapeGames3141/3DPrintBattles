@@ -41,7 +41,7 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 	var hand: Array[String] = []
 	for draw_index in 4:
 		hand.append(deck.pop_front())
-	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"switch_discount":0,"switch_discount_turns":0,"passed_turns":0}
+	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"discard":[],"switch_discount":0,"switch_discount_turns":0,"passed_turns":0}
 
 static func creature_id_from_entry(entry) -> String:
 	if entry is Dictionary:
@@ -107,6 +107,9 @@ static func from_snapshot(snapshot: Dictionary) -> BattleState:
 func normalize_runtime() -> void:
 	for player_data in players:
 		if not player_data is Dictionary: continue
+		for runtime_key in ["hand", "deck", "discard"]:
+			if not player_data.get(runtime_key, []) is Array: player_data[runtime_key] = []
+		if not player_data.has("discard"): player_data["discard"] = []
 		var team_value = player_data.get("team", [])
 		if not team_value is Array: continue
 		for index in team_value.size():

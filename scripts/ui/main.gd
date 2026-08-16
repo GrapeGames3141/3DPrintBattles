@@ -8,9 +8,10 @@ const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
 const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
+const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
-const REVIEW_BUILD_LABEL := "0.5.21-alpha-battle-presentation"
+const REVIEW_BUILD_LABEL := "0.5.22-alpha-support-cards"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -32,7 +33,10 @@ var pending_starter_id := ""
 var shop_day_key := ""
 var team_draft: Array = []
 var deck_draft: Array = []
+var deck_selected_card_id := ""
 var deck_slot_id := ProgressionRules.STARTER_DECK_ID
+var card_archive_owned_only := false
+var card_archive_detail_id := ""
 var battle: BattleState
 var body: VBoxContainer
 var status: Label
@@ -308,6 +312,7 @@ func render() -> void:
 		"team": render_team()
 		"armor": render_armor()
 		"deck": render_deck()
+		"archive": render_card_archive()
 		"yard": render_print_yard()
 		"calibration": render_calibration_bench()
 		"printer": render_printer()
@@ -442,7 +447,7 @@ func render_workshop() -> void:
 func _workshop_views() -> Array:
 	return [
 		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "description":"The left Arcane Forge holds learned blueprints and printed companions.", "rect":Rect2(0.08, 0.32, 0.28, 0.44), "objects":[{"id":"forge_machine", "name":"Arcane Forge", "description":"Prepare a learned blueprint for a safe, witnessed print.", "target":"printer", "rect":Rect2(0.34, 0.27, 0.36, 0.56)}, {"id":"collection_case", "name":"Collection Case", "description":"Review your learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.08, 0.06, 0.25, 0.66)}]},
-		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"armor_tools", "name":"Armor Tools", "description":"Learn, print, fit, unequip, and reassign armor.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
+		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"card_archive", "name":"Support Card Archive", "description":"Browse card art, rules, targets and owned copies.", "target":"archive", "rect":Rect2(0.26, 0.52, 0.28, 0.18)}, {"id":"armor_tools", "name":"Armor Tools", "description":"Learn, print, fit, unequip, and reassign armor.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
 		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "description":"Browse fixed daily offers, records, and a local kid-safe trade demo.", "rect":Rect2(0.65, 0.30, 0.23, 0.34), "objects":[{"id":"offer_screen", "name":"Forge Offers", "description":"Review today's deterministic blueprint, card, and armor offers.", "target":"shop", "rect":Rect2(0.57, 0.35, 0.10, 0.29)}, {"id":"forgedex_screen", "name":"Forgedex Terminal", "description":"Track every discovered creature blueprint.", "target":"codex", "rect":Rect2(0.67, 0.35, 0.11, 0.29)}, {"id":"trade_terminal", "name":"Guild Trade Table", "description":"Open a credential-free two-profile escrow demonstration.", "target":"trade", "rect":Rect2(0.78, 0.35, 0.12, 0.29)}]},
 		{"id":"proving", "name":"Proving Door", "callout":"Daily Training, Trials, Local Versus", "description":"Step through the center door for daily training, ordered Workshop Trials, or a private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Proving Door", "description":"Choose a repeatable daily rival or an ordered Workshop Trial with fixed first-clear rewards.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
 		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "description":"Visit printed companions for one calm, limited XP lesson each day.", "rect":Rect2(0.37, 0.63, 0.27, 0.29), "objects":[{"id":"yard_companions", "name":"Daily Print Yard", "description":"Share today's local filament lesson with your current collection.", "target":"yard", "rect":Rect2(0.31, 0.44, 0.34, 0.28)}]}
@@ -1062,7 +1067,7 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 	tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
 
 func _workshop_action_label(target: String) -> String:
-	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
+	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "archive":"Open Support Card Archive", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
 	return str(names.get(target, "Open Station"))
 
 func open_workshop_view(view_id: String) -> void:
@@ -1133,7 +1138,7 @@ func _workshop_hotspot(station: Dictionary) -> Button:
 func _run_workshop_station(id: String) -> void:
 	match id:
 		"printer": open_printer_picker()
-		"collection", "shop", "codex", "team", "deck", "armor", "settings": navigate_to(id)
+		"collection", "shop", "codex", "team", "deck", "archive", "armor", "settings": navigate_to(id)
 		"proving": navigate_to("proving")
 		"trials": navigate_to("trials")
 		"local_vs": start_local_vs()
@@ -1172,6 +1177,7 @@ func render_local_vs() -> void:
 		local_concede_armed = false
 		panel.add_child(label("Private handoff", 20, Color("fff0a1")))
 		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
+		var hidden := SUPPORT_CARD_VIEW.new(); hidden.configure({}, 0, "", true, false, false); hidden.name = "LocalHiddenCardBack"; panel.add_child(hidden)
 		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
 	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 110 if is_portrait_layout() else 120)
@@ -1181,14 +1187,16 @@ func render_local_vs() -> void:
 	if state.finished:
 		panel.add_child(label("Local match complete. No Forge Coins or rewards are granted.", 18, Color("fff0a1")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	panel.add_child(label("Player %d hand: %s" % [seat + 1, ", ".join(state.players[seat].hand)], 15, Color("dce8f4")))
+	panel.add_child(label("Player %d hand — Deck %d | Discard %d" % [seat + 1, state.players[seat].deck.size(), state.players[seat].get("discard", []).size()], 15, Color("dce8f4")))
 	var actions := GridContainer.new(); actions.name = "LocalBattleActionGrid"; actions.columns = 2 if is_portrait_layout() else 4; actions.add_theme_constant_override("h_separation", 8); actions.add_theme_constant_override("v_separation", 8); panel.add_child(actions)
 	for action in [{"type":"attack","name":"Basic Attack"},{"type":"ability","name":"Signature Ability"},{"type":"defend","name":"Defend"},{"type":"end_turn","name":"End Turn"}]:
 		actions.add_child(make_button(str(action.name), func(): submit_local_intent({"type":action.type}), Color("2f93a8")))
 	var card_counts := {}
 	for card_id in state.players[seat].hand: card_counts[str(card_id)] = int(card_counts.get(str(card_id), 0)) + 1
+	var local_cards := GridContainer.new(); local_cards.name = "LocalRevealedCardGrid"; local_cards.columns = 2 if is_portrait_layout() else 4; panel.add_child(local_cards)
 	for card_id in card_counts:
-		body.add_child(make_button("Play %s x%d" % [str(card_id).replace("_", " ").capitalize(), int(card_counts[card_id])], func(): submit_local_intent({"type":"card","card_id":card_id}), Color("526e93")))
+		var definition := Catalog.support_card(str(card_id)); var reason := SupportCardRules.legality_reason(state, seat, definition)
+		var view := SUPPORT_CARD_VIEW.new(); view.configure(definition, int(card_counts[card_id]), reason); view.name = "LocalCard%s" % str(card_id).capitalize(); view.pressed.connect(func(): submit_local_intent({"type":"card","card_id":card_id})); local_cards.add_child(view)
 	var navigation := GridContainer.new(); navigation.name = "LocalBattleNavigationGrid"; navigation.columns = 2 if is_portrait_layout() else 3; navigation.add_theme_constant_override("h_separation", 8); navigation.add_theme_constant_override("v_separation", 8); body.add_child(navigation)
 	for index in state.players[seat].team.size():
 		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
@@ -1287,6 +1295,9 @@ func render_shop() -> void:
 	var grid := GridContainer.new(); grid.columns = 3 if size.x >= 900 else 1; body.add_child(grid)
 	for offer in GameManager.daily_shop(shop_day_key):
 		var card := make_panel(Color("152842e8"), Color("7dd7ef")); grid.add_child(card.get_parent())
+		if str(offer.get("kind", "")) == "support_card":
+			var definition := Catalog.support_card(str(offer.get("item_id", "")))
+			var preview := SUPPORT_CARD_VIEW.new(); preview.configure(definition, int(GameManager.profile.support_cards.get(str(offer.get("item_id", "")), 0)), "", false, false, false); preview.name = "ShopCard%s" % str(offer.get("item_id", "")).capitalize(); card.add_child(preview)
 		card.add_child(label(str(offer.name), 19, Color("8deaff")))
 		card.add_child(label(str(offer.kind).replace("_", " ").capitalize() + " • " + str(offer.price) + " FC", 14, Color("dce8f4")))
 		card.add_child(make_button("Acquire", func(): GameManager.buy_shop_offer(shop_day_key, str(offer.offer_id))))
@@ -1659,18 +1670,26 @@ func render_deck() -> void:
 		var slot_button := make_button("%s: %s" % [_saved_deck_name(slot_id), slot_copy], select_deck_slot.bind(slot_id), Color("588d73") if str(GameManager.profile.active_deck_id) == slot_id else Color("526e93"))
 		slot_button.name = "DeckSlot%s" % slot_id.capitalize()
 		panel.add_child(slot_button)
+	if Catalog.support_card(deck_selected_card_id).is_empty():
+		for candidate in Catalog.SUPPORT_CARDS:
+			if int(GameManager.profile.support_cards.get(str(candidate.id), 0)) > 0:
+				deck_selected_card_id = str(candidate.id)
+				break
+	var selected := Catalog.support_card(deck_selected_card_id)
+	if not selected.is_empty():
+		var selected_tray := make_panel(Color("10273ad8"), Color("ffd36c")); panel.add_child(selected_tray.get_parent()); selected_tray.name = "DeckSelectedCardTray"
+		var selected_owned: int = int(GameManager.profile.support_cards.get(deck_selected_card_id, 0)); var selected_copies: int = deck_draft.count(deck_selected_card_id)
+		selected_tray.add_child(label("Selected: %s" % str(selected.name), 19, Color("fff0a1")))
+		selected_tray.add_child(label("Owned: %d | Draft copies: %d / %d | %d Filament" % [selected_owned, selected_copies, selected_owned, int(selected.cost)], 14, Color("9beaff")))
+		selected_tray.add_child(label(SUPPORT_CARD_PRESENTER.effect_text(selected) + "\nTarget: " + SUPPORT_CARD_PRESENTER.target_text(selected), 14, Color("dce8f4")))
+		var selected_actions := HBoxContainer.new(); selected_tray.add_child(selected_actions)
+		var selected_remove := make_button("Remove selected", change_deck_draft.bind(deck_selected_card_id, false), Color("536c8d")); selected_remove.name = "DeckSelectedRemove"; selected_remove.disabled = selected_copies <= 0; selected_actions.add_child(selected_remove)
+		var selected_add := make_button("Add selected (%d/%d)" % [selected_copies, selected_owned], change_deck_draft.bind(deck_selected_card_id, true), Color("2f93a8")); selected_add.name = "DeckSelectedAdd"; selected_add.disabled = deck_draft.size() >= 15 or selected_copies >= selected_owned; selected_actions.add_child(selected_add)
+	var cards := GridContainer.new(); cards.name = "DeckCardGallery"; cards.columns = 2 if is_portrait_layout() else 4; cards.add_theme_constant_override("h_separation", 8); cards.add_theme_constant_override("v_separation", 8); panel.add_child(cards)
 	for card in Catalog.SUPPORT_CARDS:
-		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0)); var copies: int = deck_draft.count(card_id)
+		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0))
 		if owned <= 0: continue
-		var row := HBoxContainer.new(); panel.add_child(row)
-		var effect_copy := SUPPORT_CARD_PRESENTER.effect_text(card)
-		var info := label("%s | %d Filament | %s | Target: %s | owned %d | slot %d" % [str(card.name), int(card.get("cost", 0)), effect_copy, SUPPORT_CARD_PRESENTER.target_text(card), owned, copies], 14, Color("dce8f4")); info.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(info)
-		var remove_card := make_button("-", change_deck_draft.bind(card_id, false), Color("536c8d"))
-		remove_card.name = "DeckRemove%s" % card_id.capitalize()
-		row.add_child(remove_card)
-		var add_card := make_button("+", change_deck_draft.bind(card_id, true), Color("2f93a8"))
-		add_card.name = "DeckAdd%s" % card_id.capitalize()
-		row.add_child(add_card)
+		var view := SUPPORT_CARD_VIEW.new(); view.configure(card, owned, ""); view.name = "DeckCard%s" % card_id.capitalize(); view.pressed.connect(select_deck_card.bind(card_id)); cards.add_child(view)
 	panel.add_child(make_button("Save %s as active (%d / 15)" % [_saved_deck_name(deck_slot_id), deck_draft.size()], save_active_deck_draft, Color("a86b2e")))
 	var missing_slot := ""
 	for candidate in ProgressionRules.DECK_SLOT_IDS:
@@ -1684,6 +1703,33 @@ func render_deck() -> void:
 		for fixed_name in ProgressionRules.DECK_NAME_OPTIONS:
 			panel.add_child(make_button("Rename as %s" % fixed_name, rename_selected_deck.bind(fixed_name), Color("526e93")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+
+func render_card_archive() -> void:
+	var panel := make_panel(Color("19334de8"), Color("78cfe5")); body.add_child(panel.get_parent())
+	panel.add_child(label("Support Card Archive", 25, Color("9beaff")))
+	panel.add_child(label("30 offline tactical cards. Non-turn-ending; no reshuffle.", 15, Color("dce8f4")))
+	panel.add_child(label("Deck 15 / opening 4 / hand cap 4 / draw 1 per turn.", 15, Color("dce8f4")))
+	var filters := HBoxContainer.new(); panel.add_child(filters)
+	var all_filter := make_button("All cards", func(): card_archive_owned_only = false; render(), Color("2f93a8") if not card_archive_owned_only else Color("536c8d")); all_filter.name = "ArchiveFilterAll"; filters.add_child(all_filter)
+	var owned_filter := make_button("Owned only", func(): card_archive_owned_only = true; render(), Color("2f93a8") if card_archive_owned_only else Color("536c8d")); owned_filter.name = "ArchiveFilterOwned"; filters.add_child(owned_filter)
+	var cards := GridContainer.new(); cards.name = "CardArchiveGallery"; cards.columns = 2 if is_portrait_layout() else 4; cards.add_theme_constant_override("h_separation", 8); cards.add_theme_constant_override("v_separation", 8); panel.add_child(cards)
+	for card in Catalog.SUPPORT_CARDS:
+		var owned := int(GameManager.profile.support_cards.get(str(card.id), 0))
+		if card_archive_owned_only and owned <= 0: continue
+		var view := SUPPORT_CARD_VIEW.new(); view.configure(card, owned); view.name = "ArchiveCard%s" % str(card.id).capitalize(); view.pressed.connect(show_card_archive_detail.bind(card)); cards.add_child(view)
+	if not card_archive_detail_id.is_empty(): _append_card_archive_detail(panel, Catalog.support_card(card_archive_detail_id))
+	body.add_child(make_button("Back to Maker Bench", navigate_to.bind("workshop"), Color("536c8d")))
+
+func show_card_archive_detail(card: Dictionary) -> void:
+	card_archive_detail_id = str(card.get("id", ""))
+	render()
+
+func _append_card_archive_detail(host: Container, card: Dictionary) -> void:
+	var panel := make_panel(Color("10273ad8"), Color("ffd36c")); host.add_child(panel.get_parent())
+	panel.name = "CardArchiveDetail"
+	panel.add_child(label(str(card.get("name", "Support Card")), 21, Color("fff0a1")))
+	panel.add_child(label("%s • %s • %d Filament" % [str(card.get("role", "utility")).capitalize(), str(card.get("rarity", "common")).capitalize(), int(card.get("cost", 0))], 15, Color("9beaff")))
+	panel.add_child(label(SUPPORT_CARD_PRESENTER.effect_text(card) + "\nTarget: " + SUPPORT_CARD_PRESENTER.target_text(card) + "\nOwned: %d" % int(GameManager.profile.support_cards.get(str(card.id), 0)), 15, Color("dce8f4")))
 
 func _saved_deck_cards(deck_id: String) -> Array:
 	for saved in GameManager.profile.get("decks", []):
@@ -1711,6 +1757,11 @@ func select_deck_slot(deck_id: String) -> void:
 		GameManager.select_deck(deck_id)
 	else:
 		render()
+
+func select_deck_card(card_id: String) -> void:
+	if Catalog.support_card(card_id).is_empty(): return
+	deck_selected_card_id = card_id
+	render()
 
 func change_deck_draft(card_id: String, add: bool) -> void:
 	var owned: int = int(GameManager.profile.get("support_cards", {}).get(card_id, 0))
@@ -1928,8 +1979,10 @@ func render_battle_fullscreen(host: Container) -> void:
 	intro.add_child(label("%s - %s" % [battle_title, "Your turn" if battle.active_player == 0 else "Rival is thinking"], 22, Color("ffd36c")))
 	if not battle_launch_notice.is_empty():
 		intro.add_child(label("Lineup notice: " + battle_launch_notice, 13, Color("fff0a1")))
-	var compact_secondary := battle_secondary_open and not is_portrait_layout()
-	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() else (96 if compact_secondary else 172), bool(settings().get("high_contrast", false)), battle_presentation_serial)
+	# An opened tactical panel owns the first fold. Keep the stage compact on both
+	# phone and landscape so every visual card can remain fully reachable.
+	var compact_secondary := battle_secondary_open
+	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (96 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
 	_battle_screen_component.attach(intro)
 	if battle.active_player == 0 and not battle.finished:
@@ -2037,7 +2090,7 @@ func render_battle_secondary(host: Container) -> void:
 	var panel := make_panel(Color("172e43ee"), Color("7bcbe5"))
 	panel.name = "BattleSecondaryPanel"
 	var secondary_panel := panel.get_parent() as PanelContainer
-	secondary_panel.custom_minimum_size = Vector2(0, 160)
+	secondary_panel.custom_minimum_size = Vector2(0, 320 if battle_secondary_tab == "hand" and is_portrait_layout() else (190 if battle_secondary_tab == "hand" else 160))
 	secondary_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	host.add_child(secondary_panel)
 	panel.add_child(label("Tactics", 16, Color("9beaff")))
@@ -2083,25 +2136,35 @@ func render_battle_bench_tab(panel: Container) -> void:
 		switches.add_child(label("No healthy bench prints.", 14, Color("b9cad7")))
 
 func render_battle_hand_tab(panel: Container) -> void:
-	panel.add_child(label("Hand", 16, Color("9beaff")))
+	panel.add_child(label("Hand — Deck %d | Discard %d" % [battle.players[0].deck.size(), battle.players[0].get("discard", []).size()], 16, Color("9beaff")))
 	var cards := GridContainer.new()
 	cards.name = "BattleHandGrid"
-	cards.columns = 2 if is_portrait_layout() else 4
+	cards.columns = 4
 	cards.add_theme_constant_override("h_separation", 8)
 	cards.add_theme_constant_override("v_separation", 8)
-	panel.add_child(cards)
+	if is_portrait_layout():
+		var carousel := ScrollContainer.new()
+		carousel.name = "BattleHandCarousel"
+		carousel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		carousel.custom_minimum_size = Vector2(0, 112)
+		carousel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel.add_child(carousel)
+		carousel.add_child(cards)
+	else:
+		panel.add_child(cards)
 	var counts := {}
 	for raw_id in battle.players[0].hand: counts[str(raw_id)] = int(counts.get(str(raw_id), 0)) + 1
 	for card_id in counts:
 		var definition := Catalog.support_card(str(card_id))
-		var cost: int = int(definition.get("cost", 0))
-		var legal := int(battle.players[0].get("filament", 0)) >= cost
-		var detail := "%s x%d | %d Filament | %s | Target: %s" % [str(definition.get("name", card_id)), int(counts[card_id]), cost, SUPPORT_CARD_PRESENTER.effect_text(definition), SUPPORT_CARD_PRESENTER.target_text(definition)]
-		var reason := "" if legal else " | Needs %d more Filament" % (cost - int(battle.players[0].get("filament", 0)))
-		var card := make_button(detail + reason, submit_battle_card.bind(str(card_id)), Color("526e93"))
+		var reason := SupportCardRules.legality_reason(battle, 0, definition)
+		var card := SUPPORT_CARD_VIEW.new(); card.configure(definition, int(counts[card_id]), reason, false, true); card.pressed.connect(submit_battle_card.bind(str(card_id)))
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if is_portrait_layout(): card.custom_minimum_size = Vector2(220, 104)
+		else: card.custom_minimum_size.y = 76
 		card.name = "BattleCard%s" % str(card_id).capitalize()
-		card.disabled = not legal
 		cards.add_child(card)
+	if is_portrait_layout(): cards.custom_minimum_size.x = maxi(1, counts.size()) * 228
 
 func submit_battle_card(card_id: String) -> void:
 	_audio_director.cue("card")
@@ -2181,9 +2244,13 @@ func intent(action: Dictionary) -> void:
 	var result := BattleRules.apply_intent(battle, 0, action)
 	if not result.ok: _toast(str(result.error))
 	else:
-		_audio_director.cue("impact")
+		if str(action.get("type", "")) == "card":
+			var card_definition := Catalog.support_card(str(result.get("card_id", "")))
+			_audio_director.cue_card(str(card_definition.get("name", "Support Card")), SUPPORT_CARD_PRESENTER.effect_text(card_definition))
+			battle_last_event = "card:" + str(result.get("card_id", ""))
+		else: _audio_director.cue("impact")
 		battle_concede_armed = false
-		battle_last_event = str(action.get("type", ""))
+		if str(action.get("type", "")) != "card": battle_last_event = str(action.get("type", ""))
 		battle_last_actor = 0
 		battle_presentation_serial += 1
 		render()

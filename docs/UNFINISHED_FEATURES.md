@@ -87,7 +87,7 @@
   - **DoD:** seeded rival roster/team generator covers catalog elements/rarities within intended unlock bands; deterministic fixtures test legal decks/loadouts; balance sheet tracks win rate, turn length, opening fairness, and ability/card usage.
   - **Depends on:** stable XP/spool economy and catalog balance targets.
 
-- [ ] **Complete multiple named deck slots and active-deck selection.** Three safe named slots can save/select legal 15-card decks and battle reads the active deck. Slot creation, duplication, deletion, and a product-approved naming policy remain unfinished.
+- [ ] **Complete multiple named deck slots and active-deck selection.** Five safe named slots can save/select legal 15-card decks and battle reads the active deck. Slot creation, duplication, deletion, and a product-approved naming policy remain unfinished.
   - **DoD:** player can create, rename from fixed/safe choices or an approved text policy, duplicate/delete/select slots, see validity/owned-copy feedback, and battle consumes the selected saved deck; migration and controller tests pass.
   - **Depends on:** product decision on freeform naming/localization.
 
@@ -107,9 +107,8 @@
   - **Depends on:** approved audio assets and platform QA.
 
 
-- [ ] **Finish support-card art and collection presentation.** Deck and Battle Hand now show exact cost, target, derived effect, owned copies, and a Filament-disabled reason; approved card art and collection-card presentation remain incomplete.
-  - **DoD:** every card has readable name, cost, text effect, target/legality explanation, status interaction, and approved visual/icon fallback; color is never the only signal; tests confirm all catalog cards still act.
-  - **Depends on:** final card art direction and localization plan.
+- [x] **Complete offline support-card art and collection presentation.** All 30 catalog cards have cached 4x2 atlas regions (plus a private card back), readable code-native card frames, explicit cost/rules/target/rarity/copy/disabled text, Maker-reachable archive, deck gallery, shop integration, and solo/local hands with discard counts. `tests/test_support_card_system.tscn` proves every card resolves and discards deterministically. See `docs/CARD_SYSTEM.md`.
+  - **Remaining:** localization and a device accessibility matrix remain separate P2 work.
 
 
 - [ ] **Complete UI text and localization readiness.** A shipped-text scan found no current mojibake/replacement-character match in UI/docs, including `scripts/ui/main.gd`; strings are not yet centralized and no pseudolocale pass exists.

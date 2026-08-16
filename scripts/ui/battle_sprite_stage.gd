@@ -5,11 +5,14 @@ extends Control
 const CELL := Vector2i(384, 512)
 const ATLAS_GUTTER := CreatureSpriteCache.ATLAS_GUTTER
 const MOVE_VFX := preload("res://scripts/ui/battle_move_vfx.gd")
+const CARD_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
+const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
 var left_id := "cinderpaw"
 var right_id := "mossmunk"
 var event_kind := ""
 var event_actor := 0
 var event_token := 0
+var event_card_id := ""
 var reduced_motion := false
 var high_contrast := false
 var elapsed := 0.0
@@ -21,10 +24,13 @@ func _ready() -> void:
 	queue_redraw()
 
 func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, reduce: bool, contrast := false, token := 0) -> void:
-	var changed := left_id != str(player.get("id", "cinderpaw")) or right_id != str(rival.get("id", "mossmunk")) or event_kind != kind or event_actor != actor or reduced_motion != reduce or high_contrast != contrast or event_token != token
+	var resolved_kind := kind.split(":")[0]
+	var resolved_card := kind.substr(5) if kind.begins_with("card:") else ""
+	var changed := left_id != str(player.get("id", "cinderpaw")) or right_id != str(rival.get("id", "mossmunk")) or event_kind != resolved_kind or event_card_id != resolved_card or event_actor != actor or reduced_motion != reduce or high_contrast != contrast or event_token != token
 	left_id = str(player.get("id", "cinderpaw"))
 	right_id = str(rival.get("id", "mossmunk"))
-	event_kind = kind
+	event_kind = resolved_kind
+	event_card_id = resolved_card
 	event_actor = actor
 	reduced_motion = reduce
 	high_contrast = contrast
@@ -152,6 +158,9 @@ func _draw_move_vfx(left: Rect2, right: Rect2) -> void:
 		draw_arc(origin, minf(actor_rect.size.x, actor_rect.size.y) * (0.25 + progress * 0.10), 0.0, TAU, 18, color, 3.0, true)
 	elif event_kind == "card":
 		draw_circle(origin + Vector2(0, -actor_rect.size.y * 0.22), 10.0 + progress * 6.0, color, false, 2.0, true)
+		var accents: Array = []
+		for effect in CARD_RULES.normalized_effects(CARD_CATALOG.support_card(event_card_id)): accents.append(str(effect.get("effect", "")))
+		_draw_effect_accents(actor_rect, foe_rect, accents, color, progress, status_atlas)
 	elif event_kind == "switch":
 		draw_line(origin + Vector2(-20, 0), origin + Vector2(20, 0), color, 3.0, true)
 

@@ -84,6 +84,10 @@ func _ready() -> void:
 	survival_ai.active_unit(1)["hp"] = 4
 	survival_ai.players[1]["hand"] = ["quick_patch"]
 	require(AIOpponent.choose_intent(survival_ai, "Craftsman").get("type", "") == "card", "Craftsman prioritizes affordable survival card")
+	var apprentice_recovery := BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 2)
+	apprentice_recovery.turn = 2; apprentice_recovery.active_player = 1; apprentice_recovery.active_unit(1)["hp"] = 4
+	apprentice_recovery.players[1]["hand"] = ["arcane_spark", "quick_patch"]
+	require(AIOpponent.choose_intent(apprentice_recovery, "Apprentice") == {"type":"card", "card_id":"quick_patch"}, "Apprentice chooses recovery over earlier attack buff at low health")
 	var lethal_ai := BattleState.create(["mossmunk"], ["cinderpaw"], 9, 9, 2)
 	lethal_ai.turn = 2
 	lethal_ai.active_player = 1

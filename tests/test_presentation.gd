@@ -39,7 +39,7 @@ func _ready() -> void:
 	var banner := main.find_child("BattleImpactBanner", true, false) as Label
 	var hand := main.find_child("BattleHandGrid", true, false) as GridContainer
 	var first_card := hand.get_child(0) as Button if hand != null and hand.get_child_count() > 0 else null
-	require(banner != null and banner.text.contains("Outcome:") and banner.text.contains("Cue:") and first_card != null and first_card.text.contains("Filament") and first_card.text.contains("Target:"), "battle impact banner, caption, and support-card cost/effect/target detail are explicit")
+	require(banner != null and banner.text.contains("Outcome:") and banner.text.contains("Cue:") and first_card != null and first_card.text.is_empty() and first_card.tooltip_text.contains("Filament") and first_card.accessibility_name.contains("Target:"), "battle impact banner, caption, and accessible support-card cost/effect/target detail are explicit")
 	main.queue_free()
 	if failures.is_empty(): print("PASS: presentation audio settings, captions, battle feedback, and card detail")
 	call_deferred("finish")

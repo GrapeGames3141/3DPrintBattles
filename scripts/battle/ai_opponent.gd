@@ -3,6 +3,7 @@ extends RefCounted
 ## Deterministic legal-first solo policy. Scores are fixed integer heuristics;
 ## no gameplay RNG is introduced by difficulty choices.
 const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
+const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
 
 static func choose_intent(state: BattleState, difficulty: String = "Apprentice") -> Dictionary:
 	var setup_error := state.validation_error(true)
@@ -17,9 +18,20 @@ static func choose_intent(state: BattleState, difficulty: String = "Apprentice")
 static func _choose_apprentice(state: BattleState, candidates: Array) -> Dictionary:
 	var unit := state.active_unit(1)
 	if int(unit.get("hp", 0)) * 3 <= int(unit.get("max_hp", 1)):
+		var recovery: Dictionary = {}
+		var recovery_score := -999999
 		for candidate in candidates:
-			if str(candidate.get("type", "")) == "card" and str(BATTLE_CATALOG.support_card(str(candidate.get("card_id", ""))).get("effect", "")) in ["heal", "shield"]:
-				return candidate
+			if str(candidate.get("type", "")) != "card": continue
+			var card: Dictionary = BATTLE_CATALOG.support_card(str(candidate.get("card_id", "")))
+			var restores := false
+			for effect in CARD_RULES.normalized_effects(card):
+				if str(effect.get("effect", "")) in ["heal", "shield"]: restores = true; break
+			if not restores: continue
+			var score := CARD_RULES.ai_utility(state, 1, card)
+			if score > recovery_score:
+				recovery_score = score
+				recovery = candidate
+		if not recovery.is_empty(): return recovery
 	for candidate in candidates:
 		if str(candidate.get("type", "")) == "attack": return candidate
 	for candidate in candidates:
@@ -57,18 +69,12 @@ static func _score_candidate(state: BattleState, candidate: Dictionary, master: 
 			return score
 		"card":
 			var card: Dictionary = BATTLE_CATALOG.support_card(str(candidate.get("card_id", "")))
-			var amount: int = int(card.get("amount", 0))
-			match str(card.get("effect", "")):
-				"heal": return mini(health_missing, amount) * 14 + (160 if int(unit.get("hp", 0)) * 3 <= int(unit.get("max_hp", 1)) else 0)
-				"shield": return amount * 9 + (90 if incoming_basic >= int(unit.get("hp", 0)) else 0)
-				"filament": return amount * 5 + (45 if not _can_ability(unit, int(state.players[1].get("filament", 0))) else 0)
-				"attack_buff": return amount * 7
-				"cooldown": return amount * 8 if int(unit.get("cooldown_remaining", 0)) > 0 else 1
-				"switch_discount": return amount * 5 if _best_switch(state) >= 0 else 1
-				"debuff": return amount * 8 + (25 if master else 0)
-				"cleanse": return 100 if int(unit.get("attack_debuff", 0)) > 0 or int(unit.get("ability_lock_turns", 0)) > 0 else 1
-				"draw": return amount * 4
-			return 0
+			var card_score := CARD_RULES.ai_utility(state, 1, card) * 7
+			if int(unit.get("hp", 0)) * 3 <= int(unit.get("max_hp", 1)):
+				card_score += CARD_RULES.ai_utility(state, 1, card) * 3
+				for effect in CARD_RULES.normalized_effects(card):
+					if str(effect.get("effect", "")) in ["heal", "shield"]: card_score += 1000
+			return card_score + (10 if master else 0)
 		"switch":
 			var candidate_unit: Dictionary = state.players[1].team[int(candidate.get("index", -1))]
 			var delta: int = BATTLE_CATALOG.element_multiplier(str(candidate_unit.get("element", "")), str(foe.get("element", ""))) - BATTLE_CATALOG.element_multiplier(str(unit.get("element", "")), str(foe.get("element", "")))
@@ -100,7 +106,7 @@ static func _legal_candidates(state: BattleState) -> Array:
 	if _can_ability(unit, filament): result.append({"type":"ability"})
 	for card_id in state.players[1].get("hand", []):
 		var card := BATTLE_CATALOG.support_card(str(card_id))
-		if not card.is_empty() and filament >= int(card.get("cost", 0)):
+		if CARD_RULES.legality_reason(state, 1, card).is_empty():
 			result.append({"type":"card","card_id":str(card_id)})
 	for index in state.players[1].get("team", []).size():
 		if index == int(state.players[1].get("active", 0)): continue

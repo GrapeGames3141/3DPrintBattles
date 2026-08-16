@@ -1,5 +1,42 @@
 # Validation record
 
+## Checkpoint 0.5.22 offline support cards (staging only)
+
+- The 30-card offline catalog now has stable IDs, cached 4x2 atlas regions, direct
+  private-card-back rendering, ordered deterministic effects, runtime discard,
+  exact target/rules/legality wording, and a shared `SupportCardRules` seam for
+  UI and AI. Decks stay 15 cards; opening hand and cap stay four; one normal draw
+  occurs toward the cap; cards never end the turn; exhausted decks do not reshuffle.
+- Focused `test_support_card_system`, `test_ui_support_cards`,
+  `test_card_balance_audit`, `test_presentation`, `test_signature_rules`, and
+  `test_ui_checkpoint_a1` passed. The rules test verifies every card/effect,
+  discard snapshot roundtrip and byte-equal card rejections. The balance audit
+  verifies contextual useful/legal values, no same-tier duplicate vectors, and
+  deterministic legal AI choices. The touch-safe portrait Hand uses a bounded
+  horizontal carousel for larger hands and shows visible cost/rules/target plus
+  legality feedback; normal two-card capture shows the complete first fold.
+- Final retained suite: 29/29 individual ShellExecute scenes exited 0. PIDs:
+  `26292,20320,26572,10380,18348,5700,20476,18640,9352,23492,2928,22468,
+  2016,6880,21064,15392,9256,23640,23752,22788,13616,18456,5060,3324,
+  15296,8740,25732,24600,23224`. `test_move_presentation` PID 2928 took
+  59.621 seconds and passed under its explicit 180-second bound. Logs/manifests
+  remain external under `E:/CodexCache/printforge-validation/`.
+- Fresh OpenGL visual QA captured and inspected `card_archive`, `card_detail`,
+  `deck_cards`, `shop_cards`, `battle_hand_cards`, `local_card_handoff`,
+  `local_card_revealed`, and `high_contrast_cards` at 576x1024 and 1280x720.
+  Portrait uses its height cleanly: Archive filters and visual cards are legible,
+  Deck exposes one selected-card tray, Hand cards are contained and readable,
+  and handoff shows only the card back before Ready. Landscape remains unclipped.
+- Final Android debug/review export PID 20624 exited 0:
+  `PrintForge-Legends-0.5.22-alpha-support-cards-arm64.apk` is 117,942,985 bytes,
+  SHA-256 `817540C662FD21A6D76D6209D5A4CF52AF66A487999D4D2E6066519145313CE9`.
+  `apksigner` confirms Android Debug v2/v3; `aapt` reports package
+  `com.tak.printforge.legends.review`, versionCode 72/name
+  `0.5.22-alpha-support-cards`, SDK 24/36, and only arm64-v8a native libraries.
+  Archive exclusion audit found zero backend/tests/tools/tmp/node_modules/.git/
+  docs-art-source entries. The known `aapt` `android:required` reader warning is
+  non-failing and unchanged.
+
 ## Checkpoint 0.5.21 battle presentation (staging only)
 
 - The finite tokenized `BattleMoveVFX` presentation covers every one of the 24

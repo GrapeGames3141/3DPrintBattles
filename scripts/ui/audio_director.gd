@@ -81,5 +81,11 @@ func cue(kind: String) -> String:
 		_playback = _player.get_stream_playback()
 	return last_caption
 
+func cue_card(card_name: String, effect_text: String) -> String:
+	last_caption = "Support card: %s — %s." % [card_name, effect_text]
+	if audible("card") and is_inside_tree():
+		_frequency = 660.0; _channel = "sfx"; _remaining_frames = 900; _phase = 0.0; _player.play(); _playback = _player.get_stream_playback()
+	return last_caption
+
 func audible(kind: String) -> bool:
 	return not muted_for_capture and int(settings.get("master_bps", 0)) > 0 and int(settings.get("sfx_bps", 0)) > 0 and not str(kind).is_empty()

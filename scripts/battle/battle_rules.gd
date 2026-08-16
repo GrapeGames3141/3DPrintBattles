@@ -2,6 +2,7 @@ class_name BattleRules
 extends RefCounted
 ## Deterministic integer-only rules. Client UI submits intents; server can use same contract.
 const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
+const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
 
 const IMPLEMENTED_CARD_EFFECTS: Array[String] = ["filament", "heal", "shield", "attack_buff", "cooldown", "draw", "switch_discount", "debuff", "cleanse"]
 const IMPLEMENTED_SIGNATURE_EFFECTS: Array[String] = ["heal", "shield", "filament", "attack_buff", "debuff", "cleanse", "switch_discount", "ability_lock"]
@@ -100,35 +101,19 @@ static func _defend(state: BattleState, player: int) -> Dictionary:
 	return {"ok":true,"shield":4}
 
 static func _card(state: BattleState, player: int, card_id: String) -> Dictionary:
+	var card: Dictionary = BATTLE_CATALOG.support_card(card_id)
+	var error := CARD_RULES.legality_reason(state, player, card)
+	if not error.is_empty(): return {"ok":false,"error":error}
 	var index: int = state.players[player].hand.find(card_id)
-	if index < 0: return {"ok":false,"error":"Card is not in hand."}
-	var card: Dictionary = {}
-	for item in BATTLE_CATALOG.DATA.SUPPORT_CARDS:
-		if item.id == card_id: card = item; break
-	var card_cost: int = int(card.cost)
-	if card.is_empty() or int(state.players[player].filament) < card_cost: return {"ok":false,"error":"Cannot play this card."}
+	var card_cost: int = int(card.get("cost", 0))
+	# All validation occurred above. Commit cost, hand/discard and ordered effects as
+	# one deterministic transaction; cards are tactical and never end the turn.
 	state.players[player].filament = int(state.players[player].filament) - card_cost
 	state.players[player].hand.remove_at(index)
-	var unit := state.active_unit(player)
-	match str(card.effect):
-		"filament": state.players[player].filament = mini(int(state.players[player].spool_cap), int(state.players[player].filament) + int(card.amount))
-		"heal": unit.hp = mini(int(unit.max_hp), int(unit.hp) + int(card.amount))
-		"shield": unit.shield = int(unit.shield) + int(card.amount)
-		"attack_buff": unit.attack_buff = int(unit.attack_buff) + int(card.amount)
-		"cooldown": unit.cooldown_remaining = maxi(0, int(unit.cooldown_remaining) - int(card.amount))
-		"draw":
-			for n in int(card.amount):
-				if not state.players[player].deck.is_empty() and state.players[player].hand.size() < 4: state.players[player].hand.append(state.players[player].deck.pop_front())
-		"switch_discount": state.players[player].switch_discount = maxi(int(state.players[player].switch_discount), int(card.amount))
-		"debuff":
-			var target := state.active_unit(1-player)
-			target.attack_debuff = int(target.attack_debuff) + int(card.amount)
-			target.ability_lock_turns = maxi(int(target.ability_lock_turns), 1)
-		"cleanse":
-			unit.attack_debuff = 0
-			unit.ability_lock_turns = 0
+	state.players[player].discard.append(card_id)
+	for effect in CARD_RULES.normalized_effects(card): CARD_RULES.apply_effect(state, player, effect)
 	state.log.append("%s played %s." % ["You" if player == 0 else "Rival", card.name])
-	return {"ok":true}
+	return {"ok":true,"card_id":card_id,"effects":CARD_RULES.normalized_effects(card),"presentation":{"card_id":card_id,"role":str(card.get("role", "")),"rarity":str(card.get("rarity", ""))}}
 
 static func _switch(state: BattleState, player: int, index: int, forced: bool) -> Dictionary:
 	if index < 0 or index >= state.players[player].team.size() or state.players[player].team[index].hp <= 0: return {"ok":false,"error":"Choose a ready print."}

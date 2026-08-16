@@ -4,6 +4,14 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
+	if mode in ["battle_hand_cards", "high_contrast_cards"]:
+		main.screen = "battle"
+		main.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+		main.battle.players[0].hand = ["coolant", "final_pass"]
+		main.battle.players[0].filament = 1
+		main.battle_secondary_open = true; main.battle_secondary_tab = "hand"
+		if mode == "high_contrast_cards": GameManager.profile.settings.high_contrast = true
+		return true
 	var vfx_creatures := {"battle_vfx_fire":"cinderpaw", "battle_vfx_water":"aquafin", "battle_vfx_lightning":"voltwig", "battle_vfx_nature":"mossmunk", "battle_vfx_ice":"frostling", "battle_vfx_stone":"stoneback", "battle_vfx_wind":"galehopper", "battle_vfx_arcane":"runestag"}
 	if mode in ["battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "high_contrast_battle", "reduced_motion_battle", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "battle_vfx_idle", "battle_vfx_basic"] or vfx_creatures.has(mode):
 		main.screen = "battle"
@@ -34,11 +42,11 @@ static func configure_battle(main, mode: String) -> bool:
 			main.battle_last_event = "attack"
 			main.battle_presentation_serial = 1
 		return true
-	if mode == "local_vs":
+	if mode in ["local_vs", "local_card_handoff"]:
 		main.screen = "local_vs"
 		main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
 		return true
-	if mode == "local_vs_ready":
+	if mode in ["local_vs_ready", "local_card_revealed"]:
 		main.screen = "local_vs"
 		main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
 		main.local_ready_seat = main.local_authority.state.active_player
@@ -72,6 +80,10 @@ static func configure_forge(main, mode: String) -> bool:
 	return true
 
 static func configure_workshop(main, mode: String) -> bool:
+	if mode in ["card_archive", "card_detail", "deck_cards", "shop_cards"]:
+		main.screen = {"card_archive":"archive", "card_detail":"archive", "deck_cards":"deck", "shop_cards":"shop"}.get(mode, "archive")
+		if mode == "card_detail": main.card_archive_detail_id = "coolant"
+		return true
 	if mode in ["trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch"]:
 		main.screen = "trials"
 		if mode == "trials_scrolled": main.set_meta("capture_scroll_trials", true)
