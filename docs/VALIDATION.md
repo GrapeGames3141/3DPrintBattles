@@ -1,5 +1,37 @@
 # Validation record
 
+## Checkpoint 0.5.23 portrait support-card frames (staging only)
+
+- Every support-card front and the private Local Versus back now shares a tested
+  2:3 portrait silhouette. Fronts use code-rendered workshop/navy/brass outer and
+  inset frames, rarity accent, title plate, separate Filament badge, framed art,
+  rarity/role, exact rules, target, copy count, and legality banner. Native button
+  text is empty; semantic tooltip/accessibility names retain the full card detail.
+- Solo and Local Hands use horizontal carousels. The opened solo tactical drawer has
+  a bounded vertical touch viewport so portrait card content is reachable on short
+  landscape screens without moving the primary battle controls out of the first fold.
+  Shop and private handoff cards are decorative/noninteractive; the hidden hand shows
+  only its centered 2:3 back.
+- Godot 4.7.1 parser: console PID `21684`, exit 0. Full retained suite: 29/29 scenes
+  exit 0; manifest `E:/CodexCache/printforge-validation/cardframes-retained-suite-0523.txt`.
+  The long move-presentation scene was PID `10224`; final responsive and card scenes
+  were PIDs `17420` and `4924`, respectively.
+- Fresh inspected OpenGL captures are under `E:/CodexCache/printforge-validation/`:
+  `card_archive`, `deck_cards`, `shop_cards`, `battle_hand_cards`, focused
+  `battle_hand_cards_focus`, `local_card_handoff`, and `local_card_revealed`, each at
+  `576x1024` and `1280x720` with tag `cardframes-release`. Capture PIDs, in order,
+  are `13364`, `25200`, `9164`, `16536`, `24996`, `23152`, `25368`, `6128`, `17456`,
+  `2936`, `1192`, `22252`, `23472`, and `9872`; all exited 0. Inspection confirms
+  visible title/cost/art/rarity/rules/target hierarchy, centered 2:3 Shop and Local
+  back silhouettes, an in-frame first-fold move layout, and complete focused Hand
+  cards without overlap.
+- Debug export PID `22356`, exit 0: `PrintForge-Legends-0.5.23-alpha-card-frames-arm64.apk`
+  is 117,946,883 bytes with SHA-256
+  `43F656DFC496C44AA1DB33DF0069C3086134D7D2D35A86407FC42791C4F34A1A`.
+  `apksigner` verifies v2/v3; package is `com.tak.printforge.legends.review`,
+  versionCode `73`, versionName `0.5.23-alpha-card-frames`, with only arm64 native
+  libraries and no excluded source/provenance paths in the archive.
+
 ## Checkpoint 0.5.22 offline support cards (staging only)
 
 - The 30-card offline catalog now has stable IDs, cached 4x2 atlas regions, direct

@@ -4,11 +4,11 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
-	if mode in ["battle_hand_cards", "high_contrast_cards"]:
+	if mode in ["battle_hand_cards", "battle_hand_cards_focus", "high_contrast_cards"]:
 		main.screen = "battle"
 		main.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
-		main.battle.players[0].hand = ["coolant", "final_pass"]
-		main.battle.players[0].filament = 1
+		main.battle.players[0].hand = ["coolant", "final_pass", "raw_filament", "arcane_spark"]
+		main.battle.players[0].filament = 3
 		main.battle_secondary_open = true; main.battle_secondary_tab = "hand"
 		if mode == "high_contrast_cards": GameManager.profile.settings.high_contrast = true
 		return true
@@ -45,10 +45,12 @@ static func configure_battle(main, mode: String) -> bool:
 	if mode in ["local_vs", "local_card_handoff"]:
 		main.screen = "local_vs"
 		main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+		main.local_authority.state.players[main.local_authority.state.active_player].hand = ["coolant", "final_pass", "raw_filament", "arcane_spark"]
 		return true
 	if mode in ["local_vs_ready", "local_card_revealed"]:
 		main.screen = "local_vs"
 		main.local_authority = LocalBattleAuthority.create(GameManager.current_team_loadout(), ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
+		main.local_authority.state.players[main.local_authority.state.active_player].hand = ["coolant", "final_pass", "raw_filament", "arcane_spark"]
 		main.local_ready_seat = main.local_authority.state.active_player
 		return true
 	return false

@@ -83,8 +83,10 @@ func _ready() -> void:
 				await get_tree().process_frame
 			var hand := main.find_child("BattleHandGrid", true, false) as GridContainer
 			var hand_carousel := main.find_child("BattleHandCarousel", true, false) as ScrollContainer
-			var hand_viewport := hand_carousel.get_global_rect() if hand_carousel != null else (hand.get_global_rect() if hand != null else Rect2())
-			require(hand != null and hand.get_child_count() > 0 and hand_viewport.size.y >= 48.0 and hand_viewport.end.y <= float(size.y), "expanded Hand has a reachable clipped carousel/grid viewport at %s (rect %s)" % [size, hand_viewport])
+			var hand_scroll := main.find_child("BattleSecondaryScroll", true, false) as ScrollContainer
+			var hand_viewport := main.find_child("BattleSecondaryViewport", true, false) as Control
+			var viewport_rect := hand_viewport.get_global_rect() if hand_viewport != null else Rect2()
+			require(hand != null and hand.get_child_count() > 0 and hand_carousel != null and hand_scroll != null and hand_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and viewport_rect.size.y >= 48.0 and viewport_rect.end.y <= float(size.y) and hand_carousel.custom_minimum_size.y >= 225.0, "expanded Hand retains 2:3 cards in a bounded, reachable tactical scroll viewport at %s (rect %s)" % [size, viewport_rect])
 			var concede_tab := main.find_child("BattleSecondaryConcedeTab", true, false) as Button
 			if concede_tab != null:
 				concede_tab.emit_signal("pressed")

@@ -21,5 +21,18 @@ frame. Existing primary card costs and values are retained; the modest paired ef
 make previously duplicate-looking cards tactically distinct without changing combat
 to floating-point arithmetic.
 
+## Presentation contract (0.5.23)
+
+Every support-card context uses one 2:3 portrait silhouette: the archive, Deck
+Builder, Forge shop, solo Hand, revealed local-versus Hand, and private local handoff.
+The card front is a code-rendered navy/workshop-brass frame with an inset border,
+rarity accent, title and separate Filament badge, framed atlas art, rarity/role line,
+rules panel, target footer, optional copy count, and a readable legality banner.
+Battle and local hands use a horizontal touch carousel rather than changing cards into
+landscape tiles; the compact 150x225 tier preserves exact rules and targets. The
+private handoff renders only the full portrait back within that same silhouette and is
+noninteractive. Native `Button.text` remains empty; tooltip and accessibility names
+provide the complete card detail.
+
 Known limit: this milestone supplies code-native labels and English catalog text;
 the broader localization pass remains separate.

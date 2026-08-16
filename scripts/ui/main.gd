@@ -11,7 +11,7 @@ const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter
 const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
-const REVIEW_BUILD_LABEL := "0.5.22-alpha-support-cards"
+const REVIEW_BUILD_LABEL := "0.5.23-alpha-card-frames"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -1193,10 +1193,20 @@ func render_local_vs() -> void:
 		actions.add_child(make_button(str(action.name), func(): submit_local_intent({"type":action.type}), Color("2f93a8")))
 	var card_counts := {}
 	for card_id in state.players[seat].hand: card_counts[str(card_id)] = int(card_counts.get(str(card_id), 0)) + 1
-	var local_cards := GridContainer.new(); local_cards.name = "LocalRevealedCardGrid"; local_cards.columns = 2 if is_portrait_layout() else 4; panel.add_child(local_cards)
+	var local_carousel := ScrollContainer.new()
+	local_carousel.name = "LocalRevealedCardCarousel"
+	local_carousel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	local_carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	local_carousel.custom_minimum_size = Vector2(0, 274)
+	local_carousel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_child(local_carousel)
+	var local_cards := GridContainer.new(); local_cards.name = "LocalRevealedCardGrid"; local_cards.columns = 4
+	local_cards.add_theme_constant_override("h_separation", 8)
+	local_carousel.add_child(local_cards)
 	for card_id in card_counts:
 		var definition := Catalog.support_card(str(card_id)); var reason := SupportCardRules.legality_reason(state, seat, definition)
 		var view := SUPPORT_CARD_VIEW.new(); view.configure(definition, int(card_counts[card_id]), reason); view.name = "LocalCard%s" % str(card_id).capitalize(); view.pressed.connect(func(): submit_local_intent({"type":"card","card_id":card_id})); local_cards.add_child(view)
+	local_cards.custom_minimum_size = Vector2(maxi(1, card_counts.size()) * 182, 261)
 	var navigation := GridContainer.new(); navigation.name = "LocalBattleNavigationGrid"; navigation.columns = 2 if is_portrait_layout() else 3; navigation.add_theme_constant_override("h_separation", 8); navigation.add_theme_constant_override("v_separation", 8); body.add_child(navigation)
 	for index in state.players[seat].team.size():
 		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
@@ -1982,7 +1992,7 @@ func render_battle_fullscreen(host: Container) -> void:
 	# An opened tactical panel owns the first fold. Keep the stage compact on both
 	# phone and landscape so every visual card can remain fully reachable.
 	var compact_secondary := battle_secondary_open
-	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (96 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
+	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (64 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
 	_battle_screen_component.attach(intro)
 	if battle.active_player == 0 and not battle.finished:
@@ -2078,6 +2088,10 @@ func render_battle_action_dock(host: Container) -> void:
 	var signature_effect := label("Signature effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8"))
 	signature_effect.name = "BattleSignatureDescription"
 	signature_effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# The card detail itself occupies this explanatory role while the tactical
+	# drawer is open. Removing this duplicate line preserves a complete card
+	# viewport on a short landscape screen without hiding any move control.
+	signature_effect.visible = not battle_secondary_open
 	dock.add_child(signature_effect)
 	var secondary := make_button("Hide Bench, Hand & Details" if battle_secondary_open else "Bench, Hand & Details", toggle_battle_secondary, Color("536c8d"))
 	secondary.name = "BattleSecondaryToggle"
@@ -2087,12 +2101,35 @@ func render_battle_action_dock(host: Container) -> void:
 func render_battle_secondary(host: Container) -> void:
 	if not battle_secondary_open:
 		return
-	var panel := make_panel(Color("172e43ee"), Color("7bcbe5"))
-	panel.name = "BattleSecondaryPanel"
-	var secondary_panel := panel.get_parent() as PanelContainer
-	secondary_panel.custom_minimum_size = Vector2(0, 320 if battle_secondary_tab == "hand" and is_portrait_layout() else (190 if battle_secondary_tab == "hand" else 160))
+	# The Hand keeps its portrait cards intact. Its own vertical touch scroll keeps
+	# the large card carousel reachable without pushing the primary move dock off
+	# the first fold on a phone or on a short landscape screen.
+	var secondary_panel := PanelContainer.new()
+	secondary_panel.name = "BattleSecondaryPanel"
+	secondary_panel.add_theme_stylebox_override("panel", panel_style(Color("172e43ee"), Color("7bcbe5")))
+	secondary_panel.custom_minimum_size = Vector2(0, (282 if is_portrait_layout() else 260) if battle_secondary_tab == "hand" else 160)
 	secondary_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	host.add_child(secondary_panel)
+	# Keep the scroll viewport from advertising its whole card-content height to
+	# the outer battle VBox. Otherwise Godot expands the tactical panel below a
+	# short landscape frame before it has a chance to scroll it.
+	var viewport := Control.new()
+	viewport.name = "BattleSecondaryViewport"
+	viewport.clip_contents = true
+	viewport.custom_minimum_size = Vector2.ZERO
+	secondary_panel.add_child(viewport)
+	var scroll := TOUCH_SCROLL_CONTAINER.new()
+	scroll.name = "BattleSecondaryScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE)
+	scroll.custom_minimum_size = Vector2.ZERO
+	viewport.add_child(scroll)
+	var panel := VBoxContainer.new()
+	panel.name = "BattleSecondaryContent"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_constant_override("separation", 8)
+	scroll.add_child(panel)
 	panel.add_child(label("Tactics", 16, Color("9beaff")))
 	var tabs := GridContainer.new()
 	tabs.name = "BattleSecondaryTabs"
@@ -2142,29 +2179,27 @@ func render_battle_hand_tab(panel: Container) -> void:
 	cards.columns = 4
 	cards.add_theme_constant_override("h_separation", 8)
 	cards.add_theme_constant_override("v_separation", 8)
-	if is_portrait_layout():
-		var carousel := ScrollContainer.new()
-		carousel.name = "BattleHandCarousel"
-		carousel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		carousel.custom_minimum_size = Vector2(0, 112)
-		carousel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		panel.add_child(carousel)
-		carousel.add_child(cards)
-	else:
-		panel.add_child(cards)
+	# Portrait cards stay portrait at every device size. A bounded horizontal
+	# carousel protects their readable rules/target copy instead of flattening
+	# four cards into landscape info tiles.
+	var carousel := ScrollContainer.new()
+	carousel.name = "BattleHandCarousel"
+	carousel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	carousel.custom_minimum_size = Vector2(0, 238)
+	carousel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_child(carousel)
+	carousel.add_child(cards)
 	var counts := {}
 	for raw_id in battle.players[0].hand: counts[str(raw_id)] = int(counts.get(str(raw_id), 0)) + 1
 	for card_id in counts:
 		var definition := Catalog.support_card(str(card_id))
 		var reason := SupportCardRules.legality_reason(battle, 0, definition)
 		var card := SUPPORT_CARD_VIEW.new(); card.configure(definition, int(counts[card_id]), reason, false, true); card.pressed.connect(submit_battle_card.bind(str(card_id)))
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if is_portrait_layout(): card.custom_minimum_size = Vector2(220, 104)
-		else: card.custom_minimum_size.y = 76
+		card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		card.name = "BattleCard%s" % str(card_id).capitalize()
 		cards.add_child(card)
-	if is_portrait_layout(): cards.custom_minimum_size.x = maxi(1, counts.size()) * 228
+	cards.custom_minimum_size = Vector2(maxi(1, counts.size()) * 158, 225)
 
 func submit_battle_card(card_id: String) -> void:
 	_audio_director.cue("card")
