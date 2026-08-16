@@ -1,6 +1,7 @@
 extends Node
 
 const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
+const SOLO_BATTLE_FACTORY := preload("res://scripts/core/solo_battle_factory.gd")
 ## Account state facade. All mutations pass through SaveService journal entries.
 
 signal profile_changed
@@ -72,6 +73,11 @@ func current_team_loadout() -> Array:
 
 func active_deck_cards() -> Array:
 	return ProgressionRules.active_deck(profile)
+
+## A launch-only repair never changes the saved team, inventory, or revision.
+func create_solo_battle(rival_team: Array, rival_spool: int, seed: int) -> Dictionary:
+	if _reject_read_only(): return {"ok":false, "battle":null, "error":save_recovery_message()}
+	return SOLO_BATTLE_FACTORY.create(profile, rival_team, filament_cap(), rival_spool, seed)
 
 func daily_shop(day_key: String) -> Array:
 	if _reject_read_only(): return []

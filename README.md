@@ -22,6 +22,10 @@ Calibration Bench now presents three deterministic day-keyed target bands per at
 
 Armor blueprints print through the same transaction-safe Arcane Forge timing as creatures: ten seconds of layer printing, one raw-completed-part hold, then an armor-only completion transfer. Forgedex records base stats, signature, per-instance mastery, inventory and print counts. Five fixed-label deck slots support create, duplicate, rename, activate, and delete; the starter slot remains protected and every active deck remains legal.
 
+Solo Daily Training and Workshop Trials share a catalog-valid launch factory. It uses the saved team and active 15-card deck when they are legal; a stale but repairable team reference temporarily uses deterministic owned prints for that match without changing inventory or saved-team data, while a profile with no catalog-valid owned print receives an exact actionable setup error. Long activity screens use a touch-first scroll container with focus-follow, a low drag threshold, and a 32px visible scrollbar target.
+
+The Armor Forge uses seven processed transparent raw-part textures derived from the approved 4x2 armor atlas. Each remains seated on the Forge bed during the deterministic ten-second layer reveal and three-second completed-part hold; armor completes as a transfer, never as a creature awakening.
+
 The Proving Door deliberately separates repeatable Daily Training from five ordered Workshop Trial tiers: **First Layers**, **Element Bench**, **Reinforced Run**, **Masterwork Circuit**, and **Primordial Proof**. Every tier has three fixed encounters and a three-print boss. First clears use an authored integer reward curve and grant coins, account XP, and mastery to every instance in the currently saved team; duplicate claims cannot grant rewards again. A faster replay can improve only its recorded best turn count. Mastery is per printed instance and is shown in Collection, Team Builder, Forgedex, and Trial rewards; it is presentation/progression only and does not alter combat stats in this build.
 
 ## Accessibility and battle presentation

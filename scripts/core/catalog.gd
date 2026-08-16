@@ -53,13 +53,13 @@ const CREATURES := [
 	{"id":"starloom","name":"Starloom","rarity":"primordial","element":"Arcane","bend":165,"hp":145,"attack":51,"speed":12,"cost":9,"ability":"First Print","ability_cost":7,"cooldown":5,"signature":{"damage_bonus":15,"effects":[{"effect":"filament","target":"self","amount":5}]},"sprite_sheet":"res://assets/creatures/2d/starloom_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/starloom_raw_print.png"}
 ]
 const ARMOR := [
-	{"id":"helm","name":"Layered Helm","hp":10,"speed":0,"armor":0,"blueprint":80,"print":25},
-	{"id":"chest_plate","name":"Chest Plate","hp":18,"speed":-1,"armor":1,"blueprint":150,"print":45},
-	{"id":"leg_guards","name":"Leg Guards","hp":8,"speed":1,"armor":0,"blueprint":100,"print":30},
-	{"id":"full_suit","name":"Full Suit","hp":30,"speed":-2,"armor":2,"blueprint":400,"print":100},
-	{"id":"arcane_core","name":"Arcane Core","hp":12,"speed":0,"armor":0,"blueprint":800,"print":200},
-	{"id":"shadow_cloak","name":"Shadow Cloak","hp":5,"speed":2,"armor":0,"blueprint":600,"print":150},
-	{"id":"titan_plate","name":"Titan Plate","hp":45,"speed":-3,"armor":0,"blueprint":1200,"print":300}
+	{"id":"helm","name":"Layered Helm","hp":10,"speed":0,"armor":0,"blueprint":80,"print":25,"raw_print":"res://assets/armor/raw/helm_raw_print_alpha_v2.png"},
+	{"id":"chest_plate","name":"Chest Plate","hp":18,"speed":-1,"armor":1,"blueprint":150,"print":45,"raw_print":"res://assets/armor/raw/chest_plate_raw_print_alpha_v2.png"},
+	{"id":"leg_guards","name":"Leg Guards","hp":8,"speed":1,"armor":0,"blueprint":100,"print":30,"raw_print":"res://assets/armor/raw/leg_guards_raw_print_alpha_v2.png"},
+	{"id":"full_suit","name":"Full Suit","hp":30,"speed":-2,"armor":2,"blueprint":400,"print":100,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"},
+	{"id":"arcane_core","name":"Arcane Core","hp":12,"speed":0,"armor":0,"blueprint":800,"print":200,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"},
+	{"id":"shadow_cloak","name":"Shadow Cloak","hp":5,"speed":2,"armor":0,"blueprint":600,"print":150,"raw_print":"res://assets/armor/raw/shadow_cloak_raw_print_alpha_v2.png"},
+	{"id":"titan_plate","name":"Titan Plate","hp":45,"speed":-3,"armor":0,"blueprint":1200,"print":300,"raw_print":"res://assets/armor/raw/titan_plate_raw_print_alpha_v2.png"}
 ]
 const SUPPORT_CARDS := [
 	{"id":"raw_filament","name":"Raw Filament","cost":0,"effect":"filament","amount":2}, {"id":"heated_spool","name":"Heated Spool","cost":0,"effect":"filament","amount":3}, {"id":"quick_patch","name":"Quick Patch","cost":1,"effect":"heal","amount":7}, {"id":"reinforced_layer","name":"Reinforced Layer","cost":1,"effect":"shield","amount":4}, {"id":"arcane_spark","name":"Arcane Spark","cost":1,"effect":"attack_buff","amount":3},

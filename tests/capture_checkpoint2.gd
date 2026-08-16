@@ -101,6 +101,17 @@ func capture() -> void:
 		workshop._audio_director.cue("impact")
 		workshop.render()
 	await wait_for_stable_header()
+	# The trial screen is deliberately scrollable on a phone.  Pin the capture
+	# position after all deferred focus/layout work so the evidence proves both
+	# the initial list and a genuine lower-list scroll state.
+	if capture_mode in ["trials", "trials_scrolled"]:
+		var trial_scroll := workshop.find_child("TouchFirstScroll", true, false) as ScrollContainer
+		if trial_scroll != null:
+			if capture_mode == "trials_scrolled":
+				trial_scroll.scroll_vertical = int(trial_scroll.get_v_scroll_bar().max_value)
+			else:
+				trial_scroll.scroll_vertical = 0
+			await wait_frames(2)
 	var capture_object := capture_workshop_object()
 	if not capture_object.is_empty():
 		var hotspot := workshop.find_child("WorkshopObject%s" % capture_object.capitalize(), true, false) as Button
@@ -159,7 +170,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

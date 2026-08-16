@@ -28,6 +28,8 @@ func _ready() -> void:
 	require(main.find_child("OpenWorkshopTrials", true, false) != null and tree_has_text(main, "Daily Training"), "Proving Door separates Daily Training from Workshop Trials")
 	main.navigate_to("trials")
 	await get_tree().process_frame
+	var scroll := find_named(main, "TouchFirstScroll") as ScrollContainer
+	require(scroll != null and scroll.scroll_deadzone <= 8 and scroll.follow_focus and scroll.get_v_scroll_bar().custom_minimum_size.x >= 28.0, "long Trial screen uses touch-first scrolling with a visible wide focus-follow scrollbar")
 	var first := find_named(main, "TrialStartfirst_layers_1") as Button
 	var second := find_named(main, "TrialStartfirst_layers_2") as Button
 	require(first != null and not first.disabled and second != null and second.disabled, "first encounter starts unlocked and later encounters stay locked")
@@ -52,6 +54,16 @@ func _ready() -> void:
 	var locked_control := find_named(main, "TrialStartfirst_layers_2") as Control
 	var rect := locked_control.get_global_rect() if locked_control != null else Rect2()
 	require(rect.size.y >= 44.0 and rect.position.x >= 0.0 and rect.end.x <= 576.0, "portrait trial action remains touch-safe and in bounds")
+	# Phone symptom: a current-schema profile can retain stale legacy species refs
+	# and a missing active deck. Start must build a temporary, catalog-valid match.
+	var stale_profile := GameManager.profile.duplicate(true)
+	stale_profile["team"] = ["cinderpaw"]
+	stale_profile["active_deck_id"] = "missing-review-deck"
+	stale_profile["decks"] = []
+	GameManager.profile = stale_profile
+	main.screen = "trials"; main.render(); await get_tree().process_frame
+	main.start_trial("first_layers_1")
+	require(main.screen == "battle" and main.battle != null and not Catalog.creature(str(main.battle.active_unit(0).get("id", ""))).is_empty(), "migrated review profile launches Warm Nozzle using a temporary owned-team repair")
 	main.queue_free()
 	await get_tree().process_frame
 	if failures.is_empty(): print("PASS: Workshop Trial navigation, locks, victory return, and mastery UI")

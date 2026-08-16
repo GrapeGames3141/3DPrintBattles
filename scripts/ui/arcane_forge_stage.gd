@@ -85,7 +85,7 @@ func _load_assets() -> void:
 		var texture := CreatureSpriteCache.texture_for_path(path)
 		if texture != null: printer_frames.append(texture)
 	var definition := Catalog.creature(creature_id)
-	var raw_path := str(definition.get("raw_print", ""))
+	var raw_path := str(ProgressionRules.armor_def(armor_id).get("raw_print", "")) if not armor_id.is_empty() else str(definition.get("raw_print", ""))
 	if raw_path.is_empty() or not ResourceLoader.exists(raw_path): raw_path = str(Catalog.creature("mossmunk").get("raw_print", ""))
 	raw = CreatureSpriteCache.texture_for_path(raw_path)
 	living = CreatureSpriteCache.texture_for_creature(creature_id)
@@ -136,16 +136,18 @@ func _draw_raw(plate: Rect2) -> void:
 		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("69efff"), 2.0)
 
 func _draw_armor_part(plate: Rect2) -> void:
+	if raw == null: return
 	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
-	var height := plate.size.y * 1.25
-	var center := Vector2(plate.get_center().x, _plate_surface_y(plate) - height * 0.48)
-	var points := PackedVector2Array([center + Vector2(-height * 0.30, -height * 0.42), center + Vector2(height * 0.30, -height * 0.42), center + Vector2(height * 0.38, -height * 0.08), center + Vector2(0, height * 0.48), center + Vector2(-height * 0.38, -height * 0.08)])
-	var clip_y := center.y + height * 0.50 - height * float(reveal) / 10000.0
-	if reveal > 0:
-		draw_colored_polygon(points, Color("d7b16a"))
-		draw_polyline(points + PackedVector2Array([points[0]]), Color("f7e7a1"), 2.0)
-		draw_rect(Rect2(center.x - height * 0.5, center.y - height * 0.5, height, clip_y - (center.y - height * 0.5)), Color("081526"), true)
-	if phase == ArcaneForgeSequence.PRINTING: draw_line(Vector2(plate.position.x, clip_y), Vector2(plate.end.x, clip_y), Color("69efff"), 2.0)
+	var height := plate.size.y * 1.46
+	var width := height * float(raw.get_width()) / float(raw.get_height())
+	var rect := Rect2(Vector2(plate.get_center().x - width * 0.5, _plate_surface_y(plate) - height), Vector2(width, height))
+	var shown := rect.size.y * float(reveal) / 10000.0
+	if shown <= 0.5: return
+	var source_height := raw.get_height() * float(reveal) / 10000.0
+	var source := Rect2(0, raw.get_height() - source_height, raw.get_width(), source_height)
+	var destination := Rect2(rect.position + Vector2(0, rect.size.y - shown), Vector2(rect.size.x, shown))
+	draw_texture_rect_region(raw, destination, source)
+	if phase == ArcaneForgeSequence.PRINTING: draw_line(Vector2(destination.position.x, destination.position.y), Vector2(destination.end.x, destination.position.y), Color("69efff"), 2.0)
 
 func _draw_living(plate: Rect2) -> void:
 	if living == null: return

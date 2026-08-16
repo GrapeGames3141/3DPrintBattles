@@ -1,4 +1,5 @@
 extends Control
+
 ## Reference-driven workshop presentation; final character art remains approval-gated.
 const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-reference.jpg")
 const WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_landscape_v3.png")
@@ -8,6 +9,7 @@ const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_ove
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
 const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
+const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -282,15 +284,17 @@ func render() -> void:
 			_focus_after_render = false
 			call_deferred("focus_first_button")
 		return
-	var scroll := ScrollContainer.new()
+	var scroll := TOUCH_SCROLL_CONTAINER.new()
+	scroll.name = "TouchFirstScroll"
 	scroll.custom_minimum_size = Vector2(0, 0)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root.add_child(scroll)
 	body = VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 14)
 	scroll.add_child(body)
+	if bool(get_meta("capture_scroll_trials", false)) and screen == "trials":
+		call_deferred("_capture_scroll_trials", scroll)
 	status = label("", 15, Color("fff0a1"))
 	body.add_child(status)
 	match screen:
@@ -328,6 +332,9 @@ func focus_first_button() -> void:
 		if button and button.is_visible_in_tree() and button.disabled == false:
 			button.grab_focus()
 			return
+
+func _capture_scroll_trials(scroll: ScrollContainer) -> void:
+	if is_instance_valid(scroll): scroll.scroll_vertical = 260
 
 func render_save_recovery(root: VBoxContainer) -> void:
 	var panel := make_panel(Color("2f1f2be8"), Color("ffaaa1"))
@@ -1802,16 +1809,16 @@ func start_trial(encounter_id: String) -> void:
 	if not bool(state.get("ok", false)) or not bool(state.get("unlocked", false)):
 		_toast(str(state.get("error", "Clear the earlier Workshop Trial encounters first.")))
 		return
-	var player_team := GameManager.current_team_loadout()
-	if player_team.is_empty():
-		_toast("Your training team is incomplete. Choose a ready print in Team Builder.")
-		return
 	var encounter: Dictionary = state["encounter"]
 	battle_session_generation += 1
 	ai_pending = false
-	battle = BattleState.create(player_team, encounter.get("team", []), GameManager.filament_cap(), int(encounter.get("spool", 3)), _trial_seed(encounter_id), GameManager.active_deck_cards())
-	if battle == null or not battle.validation_error(true).is_empty():
-		_toast("The Workshop Trial team is not ready."); battle = null; return
+	var setup := GameManager.create_solo_battle(encounter.get("team", []), int(encounter.get("spool", 3)), _trial_seed(encounter_id))
+	if not bool(setup.get("ok", false)):
+		battle = null
+		_toast(str(setup.get("error", "The Workshop Trial team is not ready.")))
+		return
+	battle = setup.get("battle", null) as BattleState
+	if bool(setup.get("temporary_repair", false)): _toast(str(setup.get("repair_message", "")))
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_mode = "trial"
@@ -1823,21 +1830,18 @@ func start_trial(encounter_id: String) -> void:
 	render()
 
 func start_battle() -> void:
-	var player_team := GameManager.current_team_loadout()
-	if player_team.is_empty():
-		_toast("Your training team is incomplete. Choose a ready print in Team Builder.")
-		return
 	# Training begins with the currently selected/available team; one print is valid.
 	var rival_team := GameManager.training_opponent(shop_day_key)
 	# A new match invalidates every deferred AI callback tied to an older stage.
 	battle_session_generation += 1
 	ai_pending = false
-	battle = BattleState.create(player_team, rival_team, GameManager.filament_cap(), 3, _training_seed(shop_day_key), GameManager.active_deck_cards())
-	var setup_error := "The training team is not ready." if battle == null else battle.validation_error(true)
-	if not setup_error.is_empty():
+	var setup := GameManager.create_solo_battle(rival_team, 3, _training_seed(shop_day_key))
+	if not bool(setup.get("ok", false)):
 		battle = null
-		_toast(setup_error)
+		_toast(str(setup.get("error", "The training team is not ready.")))
 		return
+	battle = setup.get("battle", null) as BattleState
+	if bool(setup.get("temporary_repair", false)): _toast(str(setup.get("repair_message", "")))
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_last_event = ""

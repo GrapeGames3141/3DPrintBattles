@@ -323,7 +323,53 @@ No Godot editor processes are required for the test scene.
   devices` started an empty daemon and found no attached device, so physical
   Android smoke remains blocked rather than passed.
 
-## Checkpoint 3 workshop depth (staging)
+## Checkpoint 0.5.16 Trial recovery, touch scroll, and armor atlas (staging)
+
+- The shared `SoloBattleFactory` accepts a legal saved team/deck when present,
+  otherwise builds a deterministic temporary owned-print lineup for a
+  catalog-valid stale team reference without mutating the profile. A profile
+  with no catalog-valid owned print is refused before battle creation with its
+  exact recovery message. `test_solo_battle_factory.tscn` and
+  `test_ui_trials.tscn` cover stale species refs, an invalid active deck,
+  no-owned refusal, the Warm Nozzle launch, and touch-scroll configuration.
+- The final true-portrait OpenGL captures were inspected: initial Trial list
+  `trials_576x1024_trialscroll-final-top3.png` (console PID 17768, exit 0),
+  lower-list scroll `trials_scrolled_576x1024_trialscroll-final-scroll3.png`
+  (PID 6600, exit 0), and successful Warm Nozzle first frame
+  `trial_battle_576x1024_trialscroll-final-warmnozzle.png` (PID 8420, exit 0).
+  The list shows an in-frame 32px cyan scrollbar; the Warm Nozzle first fold
+  shows opening guidance with Defend/End Turn enabled and core actions visible.
+- Armor raw assets were regenerated from the original atlas after converting
+  every crop to RGBA before keying. `test_checkpoint6.tscn` (PID 13680, exit
+  0) verifies all seven catalog mappings, 512px source dimensions, and
+  imported-texture transparency at interior background probes. Inspected
+  final OpenGL captures are `armor_printing_720x1280_rgba-helm.png` (PID 6800),
+  `armor_shadow_raw_hold_1280x720_rgba-shadow.png` (PID 20284), and
+  `armor_full_suit_awakened_720x1280_rgba-full.png` (PID 17552), all exit 0;
+  no green fringe or black rectangular matte remains.
+- Final isolated parser/import PID 5884 exited 0. The final retained 23-scene
+  Godot suite also exited 0 (console PIDs 16840, 4872, 3324, 24976, 24412,
+  25548, 15712, 9164, 22308, 23088, 20408, 6188, 25924, 16376, 8420, 23264,
+  15112, 9460, 17876, 1852, 19760, 8740, and 2796). The Windows
+  root-certificate-store warning and dummy renderer cleanup warnings are
+  environment-only. One headless capture retry was intentionally discarded
+  because the dummy renderer has no viewport texture; the final captures above
+  used isolated OpenGL processes.
+- Android review export PID 5168 exited 0:
+  `build/android/PrintForge-Legends-0.5.16-alpha-trial-scroll-arm64.apk`,
+  Final rebuild PID 9932 exited 0 after excluding the converter and source
+  atlas from runtime export: 105,427,012 bytes, SHA-256
+  `E7BBE8E1A6B9AB7B376915C390288B5D9597F70E25FE24C21CBCE75265F23980`.
+  `apksigner` verifies debug v2/v3 signing; APK archive inspection contains
+  only arm64 native libraries and no backend, tests, tools, source atlas, tmp,
+  node_modules, or Git paths; all seven `*_alpha_v2` runtime armor textures
+  remain present. The only docs-like archive entry is the required imported
+  workshop reference asset. Legacy `aapt` prints a known manifest `android:required`
+  parsing warning after package output, so arm64 was verified directly from
+  `lib/arm64-v8a/` entries. No Android device was attached (`adb devices`), so
+  physical-device smoke remains blocked rather than passed.
+
+## Checkpoint 3 workshop depth (historical staging)
 
 - Staging implementation in `E:/CodexCache/printforge-workshop-depth-20260815` uses schema 6/catalog 0.5.13 and has not been committed, pushed, or Drive-delivered. It adds deterministic three-step Calibration Bench patterns, one-choice Print Yard drills, print history, five fixed-label deck slots, and the raw-only armor Forge presentation.
 - Fresh isolated OpenGL parser/import completed with exit 0 (bounded console wrapper PID 22808). The full retained 20-scene suite completed with exit 0, including the new `test_workshop_depth.tscn`; its pure coverage verifies calibration pattern/performance and cap, all Print Yard transitions, one-shot warmup, history migration/increments, raw-only armor print behavior, and deck lifecycle. Environment output was limited to the known Windows root certificate-store warning and existing dummy-renderer cleanup warnings in UI tests.

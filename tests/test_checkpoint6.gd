@@ -45,8 +45,37 @@ func _ready() -> void:
 		# Headless Windows may not expose source PNG bytes, so validate the imported/export seam here.
 		require(ResourceLoader.exists(living_path) and living_texture != null and living_texture.get_width() == 1536 and living_texture.get_height() == 1024, "%s living 4x2 sheet exists and loads at 1536x1024" % creature_id)
 		require(ResourceLoader.exists(raw_path) and raw_texture != null and raw_texture.get_width() > 0 and raw_texture.get_height() > 0, "%s raw print exists and loads" % creature_id)
+	for armor in Catalog.ARMOR:
+		var armor_id: String = str(armor.get("id", ""))
+		var armor_path: String = str(armor.get("raw_print", ""))
+		var armor_image := Image.load_from_file(ProjectSettings.globalize_path(armor_path))
+		var armor_texture := ResourceLoader.load(armor_path) as Texture2D
+		var imported := armor_texture.get_image() if armor_texture != null else null
+		require(ResourceLoader.exists(armor_path) and armor_image != null and not armor_image.is_empty() and armor_image.get_width() == 512 and armor_image.get_height() == 512 and _armor_import_alpha_contract(armor_image, imported), "%s source transparency survives import without a rectangular matte" % armor_id)
+	var armor_sequence := ArcaneForgeSequence.create(false, true)
+	armor_sequence.begin(); armor_sequence.advance(ArcaneForgeSequence.PRINT_COMPLETE_BPS); armor_sequence.request_commit(); armor_sequence.resolve_commit(true); armor_sequence.advance(ArcaneForgeSequence.RAW_HOLD_BPS)
+	require(armor_sequence.phase == ArcaneForgeSequence.AWAKENED, "armor print exits its full completed-part hold directly to transfer completion without creature awakening or departure")
 	if failures.is_empty(): print("PASS: checkpoint6 Arcane Forge sequence and asset mappings")
 	call_deferred("finish")
 
 func finish() -> void:
 	get_tree().quit(0 if failures.is_empty() else 1)
+
+func _armor_import_alpha_contract(source: Image, imported: Image) -> bool:
+	if imported == null or imported.is_empty() or source.get_size() != imported.get_size(): return false
+	var samples: int = 0
+	var transparent_samples: int = 0
+	var opaque_samples: int = 0
+	for y in range(8, source.get_height(), 16):
+		for x in range(8, source.get_width(), 16):
+			samples += 1
+			var source_alpha: float = source.get_pixel(x, y).a
+			var imported_alpha: float = imported.get_pixel(x, y).a
+			if source_alpha <= 0.03:
+				transparent_samples += 1
+				if imported_alpha > 0.03: return false
+			elif source_alpha >= 0.50:
+				opaque_samples += 1
+	# Each centered armor silhouette must retain meaningful transparent surround
+	# and opaque material, but must not approximate a filled 512px rectangle.
+	return samples > 0 and transparent_samples * 100 >= samples * 30 and opaque_samples * 100 >= samples * 2 and opaque_samples * 100 <= samples * 75
