@@ -1,5 +1,77 @@
 # Validation record
 
+## Checkpoint 0.5.25 landscape support-card art (staging only)
+
+- The four approved v2 runtime atlases are 1536x512 4x2 sheets; every mapped card
+  region is a complete 384x256 3:2 cell. `CardArtAspect` holds the visible art
+  window at 3:2, so centered containment fills it without crop, pillarbox, or
+  letterbox space while the external support-card silhouette remains 2:3.
+- Focused support-card mechanics/catalog test passed: console PID `17968`, worker
+  PID `8740`. Focused UI regression passed: console PID `22276`, worker PID
+  `25812`; it asserts actual post-layout 2:3 cards, 3:2 art viewport/regions,
+  required title/rules/target hierarchy, privacy/noninteractive policy, and bounded
+  four-card portrait/landscape carousels. The final exact all-30 approved A/B atlas
+  mapping assertion also passed in the focused catalog/UI rerun (console PIDs
+  `24952`/`26448`, worker PIDs `4064`/`16996`).
+- Fresh inspected OpenGL captures under `E:/CodexCache/printforge-validation/`
+  use the `cardartlandscape-review` tag: Archive `19088`/`3300`, Deck
+  `6484`/`16528`, Shop `9448`/`21056`, first-fold Battle Hand `23424`/`7352`,
+  focused complete Battle Hand `6956`/`26520`, and Local revealed `10448`/`8924`,
+  each ordered `576x1024` then `1280x720`. Inspection confirmed full 3:2 art fill,
+  readable text hierarchy, and unchanged first-fold move controls.
+- Final parser passed: console PID `23924`, worker PID `21580`, exit 0. Retained
+  suite passed 29/29 through the fresh E:-backed APPDATA/LOCALAPPDATA process
+  pattern; manifest
+  `E:/CodexCache/printforge-validation/card-landscape-art-retained-suite-0525.txt`.
+  The non-marginal move-presentation case passed in 63 seconds (console PID
+  `25980`, worker PID `13940`).
+- Debug Android export passed: console PID `22972`, worker PID `17448`, exit 0.
+  `PrintForge-Legends-0.5.25-alpha-landscape-card-art-arm64.apk` is 122,199,559
+  bytes with SHA-256 `66B9140158CE5E8E65B5CC6ADDD9D5248D400CE158CD9E9389F94E743557E7F6`.
+  `apksigner` verifies v2/v3; `aapt` reports package
+  `com.tak.printforge.legends.review`, versionCode `75`, versionName
+  `0.5.25-alpha-landscape-card-art`, and only `arm64-v8a` native libraries. Archive
+  exclusion audit found zero backend/test/tool/source/provenance paths or raw atlas
+  source files. (The installed `aapt` returns its known nonzero
+  `android:required` parsing warning after emitting valid package metadata.)
+
+## Checkpoint 0.5.24 contained support-card art (staging only)
+
+- Front `CardArt` now uses centered aspect containment instead of aspect-covered
+  rendering. Each runtime 4x2 atlas region is its entire portrait cell; its object
+  or scene is visible in the dark framed side space rather than cropped at top or
+  bottom. Full and compact art windows are 112px and 92px respectively. The private
+  local back remains aspect-covered because its 2:3 source exactly matches the card.
+- Focused `test_ui_support_cards.tscn` passed after the containment change. It
+  asserts front/compact/hidden 2:3 layout after host geometry, native Button text
+  emptiness, decorative/privacy policy, full atlas-cell regions, non-cropping front
+  stretch mode, long readable title/rules/target fields, and bounded four-card
+  portrait/landscape Hand carousels.
+- Fresh inspected captures are under `E:/CodexCache/printforge-validation/` with
+  tag `cardartfit-review`: Archive PIDs `22596`/`7064`, Deck `17968`/`20364`, Shop
+  `11624`/`8688`, first-fold Battle Hand `6192`/`18724`, focused complete Battle
+  Hand `14592`/`11780`, and Local revealed `21704`/`23260`, each ordered
+  `576x1024` then `1280x720`. Inspection confirmed complete, centered art objects,
+  visible title/cost/rules/target hierarchy, intentional dark side space, and
+  unchanged first-fold move controls.
+- Parser/import scan passed: Godot 4.7.1-stable desktop x64 console PID `13108`,
+  exit 0. The retained suite passed 29/29 scenes through a fresh E:-backed
+  APPDATA/LOCALAPPDATA root per invocation; its manifest is
+  `E:/CodexCache/printforge-validation/card-art-fit-retained-suite-0524.txt`.
+  The slower move-presentation test was console PID `9720`, worker PID `7196`, and
+  passed in 64 seconds. Earlier failed bootstrap evidence remains outside the
+  repository at
+  `E:/CodexCache/printforge-validation/card-art-fit-godot-bootstrap-crash-0524.txt`;
+  no gameplay, queue, or schema change was made in response. Android export audit
+  used console PID `21184` and worker PID `19936`, exit 0. The debug-signed arm64
+  APK is `PrintForge-Legends-0.5.24-alpha-card-art-fit-arm64.apk`, 117,946,883
+  bytes, SHA-256 `43BF82551C474DC61350474569D58643BE0EBFBCD7BE1052303A47E05BC81C08`.
+  `apksigner` verifies v2/v3 (debug signer); `aapt` reports package
+  `com.tak.printforge.legends.review`, versionCode `74`, versionName
+  `0.5.24-alpha-card-art-fit`, and only `arm64-v8a` native libraries. Archive audit
+  found zero excluded source/provenance/backend/test paths, raw armor atlas files,
+  or source card atlases.
+
 ## Checkpoint 0.5.23 portrait support-card frames (staging only)
 
 - Every support-card front and the private Local Versus back now shares a tested

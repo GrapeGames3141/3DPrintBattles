@@ -107,7 +107,7 @@
   - **Depends on:** approved audio assets and platform QA.
 
 
-- [x] **Complete offline support-card art and collection presentation.** All 30 catalog cards have cached 4x2 atlas regions (plus a private card back), a unified 2:3 workshop/navy/brass frame with explicit cost/rules/target/rarity/copy/disabled text, Maker-reachable archive, deck gallery, shop integration, and horizontal portrait-card carousels in solo/local hands with discard counts. `tests/test_support_card_system.tscn` proves every card resolves and discards deterministically. See `docs/CARD_SYSTEM.md`.
+- [x] **Complete offline support-card art and collection presentation.** All 30 catalog cards have cached 4x2 landscape 3:2 atlas regions (plus a private card back), a unified 2:3 workshop/navy/brass frame with explicit cost/rules/target/rarity/copy/disabled text, full-frame source art with no crop or side bars, Maker-reachable archive, deck gallery, shop integration, and horizontal portrait-card carousels in solo/local hands with discard counts. `tests/test_support_card_system.tscn` proves every card resolves and discards deterministically. See `docs/CARD_SYSTEM.md`.
   - **Remaining:** localization and a device accessibility matrix remain separate P2 work.
 
 

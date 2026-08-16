@@ -1,5 +1,31 @@
 # Arcane Forge selected-art ledger
 
+## Support-card landscape atlas (0.5.25-alpha)
+
+Eight approved `1536x1024` 2x2 source sheets live in
+`docs/art/source/cards/landscape_v2/`: resources, defense, offense, and utility A/B.
+Every source quadrant is `768x512` (3:2). `tmp/build_support_card_landscape_atlases.ps1`
+deterministically places A in runtime cells 0-3 and B in cells 4-7, downsampling each
+quadrant once to a `384x256` native-aspect cell in a versioned `1536x512` 4x2 runtime
+atlas at `assets/cards/support_cards_*_landscape_v2.png`. The source artwork is not
+cropped, stretched, or regenerated during assembly. Runtime is allowed to load only
+those four v2 atlases; the v1 source atlases remain preserved for history.
+
+| Asset | SHA-256 |
+| --- | --- |
+| `resources_a_2x2.png` | `557F336558C9772F993CE9AA5B126AF3BA333BFD3DF82F539C27A1377C97716C` |
+| `resources_b_2x2.png` | `39B5CA05EDAA7E90F73B00C853EC07B2AACB82E2F81F35A8128DEB7134B3533B` |
+| `defense_a_2x2.png` | `3532AF34BBC12AFEA1291962EF024186D591703D89823CDAC810137313862F37` |
+| `defense_b_2x2.png` | `FF01CE7B0B82F1D05776C95FBEA35731205CA29F40B3EEBBFAA81C78689E9617` |
+| `offense_a_2x2.png` | `E718F37DDAD4FF93B0E9ED0E624C202F1C96A8E4494802A72FCF581B0AF21E4F` |
+| `offense_b_2x2.png` | `75001D406A98B84DF16F4C19917AB7366F45DC6DEE4BB1CF105480D74682FFC0` |
+| `utility_a_2x2.png` | `F7A4B0E0F8370CFA68E0CAC092F3437A27065884CB8CBE779FB50D9007D559F2` |
+| `utility_b_2x2.png` | `5D54601A4A1647AC3863B829262D94868454BB9E0D2F7F665C7CEE0F614E3DA8` |
+| `support_cards_resources_landscape_v2.png` | `FF807F5128430FA5AD1C1A1600B90730049B1D6177881059848F9444F1CD96E4` |
+| `support_cards_defense_landscape_v2.png` | `21ADE8211E5BA6B8ABB8F4591BD6BB9EC4DE1B5637CC1429E007D60D8487ACD3` |
+| `support_cards_offense_landscape_v2.png` | `950F244BABB5BC7379D571BB6809215914B929F0A8E6AF616F1E91A1F762A43E` |
+| `support_cards_utility_landscape_v2.png` | `A096108987F8B25CE8FFECADC624787C5FE1CD4C905FE219B4EBC86F40D445C8` |
+
 Checkpoint 6 uses only the selected transparent PNGs already validated in staging:
 
 - `assets/ui/arcane_forge_printer.png` - SHA-256 `D5D8CD574D37D22AF82B304B3F0EF857ECD0D97312522C691D1AC861A8161C6D`

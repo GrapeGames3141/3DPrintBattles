@@ -92,11 +92,19 @@ func _require_card_front(card: Button, disabled := false, decorative := false, c
 	if hidden:
 		require(card.find_child("CardBackArt", true, false) != null and card.find_child("CardTitlePlate", true, false) == null and card.tooltip_text == "Hidden support card", context + " is private, art-only and has no redundant plaque")
 		return
-	for field in ["CardInsetBorder", "CardTitlePlate", "CardTitle", "CardCostBadge", "CardArtWindow", "CardArt", "CardRarityRole", "CardRulesPanel", "CardTargetFooter"]:
+	for field in ["CardInsetBorder", "CardTitlePlate", "CardTitle", "CardCostBadge", "CardArtAspect", "CardArtWindow", "CardArt", "CardRarityRole", "CardRulesPanel", "CardTargetFooter"]:
 		require(card.find_child(field, true, false) != null, context + " has required " + field)
 	var title := card.find_child("CardTitle", true, false) as Label
 	var rules := card.find_child("CardRulesPanel", true, false) as Label
 	var target := card.find_child("CardTargetFooter", true, false) as Label
+	var art := card.find_child("CardArt", true, false) as TextureRect
+	var art_window := card.find_child("CardArtWindow", true, false) as Control
 	require(title != null and title.visible and not title.text.is_empty() and rules != null and rules.visible and not rules.text.is_empty() and target != null and target.visible and target.text.begins_with("Target:"), context + " visibly renders title, exact rules, and target")
+	require(art != null and art.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED and art_window != null and art_window.get_global_rect().size.y >= 48.0 and absf(art_window.get_global_rect().size.x / maxf(1.0, art_window.get_global_rect().size.y) - 1.5) <= 0.03, context + " contains full landscape atlas art in an exact 3:2 framed window")
+	if art != null and art.texture is AtlasTexture:
+		var region := art.texture as AtlasTexture
+		var source_size := region.atlas.get_size()
+		require(is_equal_approx(region.region.size.x, source_size.x / 4.0) and is_equal_approx(region.region.size.y, source_size.y / 2.0) and absf(region.region.size.x / region.region.size.y - 1.5) <= 0.001, context + " uses one complete landscape 4x2 atlas cell without crop")
 	if disabled:
-		require(card.find_child("CardLegalityBanner", true, false) != null and card.disabled, context + " shows a readable legality banner")
+		var banner := card.find_child("CardLegalityBanner", true, false) as Label
+		require(banner != null and banner.visible and not banner.text.is_empty() and card.disabled, context + " shows a readable legality banner")

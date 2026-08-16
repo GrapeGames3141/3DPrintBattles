@@ -16,6 +16,7 @@ func _ready() -> void:
 		var effects := SupportCardRules.normalized_effects(definition)
 		require(not effects.is_empty() and not SupportCardRules.rules_text(definition).is_empty() and not SupportCardRules.target_text(definition).is_empty(), "metadata/effects/rules: " + id)
 		_assert_play_effects(definition, effects)
+	_assert_landscape_atlas_mapping()
 	_assert_rejections_and_snapshot()
 	_assert_lazy_art_cache()
 	if failures.is_empty(): print("PASS: all 30 support cards, every effect, discard snapshots, atomic rejection, lazy atlas cache")
@@ -65,13 +66,26 @@ func _assert_rejections_and_snapshot() -> void:
 	rejected.players[0].filament = 10; rejected.players[0].hand = []; snapshot = rejected.serialize().duplicate(true)
 	require(not BattleRules.apply_intent(rejected, 0, {"type":"card", "card_id":"final_pass"}).get("ok", false) and rejected.serialize() == snapshot, "not-in-hand card byte-equal")
 
+func _assert_landscape_atlas_mapping() -> void:
+	var expected := {
+		"resources":["raw_filament", "heated_spool", "print_accelerant", "emergency_coil", "calibration", "forge_map", "print_preview", "spare_nozzle"],
+		"defense":["quick_patch", "reinforced_layer", "coolant", "dense_infill", "flux_tape", "safety_brace", "repair_drone", "spark_guard"],
+		"offense":["arcane_spark", "windup", "filament_snare", "layer_lock", "tempered_edge", "spool_siphon", "anchor_bolt", "final_pass"],
+		"utility":["switchback", "overclock", "resin_wash", "hot_swap", "thermal_paste", "soft_reset"]
+	}
+	for atlas_id in expected:
+		var ids: Array = expected[atlas_id]
+		for cell in ids.size():
+			var art := Catalog.support_card(str(ids[cell])).get("art", {})
+			require(str(art.get("atlas", "")) == atlas_id and int(art.get("cell", -1)) == cell, "approved landscape atlas mapping: %s cell %d" % [str(ids[cell]), cell])
+
 func _assert_lazy_art_cache() -> void:
 	SupportCardView.reset_cache_for_test(); require(SupportCardView.cache_count_for_test() == 0, "startup card cache remains empty")
 	for atlas_id in ["resources", "defense", "offense", "utility"]:
 		var first := SupportCardView.atlas_texture_for_test(atlas_id); var second := SupportCardView.atlas_texture_for_test(atlas_id)
-		require(first != null and first.get_size().x > 0 and first.get_size().y > 0 and first == second, "lazy cached atlas: " + atlas_id)
+		require(first != null and first.get_size() == Vector2i(1536, 512) and first == second, "lazy cached 4x2 landscape atlas: " + atlas_id)
 	var back := SupportCardView.card_back_for_test(); require(back != null and back.get_size().x > 0 and back.get_size().y > 0, "lazy card back")
-	var sample := Catalog.support_card("raw_filament"); require(SupportCardView.atlas_region(sample) == SupportCardView.atlas_region(sample), "atlas region identity cached")
+	var sample := Catalog.support_card("raw_filament"); var sample_region := SupportCardView.atlas_region(sample); require(sample_region == SupportCardView.atlas_region(sample) and sample_region is AtlasTexture and absf((sample_region as AtlasTexture).region.size.x / (sample_region as AtlasTexture).region.size.y - 1.5) <= 0.001, "3:2 atlas region identity cached")
 
 func finish() -> void:
 	get_tree().quit(0 if failures.is_empty() else 1)

@@ -3,7 +3,7 @@ extends Button
 ## A single, portrait-first card renderer shared by archive, deck, shop and battle.
 ## Art never carries copy: every player-facing label remains a real Godot control.
 const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
-const ATLAS_PATHS := {"resources":"res://assets/cards/support_cards_resources_source_v1.png", "defense":"res://assets/cards/support_cards_defense_source_v1.png", "offense":"res://assets/cards/support_cards_offense_source_v1.png", "utility":"res://assets/cards/support_cards_utility_source_v1.png"}
+const ATLAS_PATHS := {"resources":"res://assets/cards/support_cards_resources_landscape_v2.png", "defense":"res://assets/cards/support_cards_defense_landscape_v2.png", "offense":"res://assets/cards/support_cards_offense_landscape_v2.png", "utility":"res://assets/cards/support_cards_utility_landscape_v2.png"}
 const CARD_BACK_PATH := "res://assets/cards/support_card_back_source_v1.png"
 const FULL_SIZE := Vector2(174, 261) # Canonical 2:3 silhouette.
 const COMPACT_SIZE := Vector2(150, 225) # Battle carousel tier; still touch-safe and readable.
@@ -93,17 +93,26 @@ func _build_front(definition: Dictionary, copies: int, disabled_reason: String, 
 	cost.offset_left = -30
 	cost.add_theme_stylebox_override("normal", _badge_frame())
 	title_row.add_child(cost)
+	# Approved v2 atlas cells and the visible viewport are both 3:2. The aspect
+	# container keeps the art frame exact at any host width, so centered containment
+	# fills it without cropping, bars, or source-art distortion.
+	var art_aspect := AspectRatioContainer.new()
+	art_aspect.name = "CardArtAspect"
+	art_aspect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_aspect.ratio = 1.5
+	art_aspect.stretch_mode = AspectRatioContainer.STRETCH_WIDTH_CONTROLS_HEIGHT
+	art_aspect.custom_minimum_size = Vector2(0, 92 if compact else 108)
+	content.add_child(art_aspect)
 	var art_frame := PanelContainer.new()
 	art_frame.name = "CardArtWindow"
 	art_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art_frame.custom_minimum_size = Vector2(0, 72 if compact else 88)
 	art_frame.add_theme_stylebox_override("panel", _art_frame(definition))
-	content.add_child(art_frame)
+	art_aspect.add_child(art_frame)
 	var art := TextureRect.new()
 	art.name = "CardArt"
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.texture = atlas_region(definition)
 	art_frame.add_child(art)
 	var role := _text("%s  •  %s" % [str(definition.get("rarity", "common")).capitalize(), str(definition.get("role", "utility")).capitalize()], 9 if compact else 10, _rarity_color(str(definition.get("rarity", "common"))))

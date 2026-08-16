@@ -11,7 +11,7 @@ const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter
 const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
-const REVIEW_BUILD_LABEL := "0.5.23-alpha-card-frames"
+const REVIEW_BUILD_LABEL := "0.5.25-alpha-landscape-card-art"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.

@@ -13,15 +13,17 @@ legality feedback and deterministic AI utility. Targets are Your Forge (Filament
 draw), Your team (switch discount), Your active print (heal/shield/buff/cooldown/
 cleanse), or Foe active print (debuff). Multi-target cards enumerate their effects.
 
-The approved source atlases are copied unchanged to `assets/cards/` for runtime and
-`docs/art/source/cards/` for provenance. Runtime uses cached normalized 4x2
+The approved landscape v2 source sheets remain under
+`docs/art/source/cards/landscape_v2/` for provenance. Their exact 2x2 native 3:2
+quadrants are deterministically assembled into versioned 1536x512 runtime 4x2
+atlases in `assets/cards/`; each runtime cell is 384x256. Runtime uses cached
 `AtlasTexture` regions; Utility intentionally uses cells 0-5 only. The card back is
 a direct texture for private local-versus handoff. No image is decoded or cropped per
 frame. Existing primary card costs and values are retained; the modest paired effects
 make previously duplicate-looking cards tactically distinct without changing combat
 to floating-point arithmetic.
 
-## Presentation contract (0.5.23)
+## Presentation contract (0.5.25)
 
 Every support-card context uses one 2:3 portrait silhouette: the archive, Deck
 Builder, Forge shop, solo Hand, revealed local-versus Hand, and private local handoff.
@@ -33,6 +35,12 @@ landscape tiles; the compact 150x225 tier preserves exact rules and targets. The
 private handoff renders only the full portrait back within that same silhouette and is
 noninteractive. Native `Button.text` remains empty; tooltip and accessibility names
 provide the complete card detail.
+
+Front atlas cells and their `CardArtWindow` are both exact 3:2. Centered containment
+therefore fills the window with the complete landscape cell—no crop, side bars, or
+letterbox space—while the overall card frame remains canonical 2:3. The private back
+remains full-cover because its source image already matches the canonical 2:3 card
+silhouette.
 
 Known limit: this milestone supplies code-native labels and English catalog text;
 the broader localization pass remains separate.
