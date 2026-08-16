@@ -10,7 +10,7 @@ const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordan
 const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
-const REVIEW_BUILD_LABEL := "0.5.20-alpha-battle-static-catalog"
+const REVIEW_BUILD_LABEL := "0.5.21-alpha-battle-presentation"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -38,6 +38,7 @@ var body: VBoxContainer
 var status: Label
 var battle_last_event := ""
 var battle_last_actor := 0
+var battle_presentation_serial := 0
 var ai_pending := false
 var battle_session_generation := 0
 var battle_concede_armed := false
@@ -1851,7 +1852,7 @@ func start_trial(encounter_id: String) -> void:
 	battle_mode = "trial"
 	trial_encounter_id = encounter_id
 	battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
-	battle_last_event = ""; battle_last_actor = 0; battle_concede_armed = false; battle_secondary_open = false; battle_secondary_tab = "bench"
+	battle_last_event = ""; battle_last_actor = 0; battle_presentation_serial = 0; battle_concede_armed = false; battle_secondary_open = false; battle_secondary_tab = "bench"
 	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "battle"
 	render()
@@ -1872,6 +1873,7 @@ func start_battle() -> void:
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_last_event = ""
+	battle_presentation_serial = 0
 	battle_last_actor = 0
 	battle_mode = "training"
 	trial_encounter_id = ""
@@ -1927,7 +1929,7 @@ func render_battle_fullscreen(host: Container) -> void:
 	if not battle_launch_notice.is_empty():
 		intro.add_child(label("Lineup notice: " + battle_launch_notice, 13, Color("fff0a1")))
 	var compact_secondary := battle_secondary_open and not is_portrait_layout()
-	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() else (96 if compact_secondary else 172))
+	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() else (96 if compact_secondary else 172), bool(settings().get("high_contrast", false)), battle_presentation_serial)
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
 	_battle_screen_component.attach(intro)
 	if battle.active_player == 0 and not battle.finished:
@@ -2183,6 +2185,7 @@ func intent(action: Dictionary) -> void:
 		battle_concede_armed = false
 		battle_last_event = str(action.get("type", ""))
 		battle_last_actor = 0
+		battle_presentation_serial += 1
 		render()
 
 func toggle_battle_concede() -> void:
@@ -2224,6 +2227,7 @@ func run_ai(expected_state: BattleState = null, expected_generation := -1) -> vo
 	if result.ok:
 		battle_last_event = str(applied.type)
 		battle_last_actor = 1
+		battle_presentation_serial += 1
 	render()
 
 func _toast(message: String) -> void:

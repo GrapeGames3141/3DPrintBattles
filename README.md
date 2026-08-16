@@ -33,7 +33,11 @@ single existing catalog validation inside `BattleState.make_team()`. This avoids
 an exported nested static-helper lookup producing an empty valid team while
 preserving catalog validation, armor modifiers, deterministic order, and the
 non-persisting retry behavior. The current review label is
-`0.5.20-alpha-battle-static-catalog`. The complete battle domain now reads the
+`0.5.21-alpha-battle-presentation`. Battle units rest on static idle artwork,
+then replay finite tokenized action presentation with a stable 2px atlas inset and
+optional transparent elemental/status VFX atlases. Living sheets are repaired
+offline before import, so the runtime stage reuses ordinary imported textures
+without a component scan or a per-frame texture allocation. The complete battle domain now reads the
 immutable `catalog.gd` constants through a preloaded static accessor rather
 than the application `Catalog` Node autoload, so battle construction,
 normalization, rules, signatures, support cards, and AI share export-safe data

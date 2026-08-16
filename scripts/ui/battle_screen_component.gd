@@ -10,12 +10,14 @@ func enter(_context: Dictionary = {}) -> void:
 		stage = BattleSpriteStage.new()
 		stage.name = "BattleStage"
 
-func refresh(player: Dictionary, rival: Dictionary, event_kind: String, actor: int, reduced_motion: bool, minimum_height: float) -> BattleSpriteStage:
+func refresh(player: Dictionary, rival: Dictionary, event_kind: String, actor: int, reduced_motion: bool, minimum_height: float, high_contrast := false, presentation_token := 0) -> BattleSpriteStage:
 	enter()
-	var signature := "%s:%s:%s:%s:%s" % [str(player.get("id", "")), str(rival.get("id", "")), event_kind, actor, reduced_motion]
+	# Token is monotonic per accepted intent. It deliberately distinguishes two
+	# consecutive attacks/cards after the persistent stage has been reattached.
+	var signature := "%s:%s:%s:%s:%s:%s:%s" % [str(player.get("id", "")), str(rival.get("id", "")), event_kind, actor, reduced_motion, high_contrast, presentation_token]
 	if signature != _presentation_signature:
 		_presentation_signature = signature
-		stage.configure(player, rival, event_kind, actor, reduced_motion)
+		stage.configure(player, rival, event_kind, actor, reduced_motion, high_contrast, presentation_token)
 	stage.custom_minimum_size = Vector2(0, minimum_height)
 	return stage
 

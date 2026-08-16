@@ -5,6 +5,7 @@ const MAIN_SCENE := preload("res://scenes/main.tscn")
 const ART_GALLERY := preload("res://scripts/ui/creature_art_gallery.gd")
 const CAPTURE_FEATURE_SETUP := preload("res://tests/capture_feature_setup.gd")
 const CAPTURE_OFFLINE_QA_SETUP := preload("res://tests/capture_offline_qa_setup.gd")
+const VFX_CONTACT_SHEET := preload("res://tests/vfx_contact_sheet.gd")
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -43,6 +44,11 @@ func _prepare_capture() -> void:
 		workshop.page = 1 if capture_mode == "art_gallery_page1" else 2
 		get_tree().root.call_deferred("add_child", workshop)
 		call_deferred("capture")
+		return
+	if capture_mode == "battle_vfx_contact_sheet":
+		workshop = VFX_CONTACT_SHEET.new()
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture_contact_sheet")
 		return
 	if capture_mode == "high_contrast_battle": GameManager.profile.settings.high_contrast = true
 	if capture_mode == "reduced_motion_battle": GameManager.profile.settings.reduced_motion = true
@@ -144,6 +150,15 @@ func capture() -> void:
 			else:
 				trial_scroll.scroll_vertical = 0
 			await wait_frames(2)
+	if capture_mode.begins_with("battle_vfx_") and workshop != null:
+		# Replay the finite visual at a meaningful deterministic point after layout
+		# has settled. This does not submit an intent or mutate BattleState.
+		var stage := workshop.find_child("BattleStage", true, false) as BattleSpriteStage
+		if stage != null:
+			var kind := "attack" if capture_mode == "battle_vfx_basic" else ("" if capture_mode == "battle_vfx_idle" else "ability")
+			stage.configure(workshop.battle.active_unit(0), workshop.battle.active_unit(1), kind, 0, bool(workshop.settings().get("reduced_motion", false)), bool(workshop.settings().get("high_contrast", false)), int(workshop.battle_presentation_serial) + 1)
+			stage.advance_presentation(0.38 if kind == "ability" else 0.26)
+			await wait_frames(1)
 	var capture_object := capture_workshop_object()
 	if not capture_object.is_empty():
 		var hotspot := workshop.find_child("WorkshopObject%s" % capture_object.capitalize(), true, false) as Button
@@ -152,6 +167,24 @@ func capture() -> void:
 			await wait_frames(2)
 	# Hide/capture the Windows pointer immediately before the viewport readback.
 	# This is more reliable than the initial hidden request while the window gains focus.
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	await wait_frames(2)
+	capture_size = requested_resolution()
+	var suffix := "_%s" % capture_tag if not capture_tag.is_empty() else ""
+	var image := get_viewport().get_texture().get_image()
+	var expected := requested_capture_viewport()
+	if expected.x > 0 and image.get_size() != expected:
+		push_error("Capture dimension mismatch: expected %s, received %s" % [expected, image.get_size()])
+		get_tree().quit(1)
+		return
+	image.save_png(OUTPUT_DIR.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix]))
+	print("CAPTURED: %s (%s, %s%s)" % [OUTPUT_DIR, capture_mode, capture_size, suffix])
+	get_tree().quit()
+
+func capture_contact_sheet() -> void:
+	# Raw capture-only ImageTextures finish their first render after the root
+	# attachment; retain extra frames so every labeled VFX cell is present.
+	await wait_frames(24)
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	await wait_frames(2)
 	capture_size = requested_resolution()
@@ -202,7 +235,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

@@ -1,9 +1,10 @@
 class_name CreatureSpriteCache
 extends RefCounted
-## Process-wide immutable sprite assets. Recreated presentation controls share this
-## cache so alpha analysis is never repeated for the same catalog sheet.
+## Process-wide immutable sprite assets. Atlas edge repair is an offline asset
+## step; runtime only reuses imported textures and a fixed safe source region.
 
 const CELL := Vector2i(384, 512)
+const ATLAS_GUTTER := 2
 
 static var _textures: Dictionary = {}
 static var _images: Dictionary = {}
@@ -42,34 +43,19 @@ static func sprite_path_for(creature_id: String) -> String:
 	if not path.is_empty() and ResourceLoader.exists(path): return path
 	return str(Catalog.creature("mossmunk").get("sprite_sheet", ""))
 
+static func safe_source_region(frame: int) -> Rect2:
+	var normalized := posmod(frame, 8)
+	var origin := Vector2((normalized % 4) * CELL.x, (normalized / 4) * CELL.y)
+	return Rect2(origin + Vector2.ONE * ATLAS_GUTTER, Vector2(CELL) - Vector2.ONE * ATLAS_GUTTER * 2.0)
+
+## Compatibility seam for existing Forge/checkpoint callers. This is now a
+## fixed, scan-free source contract because assets are repaired offline.
 static func alpha_bounds_for_path(path: String) -> Rect2:
 	if _alpha_bounds.has(path): return _alpha_bounds[path] as Rect2
-	texture_for_path(path)
-	var image := _images.get(path) as Image
-	if image == null or image.is_empty():
-		var fallback := Rect2(Vector2.ZERO, Vector2(CELL))
-		_alpha_bounds[path] = fallback
-		_bounds_scans[path] = 1
-		return fallback
-	var min_x := CELL.x
-	var min_y := CELL.y
-	var max_x := -1
-	var max_y := -1
-	# Union all eight cells in local coordinates. The fixed union removes frame
-	# scale jitter while only scanning each path once in this process.
-	for y in image.get_height():
-		for x in image.get_width():
-			if image.get_pixel(x, y).a <= 0.01: continue
-			var local_x := x % CELL.x
-			var local_y := y % CELL.y
-			min_x = mini(min_x, local_x)
-			min_y = mini(min_y, local_y)
-			max_x = maxi(max_x, local_x)
-			max_y = maxi(max_y, local_y)
-	var result := Rect2(Vector2(min_x, min_y), Vector2(maxi(1, max_x - min_x + 1), maxi(1, max_y - min_y + 1))) if max_x >= min_x else Rect2(Vector2.ZERO, Vector2(CELL))
-	_alpha_bounds[path] = result
+	var bounds := Rect2(Vector2.ONE * ATLAS_GUTTER, Vector2(CELL) - Vector2.ONE * ATLAS_GUTTER * 2.0)
+	_alpha_bounds[path] = bounds
 	_bounds_scans[path] = int(_bounds_scans.get(path, 0)) + 1
-	return result
+	return bounds
 
 static func debug_stats() -> Dictionary:
 	return {"texture_loads":_texture_loads.duplicate(true), "bounds_scans":_bounds_scans.duplicate(true)}

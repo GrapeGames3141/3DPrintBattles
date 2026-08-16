@@ -1,5 +1,53 @@
 # Validation record
 
+## Checkpoint 0.5.21 battle presentation (staging only)
+
+- The finite tokenized `BattleMoveVFX` presentation covers every one of the 24
+  catalog signatures, all eight elements, and all eight status accents without
+  changing `BattleRules`. The static idle/reduced-motion/Forge/Workshop paths
+  retain their ordinary imported texture behavior.
+- `tools/clean_sprite_atlas_edges.gd` repaired only 17 living 1536x1024 PNG
+  sheets. It removed 33 non-largest edge components / 15,922 alpha pixels;
+  seven verified zero-removal PNGs were restored byte-for-byte from `HEAD`.
+  `docs/SPRITE_ATLAS_EDGE_REPAIR.json` records every source path, before/after
+  SHA-256, frame count, and removal count. The Android export excludes `tools/`.
+- Fresh parser/import used Godot 4.7.1 official `a13da4feb`, direct isolated
+  E: runtime, final console PID `22408`, exit 0. The wrapper bootstrap crash was
+  retained at `docs/validation/godot-bootstrap-user-logs-sigsegv-20260816.txt`:
+  it failed
+  opening `user://logs` before the first test marker and then produced a
+  SIGSEGV, so it was treated as engine/log-path evidence rather than gameplay.
+  All accepted test/capture/export runs use the smaller direct
+  `APPDATA`/`LOCALAPPDATA` E: invocation instead.
+- Focused source/import audit PID `23056`, exit 0, inspected all 24 sheets x 8
+  frames. It proves valid alpha survives, no non-largest edge component remains,
+  and every imported `Texture2D` matches its repaired source alpha. Runtime
+  imported texture lookup measured 19,504 microseconds cold and 27 microseconds
+  cached; it performs no runtime component cleanup.
+- Post-review focused regressions also passed: checkpoint4 accessibility/armor/AI
+  (PID `19412`, exit 0) and presentation audio/captions/battle feedback/card
+  detail (PID `23160`, exit 0).
+- Inspected OpenGL captures: corrected Fire portrait
+  `battle_vfx_fire_576x1024_battle-presentation-reimported.png` (wrapper PID
+  `5816`, exit 0) has neither the prior left beige fragment nor orange sliver;
+  Arcane landscape `battle_vfx_arcane_1280x720_battle-presentation-final.png`
+  (PID `24808`, exit 0) and labeled all-16-cell contact sheet
+  `battle_vfx_contact_sheet_1280x720_battle-presentation-final.png` (PID
+  `25832`, exit 0) were also visually accepted.
+- The isolated retained 26-scene Godot suite passed (wrapper PID `15016`, every
+  scene exit 0). Expected environment-only root-certificate warnings and the
+  existing orderly dummy-renderer RID cleanup messages remained non-failing.
+- Android debug/review arm64 export console PID `26404`, exit 0:
+  `build/android/PrintForge-Legends-0.5.21-alpha-battle-presentation-arm64.apk`
+  is 108,742,147 bytes, SHA-256
+  `48DB7966004CAB8D2BDC1FE6B605C3CC5DA56FA5F20A2E579CB6F81B969A67C0`.
+  `apksigner verify --verbose` confirms v2/v3 with the Android Debug
+  certificate; `aapt2` reports package `com.tak.printforge.legends.review`.
+  `aapt` reports version code 71/name `0.5.21-alpha-battle-presentation`, SDK
+  24/36, then its known `android:required` reader warning. Archive audit found
+  two arm64 libraries, the VFX and battle resources, and zero backend/tests/
+  tools/tmp/node_modules/.git/docs-art-source entries.
+
 ## Checkpoint 0.5.20 Android static battle catalog (staging only)
 
 - The 0.5.19 phone result still produced empty first-build and catalog-ID retry

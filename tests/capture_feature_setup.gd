@@ -4,7 +4,8 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
-	if mode in ["battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "high_contrast_battle", "reduced_motion_battle", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch"]:
+	var vfx_creatures := {"battle_vfx_fire":"cinderpaw", "battle_vfx_water":"aquafin", "battle_vfx_lightning":"voltwig", "battle_vfx_nature":"mossmunk", "battle_vfx_ice":"frostling", "battle_vfx_stone":"stoneback", "battle_vfx_wind":"galehopper", "battle_vfx_arcane":"runestag"}
+	if mode in ["battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "high_contrast_battle", "reduced_motion_battle", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "battle_vfx_idle", "battle_vfx_basic"] or vfx_creatures.has(mode):
 		main.screen = "battle"
 		if mode in ["trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch"]:
 			var encounter := Catalog.workshop_trial_encounter("first_layers_1")
@@ -14,12 +15,24 @@ static func configure_battle(main, mode: String) -> bool:
 			main.battle_mode = "trial"
 			main.trial_encounter_id = "first_layers_1"
 			main.battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
+		elif vfx_creatures.has(mode):
+			main.battle = BattleState.create([str(vfx_creatures[mode])], ["mossmunk"], 5, 3, 2, ["raw_filament", "quick_patch"])
+			main.battle_last_event = "ability"
+			main.battle_last_actor = 0
+			main.battle_presentation_serial = 1
+		elif mode == "battle_vfx_basic":
+			main.battle = BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 2, ["raw_filament", "quick_patch"])
+			main.battle_last_event = "attack"
+			main.battle_last_actor = 0
+			main.battle_presentation_serial = 1
 		else:
 			var rival := "voidmanta" if mode == "battle_voidmanta" else "mossmunk"
 			main.battle = BattleState.create(GameManager.current_team_loadout(), [rival], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
 		main.battle_secondary_open = mode in ["battle_secondary", "battle_hand"]
 		main.battle_secondary_tab = "hand" if mode == "battle_hand" else "bench"
-		if mode == "battle_impact": main.battle_last_event = "attack"
+		if mode == "battle_impact":
+			main.battle_last_event = "attack"
+			main.battle_presentation_serial = 1
 		return true
 	if mode == "local_vs":
 		main.screen = "local_vs"
