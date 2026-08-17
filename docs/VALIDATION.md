@@ -780,3 +780,23 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
   selected roster armor master at both sizes.
 - Initial durable launcher/cache stalls were retained as bootstrap evidence;
   fresh and direct-to-file runs passed, so no gameplay or source fix was needed.
+
+## 2026-08-17 0.6.2 Arcane Armor Android update
+
+- Android Review export preset now targets the non-overwriting artifact
+  `build/android/PrintForge-Legends-0.6.2-arcane-armor-arm64.apk` with
+  `versionCode` 77 and version name `0.6.2-arcane-armor`.
+- The 2026-08-16 merged 34/34 retained-suite evidence remains applicable to
+  unchanged gameplay and UI code. The direct durable export correctly stopped
+  when its non-writable stale cache lacked required tiered-armor `.ctex` files;
+  a clean index-derived E: staging copy imported successfully (console/worker
+  PIDs 18724/27404, exit 0) and produced the review APK (23960/19864, exit 0).
+- The debug-signed arm64-only APK is 144,990,542 bytes, SHA-256
+  `B82FD142F4D0E32507221C83B85651A4A614CD391CCB56073C36A971CF46E52D`.
+  `apksigner` confirms v2/v3 with the Android Debug certificate; `aapt` reports
+  `com.tak.printforge.legends.review`, code 77, and
+  `0.6.2-arcane-armor` before its established nonzero `android:required`
+  parsing warning. Archive inspection found only `lib/arm64-v8a` native
+  libraries and zero excluded backend/test/tool/docs/cache/raw-armor entries.
+- `adb devices -l` and mDNS discovery both returned empty lists, so no install
+  or physical-device smoke was attempted.
