@@ -23,18 +23,25 @@ frame. Existing primary card costs and values are retained; the modest paired ef
 make previously duplicate-looking cards tactically distinct without changing combat
 to floating-point arithmetic.
 
-## Presentation contract (0.5.25)
+## Presentation contract (Arcane Foundry Pattern Plate)
 
 Every support-card context uses one 2:3 portrait silhouette: the archive, Deck
 Builder, Forge shop, solo Hand, revealed local-versus Hand, and private local handoff.
-The card front is a code-rendered navy/workshop-brass frame with an inset border,
-rarity accent, title and separate Filament badge, framed atlas art, rarity/role line,
-rules panel, target footer, optional copy count, and a readable legality banner.
-Battle and local hands use a horizontal touch carousel rather than changing cards into
-landscape tiles; the compact 150x225 tier preserves exact rules and targets. The
-private handoff renders only the full portrait back within that same silhouette and is
-noninteractive. Native `Button.text` remains empty; tooltip and accessibility names
-provide the complete card detail.
+The visual-only Arcane Foundry Pattern Plate front uses a clear manufactured hierarchy
+with restrained forged-steel materials: a thin aged-brass seam around a charcoal body,
+a brass circular `0F`/`1F` spool-cost token integrated into a clear title rail, larger
+brass-edged atlas art, a thin cyan technical metadata strip with a small rarity pip
+and rarity/category label, a calm rules field, and a subordinate target footer rail
+that may carry the owned-count. Warm ivory functional type maintains readability;
+resource, defense, offense, and utility use restrained accents with ember-orange for
+offense/active energy. Rarity is limited to its small pip rather than a thick full-card
+rainbow border. Small clipped-looking radii, sparse cyan separators, and subtle plate
+construction replace runes, ornate fantasy chrome, or heavy glow. Battle and local
+hands use a horizontal touch carousel rather than changing cards into landscape tiles;
+the compact 150x225 tier preserves exact rules and targets. The private handoff renders
+only the full portrait back within that same silhouette and is noninteractive. Native
+`Button.text` remains empty; tooltip and accessibility names provide the complete card
+detail.
 
 Front atlas cells and their `CardArtWindow` are both exact 3:2. Centered containment
 therefore fills the window with the complete landscape cell—no crop, side bars, or
