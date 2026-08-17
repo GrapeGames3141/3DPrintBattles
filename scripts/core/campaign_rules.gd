@@ -3,8 +3,6 @@ extends RefCounted
 ## Pure Workshop Trial progression. Rewards are resolved from authored catalog
 ## encounter IDs and current owned instance IDs; no combat stat is modified.
 
-const OPPONENT_RULES := preload("res://scripts/core/opponent_rules.gd")
-
 static func ensure_fields(source: Dictionary) -> Dictionary:
 	var p: Dictionary = source.duplicate(true)
 	var campaign: Dictionary = p.get("solo_campaign", {}) if p.get("solo_campaign", {}) is Dictionary else {}
@@ -55,6 +53,10 @@ static func reward_for(encounter: Dictionary) -> Dictionary:
 static func authored_encounter(raw: Dictionary) -> Dictionary:
 	if raw.is_empty(): return raw
 	var result := raw.duplicate(true)
+	var opponent_rules = ResourceLoader.load("res://scripts/core/opponent_rules.gd")
+	if opponent_rules == null:
+		push_error("Workshop Trial opponent module could not load; using its authored base encounter.")
+		return result
 	var tier := clampi(int(result.get("tier", 1)), 1, 5)
 	var boss := bool(result.get("boss", false))
 	var difficulty := str(result.get("ai", "Apprentice"))
@@ -67,14 +69,14 @@ static func authored_encounter(raw: Dictionary) -> Dictionary:
 	for index in result.get("team", []).size():
 		var creature_id := str(result["team"][index])
 		var core := ""
-		if tier >= 4 or (tier == 3 and boss): core = OPPONENT_RULES.core_for(str(Catalog.creature(creature_id).get("element", "")))
+		if tier >= 4 or (tier == 3 and boss): core = opponent_rules.core_for(str(Catalog.creature(creature_id).get("element", "")))
 		team.append({"creature_id":creature_id,"suit_id":suit,"core_id":core})
 	result["team"] = team
-	if tier <= 1: result["deck"] = OPPONENT_RULES.deck("balanced")
-	elif tier == 2: result["deck"] = OPPONENT_RULES.deck("guard" if boss else "balanced")
-	elif tier == 3: result["deck"] = OPPONENT_RULES.deck("guard" if boss else "control")
-	elif tier == 4: result["deck"] = OPPONENT_RULES.deck("control" if boss else "pressure")
-	else: result["deck"] = OPPONENT_RULES.deck("pressure")
+	if tier <= 1: result["deck"] = opponent_rules.deck("balanced")
+	elif tier == 2: result["deck"] = opponent_rules.deck("guard" if boss else "balanced")
+	elif tier == 3: result["deck"] = opponent_rules.deck("guard" if boss else "control")
+	elif tier == 4: result["deck"] = opponent_rules.deck("control" if boss else "pressure")
+	else: result["deck"] = opponent_rules.deck("pressure")
 	result["deck_role"] = "Pressure" if tier >= 4 and not boss else ("Guard" if boss else ("Control" if tier >= 3 else "Balanced"))
 	result["loadout_tier"] = suit if not suit.is_empty() else "None"
 	return result

@@ -7,15 +7,19 @@ const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/wo
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
-const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter.gd")
-const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
-const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
-const EQUIPMENT_WORKBENCH_VIEW := preload("res://scripts/ui/equipment_workbench_view.gd")
-const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
-# TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
-const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
-const REVIEW_BUILD_LABEL := "0.5.25-alpha-landscape-card-art"
+const SUPPORT_CARD_PRESENTER_PATH := "res://scripts/ui/support_card_presenter.gd"
+const SUPPORT_CARD_VIEW_PATH := "res://scripts/ui/support_card_view.gd"
+const BATTLE_FEEDBACK_PRESENTER_PATH := "res://scripts/ui/battle_feedback_presenter.gd"
+const EQUIPMENT_WORKBENCH_VIEW_PATH := "res://scripts/ui/equipment_workbench_view.gd"
+# TieredArmorRoster remains species-neutral and is loaded only by the Equipment
+# Workbench path, so the workshop's first frame never parses its preview graph.
+const TIERED_ARMOR_ROSTER_PATH := "res://scripts/ui/tiered_armor_roster.gd"
+const TIERED_ARMOR_PREVIEW_PATH := "res://scripts/ui/tiered_armor_palette_preview.gd"
+const BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/battle_screen_component.gd"
+const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
+const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
+const REVIEW_BUILD_LABEL := "0.6.4-startup-isolation"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -87,8 +91,10 @@ var workshop_station_live_capture_progress := -1
 var workshop_station_live_capture_seed := 17
 var overview_layout_portrait := false
 var _workshop_screen_component := WorkshopScreenComponent.new()
-var _battle_screen_component := BattleScreenComponent.new()
-var _forge_screen_component := ArcaneForgeScreenComponent.new()
+# Battle, Forge, cards, and equipment are intentionally absent from the first
+# workshop frame. Their resources now load only when their screen is requested.
+var _battle_screen_component = null
+var _forge_screen_component = null
 var _audio_director := AudioDirector.new()
 
 func settings() -> Dictionary:
@@ -101,7 +107,37 @@ func is_portrait_layout() -> bool:
 	var viewport_size := get_viewport().get_visible_rect().size
 	return viewport_size.y > viewport_size.x
 
+func _optional_script(path: String, feature_name: String):
+	var script = ResourceLoader.load(path)
+	if script == null:
+		push_error("%s resource could not load: %s" % [feature_name, path])
+		_toast("%s could not load. The Workshop remains available." % feature_name)
+	return script
+
+func _battle_component():
+	if _battle_screen_component == null:
+		var script = _optional_script(BATTLE_SCREEN_COMPONENT_PATH, "Battle presentation")
+		if script == null: return null
+		_battle_screen_component = script.new()
+	return _battle_screen_component
+
+func _forge_component():
+	if _forge_screen_component == null:
+		var script = _optional_script(FORGE_SCREEN_COMPONENT_PATH, "Forge presentation")
+		if script == null: return null
+		_forge_screen_component = script.new()
+	return _forge_screen_component
+
+func _new_support_card_view():
+	var script = _optional_script(SUPPORT_CARD_VIEW_PATH, "Support card view")
+	return null if script == null else script.new()
+
+func _new_local_battle_stage():
+	var script = _optional_script(BATTLE_SPRITE_STAGE_PATH, "Local battle presentation")
+	return null if script == null else script.new()
+
 func _ready() -> void:
+	print("PRINTFORGE_STARTUP marker=ui_ready renderer=%s platform=%s" % [RenderingServer.get_current_rendering_method(), OS.get_name()])
 	if shop_day_key.is_empty(): shop_day_key = Time.get_date_string_from_system()
 	GameManager.profile_changed.connect(render)
 	GameManager.toast_requested.connect(_toast)
@@ -111,6 +147,11 @@ func _ready() -> void:
 	# the tree. Normal launches use the workshop default and route from profile state.
 	if screen == "workshop": screen = OnboardingState.screen_for_profile(GameManager.profile)
 	render()
+	call_deferred("_emit_first_frame_marker")
+
+func _emit_first_frame_marker() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	print("PRINTFORGE_STARTUP marker=first_frame screen=%s viewport=%dx%d" % [screen, int(viewport_size.x), int(viewport_size.y)])
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and is_inside_tree():
@@ -403,8 +444,8 @@ func _detach_persistent_screen_components() -> void:
 	# Main's shell is intentionally rebuilt for responsive text/contrast. Detach
 	# expensive presentation nodes first so their imported textures and animation
 	# state survive the ancestor queue_free operation.
-	_battle_screen_component.detach()
-	_forge_screen_component.detach()
+	if _battle_screen_component != null: _battle_screen_component.detach()
+	if _forge_screen_component != null: _forge_screen_component.detach()
 	_workshop_screen_component.detach()
 
 func focus_first_button() -> void:
@@ -1250,10 +1291,17 @@ func render_local_vs() -> void:
 		local_concede_armed = false
 		panel.add_child(label("Private handoff", 20, Color("fff0a1")))
 		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
-		var hidden := SUPPORT_CARD_VIEW.new(); hidden.configure({}, 0, "", true, false, false); hidden.name = "LocalHiddenCardBack"; panel.add_child(hidden)
+		var hidden = _new_support_card_view()
+		if hidden != null:
+			hidden.configure({}, 0, "", true, false, false); hidden.name = "LocalHiddenCardBack"; panel.add_child(hidden)
 		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
 		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	var stage := BattleSpriteStage.new(); stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 110 if is_portrait_layout() else 120)
+	var stage = _new_local_battle_stage()
+	if stage == null:
+		panel.add_child(label("Local battle presentation could not load. Return to the Workshop and try again.", 16, Color("ffcfbf")))
+		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+		return
+	stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 110 if is_portrait_layout() else 120)
 	for player in [0, 1]:
 		var unit := state.active_unit(player)
 		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.get("name", "Unknown")), int(unit.get("hp", 0)), int(unit.get("max_hp", 1)), str(unit.get("element", "Unknown"))], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
@@ -1278,7 +1326,9 @@ func render_local_vs() -> void:
 	local_carousel.add_child(local_cards)
 	for card_id in card_counts:
 		var definition := Catalog.support_card(str(card_id)); var reason := SupportCardRules.legality_reason(state, seat, definition)
-		var view := SUPPORT_CARD_VIEW.new(); view.configure(definition, int(card_counts[card_id]), reason); view.name = "LocalCard%s" % str(card_id).capitalize(); view.pressed.connect(func(): submit_local_intent({"type":"card","card_id":card_id})); local_cards.add_child(view)
+		var view = _new_support_card_view()
+		if view != null:
+			view.configure(definition, int(card_counts[card_id]), reason); view.name = "LocalCard%s" % str(card_id).capitalize(); view.pressed.connect(func(): submit_local_intent({"type":"card","card_id":card_id})); local_cards.add_child(view)
 	local_cards.custom_minimum_size = Vector2(maxi(1, card_counts.size()) * 182, 261)
 	var navigation := GridContainer.new(); navigation.name = "LocalBattleNavigationGrid"; navigation.columns = 2 if is_portrait_layout() else 3; navigation.add_theme_constant_override("h_separation", 8); navigation.add_theme_constant_override("v_separation", 8); body.add_child(navigation)
 	for index in state.players[seat].team.size():
@@ -1380,7 +1430,9 @@ func render_shop() -> void:
 		var card := make_panel(Color("152842e8"), Color("7dd7ef")); grid.add_child(card.get_parent())
 		if str(offer.get("kind", "")) == "support_card":
 			var definition := Catalog.support_card(str(offer.get("item_id", "")))
-			var preview := SUPPORT_CARD_VIEW.new(); preview.configure(definition, int(GameManager.profile.support_cards.get(str(offer.get("item_id", "")), 0)), "", false, false, false); preview.name = "ShopCard%s" % str(offer.get("item_id", "")).capitalize(); card.add_child(preview)
+			var preview = _new_support_card_view()
+			if preview != null:
+				preview.configure(definition, int(GameManager.profile.support_cards.get(str(offer.get("item_id", "")), 0)), "", false, false, false); preview.name = "ShopCard%s" % str(offer.get("item_id", "")).capitalize(); card.add_child(preview)
 		card.add_child(label(str(offer.name), 19, Color("8deaff")))
 		card.add_child(label(str(offer.kind).replace("_", " ").capitalize() + " • " + str(offer.price) + " FC", 14, Color("dce8f4")))
 		card.add_child(make_button("Acquire", func(): GameManager.buy_shop_offer(shop_day_key, str(offer.offer_id))))
@@ -1510,8 +1562,12 @@ func render_printer() -> void:
 	var print_type := ("Printed Core" if printer_is_core else "Complete suit") if printer_is_armor else str(definition.element)
 	panel.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
 	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
-	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
-	_forge_screen_component.attach(panel)
+	var forge_component = _forge_component()
+	if forge_component != null:
+		forge_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
+		forge_component.attach(panel)
+	else:
+		panel.add_child(label("Forge preview is unavailable, but this screen remains safe to exit without changing your profile.", 14, Color("ffcfbf")))
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
 			panel.add_child(label("Preview the dormant print on the build plate. Begin only when ready.", 16, Color("fff0a1")))
@@ -1552,7 +1608,9 @@ func _printer_progress_text() -> String:
 
 func _refresh_printer_presentation() -> void:
 	if screen != "printer" or printer_sequence == null: return
-	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
+	var forge_component = _forge_component()
+	if forge_component != null:
+		forge_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
 	if is_instance_valid(printer_progress_label):
 		printer_progress_label.text = _printer_progress_text()
 
@@ -1643,9 +1701,12 @@ func render_team() -> void:
 		if instance_id.is_empty(): continue
 		var selected: bool = instance_id in team_draft
 		var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
-		if TIERED_ARMOR_ROSTER.has_master(str(creature.get("creature_id", ""))) and not str(creature.get("suit_instance_id", "")).is_empty():
+		var roster = _optional_script(TIERED_ARMOR_ROSTER_PATH, "Armor preview")
+		if roster != null and roster.has_master(str(creature.get("creature_id", ""))) and not str(creature.get("suit_instance_id", "")).is_empty():
 			var loadout := EquipmentRules.suit_loadout(GameManager.profile, instance_id)
-			var portrait := TIERED_ARMOR_PREVIEW.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_creature(str(creature.get("creature_id", ""))); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
+			var preview_script = _optional_script(TIERED_ARMOR_PREVIEW_PATH, "Armor preview")
+			if preview_script != null:
+				var portrait = preview_script.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_creature(str(creature.get("creature_id", ""))); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
 			intro.add_child(label("%s • %s" % [str(ArmorCoreDefinitions.suit_definition(str(loadout.get("tier_id", ""))).get("name", "Full Suit")), str(ArmorCoreDefinitions.definition(str(loadout.get("core_id", ""))).get("name", "No Core"))], 13, Color("f1be69")))
 		intro.add_child(make_button(("Remove " if selected else "Add ") + "%s (Mastery %d)" % [creature_name, GameManager.creature_mastery(instance_id)], toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
 	intro.add_child(make_button("Save Team", save_team_draft, Color("a86b2e")))
@@ -1676,7 +1737,11 @@ func save_team_draft() -> void:
 func render_armor() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
 	if equipment_selected_creature_id.is_empty() and not GameManager.profile.get("creatures", []).is_empty(): equipment_selected_creature_id = str(GameManager.profile.creatures[0].get("instance_id", ""))
-	panel.add_child(EQUIPMENT_WORKBENCH_VIEW.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}))
+	var workbench = _optional_script(EQUIPMENT_WORKBENCH_VIEW_PATH, "Equipment Workbench")
+	if workbench == null:
+		panel.add_child(label("The Equipment Workbench could not load. Return to the Workshop and try again; your profile has not changed.", 15, Color("ffcfbf")))
+	else:
+		panel.add_child(workbench.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func equipment_select_creature(instance_id: String) -> void: equipment_selected_creature_id = instance_id; render()
@@ -1754,7 +1819,9 @@ func render_deck() -> void:
 		var selected_owned: int = int(GameManager.profile.support_cards.get(deck_selected_card_id, 0)); var selected_copies: int = deck_draft.count(deck_selected_card_id)
 		selected_tray.add_child(label("Selected: %s" % str(selected.name), 19, Color("fff0a1")))
 		selected_tray.add_child(label("Owned: %d | Draft copies: %d / %d | %d Filament" % [selected_owned, selected_copies, selected_owned, int(selected.cost)], 14, Color("9beaff")))
-		selected_tray.add_child(label(SUPPORT_CARD_PRESENTER.effect_text(selected) + "\nTarget: " + SUPPORT_CARD_PRESENTER.target_text(selected), 14, Color("dce8f4")))
+		var card_presenter = _optional_script(SUPPORT_CARD_PRESENTER_PATH, "Support card details")
+		if card_presenter != null:
+			selected_tray.add_child(label(card_presenter.effect_text(selected) + "\nTarget: " + card_presenter.target_text(selected), 14, Color("dce8f4")))
 		var selected_actions := HBoxContainer.new(); selected_tray.add_child(selected_actions)
 		var selected_remove := make_button("Remove selected", change_deck_draft.bind(deck_selected_card_id, false), Color("536c8d")); selected_remove.name = "DeckSelectedRemove"; selected_remove.disabled = selected_copies <= 0; selected_actions.add_child(selected_remove)
 		var selected_add := make_button("Add selected (%d/%d)" % [selected_copies, selected_owned], change_deck_draft.bind(deck_selected_card_id, true), Color("2f93a8")); selected_add.name = "DeckSelectedAdd"; selected_add.disabled = deck_draft.size() >= 15 or selected_copies >= selected_owned; selected_actions.add_child(selected_add)
@@ -1762,7 +1829,9 @@ func render_deck() -> void:
 	for card in Catalog.SUPPORT_CARDS:
 		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0))
 		if owned <= 0: continue
-		var view := SUPPORT_CARD_VIEW.new(); view.configure(card, owned, ""); view.name = "DeckCard%s" % card_id.capitalize(); view.pressed.connect(select_deck_card.bind(card_id)); cards.add_child(view)
+		var view = _new_support_card_view()
+		if view != null:
+			view.configure(card, owned, ""); view.name = "DeckCard%s" % card_id.capitalize(); view.pressed.connect(select_deck_card.bind(card_id)); cards.add_child(view)
 	panel.add_child(make_button("Save %s as active (%d / 15)" % [_saved_deck_name(deck_slot_id), deck_draft.size()], save_active_deck_draft, Color("a86b2e")))
 	var missing_slot := ""
 	for candidate in ProgressionRules.DECK_SLOT_IDS:
@@ -1789,7 +1858,9 @@ func render_card_archive() -> void:
 	for card in Catalog.SUPPORT_CARDS:
 		var owned := int(GameManager.profile.support_cards.get(str(card.id), 0))
 		if card_archive_owned_only and owned <= 0: continue
-		var view := SUPPORT_CARD_VIEW.new(); view.configure(card, owned); view.name = "ArchiveCard%s" % str(card.id).capitalize(); view.pressed.connect(show_card_archive_detail.bind(card)); cards.add_child(view)
+		var view = _new_support_card_view()
+		if view != null:
+			view.configure(card, owned); view.name = "ArchiveCard%s" % str(card.id).capitalize(); view.pressed.connect(show_card_archive_detail.bind(card)); cards.add_child(view)
 	if not card_archive_detail_id.is_empty(): _append_card_archive_detail(panel, Catalog.support_card(card_archive_detail_id))
 	body.add_child(make_button("Back to Maker Bench", navigate_to.bind("workshop"), Color("536c8d")))
 
@@ -1802,7 +1873,9 @@ func _append_card_archive_detail(host: Container, card: Dictionary) -> void:
 	panel.name = "CardArchiveDetail"
 	panel.add_child(label(str(card.get("name", "Support Card")), 21, Color("fff0a1")))
 	panel.add_child(label("%s • %s • %d Filament" % [str(card.get("role", "utility")).capitalize(), str(card.get("rarity", "common")).capitalize(), int(card.get("cost", 0))], 15, Color("9beaff")))
-	panel.add_child(label(SUPPORT_CARD_PRESENTER.effect_text(card) + "\nTarget: " + SUPPORT_CARD_PRESENTER.target_text(card) + "\nOwned: %d" % int(GameManager.profile.support_cards.get(str(card.id), 0)), 15, Color("dce8f4")))
+	var card_presenter = _optional_script(SUPPORT_CARD_PRESENTER_PATH, "Support card details")
+	if card_presenter != null:
+		panel.add_child(label(card_presenter.effect_text(card) + "\nTarget: " + card_presenter.target_text(card) + "\nOwned: %d" % int(GameManager.profile.support_cards.get(str(card.id), 0)), 15, Color("dce8f4")))
 
 func _saved_deck_cards(deck_id: String) -> Array:
 	for saved in GameManager.profile.get("decks", []):
@@ -2131,9 +2204,14 @@ func render_battle_fullscreen(host: Container) -> void:
 	# An opened tactical panel owns the first fold. Keep the stage compact on both
 	# phone and landscape so every visual card can remain fully reachable.
 	var compact_secondary := battle_secondary_open
-	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (64 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
+	var battle_component = _battle_component()
+	if battle_component == null:
+		intro.add_child(label("Battle presentation could not load. Return to the Workshop and try again; no battle reward was changed.", 16, Color("ffcfbf")))
+		intro.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+		return
+	var stage = battle_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (64 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
-	_battle_screen_component.attach(intro)
+	battle_component.attach(intro)
 	# Keep the read-only portrait recap above the action dock.  The dock is the
 	# last normal-flow child, so changing combat feedback or the battle log cannot
 	# walk the primary controls below the visible phone fold on a later render.
@@ -2358,10 +2436,12 @@ func render_battle_hand_tab(panel: Container) -> void:
 	for card_id in counts:
 		var definition := Catalog.support_card(str(card_id))
 		var reason := SupportCardRules.legality_reason(battle, 0, definition)
-		var card := SUPPORT_CARD_VIEW.new(); card.configure(definition, int(counts[card_id]), reason, false, true); card.pressed.connect(submit_battle_card.bind(str(card_id)))
-		card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		card.name = "BattleCard%s" % str(card_id).capitalize()
-		cards.add_child(card)
+		var card = _new_support_card_view()
+		if card != null:
+			card.configure(definition, int(counts[card_id]), reason, false, true); card.pressed.connect(submit_battle_card.bind(str(card_id)))
+			card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			card.name = "BattleCard%s" % str(card_id).capitalize()
+			cards.add_child(card)
 	cards.custom_minimum_size = Vector2(maxi(1, counts.size()) * 158, 225)
 
 func submit_battle_card(card_id: String) -> void:
@@ -2369,7 +2449,8 @@ func submit_battle_card(card_id: String) -> void:
 	intent({"type":"card","card_id":card_id})
 
 func battle_feedback_text() -> String:
-	return BATTLE_FEEDBACK_PRESENTER.format(battle, battle_last_event, _audio_director.last_caption)
+	var presenter = _optional_script(BATTLE_FEEDBACK_PRESENTER_PATH, "Battle feedback")
+	return str(presenter.format(battle, battle_last_event, _audio_director.last_caption)) if presenter != null else _audio_director.last_caption
 
 func render_battle_details_tab(panel: Container) -> void:
 	for player in [1, 0]:
@@ -2454,7 +2535,8 @@ func intent(action: Dictionary) -> void:
 	else:
 		if str(action.get("type", "")) == "card":
 			var card_definition := Catalog.support_card(str(result.get("card_id", "")))
-			_audio_director.cue_card(str(card_definition.get("name", "Support Card")), SUPPORT_CARD_PRESENTER.effect_text(card_definition))
+			var card_presenter = _optional_script(SUPPORT_CARD_PRESENTER_PATH, "Support card details")
+			_audio_director.cue_card(str(card_definition.get("name", "Support Card")), str(card_presenter.effect_text(card_definition)) if card_presenter != null else "Card played")
 			battle_last_event = "card:" + str(result.get("card_id", ""))
 		else: _audio_director.cue("impact")
 		battle_concede_armed = false

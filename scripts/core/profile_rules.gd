@@ -3,13 +3,12 @@ extends RefCounted
 
 const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 const EQUIPMENT_RULES := preload("res://scripts/core/equipment_rules.gd")
-const OPPONENT_RULES := preload("res://scripts/core/opponent_rules.gd")
 ## Pure profile transitions: safe to test without FileAccess or autoload state.
 
 const STARTER_IDS: Array[String] = ["cinderpaw", "aquafin", "voltwig"]
 
 static func new_profile() -> Dictionary:
-	return OPPONENT_RULES.ensure_fields(CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields({
+	return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields({
 		"schema_version": Catalog.SCHEMA_VERSION,
 		"catalog_version": Catalog.CATALOG_VERSION,
 		"revision": 0,
@@ -30,7 +29,7 @@ static func new_profile() -> Dictionary:
 		"last_job_day": "",
 		"shop": {},
 		"server_revision": 0
-	}))))
+	})))
 
 static func migrate(source: Dictionary) -> Dictionary:
 	var profile: Dictionary = source.duplicate(true)
@@ -44,7 +43,7 @@ static func migrate(source: Dictionary) -> Dictionary:
 		# Signature definitions are catalog-only; preserve every saved ID/value while
 		# recording that this local profile now resolves the current catalog version.
 		profile["catalog_version"] = Catalog.CATALOG_VERSION
-		return OPPONENT_RULES.ensure_fields(CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile)))))
+		return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile))))
 	# Schema 1 granted all three starters. Preserve every inventory record, then mark
 	# the legacy account as already onboarded to prevent an extra starter grant.
 	if version <= 1:
@@ -62,7 +61,7 @@ static func migrate(source: Dictionary) -> Dictionary:
 	profile.schema_version = Catalog.SCHEMA_VERSION
 	profile.catalog_version = Catalog.CATALOG_VERSION
 	profile = normalize_integrity(profile)
-	return OPPONENT_RULES.ensure_fields(CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile)))))
+	return CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, has_starter(profile))))
 
 ## Pure compatibility status used before any local migration or save write.
 static func compatibility(source: Dictionary) -> Dictionary:

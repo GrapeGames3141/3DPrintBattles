@@ -2,7 +2,6 @@ extends Node
 
 const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 const SOLO_BATTLE_FACTORY := preload("res://scripts/core/solo_battle_factory.gd")
-const OPPONENT_RULES := preload("res://scripts/core/opponent_rules.gd")
 ## Account state facade. All mutations pass through SaveService journal entries.
 
 signal profile_changed
@@ -11,7 +10,9 @@ var profile: Dictionary = {}
 var save_compatibility: Dictionary = {"compatible":true, "state":"ready", "message":""}
 
 func _ready() -> void:
+	print("PRINTFORGE_STARTUP marker=profile_load path=%s" % SaveService.profile_path)
 	_initialize_loaded_profile(SaveService.load_profile())
+	print("PRINTFORGE_STARTUP marker=profile_ready compatibility=%s has_starter=%s" % [str(save_compatibility.get("state", "ready")), str(has_selected_starter())])
 
 ## Kept narrow and callable by isolated save-compatibility tests. It is the only
 ## bootstrap path that is allowed to migrate or persist a loaded profile.
@@ -229,7 +230,9 @@ func training_opponent(day_key: String) -> Array:
 
 func prepare_daily_training(day_key: String) -> Array:
 	if _reject_read_only(): return []
-	var result := OPPONENT_RULES.prepare_daily(profile, day_key, current_team_loadout(), active_deck_cards())
+	var rules = _opponent_rules()
+	if rules == null: return []
+	var result: Dictionary = rules.prepare_daily(profile, day_key, current_team_loadout(), active_deck_cards())
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Daily Training is unavailable.")))
 		return []
@@ -239,11 +242,14 @@ func prepare_daily_training(day_key: String) -> Array:
 	return result.get("contracts", [])
 
 func daily_training_contracts() -> Array:
-	return OPPONENT_RULES.contracts(profile)
+	var rules = _opponent_rules()
+	return [] if rules == null else rules.contracts(profile)
 
 func claim_training_victory(contract_id: String, day_key: String) -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
-	var result := OPPONENT_RULES.claim_victory(profile, contract_id, day_key)
+	var rules = _opponent_rules()
+	if rules == null: return {"ok":false,"error":"Daily Training could not load. Return to the Workshop and try again."}
+	var result: Dictionary = rules.claim_victory(profile, contract_id, day_key)
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Training reward is unavailable.")))
 		return result
@@ -258,6 +264,16 @@ func claim_training_victory(contract_id: String, day_key: String) -> Dictionary:
 
 func campaign_encounter_state(encounter_id: String) -> Dictionary:
 	return CAMPAIGN_RULES.encounter_state(profile, encounter_id)
+
+## Daily-opponent data is irrelevant to the workshop/onboarding first frame.
+## Load it only when the Proving Door asks for a contract, keeping a damaged
+## optional module from blanking the primary offline shell at startup.
+func _opponent_rules():
+	var rules = ResourceLoader.load("res://scripts/core/opponent_rules.gd")
+	if rules == null:
+		push_error("Daily Training module could not load.")
+		toast_requested.emit("Daily Training could not load. The Workshop remains available.")
+	return rules
 
 func claim_campaign_victory(encounter_id: String, turns: int) -> bool:
 	if _reject_read_only(): return false

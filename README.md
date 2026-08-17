@@ -1,5 +1,9 @@
 # PrintForge Legends
 
+## Android launch checkpoint (0.6.4)
+
+The 0.6.4-startup-isolation Android review export remains on its existing Forward Plus renderer while the physical-device regression is investigated. It defers daily-opponent, battle, Forge, card, and equipment presentation resources until the player opens their relevant screen, keeping workshop/onboarding startup limited to the primary shell. Startup emits concise `PRINTFORGE_STARTUP` markers for profile load, UI readiness, and first rendered frame; collect them with `tools/android_smoke.ps1` when testing a phone. The E:-hosted emulator setup is documented in `docs/VALIDATION.md`; host virtualization was unavailable during this checkpoint, so the phone launch gate remains required.
+
 Steam-first Godot 4.7.1 vertical slice for a cozy, winter-lit magical 3D-print workshop battler. It provides a playable solo battle loop, spatial workshop navigation, blueprint/printing progression, Forge Coins, Forgedex, safe local trade contract, offline journal, 24-creature / 8-rarity catalog, 30 support cards, five complete suit tiers, five optional socketed Cores, and TypeScript Nakama-authority scaffolding.
 
 ## Workshop navigation
