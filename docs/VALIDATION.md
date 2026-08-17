@@ -1,5 +1,40 @@
 # Validation record
 
+## Android 0.6.5 missing runtime asset fix (2026-08-17)
+
+- **Root cause and repair:** Android excludes `docs/*`, while `main.gd` and
+  `creature_art_gallery.gd` eagerly referenced
+  `docs/art/reference/workshop-theme-reference.jpg` before the first scene.
+  The exact 132,628-byte provenance JPG (SHA-256
+  `86C81AE183A7B1A2B70E84E4BC318BC98952BEB1EF7BE183AD267F302F55EE5B`)
+  is now copied to the runtime path
+  `assets/ui/workshop/workshop-theme-reference-fallback.jpg`; all runtime
+  references and Main's unknown-workshop fallback use that path. The source
+  reference remains in `docs/art/reference/` for provenance.
+- **Regression and focused gates:** `test_export_boundary.tscn` recursively
+  rejects any `res://docs/` dependency from `scripts/` and proves the Main
+  scene, both affected scripts, and the fallback texture exist and load. It
+  passed in a fresh E:-hosted APPDATA/LOCALAPPDATA/TEMP root (Godot console
+  PID 12960, exit 0). Existing `test_startup_isolation.tscn` also passed in a
+  separate fresh E: root (PID 23900, exit 0), reaching the Forward+ onboarding
+  first-frame marker. Parser/import scan PID 25408 exited 0 with no GDScript
+  parse errors; the durable repository's known `.godot` cache ACL diagnostics
+  were retained as environmental output.
+- **Export and archive audit:** Android Review is now version code 80/name
+  `0.6.5-missing-runtime-asset`, with a non-overwriting arm64 debug artifact
+  name. A writable exact-source E: staging copy hash-verified all eight changed
+  runtime/preset/test files before import/export. Godot 4.7.1 console PID 21380
+  exported and signed `PrintForge-Legends-0.6.5-missing-runtime-asset-arm64.apk`:
+  145,855,231 bytes, SHA-256
+  `C9ACB4D8DC0D0300AB56B186AB4829BB74D4EF364D3A10525161912D4F68138A`.
+  `apksigner` verifies v2/v3 with the Android Debug certificate and `aapt2`
+  reports `com.tak.printforge.legends.review`, code 80/name
+  `0.6.5-missing-runtime-asset`, min/target SDK 24/36, and arm64-v8a only.
+  The 461-entry archive has exactly one fallback `.import` and matching
+  `.ctex`, and zero `docs/`, backend, tests, tools, Git, or node_modules
+  entries. No physical Android device was attached, so device launch/smoke is
+  still pending.
+
 ## Android Forward+ startup-isolation launch checkpoint (2026-08-17)
 
 - **Symptom and scope:** The physical 0.6.3 review build showed the configured workshop splash, then a uniform dark-gray full-screen surface indefinitely. This proves Android launched the activity and displayed the Android/Godot splash, but does not by itself prove a native crash. A same-phone build line worked the prior day, so Forward Plus remains unchanged pending a 0.6.2-to-0.6.3 source and APK boundary comparison plus phone logcat. No combat, queue-limit, or performance change is part of this checkpoint.

@@ -2,7 +2,7 @@ class_name CreatureArtGallery
 extends Control
 ## Deterministic two-page contact sheet for reviewing the 20 new catalog assets.
 
-const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-reference.jpg")
+const REFERENCE_TEXTURE := preload("res://assets/ui/workshop/workshop-theme-reference-fallback.jpg")
 const PAGE_SIZE := 10
 # Keep a two-pixel gutter inside the 384x512 atlas cell.  Linear sampling at an
 # exact cell edge can otherwise bleed opaque pixels from the next animation frame

@@ -1,7 +1,7 @@
 extends Control
 
-## Reference-driven workshop presentation; final character art remains approval-gated.
-const REFERENCE_TEXTURE := preload("res://docs/art/reference/workshop-theme-reference.jpg")
+## Runtime-safe workshop presentation; final character art remains approval-gated.
+const REFERENCE_TEXTURE := preload("res://assets/ui/workshop/workshop-theme-reference-fallback.jpg")
 const WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_landscape_v3.png")
 const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_portrait_v3.png")
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
@@ -19,7 +19,7 @@ const TIERED_ARMOR_PREVIEW_PATH := "res://scripts/ui/tiered_armor_palette_previe
 const BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/battle_screen_component.gd"
 const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
-const REVIEW_BUILD_LABEL := "0.6.4-startup-isolation"
+const REVIEW_BUILD_LABEL := "0.6.5-missing-runtime-asset"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -597,7 +597,7 @@ func _workshop_overview_zones() -> Array:
 	]
 
 func _workshop_texture(view_id: String) -> Texture2D:
-	var path: String = str(WORKSHOP_CLOSEUP_PATHS.get(view_id, "res://docs/art/reference/workshop-theme-reference.jpg"))
+	var path: String = str(WORKSHOP_CLOSEUP_PATHS.get(view_id, "res://assets/ui/workshop/workshop-theme-reference-fallback.jpg"))
 	var resource := load(path)
 	return resource as Texture2D if resource is Texture2D else REFERENCE_TEXTURE
 
