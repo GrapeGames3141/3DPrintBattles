@@ -28,12 +28,12 @@ func _ready() -> void:
 	var deck_saved := ProgressionRules.save_deck_slot(profile, ProgressionRules.STARTER_DECK, "workshop-deck")
 	var deck_selected := ProgressionRules.select_deck(deck_saved.profile, "workshop-deck")
 	require(bool(deck_saved.ok) and bool(deck_selected.ok) and str(deck_selected.profile.active_deck_id) == "workshop-deck", "named deck slot saves and selects legally")
-	var learned := ProgressionRules.learn_armor_blueprint(profile, "helm")
-	var printed := ProgressionRules.print_armor(learned.profile, "helm")
-	var equipped := ProgressionRules.equip_armor(printed.profile, str(profile.onboarding.starter_instance_id), str(printed.payload.armor_instance_id))
-	var removed := ProgressionRules.unequip_armor(equipped.profile, str(profile.onboarding.starter_instance_id))
-	require(bool(equipped.ok) and bool(removed.ok) and str(removed.profile.creatures[0].armor_id).is_empty() and str(removed.profile.armor[0].equipped_to).is_empty(), "armor unequip keeps both valid instances")
-	if failures.is_empty(): print("PASS: checkpoint A calibration yard decks armor and rivals")
+	var learned := EquipmentRules.learn_suit(profile, "standard")
+	var printed := EquipmentRules.print_suit(learned.profile, "standard")
+	var equipped := EquipmentRules.equip_suit(printed.profile, str(profile.onboarding.starter_instance_id), str(printed.payload.suit_instance_id))
+	var removed := EquipmentRules.remove_suit(equipped.profile, str(profile.onboarding.starter_instance_id))
+	require(bool(equipped.ok) and bool(removed.ok) and str(removed.profile.creatures[0].suit_instance_id).is_empty() and str(removed.profile.suits[0].equipped_to).is_empty(), "suit removal keeps both valid instances")
+	if failures.is_empty(): print("PASS: checkpoint A calibration yard decks suits and rivals")
 	call_deferred("finish")
 
 func finish() -> void:

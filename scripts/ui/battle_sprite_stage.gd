@@ -9,6 +9,10 @@ const CARD_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
 const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
 var left_id := "cinderpaw"
 var right_id := "mossmunk"
+var left_suit_id := ""
+var right_suit_id := ""
+var left_core_id := ""
+var right_core_id := ""
 var event_kind := ""
 var event_actor := 0
 var event_token := 0
@@ -17,18 +21,32 @@ var reduced_motion := false
 var high_contrast := false
 var elapsed := 0.0
 var _last_frame_signature := -1
+var left_armor_preview: TieredArmorPalettePreview
+var right_armor_preview: TieredArmorPalettePreview
+var left_core_vfx: CorePowerVFX
+var right_core_vfx: CorePowerVFX
+var _core_activation_token := -1
+var _core_activation_finished := true
 
 func _ready() -> void:
 	if custom_minimum_size.y <= 0.0: custom_minimum_size = Vector2(0, 250)
+	left_armor_preview = TieredArmorPalettePreview.new(); left_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(left_armor_preview)
+	right_armor_preview = TieredArmorPalettePreview.new(); right_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(right_armor_preview)
+	left_core_vfx = CorePowerVFX.new(); left_core_vfx.name = "BattleLeftCoreActivation"; add_child(left_core_vfx)
+	right_core_vfx = CorePowerVFX.new(); right_core_vfx.name = "BattleRightCoreActivation"; add_child(right_core_vfx)
 	_update_processing()
 	queue_redraw()
 
 func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, reduce: bool, contrast := false, token := 0) -> void:
 	var resolved_kind := kind.split(":")[0]
 	var resolved_card := kind.substr(5) if kind.begins_with("card:") else ""
-	var changed := left_id != str(player.get("id", "cinderpaw")) or right_id != str(rival.get("id", "mossmunk")) or event_kind != resolved_kind or event_card_id != resolved_card or event_actor != actor or reduced_motion != reduce or high_contrast != contrast or event_token != token
+	var changed := left_id != str(player.get("id", "cinderpaw")) or right_id != str(rival.get("id", "mossmunk")) or left_suit_id != str(player.get("suit_id", "")) or right_suit_id != str(rival.get("suit_id", "")) or left_core_id != str(player.get("core_id", "")) or right_core_id != str(rival.get("core_id", "")) or event_kind != resolved_kind or event_card_id != resolved_card or event_actor != actor or reduced_motion != reduce or high_contrast != contrast or event_token != token
 	left_id = str(player.get("id", "cinderpaw"))
 	right_id = str(rival.get("id", "mossmunk"))
+	left_suit_id = str(player.get("suit_id", ""))
+	right_suit_id = str(rival.get("suit_id", ""))
+	left_core_id = str(player.get("core_id", ""))
+	right_core_id = str(rival.get("core_id", ""))
 	event_kind = resolved_kind
 	event_card_id = resolved_card
 	event_actor = actor
@@ -38,23 +56,35 @@ func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, 
 		event_token = token
 		elapsed = 0.0
 		_last_frame_signature = -1
+		if token != _core_activation_token and resolved_kind == "ability":
+			_core_activation_token = token
+			_core_activation_finished = false
+			_trigger_core_activation(left_core_vfx, left_core_id, actor == 0)
+			_trigger_core_activation(right_core_vfx, right_core_id, actor == 1)
+		elif resolved_kind != "ability":
+			_clear_core_activations()
 	CreatureSpriteCache.texture_for_creature(left_id)
 	CreatureSpriteCache.texture_for_creature(right_id)
 	_update_processing()
 	queue_redraw()
 
 func _update_processing() -> void:
-	set_process(not reduced_motion and is_event_active())
+	# Reduced motion still advances the finite presentation window so its one
+	# static Core peak is dismissed instead of becoming an idle overlay.
+	set_process(is_presentation_window_active())
+
+func is_presentation_window_active() -> bool:
+	return MOVE_VFX.is_finite_event(event_kind) and elapsed < MOVE_VFX.event_duration(event_kind)
 
 func is_event_active() -> bool:
-	return not reduced_motion and MOVE_VFX.is_finite_event(event_kind) and elapsed < MOVE_VFX.event_duration(event_kind)
+	return not reduced_motion and is_presentation_window_active()
 
 func presentation_progress() -> float:
 	var duration := MOVE_VFX.event_duration(event_kind)
 	return clampf(elapsed / duration, 0.0, 1.0) if duration > 0.0 else 0.0
 
 func _process(delta: float) -> void:
-	if not is_visible_in_tree() or not is_event_active():
+	if not is_visible_in_tree() or not is_presentation_window_active():
 		_update_processing()
 		return
 	advance_presentation(delta)
@@ -62,15 +92,17 @@ func _process(delta: float) -> void:
 ## Narrow deterministic seam for presentation tests and capture fixtures. This
 ## advances visuals only; BattleState has already accepted the action.
 func advance_presentation(delta: float) -> void:
-	if not is_event_active():
+	if not is_presentation_window_active():
 		_update_processing()
 		return
 	elapsed = minf(MOVE_VFX.event_duration(event_kind), elapsed + delta)
 	var next_signature := _frame_signature()
-	if next_signature != _last_frame_signature or not is_event_active():
+	if next_signature != _last_frame_signature or not is_presentation_window_active():
 		_last_frame_signature = next_signature
 		queue_redraw()
-	if not is_event_active(): set_process(false)
+	if not is_presentation_window_active():
+		_clear_core_activations()
+		set_process(false)
 
 static func select_frame(kind: String, actor: int, is_left: bool, reduce: bool, seconds: float) -> int:
 	if reduce or not MOVE_VFX.is_finite_event(kind) or seconds >= MOVE_VFX.event_duration(kind): return 0
@@ -104,22 +136,37 @@ func _draw() -> void:
 	var offset := _lunge_offset()
 	var left_offset := offset if event_actor == 0 else Vector2.ZERO
 	var right_offset := offset if event_actor == 1 else Vector2.ZERO
-	var left_destination := _draw_creature(left_id, Rect2(left_target.position + left_offset, left_target.size), _frame_for(true), false)
-	var right_destination := _draw_creature(right_id, Rect2(right_target.position + right_offset, right_target.size), _frame_for(false), true)
+	var left_destination := _draw_creature(left_id, left_suit_id, left_core_id, Rect2(left_target.position + left_offset, left_target.size), _frame_for(true), false, left_armor_preview)
+	var right_destination := _draw_creature(right_id, right_suit_id, right_core_id, Rect2(right_target.position + right_offset, right_target.size), _frame_for(false), true, right_armor_preview)
+	_sync_core_activation(left_core_vfx, left_destination, left_id == "cinderpaw" and not left_suit_id.is_empty(), 0)
+	_sync_core_activation(right_core_vfx, right_destination, right_id == "cinderpaw" and not right_suit_id.is_empty(), 1)
 	_draw_move_vfx(left_destination, right_destination)
+	_draw_core_activation_halo(left_destination, left_core_id, 0)
+	_draw_core_activation_halo(right_destination, right_core_id, 1)
 
 func _lunge_offset() -> Vector2:
 	if event_kind not in ["attack", "ability"] or not is_event_active(): return Vector2.ZERO
 	var travel := sin(presentation_progress() * PI) * minf(22.0, size.x * 0.035)
 	return Vector2(travel if event_actor == 0 else -travel, 0)
 
-func _draw_creature(id: String, target: Rect2, frame: int, flip: bool) -> Rect2:
-	var texture := CreatureSpriteCache.texture_for_creature(id)
+func _draw_creature(id: String, suit_id: String, core_id: String, target: Rect2, frame: int, flip: bool, armor_preview: TieredArmorPalettePreview) -> Rect2:
+	var is_armored_cinderpaw := id == "cinderpaw" and not suit_id.is_empty()
+	var texture := CreatureSpriteCache.texture_for_path(TieredArmorPalettePreview.MASTER_PATH) if is_armored_cinderpaw else CreatureSpriteCache.texture_for_creature(id)
 	if texture == null: return Rect2()
-	var source := safe_source_region(id, frame)
+	var source := Rect2(Vector2.ZERO, texture.get_size()) if is_armored_cinderpaw else safe_source_region(id, frame)
 	var fit: float = minf(target.size.x / source.size.x, target.size.y / source.size.y)
 	var fitted := source.size * fit
 	var destination := Rect2(target.position + (target.size - fitted) * 0.5, fitted)
+	if armor_preview != null:
+		armor_preview.visible = is_armored_cinderpaw
+		if is_armored_cinderpaw:
+			armor_preview.configure_tier(suit_id)
+			armor_preview.configure_core(core_id)
+			armor_preview.position = destination.position
+			armor_preview.size = destination.size
+			armor_preview.pivot_offset = destination.size * 0.5
+			armor_preview.scale = Vector2(-1, 1) if flip else Vector2.ONE
+	if is_armored_cinderpaw: return destination
 	if flip:
 		draw_set_transform(Vector2(destination.position.x + destination.size.x, destination.position.y), 0.0, Vector2(-1, 1))
 		draw_texture_rect_region(texture, Rect2(Vector2.ZERO, destination.size), source)
@@ -127,6 +174,37 @@ func _draw_creature(id: String, target: Rect2, frame: int, flip: bool) -> Rect2:
 	else:
 		draw_texture_rect_region(texture, destination, source)
 	return destination
+
+func _trigger_core_activation(effect: CorePowerVFX, core_id: String, is_actor: bool) -> void:
+	if effect == null: return
+	effect.configure_core(core_id)
+	effect.set_reduced_motion(reduced_motion)
+	if is_actor and core_id == "arcane":
+		if reduced_motion: effect.show_peak()
+		else: effect.start_activation()
+	else:
+		effect.show_idle()
+
+func _sync_core_activation(effect: CorePowerVFX, destination: Rect2, visible: bool, side: int) -> void:
+	if effect == null: return
+	var activation_visible := visible and _is_core_activation_visible(side, left_core_id if side == 0 else right_core_id)
+	effect.visible = activation_visible
+	if activation_visible:
+		effect.position = destination.position
+		effect.size = destination.size
+
+func _is_core_activation_visible(side: int, core_id: String) -> bool:
+	return event_kind == "ability" and event_actor == side and core_id == "arcane" and is_presentation_window_active() and not _core_activation_finished
+
+func _clear_core_activations() -> void:
+	if _core_activation_finished: return
+	_core_activation_finished = true
+	if left_core_vfx != null:
+		left_core_vfx.show_idle()
+		left_core_vfx.visible = false
+	if right_core_vfx != null:
+		right_core_vfx.show_idle()
+		right_core_vfx.visible = false
 
 func _draw_move_vfx(left: Rect2, right: Rect2) -> void:
 	if not is_event_active(): return
@@ -163,6 +241,19 @@ func _draw_move_vfx(left: Rect2, right: Rect2) -> void:
 		_draw_effect_accents(actor_rect, foe_rect, accents, color, progress, status_atlas)
 	elif event_kind == "switch":
 		draw_line(origin + Vector2(-20, 0), origin + Vector2(20, 0), color, 3.0, true)
+
+func _draw_core_activation_halo(destination: Rect2, core_id: String, side: int) -> void:
+	if not _is_core_activation_visible(side, core_id) or destination.size.x <= 0.0: return
+	var center := destination.position + destination.size * CorePowerVFX.HELMET_GEM_CENTER_NORMALIZED
+	var radius := minf(destination.size.x, destination.size.y) * 0.065
+	var color := Color("f44cff")
+	draw_circle(center, radius, Color(color.r, color.g, color.b, 0.28))
+	draw_arc(center, radius * 1.16, 0.0, TAU, 20, color, 3.0, true)
+	for index in 4:
+		var angle := TAU * float(index) / 4.0 + presentation_progress() * 0.6
+		var inward := center + Vector2(cos(angle), sin(angle)) * radius * 0.78
+		var outward := center + Vector2(cos(angle), sin(angle)) * radius * 1.52
+		draw_line(inward, outward, Color("ffd6ff"), 2.0, true)
 
 func _draw_impact_marks(point: Vector2, color: Color, impact: String) -> void:
 	var spokes := 8 if impact in ["spark", "nova"] else 5

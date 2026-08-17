@@ -13,5 +13,5 @@ The intended production approach is an armor overlay or authored armored sprite
 variant; this image does not replace the existing living sprite sheet.
 
 Generated with the built-in image-generation tool in `stylized-concept` mode,
-using the existing Cinderpaw sheet, Full Suit raw print, and Layered Helm raw
+using the existing Cinderpaw sheet and Full Suit raw print
 print as identity and design references.

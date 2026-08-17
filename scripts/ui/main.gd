@@ -11,6 +11,7 @@ const SUPPORT_CARD_PRESENTER := preload("res://scripts/ui/support_card_presenter
 const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
+const EQUIPMENT_WORKBENCH_VIEW := preload("res://scripts/ui/equipment_workbench_view.gd")
 const REVIEW_BUILD_LABEL := "0.5.25-alpha-landscape-card-art"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
@@ -62,6 +63,10 @@ var printer_sequence: ArcaneForgeSequence
 var printer_creature_id := ""
 var printer_armor_id := ""
 var printer_is_armor := false
+var printer_is_core := false
+var equipment_selected_creature_id := ""
+var equipment_mode := "suits"
+var equipment_selected_id := "standard"
 var printer_price := 0
 var printer_tick_accumulator := 0.0
 var printer_presentation_seconds := 0.0
@@ -447,7 +452,7 @@ func render_workshop() -> void:
 func _workshop_views() -> Array:
 	return [
 		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "description":"The left Arcane Forge holds learned blueprints and printed companions.", "rect":Rect2(0.08, 0.32, 0.28, 0.44), "objects":[{"id":"forge_machine", "name":"Arcane Forge", "description":"Prepare a learned blueprint for a safe, witnessed print.", "target":"printer", "rect":Rect2(0.34, 0.27, 0.36, 0.56)}, {"id":"collection_case", "name":"Collection Case", "description":"Review your learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.08, 0.06, 0.25, 0.66)}]},
-		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"card_archive", "name":"Support Card Archive", "description":"Browse card art, rules, targets and owned copies.", "target":"archive", "rect":Rect2(0.26, 0.52, 0.28, 0.18)}, {"id":"armor_tools", "name":"Armor Tools", "description":"Learn, print, fit, unequip, and reassign armor.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
+		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, equipment, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"card_archive", "name":"Support Card Archive", "description":"Browse card art, rules, targets and owned copies.", "target":"archive", "rect":Rect2(0.26, 0.52, 0.28, 0.18)}, {"id":"armor_tools", "name":"Equipment Workbench", "description":"Learn, print, fit, socket, remove, and move full suits and Cores.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
 		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "description":"Browse fixed daily offers, records, and a local kid-safe trade demo.", "rect":Rect2(0.65, 0.30, 0.23, 0.34), "objects":[{"id":"offer_screen", "name":"Forge Offers", "description":"Review today's deterministic blueprint, card, and armor offers.", "target":"shop", "rect":Rect2(0.57, 0.35, 0.10, 0.29)}, {"id":"forgedex_screen", "name":"Forgedex Terminal", "description":"Track every discovered creature blueprint.", "target":"codex", "rect":Rect2(0.67, 0.35, 0.11, 0.29)}, {"id":"trade_terminal", "name":"Guild Trade Table", "description":"Open a credential-free two-profile escrow demonstration.", "target":"trade", "rect":Rect2(0.78, 0.35, 0.12, 0.29)}]},
 		{"id":"proving", "name":"Proving Door", "callout":"Daily Training, Trials, Local Versus", "description":"Step through the center door for daily training, ordered Workshop Trials, or a private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Proving Door", "description":"Choose a repeatable daily rival or an ordered Workshop Trial with fixed first-clear rewards.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
 		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "description":"Visit printed companions for one calm, limited XP lesson each day.", "rect":Rect2(0.37, 0.63, 0.27, 0.29), "objects":[{"id":"yard_companions", "name":"Daily Print Yard", "description":"Share today's local filament lesson with your current collection.", "target":"yard", "rect":Rect2(0.31, 0.44, 0.34, 0.28)}]}
@@ -1067,7 +1072,7 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 	tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
 
 func _workshop_action_label(target: String) -> String:
-	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "archive":"Open Support Card Archive", "armor":"Open Armor", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
+	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "archive":"Open Support Card Archive", "armor":"Open Equipment Workbench", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
 	return str(names.get(target, "Open Station"))
 
 func open_workshop_view(view_id: String) -> void:
@@ -1112,7 +1117,7 @@ func close_printer_picker() -> void:
 func _workshop_stations() -> Array:
 	return [
 		{"id":"forge","name":"Printer Bench","description":"The left Arcane Forge holds every learned blueprint and printed companion.","actions":[{"label":"Open Arcane Forge","target":"printer"},{"label":"Open Collection","target":"collection"}],"rect":Rect2(0.05,0.48,0.17,0.23)},
-		{"id":"maker","name":"Maker Bench","description":"Shape the active team, named deck slots, fitted armor, and daily calibration patterns at one maker table.","actions":[{"label":"Edit Team","target":"team"},{"label":"Edit Deck Slots","target":"deck"},{"label":"Open Armor","target":"armor"},{"label":"Run Calibration","target":"calibration"}],"rect":Rect2(0.27,0.68,0.25,0.17)},
+		{"id":"maker","name":"Maker Bench","description":"Shape the active team, named deck slots, full-suit/Core loadouts, and daily calibration patterns at one maker table.","actions":[{"label":"Edit Team","target":"team"},{"label":"Edit Deck Slots","target":"deck"},{"label":"Open Equipment Workbench","target":"armor"},{"label":"Run Calibration","target":"calibration"}],"rect":Rect2(0.27,0.68,0.25,0.17)},
 		{"id":"terminal","name":"Forge Terminal","description":"Browse deterministic offers, track creature records, or open the kid-safe local trade table.","actions":[{"label":"Open Forge Offers","target":"shop"},{"label":"Open Forgedex","target":"codex"},{"label":"Open Trade Table","target":"trade"}],"rect":Rect2(0.76,0.50,0.19,0.23)},
 		{"id":"door","name":"Proving Door","description":"Challenge today’s deterministic training rival or pass the device for a local match.","actions":[{"label":"Start Training","target":"proving"},{"label":"Start Local Versus","target":"local_vs"}],"rect":Rect2(0.41,0.25,0.19,0.33)},
 		{"id":"yard","name":"Print Yard","description":"Visit companions for one daily XP filament lesson.","actions":[{"label":"Visit Print Yard","target":"yard"}],"rect":Rect2(0.05,0.77,0.18,0.13)},
@@ -1434,11 +1439,11 @@ func render_printer() -> void:
 	var panel := make_panel(Color("152d49ec"), Color("f1be69"))
 	body.add_child(panel.get_parent())
 	panel.add_child(label("Arcane Forge", 27, Color("ffd36c")))
-	var print_name := str(ProgressionRules.armor_def(printer_armor_id).get("name", "Armor Part")) if printer_is_armor else str(definition.name)
-	var print_type := "Armor part" if printer_is_armor else str(definition.element)
+	var print_name := (str(ArmorCoreDefinitions.core_blueprint_definition(printer_armor_id).get("name", "Core")) if printer_is_core else str(ProgressionRules.armor_def(printer_armor_id).get("name", "Full Suit"))) if printer_is_armor else str(definition.name)
+	var print_type := ("Printed Core" if printer_is_core else "Complete suit") if printer_is_armor else str(definition.element)
 	panel.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
 	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
-	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "")
+	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
 	_forge_screen_component.attach(panel)
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
@@ -1453,7 +1458,7 @@ func render_printer() -> void:
 		ArcaneForgeSequence.RAW_COMPLETE:
 			panel.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
 		ArcaneForgeSequence.RAW_HOLD:
-			var hold_text := "Completed armor part rests for a moment before transfer to the Armor Workbench." if printer_is_armor else "Raw print complete. The Forge record is secure; the dormant form rests for a moment before awakening."
+			var hold_text := ("Completed Core rests for a moment before transfer to the Equipment Workbench." if printer_is_core else "Completed full suit rests for a moment before transfer to the Equipment Workbench.") if printer_is_armor else "Raw print complete. The Forge record is secure; the dormant form rests for a moment before awakening."
 			panel.add_child(label(hold_text, 16, Color("fff0a1")))
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENING:
@@ -1464,10 +1469,10 @@ func render_printer() -> void:
 			panel.add_child(label("%s leaves the build plate for the workbench." % departing_name, 16, Color("a8e3a5")))
 			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENED:
-			var completion_text := "Armor part secured: %s is ready for the Armor Workbench." % print_name if printer_is_armor else "Welcome, %s! Your living print is ready for the Collection." % str(definition.name)
+			var completion_text := ("Core secured: %s is ready for the Equipment Workbench." if printer_is_core else "Full suit secured: %s is ready for the Equipment Workbench.") % print_name if printer_is_armor else "Welcome, %s! Your living print is ready for the Collection." % str(definition.name)
 			panel.add_child(label(completion_text, 20, Color("a8e3a5")))
-			panel.add_child(make_button("Print Another" if not printer_is_armor else "Print Another Armor Part", return_to_printer_picker, Color("a86b2e")))
-			panel.add_child(make_button("Return to Printer Bench" if not printer_is_armor else "Return to Armor Workbench", return_to_printer_station, Color("536c8d")))
+			panel.add_child(make_button("Print Another" if not printer_is_armor else "Print Another Equipment Item", return_to_printer_picker, Color("a86b2e")))
+			panel.add_child(make_button("Return to Printer Bench" if not printer_is_armor else "Return to Equipment Workbench", return_to_printer_station, Color("536c8d")))
 		ArcaneForgeSequence.FAILED:
 			panel.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
 			panel.add_child(make_button("Return to Collection", navigate_to.bind("collection"), Color("536c8d")))
@@ -1480,7 +1485,7 @@ func _printer_progress_text() -> String:
 
 func _refresh_printer_presentation() -> void:
 	if screen != "printer" or printer_sequence == null: return
-	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "")
+	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
 	if is_instance_valid(printer_progress_label):
 		printer_progress_label.text = _printer_progress_text()
 
@@ -1504,7 +1509,7 @@ func advance_printer_for_test(step_bps: int) -> void:
 
 func _commit_printer_once() -> void:
 	if printer_sequence == null or not printer_sequence.request_commit(): return
-	var success := GameManager.print_armor(printer_armor_id) if printer_is_armor else GameManager.print_creature(printer_creature_id)
+	var success := (GameManager.print_core(printer_armor_id) if printer_is_core else GameManager.print_suit(printer_armor_id)) if printer_is_armor else GameManager.print_creature(printer_creature_id)
 	if not success: printer_failure = "The blueprint, coins, or inventory no longer passed validation."
 	printer_sequence.resolve_commit(success)
 
@@ -1518,6 +1523,7 @@ func cancel_printer_preview() -> void:
 	printer_creature_id = ""
 	printer_armor_id = ""
 	printer_is_armor = false
+	printer_is_core = false
 	screen = printer_return_screen
 	if screen == "workshop": workshop_view = workshop_return_view
 	render()
@@ -1557,7 +1563,7 @@ func render_collection() -> void:
 	for creature in GameManager.profile.creatures:
 		var row := make_panel(Color("152842e8"), Color("5e99b4")); body.add_child(row.get_parent())
 		var instance_id := str(creature.get("instance_id", ""))
-		row.add_child(label("%s - %s%s - Mastery %d" % [str(Catalog.creature(str(creature.creature_id)).name), "Bound" if bool(creature.get("bound", false)) else "Printed", " - Armor: %s" % str(creature.armor_id) if not str(creature.get("armor_id", "")).is_empty() else "", GameManager.creature_mastery(instance_id)], 16, Color("dce8f4")))
+		row.add_child(label("%s - %s%s - Mastery %d" % [str(Catalog.creature(str(creature.creature_id)).name), "Bound" if bool(creature.get("bound", false)) else "Printed", " - Full suit fitted" if not str(creature.get("suit_instance_id", "")).is_empty() else "", GameManager.creature_mastery(instance_id)], 16, Color("dce8f4")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_team() -> void:
@@ -1570,6 +1576,10 @@ func render_team() -> void:
 		if instance_id.is_empty(): continue
 		var selected: bool = instance_id in team_draft
 		var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
+		if str(creature.get("creature_id", "")) == "cinderpaw" and not str(creature.get("suit_instance_id", "")).is_empty():
+			var loadout := EquipmentRules.suit_loadout(GameManager.profile, instance_id)
+			var portrait := TieredArmorPalettePreview.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
+			intro.add_child(label("%s • %s" % [str(ArmorCoreDefinitions.suit_definition(str(loadout.get("tier_id", ""))).get("name", "Full Suit")), str(ArmorCoreDefinitions.definition(str(loadout.get("core_id", ""))).get("name", "No Core"))], 13, Color("f1be69")))
 		intro.add_child(make_button(("Remove " if selected else "Add ") + "%s (Mastery %d)" % [creature_name, GameManager.creature_mastery(instance_id)], toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
 	intro.add_child(make_button("Save Team", save_team_draft, Color("a86b2e")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
@@ -1598,53 +1608,35 @@ func save_team_draft() -> void:
 
 func render_armor() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
-	panel.add_child(label("Armor Workbench", 25, Color("ffd36c")))
-	panel.add_child(label("Build a durable loadout in three clear steps. Each print wears one piece; moving or removing it never loses either item.", 15, Color("dce8f4")))
-	panel.add_child(label("Step 1 - Acquire blueprints", 19, Color("9beaff")))
-	var locked_count := 0
-	for definition in Catalog.ARMOR:
-		if str(definition.get("id", "")) not in GameManager.profile.get("armor_blueprints", []): locked_count += 1
-	if locked_count > 0:
-		panel.add_child(label("%d armor blueprint%s are still available through Forge Offers." % [locked_count, "s" if locked_count != 1 else ""], 14, Color("fff0a1")))
-		panel.add_child(make_button("Browse Forge Offers", navigate_to.bind("shop"), Color("2f93a8")))
-	else:
-		panel.add_child(label("Every catalog armor blueprint is learned.", 14, Color("a8e3a5")))
-	panel.add_child(label("Step 2 - Print learned armor", 19, Color("9beaff")))
-	var learned_count := 0
-	for definition in Catalog.ARMOR:
-		var definition_id := str(definition.get("id", ""))
-		if definition_id not in GameManager.profile.get("armor_blueprints", []): continue
-		learned_count += 1
-		var owned_count := 0
-		for armor_instance in GameManager.profile.get("armor", []):
-			if armor_instance is Dictionary and str(armor_instance.get("armor_id", "")) == definition_id: owned_count += 1
-		panel.add_child(make_button("Print %s (%d FC) - owned %d" % [str(definition.get("name", definition_id)), int(definition.get("print", 0)), owned_count], print_armor_blueprint.bind(definition_id), Color("a86b2e")))
-	if learned_count == 0: panel.add_child(label("Learn an armor blueprint in Forge Offers, then return here to print it.", 14, Color("dce8f4")))
-	panel.add_child(label("Step 3 - Equip, move, or remove", 19, Color("9beaff")))
-	if GameManager.profile.get("armor", []).is_empty():
-		panel.add_child(label("No armor prints yet. Print a learned blueprint above to fit a companion.", 14, Color("dce8f4")))
-	for creature in GameManager.profile.creatures:
-		var creature_id := str(creature.get("instance_id", "")); var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown")); var equipped := str(creature.get("armor_id", ""))
-		panel.add_child(label("%s: %s" % [creature_name, "Unarmored" if equipped.is_empty() else equipped.replace("_", " ").capitalize()], 15, Color("a8e3a5") if not equipped.is_empty() else Color("dce8f4")))
-		if not equipped.is_empty(): panel.add_child(make_button("Unequip from %s" % creature_name, unequip_armor_from.bind(creature_id), Color("536c8d")))
-	for armor_instance in GameManager.profile.armor:
-		var armor_id := str(armor_instance.get("armor_instance_id", "")); var armor_name := str(armor_instance.get("armor_id", "")).replace("_", " ").capitalize()
-		if armor_id.is_empty(): continue
-		for creature in GameManager.profile.creatures:
-			var target_id := str(creature.get("instance_id", "")); var target_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
-			var moving := not str(armor_instance.get("equipped_to", "")).is_empty()
-			panel.add_child(make_button(("Move " if moving else "Equip ") + armor_name + " to " + target_name, equip_or_move_armor.bind(target_id, armor_id), Color("588d73")))
+	if equipment_selected_creature_id.is_empty() and not GameManager.profile.get("creatures", []).is_empty(): equipment_selected_creature_id = str(GameManager.profile.creatures[0].get("instance_id", ""))
+	panel.add_child(EQUIPMENT_WORKBENCH_VIEW.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
-func print_armor_blueprint(armor_id: String) -> void:
-	open_armor_printer(armor_id)
+func equipment_select_creature(instance_id: String) -> void: equipment_selected_creature_id = instance_id; render()
+func equipment_select_mode(next_mode: String) -> void:
+	equipment_mode = next_mode
+	if next_mode == "cores": equipment_selected_id = str(EquipmentRules.suit_loadout(GameManager.profile, equipment_selected_creature_id).get("core_id", ""))
+	else: equipment_selected_id = "standard"
+	render()
+func equipment_select_item(item_id: String) -> void: equipment_selected_id = item_id; render()
+func equipment_suit_action(tier_id: String) -> void:
+	if tier_id in GameManager.profile.get("suit_blueprints", []): open_armor_printer(tier_id)
+	else: GameManager.learn_suit_blueprint(tier_id)
+func equipment_core_action(core_id: String) -> void:
+	if core_id in GameManager.profile.get("core_blueprints", []): open_core_printer(core_id)
+	else: GameManager.learn_core_blueprint(core_id)
+func equipment_fit_suit(creature_id: String, suit_id: String) -> void: GameManager.move_suit(creature_id, suit_id)
+func equipment_remove_suit() -> void: GameManager.remove_suit(equipment_selected_creature_id)
+func equipment_remove_core(suit_id: String) -> void: GameManager.remove_core(suit_id)
+func equipment_socket_core(suit_id: String, core_id: String) -> void: GameManager.move_core(suit_id, core_id)
 
 func open_armor_printer(armor_id: String) -> void:
 	var definition := ProgressionRules.armor_def(armor_id)
-	if definition.is_empty() or armor_id not in GameManager.profile.get("armor_blueprints", []):
-		_toast("That armor blueprint is not learned yet.")
+	if definition.is_empty() or armor_id not in GameManager.profile.get("suit_blueprints", []):
+		_toast("That full-suit blueprint is not learned yet.")
 		return
 	printer_is_armor = true
+	printer_is_core = false
 	printer_armor_id = armor_id
 	printer_creature_id = "cinderpaw"
 	printer_price = int(definition.get("print", 0))
@@ -1654,17 +1646,13 @@ func open_armor_printer(armor_id: String) -> void:
 	screen = "printer"
 	render()
 
-func unequip_armor_from(creature_instance_id: String) -> void:
-	GameManager.unequip_armor(creature_instance_id)
-
-func equip_or_move_armor(creature_instance_id: String, armor_instance_id: String) -> void:
-	var equipped := false
-	for armor_instance in GameManager.profile.get("armor", []):
-		if armor_instance is Dictionary and str(armor_instance.get("armor_instance_id", "")) == armor_instance_id:
-			equipped = not str(armor_instance.get("equipped_to", "")).is_empty()
-			break
-	if equipped: GameManager.reassign_armor(creature_instance_id, armor_instance_id)
-	else: GameManager.equip_armor(creature_instance_id, armor_instance_id)
+func open_core_printer(core_id: String) -> void:
+	var definition := ArmorCoreDefinitions.core_blueprint_definition(core_id)
+	if definition.is_empty() or core_id not in GameManager.profile.get("core_blueprints", []):
+		_toast("That Core blueprint is not learned yet."); return
+	printer_is_armor = true; printer_is_core = true; printer_armor_id = core_id; printer_creature_id = "cinderpaw"; printer_price = int(definition.print)
+	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)), true)
+	printer_tick_accumulator = 0.0; printer_presentation_seconds = 0.0; printer_failure = ""; printer_return_screen = "armor"; screen = "printer"; render()
 
 func render_deck() -> void:
 	var panel := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(panel.get_parent())
@@ -1817,12 +1805,16 @@ func render_codex() -> void:
 		card.add_child(label("%s | HP %d | Attack %d | Speed %d\nOwned %d | Mastery %d | Printed %d" % [str(creature.element), int(creature.hp), int(creature.attack), int(creature.speed), owned_count, mastery_total, print_count] if known else "Undiscovered", 13, Color("dce8f4")))
 		if known:
 			card.add_child(label("%s: %s" % [str(creature.ability), Catalog.signature_description(str(creature.id))], 12, Color("b9d3e8")))
-	intro.add_child(label("Armor catalog", 20, Color("ffd36c")))
-	for armor in Catalog.ARMOR:
-		var armor_id := str(armor.get("id", "")); var owned := 0
-		for row in GameManager.profile.get("armor", []): if row is Dictionary and str(row.get("armor_id", "")) == armor_id: owned += 1
-		var printed := int(GameManager.profile.get("print_history", {}).get("armor", {}).get(armor_id, 0))
-		intro.add_child(label("%s - +%d HP | +%d speed | %d guard | owned %d | printed %d" % [str(armor.get("name", armor_id)), int(armor.get("hp", 0)), int(armor.get("speed", 0)), int(armor.get("armor", 0)), owned, printed], 14, Color("dce8f4")))
+	intro.add_child(label("Full suits and Cores", 20, Color("ffd36c")))
+	for suit in Catalog.SUITS:
+		var tier_id := str(suit.id); var owned := 0
+		for row in GameManager.profile.get("suits", []): if row is Dictionary and str(row.get("tier_id", "")) == tier_id: owned += 1
+		var printed := int(GameManager.profile.get("print_history", {}).get("suits", {}).get(tier_id, 0))
+		intro.add_child(label("%s - +%d HP | +%d speed | %d guard | owned %d | printed %d" % [str(suit.name), int(suit.hp), int(suit.speed), int(suit.armor), owned, printed], 14, Color("dce8f4")))
+	for core in Catalog.CORE_BLUEPRINTS:
+		var core_id := str(core.id); var core_owned := 0
+		for row in GameManager.profile.get("cores", []): if row is Dictionary and str(row.get("core_id", "")) == core_id: core_owned += 1
+		intro.add_child(label("%s — %s | owned %d" % [str(core.name), str(ArmorCoreDefinitions.definition(core_id).get("effect", "")), core_owned], 14, Color("dce8f4")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_proving_door() -> void:
@@ -1907,7 +1899,7 @@ func start_trial(encounter_id: String) -> void:
 		_toast(str(setup.get("error", "The Workshop Trial team is not ready.")))
 		return
 	battle = setup.get("battle", null) as BattleState
-	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("unarmored_retry", false)) else ""
+	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("equipment_free_retry", false)) else ""
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_mode = "trial"
@@ -1930,7 +1922,7 @@ func start_battle() -> void:
 		_toast(str(setup.get("error", "The training team is not ready.")))
 		return
 	battle = setup.get("battle", null) as BattleState
-	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("unarmored_retry", false)) else ""
+	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("equipment_free_retry", false)) else ""
 	var warmup := GameManager.consume_solo_spool_warmup()
 	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
 	battle_last_event = ""
@@ -1995,6 +1987,11 @@ func render_battle_fullscreen(host: Container) -> void:
 	var stage := _battle_screen_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (64 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
 	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
 	_battle_screen_component.attach(intro)
+	# Keep the read-only portrait recap above the action dock.  The dock is the
+	# last normal-flow child, so changing combat feedback or the battle log cannot
+	# walk the primary controls below the visible phone fold on a later render.
+	if not battle_secondary_open and is_portrait_layout():
+		render_battle_summary(intro)
 	if battle.active_player == 0 and not battle.finished:
 		render_battle_action_dock(intro)
 		render_battle_secondary(intro)
@@ -2007,11 +2004,8 @@ func render_battle_fullscreen(host: Container) -> void:
 			intro.add_child(label("Workshop Trial: %s\n%s" % [str(trial_state.get("encounter", {}).get("name", "Encounter")), "Victory claims %d Forge Coins, %d XP, and +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))] if battle.winner == 0 else "Defeats do not grant a Workshop Trial first-clear reward."], 15, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
 		intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Proving Door", finish_battle, Color("536c8d")))
 		return
-	# Portrait has room for the always-visible status summary. On compact
-	# landscape, let the presentation use that room so the first fold remains
-	# entirely actionable; Details retains the full verbose readout.
-	if not battle_secondary_open and is_portrait_layout():
-		render_battle_summary(intro)
+	# Landscape gives that room to the presentation; Details retains the verbose
+	# recap there. Portrait renders its compact recap before the terminal dock.
 	if battle.active_player == 1 and not battle.finished and not ai_pending:
 		ai_pending = true
 		var scheduled_state := battle
@@ -2025,19 +2019,25 @@ func render_battle_summary(host: Container) -> void:
 	var summary := make_panel(Color("10273ad8"), Color("517b9a"))
 	summary.name = "BattleSummary"
 	var panel := summary.get_parent() as PanelContainer
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	panel.custom_minimum_size = Vector2(0, 142)
 	host.add_child(panel)
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
-		var armor_id := str(unit.get("armor_id", ""))
+		var suit_id := str(unit.get("suit_id", ""))
 		var max_hp: int = int(unit.get("max_hp", 1))
 		var base_hp: int = int(Catalog.creature(str(unit.get("id", ""))).get("hp", max_hp))
 		summary.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-		summary.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), max_hp - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+		summary.add_child(label("Suit: None" if suit_id.is_empty() else "Suit: %s | +%d maximum HP | %d guard | Core: %s" % [str(unit.get("suit_name", "Full suit")), max_hp - base_hp, int(unit.get("armor", 0)), str(unit.get("core_name", "None"))], 13, Color("f1be69")))
 		summary.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
 		summary.add_child(label("Effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8")))
-	summary.add_child(label("Battle log: " + " | ".join(battle.log.slice(maxi(0, battle.log.size()-3))), 13, Color("d0dfeb")))
+	# A capped, single-line recap keeps the portrait first fold deterministic as
+	# a battle history grows. The full history remains available in Details.
+	var log_line := label("Latest: " + str(battle.log.back() if not battle.log.is_empty() else "Battle ready"), 13, Color("d0dfeb"))
+	log_line.name = "BattleSummaryLatestEvent"
+	log_line.clip_text = true
+	log_line.autowrap_mode = TextServer.AUTOWRAP_OFF
+	summary.add_child(log_line)
 
 func render_battle_action_dock(host: Container) -> void:
 	var dock := make_panel(Color("214969ee"), Color("6de4ff"))
@@ -2052,7 +2052,11 @@ func render_battle_action_dock(host: Container) -> void:
 	dock.add_child(dock_title)
 	var feedback := label(battle_feedback_text(), 14, Color("fff0a1") if not bool(settings().get("high_contrast", false)) else Color.WHITE)
 	feedback.name = "BattleImpactBanner"
-	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Keep transient impact copy to one predictable dock row. Long-form combat
+	# history is preserved in Details instead of resizing touch controls.
+	feedback.autowrap_mode = TextServer.AUTOWRAP_OFF
+	feedback.clip_text = true
+	feedback.custom_minimum_size.y = 20
 	dock.add_child(feedback)
 	var actions := GridContainer.new()
 	actions.name = "BattleActionGrid"
@@ -2211,11 +2215,11 @@ func battle_feedback_text() -> String:
 func render_battle_details_tab(panel: Container) -> void:
 	for player in [1, 0]:
 		var unit := battle.active_unit(player)
-		var armor_id := str(unit.get("armor_id", ""))
+		var suit_id := str(unit.get("suit_id", ""))
 		var max_hp: int = int(unit.get("max_hp", 1))
 		var base_hp: int = int(Catalog.creature(str(unit.get("id", ""))).get("hp", max_hp))
 		panel.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 15, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-		panel.add_child(label("Armor: None" if armor_id.is_empty() else "Armor: %s | +%d maximum HP | %d guard" % [str(unit.get("armor_name", "Unarmored")), max_hp - base_hp, int(unit.get("armor", 0))], 13, Color("f1be69")))
+		panel.add_child(label("Suit: None" if suit_id.is_empty() else "Suit: %s | +%d maximum HP | %d guard | Core: %s" % [str(unit.get("suit_name", "Full suit")), max_hp - base_hp, int(unit.get("armor", 0)), str(unit.get("core_name", "None"))], 13, Color("f1be69")))
 		panel.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
 		panel.add_child(label("Signature effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8")))
 	panel.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-4))), 13, Color("d0dfeb")))

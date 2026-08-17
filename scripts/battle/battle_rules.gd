@@ -46,6 +46,7 @@ static func _attack(state: BattleState, player: int, ability: bool) -> Dictionar
 	var post_armor_damage: int = maxi(1, scaled_damage - int(defender.armor))
 	defender.shield = maxi(0, incoming_shield - post_armor_damage)
 	defender.hp = maxi(0, int(defender.hp) - damage)
+	_apply_verdant_repair(defender)
 	if ability:
 		_apply_signature_effects(state, player, signature)
 		state.log.append("%s used %s for %d damage: %s." % [attacker.name, attacker.ability, damage, BATTLE_CATALOG.signature_description(str(attacker.get("id", "")))])
@@ -54,6 +55,12 @@ static func _attack(state: BattleState, player: int, ability: bool) -> Dictionar
 	if defender.hp <= 0: _defeat(state, 1-player)
 	if not state.finished: _end_turn(state)
 	return {"ok":true,"damage":damage,"signature":signature.duplicate(true) if ability else {}}
+
+static func _apply_verdant_repair(unit: Dictionary) -> void:
+	if str(unit.get("core_id", "")) != "verdant" or not bool(unit.get("verdant_ready", false)): return
+	if int(unit.get("hp", 0)) > 0 and int(unit.get("hp", 0)) * 2 < int(unit.get("max_hp", 1)):
+		unit.hp = mini(int(unit.max_hp), int(unit.hp) + 4)
+		unit.verdant_ready = false
 
 ## Shared by the deterministic AI. This mirrors shield-after-minimum-armor rules.
 static func estimate_damage(attacker: Dictionary, defender: Dictionary, ability := false) -> int:

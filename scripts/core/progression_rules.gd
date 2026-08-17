@@ -2,6 +2,8 @@ class_name ProgressionRules
 extends RefCounted
 ## Pure, catalog-validated account transitions. File/network persistence is outside this seam.
 
+const EQUIPMENT_RULES := preload("res://scripts/core/equipment_rules.gd")
+
 const STARTER_DECK_ID := "starter-deck"
 const STARTER_DECK: Array[String] = ["raw_filament","raw_filament","raw_filament","raw_filament","raw_filament","heated_spool","heated_spool","heated_spool","reinforced_layer","reinforced_layer","reinforced_layer","quick_patch","quick_patch","arcane_spark","arcane_spark"]
 const DAILY_CALIBRATION_LIMIT := 3
@@ -11,8 +13,7 @@ const DECK_NAME_OPTIONS: Array[String] = ["Forge Deck", "Field Kit", "Guard Line
 const YARD_DRILLS := {"field_practice":{"name":"Field Practice","xp":12},"team_bond":{"name":"Team Bond","mastery":5},"spool_warmup":{"name":"Spool Warmup","warmup":1}}
 
 static func ensure_fields(source: Dictionary, grant_starter_deck: bool = false) -> Dictionary:
-	var p: Dictionary = source.duplicate(true)
-	if not p.has("armor_blueprints"): p.armor_blueprints = []
+	var p: Dictionary = EQUIPMENT_RULES.ensure_fields(source)
 	if not p.has("support_cards"): p.support_cards = {}
 	if not p.has("decks"): p.decks = []
 	if not p.has("active_deck_id"): p.active_deck_id = ""
@@ -26,15 +27,10 @@ static func ensure_fields(source: Dictionary, grant_starter_deck: bool = false) 
 	if not p.has("creature_mastery") or not p.get("creature_mastery") is Dictionary: p.creature_mastery = {}
 	if not p.has("print_history") or not p.get("print_history") is Dictionary: p.print_history = {}
 	if not p.print_history.has("creatures") or not p.print_history.get("creatures") is Dictionary: p.print_history.creatures = {}
-	if not p.print_history.has("armor") or not p.print_history.get("armor") is Dictionary: p.print_history.armor = {}
 	for creature in p.get("creatures", []):
 		if creature is Dictionary:
 			var creature_id := str(creature.get("creature_id", ""))
 			if not Catalog.creature(creature_id).is_empty(): p.print_history.creatures[creature_id] = maxi(int(p.print_history.creatures.get(creature_id, 0)), _owned_creature_count(p, creature_id))
-	for armor_row in p.get("armor", []):
-		if armor_row is Dictionary:
-			var armor_id := str(armor_row.get("armor_id", ""))
-			if not armor_def(armor_id).is_empty(): p.print_history.armor[armor_id] = maxi(int(p.print_history.armor.get(armor_id, 0)), _owned_armor_count(p, armor_id))
 	var active_found := false
 	for deck in p.decks:
 		if str(deck.get("id", "")) == str(p.active_deck_id) and _deck_is_legal(p, deck.get("cards", [])): active_found = true
@@ -75,60 +71,18 @@ static func print_creature(source: Dictionary, creature_id: String) -> Dictionar
 	if not _can_pay(p, price): return _fail(p, "Not enough Forge Coins.")
 	var instance_id := _next_id(p, creature_id)
 	p.coins = int(p.coins) - price
-	p.creatures.append({"instance_id":instance_id,"creature_id":creature_id,"armor_id":"","bound":false,"tradable":true,"source":"printed"})
+	p.creatures.append({"instance_id":instance_id,"creature_id":creature_id,"suit_instance_id":"","bound":false,"tradable":true,"source":"printed"})
 	p.print_history.creatures[creature_id] = int(p.print_history.creatures.get(creature_id, 0)) + 1
 	return _ok(p, {"creature_id":creature_id,"instance_id":instance_id,"price":price})
 
-static func learn_armor_blueprint(source: Dictionary, armor_id: String) -> Dictionary:
-	var p := ensure_fields(source)
-	var armor := armor_def(armor_id)
-	if armor.is_empty() or armor_id in p.armor_blueprints: return _fail(p, "Armor blueprint is unavailable.")
-	var price: int = int(armor.blueprint)
-	if not _can_pay(p, price): return _fail(p, "Not enough Forge Coins.")
-	p.coins = int(p.coins) - price; p.armor_blueprints.append(armor_id)
-	return _ok(p, {"armor_id":armor_id,"price":price})
-
-static func print_armor(source: Dictionary, armor_id: String) -> Dictionary:
-	var p := ensure_fields(source)
-	var armor := armor_def(armor_id)
-	if armor.is_empty() or not armor_id in p.armor_blueprints: return _fail(p, "Learn this armor blueprint first.")
-	var price: int = int(armor.print)
-	if not _can_pay(p, price): return _fail(p, "Not enough Forge Coins.")
-	var instance_id := _next_id(p, "armor-%s" % armor_id)
-	p.coins = int(p.coins) - price; p.armor.append({"armor_instance_id":instance_id,"armor_id":armor_id,"equipped_to":""})
-	p.print_history.armor[armor_id] = int(p.print_history.armor.get(armor_id, 0)) + 1
-	return _ok(p, {"armor_id":armor_id,"armor_instance_id":instance_id,"price":price})
-
-static func equip_armor(source: Dictionary, creature_instance_id: String, armor_instance_id: String) -> Dictionary:
-	var p := ensure_fields(source)
-	var creature := _creature(p, creature_instance_id); var armor := _armor(p, armor_instance_id)
-	if creature.is_empty() or armor.is_empty() or not str(armor.equipped_to).is_empty(): return _fail(p, "That creature or armor is not ready to equip.")
-	for existing in p.armor:
-		if str(existing.get("equipped_to", "")) == creature_instance_id: existing.equipped_to = ""
-	creature.armor_id = str(armor.armor_id); armor.equipped_to = creature_instance_id
-	return _ok(p, {"creature_instance_id":creature_instance_id,"armor_instance_id":armor_instance_id})
-
-static func unequip_armor(source: Dictionary, creature_instance_id: String) -> Dictionary:
-	var p := ensure_fields(source)
-	var creature := _creature(p, creature_instance_id)
-	if creature.is_empty() or str(creature.get("armor_id", "")).is_empty(): return _fail(p, "That creature has no armor to remove.")
-	for armor in p.armor:
-		if str(armor.get("equipped_to", "")) == creature_instance_id: armor.equipped_to = ""
-	creature.armor_id = ""
-	return _ok(p, {"creature_instance_id":creature_instance_id})
-
-static func reassign_armor(source: Dictionary, creature_instance_id: String, armor_instance_id: String) -> Dictionary:
-	var p := ensure_fields(source)
-	var creature := _creature(p, creature_instance_id); var armor := _armor(p, armor_instance_id)
-	if creature.is_empty() or armor.is_empty(): return _fail(p, "That creature or armor is unavailable.")
-	var previous_owner := str(armor.get("equipped_to", ""))
-	if not previous_owner.is_empty():
-		var old_owner := _creature(p, previous_owner)
-		if not old_owner.is_empty(): old_owner.armor_id = ""
-	for other in p.armor:
-		if str(other.get("equipped_to", "")) == creature_instance_id: other.equipped_to = ""
-	creature.armor_id = str(armor.armor_id); armor.equipped_to = creature_instance_id
-	return _ok(p, {"creature_instance_id":creature_instance_id,"armor_instance_id":armor_instance_id,"previous_owner":previous_owner})
+static func learn_suit_blueprint(source: Dictionary, tier_id: String) -> Dictionary: return EQUIPMENT_RULES.learn_suit(source, tier_id)
+static func print_suit(source: Dictionary, tier_id: String) -> Dictionary: return EQUIPMENT_RULES.print_suit(source, tier_id)
+static func equip_suit(source: Dictionary, creature_id: String, suit_id: String) -> Dictionary: return EQUIPMENT_RULES.equip_suit(source, creature_id, suit_id)
+static func remove_suit(source: Dictionary, creature_id: String) -> Dictionary: return EQUIPMENT_RULES.remove_suit(source, creature_id)
+static func learn_core_blueprint(source: Dictionary, core_id: String) -> Dictionary: return EQUIPMENT_RULES.learn_core(source, core_id)
+static func print_core(source: Dictionary, core_id: String) -> Dictionary: return EQUIPMENT_RULES.print_core(source, core_id)
+static func socket_core(source: Dictionary, suit_id: String, core_id: String) -> Dictionary: return EQUIPMENT_RULES.socket_core(source, suit_id, core_id)
+static func remove_core(source: Dictionary, suit_id: String) -> Dictionary: return EQUIPMENT_RULES.remove_core(source, suit_id)
 
 static func save_team(source: Dictionary, instance_ids: Array) -> Dictionary:
 	var p := ensure_fields(source)
@@ -312,7 +266,8 @@ static func buy_shop_offer(source: Dictionary, day_key: String, offer_id: String
 		if str(offer.offer_id) != offer_id: continue
 		match str(offer.kind):
 			"creature_blueprint": return purchase_creature_blueprint(shop.profile, str(offer.item_id))
-			"armor_blueprint": return learn_armor_blueprint(shop.profile, str(offer.item_id))
+			"suit_blueprint": return learn_suit_blueprint(shop.profile, str(offer.item_id))
+			"core_blueprint": return learn_core_blueprint(shop.profile, str(offer.item_id))
 			"support_card": return buy_support_card(shop.profile, str(offer.item_id), int(offer.price))
 	return _fail(shop.profile, "That shop offer is unavailable.")
 
@@ -333,9 +288,13 @@ static func _rotation(day_key: String) -> Array:
 		while used.has("c:%s" % creature.id): seed = _next_seed(seed); creature = Catalog.CREATURES[seed % Catalog.CREATURES.size()]
 		used["c:%s" % creature.id] = true; offers.append({"offer_id":"%s-c%d" % [day_key,slot],"kind":"creature_blueprint","item_id":creature.id,"name":creature.name,"price":int(Catalog.rarity(creature.rarity).blueprint)})
 	for slot in 2:
-		seed = _next_seed(seed); var armor: Dictionary = Catalog.ARMOR[seed % Catalog.ARMOR.size()]
-		while used.has("a:%s" % armor.id): seed = _next_seed(seed); armor = Catalog.ARMOR[seed % Catalog.ARMOR.size()]
-		used["a:%s" % armor.id] = true; offers.append({"offer_id":"%s-a%d" % [day_key,slot],"kind":"armor_blueprint","item_id":armor.id,"name":armor.name,"price":int(armor.blueprint)})
+		seed = _next_seed(seed); var suit: Dictionary = Catalog.SUITS[seed % Catalog.SUITS.size()]
+		while used.has("s:%s" % suit.id): seed = _next_seed(seed); suit = Catalog.SUITS[seed % Catalog.SUITS.size()]
+		used["s:%s" % suit.id] = true; offers.append({"offer_id":"%s-s%d" % [day_key,slot],"kind":"suit_blueprint","item_id":suit.id,"name":suit.name,"price":int(suit.blueprint)})
+	for slot in 2:
+		seed = _next_seed(seed); var core: Dictionary = Catalog.CORE_BLUEPRINTS[seed % Catalog.CORE_BLUEPRINTS.size()]
+		while used.has("k:%s" % core.id): seed = _next_seed(seed); core = Catalog.CORE_BLUEPRINTS[seed % Catalog.CORE_BLUEPRINTS.size()]
+		used["k:%s" % core.id] = true; offers.append({"offer_id":"%s-k%d" % [day_key,slot],"kind":"core_blueprint","item_id":core.id,"name":core.name,"price":int(core.blueprint)})
 	for slot in 2:
 		seed = _next_seed(seed); var card: Dictionary = Catalog.SUPPORT_CARDS[seed % Catalog.SUPPORT_CARDS.size()]
 		while used.has("s:%s" % card.id): seed = _next_seed(seed); card = Catalog.SUPPORT_CARDS[seed % Catalog.SUPPORT_CARDS.size()]
@@ -372,8 +331,8 @@ static func _deck_is_legal(p: Dictionary, cards: Array) -> bool:
 static func support_price(card: Dictionary) -> int:
 	return 15 + int(card.cost) * 5
 static func armor_def(id: String) -> Dictionary:
-	for armor in Catalog.ARMOR:
-		if str(armor.id) == id: return armor.duplicate(true)
+	for suit in Catalog.SUITS:
+		if str(suit.id) == id: return suit.duplicate(true)
 	return {}
 static func card_def(id: String) -> Dictionary:
 	for card in Catalog.SUPPORT_CARDS:

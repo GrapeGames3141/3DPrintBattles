@@ -45,7 +45,7 @@ func _ready() -> void:
 		# Headless Windows may not expose source PNG bytes, so validate the imported/export seam here.
 		require(ResourceLoader.exists(living_path) and living_texture != null and living_texture.get_width() == 1536 and living_texture.get_height() == 1024, "%s living 4x2 sheet exists and loads at 1536x1024" % creature_id)
 		require(ResourceLoader.exists(raw_path) and raw_texture != null and raw_texture.get_width() > 0 and raw_texture.get_height() > 0, "%s raw print exists and loads" % creature_id)
-	for armor in Catalog.ARMOR:
+	for armor in Catalog.SUITS + Catalog.CORE_BLUEPRINTS:
 		var armor_id: String = str(armor.get("id", ""))
 		var armor_path: String = str(armor.get("raw_print", ""))
 		var armor_image := Image.load_from_file(ProjectSettings.globalize_path(armor_path))

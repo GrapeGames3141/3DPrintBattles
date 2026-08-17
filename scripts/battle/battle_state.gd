@@ -2,6 +2,7 @@ class_name BattleState
 extends RefCounted
 ## Pure mutable combat state; canonical serialization is safe to send to an authority.
 const BATTLE_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
+const CORE_DEFINITIONS := preload("res://scripts/core/armor_core_definitions.gd")
 const UNIT_RUNTIME := preload("res://scripts/battle/battle_unit_runtime.gd")
 var match_id := "local"
 var turn: int = 1
@@ -28,15 +29,21 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 		# runtime owns one tolerant conversion boundary instead of silently dropping
 		# a valid species because its key changed between profile/UI/battle layers.
 		var creature_id := creature_id_from_entry(entry)
-		var armor_id := armor_id_from_entry(entry)
+		var suit_id := suit_id_from_entry(entry)
+		var requested_core_id := core_id_from_entry(entry)
 		var def := BATTLE_CATALOG.creature(creature_id)
 		if def.is_empty(): continue
-		var armor_def: Dictionary = BATTLE_CATALOG.armor(armor_id)
-		var hp_bonus: int = clampi(int(armor_def.get("hp", 0)), 0, 100)
-		var speed_bonus: int = clampi(int(armor_def.get("speed", 0)), -10, 10)
-		var armor_bonus: int = clampi(int(armor_def.get("armor", 0)), 0, 10)
+		var suit_def: Dictionary = BATTLE_CATALOG.suit(suit_id)
+		# A Core is not freestanding battle gear.  Accept it only when the launch
+		# payload also names a valid full suit and a catalog Core definition.
+		var core_id := requested_core_id if not suit_def.is_empty() and not CORE_DEFINITIONS.definition(requested_core_id).is_empty() else ""
+		var hp_bonus: int = clampi(int(suit_def.get("hp", 0)), 0, 100)
+		var speed_bonus: int = clampi(int(suit_def.get("speed", 0)), 0, 10) + (1 if core_id == "storm" else 0)
+		var guard_bonus: int = clampi(int(suit_def.get("armor", 0)), 0, 10)
+		var attack_bonus: int = 2 if core_id == "ember" else 0
+		var signature_cost: int = maxi(1, int(def.ability_cost) - (1 if core_id == "arcane" else 0))
 		var max_hp: int = clampi(int(def.hp) + hp_bonus, 1, 999)
-		team.append(normalize_unit({"id":def.id,"name":def.name,"element":def.element,"hp":max_hp,"max_hp":max_hp,"attack":def.attack,"speed":clampi(int(def.speed) + speed_bonus, 1, 99),"cost":def.cost,"ability":def.ability,"ability_cost":def.ability_cost,"cooldown":def.cooldown,"cooldown_remaining":0,"armor":armor_bonus,"armor_id":str(armor_def.get("id", "")),"armor_name":str(armor_def.get("name", "")),"shield":0,"attack_buff":0,"attack_debuff":0,"ability_lock_turns":0,"cooling":false}))
+		team.append(normalize_unit({"id":def.id,"name":def.name,"element":def.element,"hp":max_hp,"max_hp":max_hp,"attack":int(def.attack) + attack_bonus,"speed":clampi(int(def.speed) + speed_bonus, 1, 99),"cost":def.cost,"ability":def.ability,"ability_cost":signature_cost,"cooldown":def.cooldown,"cooldown_remaining":0,"armor":guard_bonus,"suit_id":str(suit_def.get("id", "")),"suit_name":str(suit_def.get("name", "")),"core_id":core_id,"core_name":str(CORE_DEFINITIONS.definition(core_id).get("name", "")),"shield":4 if core_id == "tide" else 0,"verdant_ready":core_id == "verdant","attack_buff":0,"attack_debuff":0,"ability_lock_turns":0,"cooling":false}))
 	var deck: Array[String] = supplied_deck.duplicate() if _valid_supplied_deck(supplied_deck) else STARTER_LOADOUT.duplicate()
 	var hand: Array[String] = []
 	for draw_index in 4:
@@ -56,12 +63,16 @@ static func creature_id_from_entry(entry) -> String:
 		return ""
 	return str(entry)
 
-static func armor_id_from_entry(entry) -> String:
+static func suit_id_from_entry(entry) -> String:
 	if not entry is Dictionary: return ""
-	for key in ["armor_id", "armor", "armor_definition_id"]:
+	for key in ["suit_id", "tier_id"]:
 		var candidate := str(entry.get(key, ""))
 		if not candidate.is_empty(): return candidate
 	return ""
+
+static func core_id_from_entry(entry) -> String:
+	if not entry is Dictionary: return ""
+	return str(entry.get("core_id", ""))
 
 static func _valid_supplied_deck(deck: Array) -> bool:
 	if deck.size() != 15: return false

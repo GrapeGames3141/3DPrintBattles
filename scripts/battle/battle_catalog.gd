@@ -15,8 +15,13 @@ static func creature(id: String) -> Dictionary:
 		if str(item.get("id", "")) == id: return item.duplicate(true)
 	return {}
 
-static func armor(id: String) -> Dictionary:
-	for item in DATA.ARMOR:
+static func suit(id: String) -> Dictionary:
+	for item in DATA.SUITS:
+		if str(item.get("id", "")) == id: return item.duplicate(true)
+	return {}
+
+static func core(id: String) -> Dictionary:
+	for item in DATA.CORE_BLUEPRINTS:
 		if str(item.get("id", "")) == id: return item.duplicate(true)
 	return {}
 

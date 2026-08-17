@@ -2,6 +2,7 @@ class_name ProfileRules
 extends RefCounted
 
 const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
+const EQUIPMENT_RULES := preload("res://scripts/core/equipment_rules.gd")
 ## Pure profile transitions: safe to test without FileAccess or autoload state.
 
 const STARTER_IDS: Array[String] = ["cinderpaw", "aquafin", "voltwig"]
@@ -17,7 +18,10 @@ static func new_profile() -> Dictionary:
 		"spool_level": 3,
 		"blueprints": [],
 		"creatures": [],
-		"armor": [],
+		"suit_blueprints": [],
+		"core_blueprints": [],
+		"suits": [],
+		"cores": [],
 		"discovered": [],
 		"team": [],
 		"onboarding": {"state":"choose_starter", "starter_id":"", "starter_instance_id":""},
@@ -172,7 +176,8 @@ static func team_loadout(source: Dictionary) -> Array:
 		if not creature is Dictionary: continue
 		var creature_id := str(creature.get("creature_id", ""))
 		if Catalog.creature(creature_id).is_empty(): continue
-		result.append({"creature_id":creature_id, "armor_id":str(creature.get("armor_id", ""))})
+		var equipment := EQUIPMENT_RULES.suit_loadout(profile, str(creature.get("instance_id", "")))
+		result.append({"creature_id":creature_id, "suit_id":str(equipment.get("tier_id", "")), "core_id":str(equipment.get("core_id", ""))})
 	return result
 
 static func choose_starter(source: Dictionary, creature_id: String) -> Dictionary:
@@ -189,7 +194,7 @@ static func choose_starter(source: Dictionary, creature_id: String) -> Dictionar
 	profile.next_instance_nonce = nonce + 1
 	if not creature_id in profile.blueprints: profile.blueprints.append(creature_id)
 	if not creature_id in profile.discovered: profile.discovered.append(creature_id)
-	profile.creatures.append({"instance_id":instance_id, "creature_id":creature_id, "armor_id":"", "bound":true, "tradable":false, "source":"starter"})
+	profile.creatures.append({"instance_id":instance_id, "creature_id":creature_id, "suit_instance_id":"", "bound":true, "tradable":false, "source":"starter"})
 	profile.team = [instance_id]
 	profile.onboarding = {"state":"complete", "starter_id":creature_id, "starter_instance_id":instance_id}
 	profile = CAMPAIGN_RULES.ensure_fields(AccessibilityRules.ensure_fields(ProgressionRules.ensure_fields(profile, true)))

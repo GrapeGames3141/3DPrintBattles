@@ -20,9 +20,9 @@ static func create(profile: Dictionary, rival_team: Array, player_cap: int, riva
 	var battle := BattleState.create(player_team, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []))
 	var error := battle.validation_error(true)
 	# This is deliberately a second construction attempt, not a bypass: it only
-	# strips optional armor dictionaries when canonical creature IDs could not be
+	# strips optional equipment dictionaries when canonical creature IDs could not be
 	# constructed by a legacy/runtime boundary. It never writes the profile.
-	var unarmored_retry := false
+	var equipment_free_retry := false
 	var retry_built_ids: Array[String] = []
 	if not error.is_empty():
 		var canonical_ids := _team_ids(player_team)
@@ -33,15 +33,15 @@ static func create(profile: Dictionary, rival_team: Array, player_cap: int, riva
 			if retry_error.is_empty():
 				battle = retry
 				error = ""
-				unarmored_retry = true
+				equipment_free_retry = true
 			else:
 				error = _launch_error(canonical_ids, _built_ids(battle, 0), retry_built_ids, retry_error)
 	if not error.is_empty():
 		return {"ok":false, "battle":null, "error":error, "temporary_repair":bool(team_result.get("temporary_repair", false)), "canonical_ids":_team_ids(player_team), "built_ids":_built_ids(battle, 0), "retry_built_ids":retry_built_ids}
 	var repair_message := str(team_result.get("repair_message", ""))
-	if unarmored_retry:
-		repair_message = (repair_message + " " if not repair_message.is_empty() else "") + "This match used catalog creature IDs without optional armor after a legacy setup retry; your saved team was not changed."
-	return {"ok":true, "battle":battle, "error":"", "temporary_repair":bool(team_result.get("temporary_repair", false)), "repair_message":repair_message, "deck_fallback":bool(deck_result.get("fallback", false)), "unarmored_retry":unarmored_retry, "canonical_ids":_team_ids(player_team), "built_ids":_built_ids(battle, 0)}
+	if equipment_free_retry:
+		repair_message = (repair_message + " " if not repair_message.is_empty() else "") + "This match used catalog creature IDs without optional equipment after a setup retry; your saved team was not changed."
+	return {"ok":true, "battle":battle, "error":"", "temporary_repair":bool(team_result.get("temporary_repair", false)), "repair_message":repair_message, "deck_fallback":bool(deck_result.get("fallback", false)), "equipment_free_retry":equipment_free_retry, "canonical_ids":_team_ids(player_team), "built_ids":_built_ids(battle, 0)}
 
 ## Presentation and launch call this same pure result so the displayed names are
 ## exactly the entries that BattleState will receive.
@@ -51,8 +51,7 @@ static func preview(profile: Dictionary) -> Dictionary:
 static func player_loadout(profile: Dictionary) -> Dictionary:
 	# Team Builder is authoritative whenever it can produce a normalized lineup.
 	# Do not reorder, fill, or otherwise reinterpret a valid saved team here.
-	var owned_armor := _owned_armor_ids(profile)
-	var authoritative: Array = _canonicalize_entries(ProfileRules.team_loadout(profile), owned_armor)
+	var authoritative: Array = _canonicalize_entries(ProfileRules.team_loadout(profile))
 	if not authoritative.is_empty():
 		return {"team":authoritative, "temporary_repair":false, "repair_message":""}
 	# Some pre-integrity local saves contain a perfectly plausible raw species but
@@ -83,7 +82,6 @@ static func player_loadout(profile: Dictionary) -> Dictionary:
 	return {"team":repaired, "temporary_repair":true, "repair_message":"Your saved team references were stale. This solo match temporarily uses your matching owned print(s); update Team Builder after the match."}
 
 static func _owned_records(profile: Dictionary) -> Array:
-	var owned_armor := _owned_armor_ids(profile)
 	var records: Array = []
 	var order := 0
 	for raw in profile.get("creatures", []):
@@ -91,21 +89,12 @@ static func _owned_records(profile: Dictionary) -> Array:
 		var creature_id := _species_reference(raw)
 		if Catalog.creature(creature_id).is_empty(): continue
 		var instance_id := _instance_reference(raw)
-		var armor_id := str(raw.get("armor_id", ""))
-		if ProgressionRules.armor_def(armor_id).is_empty() or not owned_armor.has(armor_id): armor_id = ""
+		var loadout := EquipmentRules.suit_loadout(profile, instance_id)
 		var stable_key := instance_id if not instance_id.is_empty() else "legacy-%06d" % order
-		records.append({"key":stable_key, "instance_id":instance_id, "creature_id":creature_id, "armor_id":armor_id, "order":order})
+		records.append({"key":stable_key, "instance_id":instance_id, "creature_id":creature_id, "suit_id":str(loadout.get("tier_id", "")), "core_id":str(loadout.get("core_id", "")), "order":order})
 		order += 1
 	records.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.get("key", "")) < str(b.get("key", "")))
 	return records
-
-static func _owned_armor_ids(profile: Dictionary) -> Dictionary:
-	var result := {}
-	for raw in profile.get("armor", []):
-		if not raw is Dictionary: continue
-		var armor_id := str(raw.get("armor_id", ""))
-		if not ProgressionRules.armor_def(armor_id).is_empty(): result[armor_id] = true
-	return result
 
 static func _species_reference(raw) -> String:
 	if raw is Dictionary:
@@ -124,21 +113,19 @@ static func _instance_reference(raw) -> String:
 	return ""
 
 static func _battle_entry(candidate: Dictionary) -> Dictionary:
-	return {"creature_id":str(candidate.get("creature_id", "")), "armor_id":str(candidate.get("armor_id", ""))}
+	return {"creature_id":str(candidate.get("creature_id", "")), "suit_id":str(candidate.get("suit_id", "")), "core_id":str(candidate.get("core_id", ""))}
 
-static func _canonicalize_entries(entries: Array, owned_armor: Dictionary) -> Array:
+static func _canonicalize_entries(entries: Array) -> Array:
 	var result: Array = []
 	for entry in entries:
 		var creature_id := _species_reference(entry)
 		if Catalog.creature(creature_id).is_empty(): continue
-		var armor_id := ""
+		var suit_id := ""
+		var core_id := ""
 		if entry is Dictionary:
-			for armor_key in ["armor_id", "armor", "armor_definition_id"]:
-				var candidate := str(entry.get(armor_key, ""))
-				if not ProgressionRules.armor_def(candidate).is_empty() and owned_armor.has(candidate):
-					armor_id = candidate
-					break
-		result.append({"creature_id":creature_id, "armor_id":armor_id})
+			suit_id = str(entry.get("suit_id", ""))
+			core_id = str(entry.get("core_id", ""))
+		result.append({"creature_id":creature_id, "suit_id":suit_id, "core_id":core_id})
 	return result
 
 static func _team_ids(team: Array) -> Array[String]:

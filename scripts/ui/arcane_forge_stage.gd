@@ -12,6 +12,7 @@ const CELL := Vector2i(384, 512)
 
 var creature_id := "cinderpaw"
 var armor_id := ""
+var core_id := ""
 var phase := ArcaneForgeSequence.IDLE
 var progress_bps := 0
 var phase_progress_bps := 0
@@ -22,18 +23,21 @@ var printer_frames: Array[Texture2D] = []
 var raw: Texture2D
 var living: Texture2D
 var _last_frame_index := -1
+var equipment_preview: TieredArmorPalettePreview
 
 func _ready() -> void:
 	# The portrait caller deliberately gives the forge more vertical room.
 	# Landscape stays compact enough that its primary controls are on-screen.
 	custom_minimum_size = Vector2(0, 330)
+	equipment_preview = TieredArmorPalettePreview.new(); equipment_preview.name = "ForgeEquipmentPalettePreview"; equipment_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(equipment_preview)
 	_load_assets()
 	_update_motion_processing()
 	queue_redraw()
 
-func configure(id: String, reduce_motion: bool, contrast: bool, armor_definition_id: String = "") -> void:
+func configure(id: String, reduce_motion: bool, contrast: bool, armor_definition_id: String = "", core_definition_id: String = "") -> void:
 	creature_id = id
 	armor_id = armor_definition_id
+	core_id = core_definition_id
 	reduced_motion = reduce_motion
 	high_contrast = contrast
 	_load_assets()
@@ -85,7 +89,8 @@ func _load_assets() -> void:
 		var texture := CreatureSpriteCache.texture_for_path(path)
 		if texture != null: printer_frames.append(texture)
 	var definition := Catalog.creature(creature_id)
-	var raw_path := str(ProgressionRules.armor_def(armor_id).get("raw_print", "")) if not armor_id.is_empty() else str(definition.get("raw_print", ""))
+	var raw_definition := ArmorCoreDefinitions.core_blueprint_definition(core_id) if not core_id.is_empty() else ProgressionRules.armor_def(armor_id)
+	var raw_path := str(raw_definition.get("raw_print", "")) if not armor_id.is_empty() else str(definition.get("raw_print", ""))
 	if raw_path.is_empty() or not ResourceLoader.exists(raw_path): raw_path = str(Catalog.creature("mossmunk").get("raw_print", ""))
 	raw = CreatureSpriteCache.texture_for_path(raw_path)
 	living = CreatureSpriteCache.texture_for_creature(creature_id)
@@ -96,11 +101,17 @@ func _draw() -> void:
 	# Center a deliberately dominant square printer. These normalized bounds match
 	# the visible gold build surface in the approved printer frames.
 	var printer_bounds := Rect2(size.x * 0.17, 0, size.x * 0.66, size.y)
+	if equipment_preview != null:
+		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE
+		equipment_preview.configure_tier(armor_id if core_id.is_empty() else "standard")
+		equipment_preview.configure_core(core_id)
+		equipment_preview.position = Vector2(size.x * 0.74, 12)
+		equipment_preview.size = Vector2(112, 150)
 	var printer_rect := _fit_rect(printer, printer_bounds)
 	if printer != null: draw_texture_rect(printer, printer_rect, false)
 	var plate := Rect2(printer_rect.position.x + printer_rect.size.x * 0.28, printer_rect.position.y + printer_rect.size.y * 0.57, printer_rect.size.x * 0.50, printer_rect.size.y * 0.13)
-	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase == ArcaneForgeSequence.AWAKENED):
-		_draw_raw(plate)
+	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase in [ArcaneForgeSequence.IDLE, ArcaneForgeSequence.AWAKENED]):
+		_draw_raw(plate, 0.42 if phase == ArcaneForgeSequence.IDLE else 1.0)
 	if armor_id.is_empty() and phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
@@ -112,9 +123,9 @@ func _fit_rect(texture: Texture2D, bounds: Rect2) -> Rect2:
 	var fitted := Vector2(texture.get_width(), texture.get_height()) * factor
 	return Rect2(bounds.position + (bounds.size - fitted) * 0.5, fitted)
 
-func _draw_raw(plate: Rect2) -> void:
+func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 	if not armor_id.is_empty():
-		_draw_armor_part(plate)
+		_draw_armor_part(plate, preview_alpha)
 		return
 	if raw == null: return
 	# The raw source has a small raft at its bottom. Align that raft to the actual
@@ -130,12 +141,12 @@ func _draw_raw(plate: Rect2) -> void:
 	var raw_alpha := 1.0
 	if phase == ArcaneForgeSequence.AWAKENING:
 		raw_alpha = 1.0 - clampf(float(phase_progress_bps) / 10000.0, 0.0, 1.0)
-	draw_texture_rect_region(raw, destination, source, Color(1, 1, 1, raw_alpha))
+	draw_texture_rect_region(raw, destination, source, Color(1, 1, 1, raw_alpha * preview_alpha))
 	if phase == ArcaneForgeSequence.PRINTING:
 		var scan_y := destination.position.y
 		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("69efff"), 2.0)
 
-func _draw_armor_part(plate: Rect2) -> void:
+func _draw_armor_part(plate: Rect2, preview_alpha := 1.0) -> void:
 	if raw == null: return
 	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
 	var height := plate.size.y * 1.46
@@ -146,7 +157,7 @@ func _draw_armor_part(plate: Rect2) -> void:
 	var source_height := raw.get_height() * float(reveal) / 10000.0
 	var source := Rect2(0, raw.get_height() - source_height, raw.get_width(), source_height)
 	var destination := Rect2(rect.position + Vector2(0, rect.size.y - shown), Vector2(rect.size.x, shown))
-	draw_texture_rect_region(raw, destination, source)
+	draw_texture_rect_region(raw, destination, source, Color(1, 1, 1, preview_alpha))
 	if phase == ArcaneForgeSequence.PRINTING: draw_line(Vector2(destination.position.x, destination.position.y), Vector2(destination.end.x, destination.position.y), Color("69efff"), 2.0)
 
 func _draw_living(plate: Rect2) -> void:

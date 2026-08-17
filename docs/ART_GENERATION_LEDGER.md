@@ -68,14 +68,14 @@ Current raw and living creature art is not regenerated or edited by this pass.
 
 ## Armor raw-print atlas (0.5.16-alpha)
 
-The approved `res://assets/armor/raw/armor_raw_print_atlas_v1.png` source is a
+The archived pre-tiered `armor_raw_print_atlas_v1.png` source was a
 strict 4x2 built-in image-generation atlas: Helm, Chest Plate, Leg Guards,
 Full Suit, Arcane Core, Shadow Cloak, and Titan Plate, followed by an empty
 cell. Its prompt direction was dormant, single-color FDM armor parts on a
 chroma backing: visible printable segmentation and layer ridges, readable
 silhouettes, no final creature or living-form art.
 
-`res://tools/process_armor_raw_atlas.gd` deterministically crops the seven
+The retired `process_armor_raw_atlas.gd` tool deterministically cropped the seven
 cells, converts each source region to RGBA before alpha work, flood-keys the
 edge-connected/strong green backing, despills surviving edge pixels, and
 centers each alpha-bound part on a 512px transparent canvas. Runtime catalog

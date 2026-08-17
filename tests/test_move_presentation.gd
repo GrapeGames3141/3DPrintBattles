@@ -38,7 +38,7 @@ func _ready() -> void:
 	require(action.is_event_active() and is_zero_approx(action.elapsed), "new monotonic event token replays an identical ability")
 	var reduced := BattleSpriteStage.new()
 	reduced.configure({"id":"cinderpaw"}, {"id":"mossmunk"}, "ability", 0, true, false, 1)
-	require(not reduced.is_processing() and BattleSpriteStage.select_frame("ability", 0, true, true, 0.2) == 0, "reduced motion keeps presentation static")
+	require(not reduced.is_event_active() and reduced.is_presentation_window_active() and reduced.is_processing() and BattleSpriteStage.select_frame("ability", 0, true, true, 0.2) == 0, "reduced motion keeps movement static while a finite presentation clock clears the Core peak")
 	CreatureSpriteCache.clear_for_test()
 	var cinder_path := CreatureSpriteCache.sprite_path_for("cinderpaw")
 	var cold_started := Time.get_ticks_usec()

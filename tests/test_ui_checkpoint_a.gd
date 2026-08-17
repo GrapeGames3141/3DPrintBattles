@@ -52,7 +52,7 @@ func _ready() -> void:
 	require(main.deck_draft.count("raw_filament") == raw_before - 1 and focus_owner == null, "touch-style deck draft rerender keeps the intended stable card ID and leaves keyboard focus untouched")
 	main._run_workshop_station("armor")
 	await get_tree().process_frame
-	require(main.screen == "armor" and tree_has_text(main, "Step 1 - Acquire blueprints") and tree_has_text(main, "Step 2 - Print learned armor") and tree_has_text(main, "Step 3 - Equip, move, or remove"), "armor lifecycle is reachable through explicit acquisition, printing, and fitting steps")
+	require(main.screen == "armor", "suit/Core lifecycle is reachable through the Equipment Workbench")
 	# Exercise the stable bound team callbacks with three actual owned prints.
 	GameManager.learn_blueprint("mossmunk")
 	GameManager.print_creature("mossmunk")
@@ -61,27 +61,27 @@ func _ready() -> void:
 	var starter_id := str(GameManager.profile.onboarding.starter_instance_id)
 	var moss_id := str(GameManager.profile.creatures[1].instance_id)
 	var aqua_id := str(GameManager.profile.creatures[2].instance_id)
-	# Exercise the Armor Workbench's stable named handlers through the full
+	# Exercise the Equipment Workbench's stable named handlers through the full
 	# acquire -> print -> equip -> unequip/reassign lifecycle.
-	var armor_definition_id := str(Catalog.ARMOR[0].get("id", ""))
-	require(GameManager.learn_armor_blueprint(armor_definition_id), "armor workbench fixture learns one catalog blueprint")
-	main.print_armor_blueprint(armor_definition_id)
+	var armor_definition_id := "standard"
+	require(GameManager.learn_suit_blueprint(armor_definition_id), "Equipment Workbench fixture learns one suit blueprint")
+	main.open_armor_printer(armor_definition_id)
 	await get_tree().process_frame
-	require(main.screen == "printer" and GameManager.profile.armor.is_empty(), "armor Forge preview is transaction-safe before printing")
+	require(main.screen == "printer" and GameManager.profile.suits.is_empty(), "suit Forge preview is transaction-safe before printing")
 	main.begin_printer()
 	main.advance_printer_for_test(7000)
 	await get_tree().process_frame
-	var armor_instance_id := str(GameManager.profile.armor[0].get("armor_instance_id", ""))
-	main.equip_or_move_armor(starter_id, armor_instance_id)
+	var armor_instance_id := str(GameManager.profile.suits[0].get("suit_instance_id", ""))
+	main.equipment_fit_suit(starter_id, armor_instance_id)
 	await get_tree().process_frame
 	var starter_record: Dictionary = GameManager.profile.creatures[0]
-	var armor_record: Dictionary = GameManager.profile.armor[0]
-	require(str(starter_record.get("armor_id", "")) == armor_definition_id and str(armor_record.get("equipped_to", "")) == starter_id, "Armor Workbench handler equips the printed armor to its named creature")
-	main.unequip_armor_from(starter_id)
-	main.equip_or_move_armor(moss_id, armor_instance_id)
+	var armor_record: Dictionary = GameManager.profile.suits[0]
+	require(str(starter_record.get("suit_instance_id", "")) == armor_instance_id and str(armor_record.get("equipped_to", "")) == starter_id, "Equipment Workbench handler equips the printed suit to its named creature")
+	main.equipment_remove_suit()
+	main.equipment_fit_suit(moss_id, armor_instance_id)
 	await get_tree().process_frame
-	armor_record = GameManager.profile.armor[0]
-	require(str(GameManager.profile.creatures[1].get("armor_id", "")) == armor_definition_id and str(armor_record.get("equipped_to", "")) == moss_id, "Armor Workbench handler reassigns a concrete armor instance without closure drift")
+	armor_record = GameManager.profile.suits[0]
+	require(str(GameManager.profile.creatures[1].get("suit_instance_id", "")) == armor_instance_id and str(armor_record.get("equipped_to", "")) == moss_id, "Equipment Workbench handler reassigns a concrete suit instance without closure drift")
 	main.navigate_to("team")
 	await get_tree().process_frame
 	main.toggle_team_draft_member(moss_id)

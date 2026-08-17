@@ -15,6 +15,54 @@ func tree_has_text(node: Node, fragment: String) -> bool:
 		if tree_has_text(child, fragment): return true
 	return false
 
+func _assert_multi_turn_dock_stability(main: Node, dimensions: Vector2i) -> void:
+	get_viewport().size = dimensions
+	main.size = Vector2(dimensions)
+	main.screen = "battle"
+	main.battle_secondary_open = false
+	main.ai_pending = true # This test explicitly applies the accepted rival turns.
+	main.battle = BattleState.create(GameManager.current_team_loadout(), ["voidmanta"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
+	# Skip the opening restriction so all six player Basic Attacks exercise the
+	# actual impact feedback and presentation re-render path. Voidmanta survives
+	# the deterministic fixture while its Defends keep the rival turn legal.
+	main.battle.turn = 2
+	main.battle.opening_player = 1
+	main.battle.active_player = 0
+	main.render()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var baseline := Rect2()
+	for exchange in 6:
+		var player_result := BattleRules.apply_intent(main.battle, 0, {"type": "attack"})
+		require(bool(player_result.get("ok", false)), "multi-turn player Basic Attack %d is accepted at %s" % [exchange + 1, dimensions])
+		main.battle_last_event = "attack"
+		main.battle_last_actor = 0
+		main.battle_presentation_serial += 1
+		main.render()
+		await get_tree().process_frame
+		var rival_result := BattleRules.apply_intent(main.battle, 1, {"type": "defend"})
+		require(bool(rival_result.get("ok", false)), "multi-turn rival Defend %d is accepted at %s" % [exchange + 1, dimensions])
+		main.battle_last_event = "defend"
+		main.battle_last_actor = 1
+		main.battle_presentation_serial += 1
+		main.render()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var docks := main.find_children("BattleActionDock", "", true, false)
+		var grids := main.find_children("BattleActionGrid", "", true, false)
+		var dock := main.find_child("BattleActionDock", true, false) as Control
+		var dock_rect := dock.get_global_rect() if dock != null else Rect2()
+		require(docks.size() == 1 and grids.size() == 1, "multi-turn render %d keeps exactly one BattleActionDock/Grid at %s" % [exchange + 1, dimensions])
+		require(dock != null and dock_rect.position.y >= 0.0 and dock_rect.end.y <= float(dimensions.y), "multi-turn dock %d remains in viewport at %s (rect %s)" % [exchange + 1, dimensions, dock_rect])
+		if exchange == 0:
+			baseline = dock_rect
+		else:
+			require(absf(dock_rect.position.y - baseline.position.y) <= 8.0 and absf(dock_rect.size.y - baseline.size.y) <= 4.0, "multi-turn dock %d has stable top/height at %s (baseline %s, current %s)" % [exchange + 1, dimensions, baseline, dock_rect])
+		for control_name in ["BattleActionBasicAttack", "BattleActionSignatureAbility", "BattleActionDefend", "BattleActionEndTurn", "BattleSecondaryToggle"]:
+			var control := main.find_child(control_name, true, false) as Control
+			var rect := control.get_global_rect() if control != null else Rect2()
+			require(control != null and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(dimensions.x) and rect.end.y <= float(dimensions.y), "multi-turn %s %d remains reachable at %s (rect %s)" % [control_name, exchange + 1, dimensions, rect])
+
 func _ready() -> void:
 	require(int(ProjectSettings.get_setting("display/window/size/viewport_width")) == 720 and int(ProjectSettings.get_setting("display/window/size/viewport_height")) == 720, "project uses a square 720 base viewport")
 	require(str(ProjectSettings.get_setting("display/window/stretch/mode")) == "canvas_items" and str(ProjectSettings.get_setting("display/window/stretch/aspect")) == "expand", "project uses canvas_items expand stretching")
@@ -112,6 +160,8 @@ func _ready() -> void:
 		var opening_log: int = main.battle.log.size()
 		if opening_control != null: opening_control.emit_signal("pressed")
 		require(opening_control_enabled and main.battle.active_player == 1 and main.battle.turn == 2 and main.battle.log.size() > opening_log, "%s advances a legal opening turn through the action dock" % opening_control_name)
+	for multi_turn_size in [Vector2i(576, 1024), Vector2i(1280, 720)]:
+		await _assert_multi_turn_dock_stability(main, multi_turn_size)
 	# A deferred callback captured for the previous match must not mutate this
 	# replacement match after its presentation delay.
 	var stale_state: BattleState = main.battle

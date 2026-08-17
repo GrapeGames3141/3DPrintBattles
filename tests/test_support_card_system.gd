@@ -76,14 +76,14 @@ func _assert_landscape_atlas_mapping() -> void:
 	for atlas_id in expected:
 		var ids: Array = expected[atlas_id]
 		for cell in ids.size():
-			var art := Catalog.support_card(str(ids[cell])).get("art", {})
+			var art: Dictionary = Catalog.support_card(str(ids[cell])).get("art", {})
 			require(str(art.get("atlas", "")) == atlas_id and int(art.get("cell", -1)) == cell, "approved landscape atlas mapping: %s cell %d" % [str(ids[cell]), cell])
 
 func _assert_lazy_art_cache() -> void:
 	SupportCardView.reset_cache_for_test(); require(SupportCardView.cache_count_for_test() == 0, "startup card cache remains empty")
 	for atlas_id in ["resources", "defense", "offense", "utility"]:
 		var first := SupportCardView.atlas_texture_for_test(atlas_id); var second := SupportCardView.atlas_texture_for_test(atlas_id)
-		require(first != null and first.get_size() == Vector2i(1536, 512) and first == second, "lazy cached 4x2 landscape atlas: " + atlas_id)
+		require(first != null and Vector2i(first.get_size()) == Vector2i(1536, 512) and first == second, "lazy cached 4x2 landscape atlas: " + atlas_id)
 	var back := SupportCardView.card_back_for_test(); require(back != null and back.get_size().x > 0 and back.get_size().y > 0, "lazy card back")
 	var sample := Catalog.support_card("raw_filament"); var sample_region := SupportCardView.atlas_region(sample); require(sample_region == SupportCardView.atlas_region(sample) and sample_region is AtlasTexture and absf((sample_region as AtlasTexture).region.size.x / (sample_region as AtlasTexture).region.size.y - 1.5) <= 0.001, "3:2 atlas region identity cached")
 

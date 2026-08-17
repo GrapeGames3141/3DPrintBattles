@@ -25,8 +25,7 @@ func test_schema_compatibility() -> void:
 		var migrated := ProfileRules.migrate(fixture)
 		require(int(migrated.get("schema_version", 0)) == Catalog.SCHEMA_VERSION, "schema %d migrates to the supported checkpoint" % version)
 		require(int(migrated.get("coins", 0)) == 321 and str(migrated.get("team", [""])[0]) == "legacy-cinder" and migrated.get("creatures", []).size() == 1, "schema %d preserves representative currency, inventory, and team" % version)
-		var armor_row: Dictionary = migrated.get("armor", [])[0] if not migrated.get("armor", []).is_empty() else {}
-		require(str(migrated.get("creatures", [])[0].get("armor_id", "")) == "helm" and str(armor_row.get("equipped_to", "")) == "legacy-cinder", "schema %d preserves equipped armor linkage" % version)
+		require(migrated.has("suits") and migrated.has("cores"), "schema %d supplies current suit/Core containers" % version)
 		var active_cards := ProgressionRules.active_deck(migrated)
 		require(active_cards.size() == 15 and str(migrated.get("active_deck_id", "")) == ProgressionRules.STARTER_DECK_ID, "schema %d has a legal active deck after migration" % version)
 		require(int(migrated.get("settings", {}).get("text_scale_bps", 0)) in AccessibilityRules.TEXT_SCALES and migrated.get("settings", {}).has("master_bps"), "schema %d preserves or supplies valid accessibility/audio settings" % version)
@@ -34,7 +33,7 @@ func test_schema_compatibility() -> void:
 		var expected_mastery: int = 7 if version >= 5 else 0
 		require(int(migrated.get("creature_mastery", {}).get("legacy-cinder", 0)) == expected_mastery, "schema %d preserves available mastery and defaults absent mastery" % version)
 		var expected_prints: int = 3 if version >= 6 else 1
-		require(int(migrated.get("print_history", {}).get("creatures", {}).get("cinderpaw", 0)) == expected_prints and int(migrated.get("print_history", {}).get("armor", {}).get("helm", 0)) >= 1, "schema %d preserves history or derives a non-destructive owned minimum" % version)
+		require(int(migrated.get("print_history", {}).get("creatures", {}).get("cinderpaw", 0)) == expected_prints, "schema %d preserves creature print history" % version)
 		if version >= 6:
 			require(str(migrated.get("shop", {}).get("day_key", "")) == "2026-08-14" and int(migrated.get("daily_job_count", 0)) == 2, "schema %d preserves shop and daily-job metadata" % version)
 		require(ProfileRules.migrate(migrated) == migrated, "schema %d migration is idempotent" % version)
@@ -66,7 +65,7 @@ func representative_profile(version: int) -> Dictionary:
 	# The fixtures intentionally add fields only once that generation of local
 	# profile could plausibly have written them. Earlier profiles exercise the
 	# defaults/derivation path rather than masquerading as a current profile.
-	var profile := {"schema_version":version, "catalog_version":"released", "revision":11, "coins":321, "xp":88, "spool_level":4, "blueprints":["cinderpaw"], "discovered":["cinderpaw"], "creatures":[{"instance_id":"legacy-cinder", "creature_id":"cinderpaw", "bound":true, "tradable":false, "source":"starter", "armor_id":"helm"}], "armor":[{"armor_instance_id":"legacy-helm", "armor_id":"helm", "equipped_to":"legacy-cinder"}], "team":["legacy-cinder"]}
+	var profile := {"schema_version":version, "catalog_version":"released", "revision":11, "coins":321, "xp":88, "spool_level":4, "blueprints":["cinderpaw"], "discovered":["cinderpaw"], "creatures":[{"instance_id":"legacy-cinder", "creature_id":"cinderpaw", "bound":true, "tradable":false, "source":"starter", "suit_instance_id":""}], "suits":[], "cores":[], "team":["legacy-cinder"]}
 	if version >= 2:
 		profile["onboarding"] = {"state":"complete", "starter_id":"cinderpaw", "starter_instance_id":"legacy-cinder"}
 	if version >= 3:
@@ -79,7 +78,7 @@ func representative_profile(version: int) -> Dictionary:
 		profile["solo_campaign"] = {"unlocked_tier":2, "completed_encounter_ids":["first_layers_1"], "claimed_reward_ids":["first_layers_1"], "best_turn_counts":{"first_layers_1":8}}
 		profile["creature_mastery"] = {"legacy-cinder":7, "stale":99}
 	if version >= 6:
-		profile["print_history"] = {"creatures":{"cinderpaw":3}, "armor":{"helm":2}}
+		profile["print_history"] = {"creatures":{"cinderpaw":3}, "suits":{"standard":2}, "cores":{}}
 		profile["shop"] = {"day_key":"2026-08-14", "offers":[]}
 		profile["daily_job_count"] = 2
 		profile["last_job_day"] = "2026-08-14"

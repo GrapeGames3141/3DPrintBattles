@@ -1,6 +1,6 @@
 # PrintForge Legends
 
-Steam-first Godot 4.7.1 vertical slice for a cozy, winter-lit magical 3D-print workshop battler. It provides a playable solo battle loop, spatial workshop navigation, blueprint/printing progression, Forge Coins, Forgedex, safe local trade contract, offline journal, 24-creature / 8-rarity catalog, 30 support cards, 7 armor definitions, and TypeScript Nakama-authority scaffolding.
+Steam-first Godot 4.7.1 vertical slice for a cozy, winter-lit magical 3D-print workshop battler. It provides a playable solo battle loop, spatial workshop navigation, blueprint/printing progression, Forge Coins, Forgedex, safe local trade contract, offline journal, 24-creature / 8-rarity catalog, 30 support cards, five complete suit tiers, five optional socketed Cores, and TypeScript Nakama-authority scaffolding.
 
 ## Workshop navigation
 
@@ -12,26 +12,26 @@ New apprentices begin with 180 Forge Coins and no creatures or blueprints. The A
 
 ## Workshop progression
 
-The Collection, Team Builder, Armor Workbench, Deck Builder, and Extruder Forge are reachable from the Workshop. The Forge takes an explicit day key and produces a deterministic seven-offer rotation: three creature blueprints, two armor blueprints, and two support cards. Every purchase, print, equip, team save, and deck save is catalog-validated as one offline profile transition. Teams contain one to three unique prints; decks contain exactly 15 owned support cards.
+The Collection, Team Builder, Equipment Workbench, Deck Builder, and Extruder Forge are reachable from the Workshop. The Forge takes an explicit day key and produces a deterministic nine-offer rotation: three creature blueprints, two full-suit blueprints, two Core blueprints, and two support cards. Every purchase, print, equip, socket, team save, and deck save is catalog-validated as one offline profile transition. Teams contain one to three unique prints; decks contain exactly 15 owned support cards.
 
-Starter completion owns only the 15 cards needed for the legal starter deck, never the full catalog. The active saved deck is dealt into training matches. Equipped armor applies its catalog-defined maximum-HP, speed, and guard modifiers to the training loadout.
+Starter completion owns only the 15 cards needed for the legal starter deck, never the full catalog. The active saved deck is dealt into training matches. An equipped full suit applies its catalog-defined maximum-HP, speed, and guard modifiers; its optional Core supplies one deterministic passive.
 
 ## Workshop depth
 
 Calibration Bench now presents three deterministic day-keyed target bands per attempt. Confirming the three selected values calculates an integer distance score and uses the existing capped 8-28 Forge Coin curve; three patterns remain available per day. Print Yard offers one daily choice: Field Practice (+12 account XP), Team Bond (+5 mastery to each saved-team instance), or, at spool capacity 4+, one non-stacking Spool Warmup consumed only after a valid Daily Training or Workshop Trial begins.
 
-Armor blueprints print through the same transaction-safe Arcane Forge timing as creatures: ten seconds of layer printing, one raw-completed-part hold, then an armor-only completion transfer. Forgedex records base stats, signature, per-instance mastery, inventory and print counts. Five fixed-label deck slots support create, duplicate, rename, activate, and delete; the starter slot remains protected and every active deck remains legal.
+Full-suit and Core blueprints print through the same transaction-safe Arcane Forge timing as creatures: ten seconds of layer printing, one raw-completed-part hold, then a completion transfer. Forgedex records base stats, signature, per-instance mastery, inventory and print counts. Five fixed-label deck slots support create, duplicate, rename, activate, and delete; the starter slot remains protected and every active deck remains legal.
 
 Solo Daily Training and Workshop Trials share a catalog-valid launch factory. It uses the saved team and active 15-card deck when they are legal; a stale but repairable team reference temporarily uses deterministic owned prints for that match without changing inventory or saved-team data, while a profile with no catalog-valid owned print receives an exact actionable setup error. Long activity screens use a touch-first scroll container with focus-follow, a low drag threshold, and a 32px visible scrollbar target.
 
 Workshop Trials show the current Team Builder lineup before Start and provide an **Edit Current Team** route. If an older local profile contains only catalog-valid raw species records without usable instance IDs, solo launch uses the matching owned prints temporarily, shows that notice inside the battle screen, and never writes a repaired team, inventory, or deck.
 
-Trial preview and launch now share the same canonical factory lineup. Valid Team Builder order is preserved; the battle boundary also accepts catalog-valid legacy `id`, `species_id`, `creature`, and `species` aliases. If a legacy dictionary construction still cannot validate, the client makes one non-persisting catalog-ID-only retry without optional armor and keeps that recovery notice visible in battle. Settings displays the installed review-build label for support checks.
+Trial preview and launch now share the same canonical factory lineup. Valid Team Builder order is preserved; the battle boundary also accepts catalog-valid legacy `id`, `species_id`, `creature`, and `species` aliases. If a legacy dictionary construction still cannot validate, the client makes one non-persisting catalog-ID-only retry without an optional loadout and keeps that recovery notice visible in battle. Settings displays the installed review-build label for support checks.
 
 The Android battle boundary keeps alias extraction data-only, then performs its
 single existing catalog validation inside `BattleState.make_team()`. This avoids
 an exported nested static-helper lookup producing an empty valid team while
-preserving catalog validation, armor modifiers, deterministic order, and the
+preserving catalog validation, suit modifiers, deterministic order, and the
 non-persisting retry behavior. The current review label is
 `0.5.21-alpha-battle-presentation`. Battle units rest on static idle artwork,
 then replay finite tokenized action presentation with a stable 2px atlas inset and
@@ -43,13 +43,13 @@ than the application `Catalog` Node autoload, so battle construction,
 normalization, rules, signatures, support cards, and AI share export-safe data
 without duplicating authored catalog records.
 
-The Armor Forge uses seven processed transparent raw-part textures derived from the approved 4x2 armor atlas. Each remains seated on the Forge bed during the deterministic ten-second layer reveal and three-second completed-part hold; armor completes as a transfer, never as a creature awakening.
+The Suit Forge and Core Lab use processed transparent raw assets derived from the approved printer source. Each remains seated on the Forge bed during the deterministic ten-second layer reveal and three-second completed-part hold; a suit or Core completes as a transfer, never as a creature awakening.
 
 The Proving Door deliberately separates repeatable Daily Training from five ordered Workshop Trial tiers: **First Layers**, **Element Bench**, **Reinforced Run**, **Masterwork Circuit**, and **Primordial Proof**. Every tier has three fixed encounters and a three-print boss. First clears use an authored integer reward curve and grant coins, account XP, and mastery to every instance in the currently saved team; duplicate claims cannot grant rewards again. A faster replay can improve only its recorded best turn count. Mastery is per printed instance and is shown in Collection, Team Builder, Forgedex, and Trial rewards; it is presentation/progression only and does not alter combat stats in this build.
 
 ## Accessibility and battle presentation
 
-Profile settings persist text scale (100%, 125%, or 150%), high contrast, reduced motion, and Apprentice/Craftsman/Master training AI. Controls have 44px minimum targets and status/element information is always written as text. Solo Proving Grounds uses an explicit visible-viewport battle composition instead of a nested scrolling stack: its first-render `Moves` dock sits directly below the stage, Basic Attack, Signature Ability, Defend, and End Turn form a two-column portrait grid (four columns on landscape), and every core target is at least 48px high. Battle units are normalized from their catalog and equipped-armor IDs before combat and presentation, so older local snapshots that retain only IDs, runtime HP, and an armor ID preserve their equipped maximum HP while still showing the same actions, player summary, and deterministic combat behavior. Bench, Hand, Details, and Concede remain compact secondary tabs; expanding them preserves an in-frame action row. Training uses the approved transparent 4x2 creature sheets for a responsive 2D stage: idle frames loop independently of deterministic combat, while legal attacks and abilities select wind-up, strike, recovery, and hit frames. Reduced motion holds frame zero. This is a presentation placeholder; final art and audio remain approval-gated.
+Profile settings persist text scale (100%, 125%, or 150%), high contrast, reduced motion, and Apprentice/Craftsman/Master training AI. Controls have 44px minimum targets and status/element information is always written as text. Solo Proving Grounds uses an explicit visible-viewport battle composition instead of a nested scrolling stack: its first-render `Moves` dock is terminal in the portrait flow, so changing battle feedback never moves its four actions below the viewport; Basic Attack, Signature Ability, Defend, and End Turn form a two-column portrait grid (four columns on landscape), and every core target is at least 48px high. Battle units derive their equipped full-suit and optional Core IDs from authoritative inventory before combat and presentation, preserving their exact maximum HP, guard, speed, and Core behavior across snapshots. Arcane Core activation is finite and actor-scoped, including reduced-motion playback. Bench, Hand, Details, and Concede remain compact secondary tabs; expanding them preserves an in-frame action row. Training uses the approved transparent 4x2 creature sheets for a responsive 2D stage: idle frames loop independently of deterministic combat, while legal attacks and abilities select wind-up, strike, recovery, and hit frames. Reduced motion holds frame zero. This is a presentation placeholder; final art and audio remain approval-gated.
 
 Profiles receive an idempotent catalog-valid integrity pass even at the current schema. It repairs only unambiguous aliases and team references that already point to owned inventory; an irreparable team is blocked before battle instead of rendering an Unknown zero-stat unit. On a player-owned opening turn, Basic Attack and Signature are visibly disabled while Defend and End Turn remain available.
 

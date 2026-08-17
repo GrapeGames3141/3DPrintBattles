@@ -186,9 +186,6 @@ func learn_blueprint(creature_id: String) -> bool:
 func print_creature(creature_id: String) -> bool:
 	return apply_transition(ProgressionRules.print_creature(profile, creature_id), "print_creature")
 
-func print_armor(armor_id: String) -> bool:
-	return apply_transition(ProgressionRules.print_armor(profile, armor_id), "print_armor")
-
 func create_deck(deck_id: String, name: String) -> bool:
 	return apply_transition(ProgressionRules.create_deck(profile, deck_id, name), "create_deck")
 
@@ -201,17 +198,26 @@ func rename_deck(deck_id: String, name: String) -> bool:
 func delete_deck(deck_id: String) -> bool:
 	return apply_transition(ProgressionRules.delete_deck(profile, deck_id), "delete_deck")
 
-func learn_armor_blueprint(armor_id: String) -> bool:
-	return apply_transition(ProgressionRules.learn_armor_blueprint(profile, armor_id), "learn_armor_blueprint")
-
-func equip_armor(creature_instance_id: String, armor_instance_id: String) -> bool:
-	return apply_transition(ProgressionRules.equip_armor(profile, creature_instance_id, armor_instance_id), "equip_armor")
-
-func unequip_armor(creature_instance_id: String) -> bool:
-	return apply_transition(ProgressionRules.unequip_armor(profile, creature_instance_id), "unequip_armor")
-
-func reassign_armor(creature_instance_id: String, armor_instance_id: String) -> bool:
-	return apply_transition(ProgressionRules.reassign_armor(profile, creature_instance_id, armor_instance_id), "reassign_armor")
+func learn_suit_blueprint(tier_id: String) -> bool:
+	return apply_transition(ProgressionRules.learn_suit_blueprint(profile, tier_id), "learn_suit_blueprint")
+func print_suit(tier_id: String) -> bool:
+	return apply_transition(ProgressionRules.print_suit(profile, tier_id), "print_suit")
+func equip_suit(creature_instance_id: String, suit_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.equip_suit(profile, creature_instance_id, suit_instance_id), "equip_suit")
+func move_suit(creature_instance_id: String, suit_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.equip_suit(profile, creature_instance_id, suit_instance_id), "move_suit")
+func remove_suit(creature_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.remove_suit(profile, creature_instance_id), "remove_suit")
+func learn_core_blueprint(core_id: String) -> bool:
+	return apply_transition(ProgressionRules.learn_core_blueprint(profile, core_id), "learn_core_blueprint")
+func print_core(core_id: String) -> bool:
+	return apply_transition(ProgressionRules.print_core(profile, core_id), "print_core")
+func socket_core(suit_instance_id: String, core_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.socket_core(profile, suit_instance_id, core_instance_id), "socket_core")
+func move_core(suit_instance_id: String, core_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.socket_core(profile, suit_instance_id, core_instance_id), "move_core")
+func remove_core(suit_instance_id: String) -> bool:
+	return apply_transition(ProgressionRules.remove_core(profile, suit_instance_id), "remove_core")
 
 func training_opponent(day_key: String) -> Array:
 	return ProgressionRules.training_opponent(day_key, current_team_creature_ids())

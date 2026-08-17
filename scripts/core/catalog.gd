@@ -1,8 +1,8 @@
 extends Node
 ## Immutable launch catalog. Runtime objects store IDs only, never presentation nodes.
 
-const SCHEMA_VERSION := 7
-const CATALOG_VERSION := "0.5.22"
+const SCHEMA_VERSION := 8
+const CATALOG_VERSION := "0.6.0-tiered-suits"
 const RARITIES := [
 	{"id":"common", "name":"Common", "color":"#b7bcc7", "weight_bps":4500, "blueprint":50, "print":20},
 	{"id":"uncommon", "name":"Uncommon", "color":"#66d17a", "weight_bps":2500, "blueprint":120, "print":40},
@@ -52,14 +52,21 @@ const CREATURES := [
 	{"id":"worldcoil","name":"Worldcoil","rarity":"primordial","element":"Stone","bend":160,"hp":160,"attack":47,"speed":6,"cost":9,"ability":"Bedquake","ability_cost":7,"cooldown":5,"signature":{"damage_bonus":14,"effects":[{"effect":"shield","target":"self","amount":10}]},"sprite_sheet":"res://assets/creatures/2d/worldcoil_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/worldcoil_raw_print.png"},
 	{"id":"starloom","name":"Starloom","rarity":"primordial","element":"Arcane","bend":165,"hp":145,"attack":51,"speed":12,"cost":9,"ability":"First Print","ability_cost":7,"cooldown":5,"signature":{"damage_bonus":15,"effects":[{"effect":"filament","target":"self","amount":5}]},"sprite_sheet":"res://assets/creatures/2d/starloom_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/starloom_raw_print.png"}
 ]
-const ARMOR := [
-	{"id":"helm","name":"Layered Helm","hp":10,"speed":0,"armor":0,"blueprint":80,"print":25,"raw_print":"res://assets/armor/raw/helm_raw_print_alpha_v2.png"},
-	{"id":"chest_plate","name":"Chest Plate","hp":18,"speed":-1,"armor":1,"blueprint":150,"print":45,"raw_print":"res://assets/armor/raw/chest_plate_raw_print_alpha_v2.png"},
-	{"id":"leg_guards","name":"Leg Guards","hp":8,"speed":1,"armor":0,"blueprint":100,"print":30,"raw_print":"res://assets/armor/raw/leg_guards_raw_print_alpha_v2.png"},
-	{"id":"full_suit","name":"Full Suit","hp":30,"speed":-2,"armor":2,"blueprint":400,"print":100,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"},
-	{"id":"arcane_core","name":"Arcane Core","hp":12,"speed":0,"armor":0,"blueprint":800,"print":200,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"},
-	{"id":"shadow_cloak","name":"Shadow Cloak","hp":5,"speed":2,"armor":0,"blueprint":600,"print":150,"raw_print":"res://assets/armor/raw/shadow_cloak_raw_print_alpha_v2.png"},
-	{"id":"titan_plate","name":"Titan Plate","hp":45,"speed":-3,"armor":0,"blueprint":1200,"print":300,"raw_print":"res://assets/armor/raw/titan_plate_raw_print_alpha_v2.png"}
+## Equipment is a complete printed suit plus an optional socketed Core.  Individual
+## Complete suits and optional Cores are the only equipment catalog items.
+const SUITS := [
+	{"id":"standard","name":"Standard Full Suit","hp":8,"speed":0,"armor":0,"blueprint":90,"print":30,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"},
+	{"id":"reinforced","name":"Reinforced Full Suit","hp":14,"speed":0,"armor":1,"blueprint":190,"print":55,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"},
+	{"id":"arcane","name":"Arcane Full Suit","hp":20,"speed":1,"armor":1,"blueprint":360,"print":90,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"},
+	{"id":"masterwork","name":"Masterwork Full Suit","hp":28,"speed":1,"armor":2,"blueprint":680,"print":140,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"},
+	{"id":"legendary","name":"Legendary Full Suit","hp":36,"speed":1,"armor":3,"blueprint":1200,"print":220,"raw_print":"res://assets/armor/raw/full_suit_raw_print_alpha_v2.png"}
+]
+const CORE_BLUEPRINTS := [
+	{"id":"ember","name":"Ember Core","blueprint":140,"print":45,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"},
+	{"id":"tide","name":"Tide Core","blueprint":180,"print":55,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"},
+	{"id":"verdant","name":"Verdant Core","blueprint":230,"print":70,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"},
+	{"id":"storm","name":"Storm Core","blueprint":280,"print":85,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"},
+	{"id":"arcane","name":"Arcane Core","blueprint":360,"print":105,"raw_print":"res://assets/armor/raw/arcane_core_raw_print_alpha_v2.png"}
 ]
 ## All card effects are ordered and target-scoped. `effect`/`amount` retain the
 ## original primary effect for profiles and older UI code; `effects` is authoritative.

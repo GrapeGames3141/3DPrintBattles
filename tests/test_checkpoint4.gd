@@ -20,14 +20,14 @@ func _ready() -> void:
 	var cinder_path := BattleSpriteStage.sprite_path_for("cinderpaw")
 	require(first_bounds == second_bounds and CreatureSpriteCache.texture_load_count(cinder_path) == 1 and CreatureSpriteCache.alpha_bounds_scan_count(cinder_path) == 1, "shared sprite cache reuses imported texture and alpha bounds across recreated stages")
 	require(not second_stage.is_processing(), "reduced-motion stage disables processing")
-	var armored := BattleState.create([{"creature_id":"cinderpaw","armor_id":"chest_plate"}], ["mossmunk"], 3, 3, 2)
+	var armored := BattleState.create([{"creature_id":"cinderpaw","suit_id":"arcane"}], ["mossmunk"], 3, 3, 2)
 	var unit := armored.active_unit(0)
-	require(int(unit.max_hp) == 52 and int(unit.speed) == 6 and int(unit.armor) == 1, "armor applies hp speed armor modifiers")
-	var invalid := BattleState.create([{"creature_id":"cinderpaw","armor_id":"bad"}], ["mossmunk"], 3, 3, 2)
-	require(int(invalid.active_unit(0).max_hp) == 34 and int(invalid.active_unit(0).armor) == 0, "invalid armor falls back")
+	require(int(unit.max_hp) == 54 and int(unit.speed) == 8 and int(unit.armor) == 1, "full suit applies hp speed guard modifiers")
+	var invalid := BattleState.create([{"creature_id":"cinderpaw","suit_id":"bad"}], ["mossmunk"], 3, 3, 2)
+	require(int(invalid.active_unit(0).max_hp) == 34 and int(invalid.active_unit(0).armor) == 0, "invalid suit falls back")
 	armored.turn = 2; armored.active_player = 1
 	var hp := int(unit.hp); var hit := BattleRules.apply_intent(armored, 1, {"type":"attack"})
-	require(bool(hit.ok) and int(unit.hp) < hp and int(hit.damage) < int(armored.active_unit(1).attack), "armor reduces incoming damage")
+	require(bool(hit.ok) and int(unit.hp) < hp and int(hit.damage) < int(armored.active_unit(1).attack), "guard reduces incoming damage")
 	var ai_state := BattleState.create(["cinderpaw","aquafin"], ["mossmunk","voltwig"], 3, 3, 3)
 	require(AIOpponent.choose_intent(ai_state, "Master").type == "defend", "AI opening defend legal")
 	ai_state.turn = 2; ai_state.active_player = 1; ai_state.active_unit(1).hp = 5; ai_state.players[1].hand = ["quick_patch"]
@@ -37,6 +37,6 @@ func _ready() -> void:
 	var reward_state := BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 2); reward_state.finished = true; reward_state.winner = 0
 	var revision := int(GameManager.profile.get("revision", 0))
 	require(GameManager.claim_battle_reward(reward_state) and int(GameManager.profile.revision) == revision + 1 and int(GameManager.profile.coins) == 20 and not GameManager.claim_battle_reward(reward_state) and int(GameManager.profile.revision) == revision + 1, "battle reward is single-claim atomic")
-	if failures.is_empty(): print("PASS: checkpoint4 accessibility armor and AI")
+	if failures.is_empty(): print("PASS: checkpoint4 accessibility suits and AI")
 	call_deferred("finish")
 func finish() -> void: get_tree().quit(0 if failures.is_empty() else 1)

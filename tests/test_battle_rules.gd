@@ -14,8 +14,8 @@ func _ready() -> void:
 	require(state.active_player == 0, "coin flip seed should choose player")
 	require(state.opening_player == 0, "opening player is retained")
 	require(state.players[0].hand.size() == 4 and state.players[0].deck.size() == 11, "starter loadout deals four cards from a fifteen-card deck")
-	var armored_legacy: Dictionary = BattleState.normalize_unit({"creature_id":"cinderpaw", "health":44, "armor_id":"helm"})
-	require(int(armored_legacy.get("hp", 0)) == 44 and int(armored_legacy.get("max_hp", 0)) == 44 and int(armored_legacy.get("speed", 0)) == 7 and int(armored_legacy.get("armor", -1)) == 0 and str(armored_legacy.get("armor_name", "")) == "Layered Helm", "legacy armor derives catalog combat defaults without clamping health")
+	var suited_unit: Dictionary = BattleState.normalize_unit({"creature_id":"cinderpaw", "health":44, "suit_id":"reinforced", "core_id":"storm"})
+	require(int(suited_unit.get("hp", 0)) == 44 and int(suited_unit.get("max_hp", 0)) == 48 and int(suited_unit.get("speed", 0)) == 8 and int(suited_unit.get("armor", -1)) == 1 and str(suited_unit.get("suit_name", "")) == "Reinforced Full Suit", "full suit and valid Core derive catalog combat defaults without clamping health")
 	var legacy_snapshot: Dictionary = state.serialize().duplicate(true)
 	legacy_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":34}
 	var restored := BattleState.from_snapshot(legacy_snapshot)
@@ -26,11 +26,22 @@ func _ready() -> void:
 	require(malformed_restore.players.is_empty() and malformed_restore.log.is_empty() and malformed_restore.active_unit(0).is_empty(), "snapshot restore rejects malformed player and log containers safely")
 	var armored_state := BattleState.create(["cinderpaw"],["mossmunk"],3,3,2)
 	var armored_snapshot: Dictionary = armored_state.serialize().duplicate(true)
-	armored_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":44, "armor_id":"helm"}
+	armored_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":44, "suit_id":"standard", "core_id":"ember"}
 	armored_snapshot.turn = 2; armored_snapshot.active_player = 0; armored_snapshot.opening_player = 1
 	armored_state = BattleState.from_snapshot(armored_snapshot)
 	var armored_attack := BattleRules.apply_intent(armored_state, 0, {"type":"attack"})
-	require(armored_attack.ok and int(armored_state.active_unit(0).get("attack", 0)) == 9 and int(armored_state.active_unit(1).get("hp", 0)) < int(armored_state.active_unit(1).get("max_hp", 0)), "normalized armored legacy unit still has legal catalog attack moves")
+	require(armored_attack.ok and int(armored_state.active_unit(0).get("attack", 0)) == 11 and int(armored_state.active_unit(1).get("hp", 0)) < int(armored_state.active_unit(1).get("max_hp", 0)), "normalized full-suit/Core unit still has legal catalog attack moves")
+	var tide_state := BattleState.create([{"creature_id":"cinderpaw", "suit_id":"standard", "core_id":"tide"}], ["mossmunk"], 3, 3, 2)
+	require(int(tide_state.active_unit(0).get("shield", 0)) == 4, "Tide Core starts battle with exactly 4 Shield")
+	var invalid_core_state := BattleState.create([{"creature_id":"cinderpaw", "core_id":"ember"}], ["mossmunk"], 3, 3, 2)
+	require(str(invalid_core_state.active_unit(0).get("core_id", "")) == "", "a Core without a valid suit cannot grant battle effects")
+	var verdant_state := BattleState.create([{"creature_id":"cinderpaw", "suit_id":"standard", "core_id":"verdant"}], ["mossmunk"], 3, 3, 2)
+	verdant_state.turn = 2; verdant_state.active_player = 1; verdant_state.active_unit(0).hp = 20; verdant_state.active_unit(1).attack = 1
+	var verdant_hit := BattleRules.apply_intent(verdant_state, 1, {"type":"attack"})
+	require(verdant_hit.ok and int(verdant_state.players[0].team[0].get("hp", 0)) == 23 and not bool(verdant_state.players[0].team[0].get("verdant_ready", true)), "Verdant heals 4 once when damage drops it below half health")
+	verdant_state.active_player = 1
+	BattleRules.apply_intent(verdant_state, 1, {"type":"attack"})
+	require(int(verdant_state.players[0].team[0].get("hp", 0)) == 22, "Verdant does not heal a second time")
 	require(state.players[0].hand.count("raw_filament") == 4, "starter loadout has deterministic opening hand")
 	var before: int = int(state.active_unit(1).hp)
 	var result := BattleRules.apply_intent(state, 0, {"type":"attack"})
@@ -96,10 +107,13 @@ func _ready() -> void:
 	var total_weight: int = 0
 	for rarity in Catalog.RARITIES: total_weight += int(rarity.weight_bps)
 	require(Catalog.CREATURES.size() == 24, "launch creature count")
-	require(Catalog.ARMOR.size() == 7, "launch armor count")
+	require(Catalog.SUITS.size() == 5 and Catalog.CORE_BLUEPRINTS.size() == 5, "launch full-suit and Core counts")
 	require(Catalog.SUPPORT_CARDS.size() == 30, "launch support card count")
 	require(total_weight == 10000, "rarity shop weights are 10,000 basis points")
-	if failures.is_empty(): print("PASS: battle rules, starter deck, cards, switching, catalog counts, and weights")
+	var battle_state_source := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://scripts/battle/battle_state.gd"))
+	var runtime_source := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://scripts/battle/battle_unit_runtime.gd"))
+	require(not battle_state_source.contains("ArmorCoreDefinitions") and not runtime_source.contains("ArmorCoreDefinitions"), "battle runtime uses preloaded Core definitions without singleton timing")
+	if failures.is_empty(): print("PASS: battle rules, suits, Cores, starter deck, cards, switching, catalog counts, and weights")
 	call_deferred("_finish")
 
 func _finish() -> void:

@@ -6,6 +6,10 @@ const ART_GALLERY := preload("res://scripts/ui/creature_art_gallery.gd")
 const CAPTURE_FEATURE_SETUP := preload("res://tests/capture_feature_setup.gd")
 const CAPTURE_OFFLINE_QA_SETUP := preload("res://tests/capture_offline_qa_setup.gd")
 const VFX_CONTACT_SHEET := preload("res://tests/vfx_contact_sheet.gd")
+const TIERED_ARMOR_PALETTE_SHOWCASE := preload("res://tests/tiered_armor_palette_showcase.gd")
+const CORE_POWER_SHOWCASE := preload("res://tests/core_power_showcase.gd")
+const CORE_POWER_TIMELINE := preload("res://tests/core_power_timeline.gd")
+const HELMET_GEM_CLOSEUP_SHOWCASE := preload("res://tests/helmet_gem_closeup_showcase.gd")
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -50,6 +54,32 @@ func _prepare_capture() -> void:
 		get_tree().root.call_deferred("add_child", workshop)
 		call_deferred("capture_contact_sheet")
 		return
+	if capture_mode == "tiered_armor_palette_showcase":
+		workshop = TIERED_ARMOR_PALETTE_SHOWCASE.new()
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture_contact_sheet")
+		return
+	if capture_mode == "core_power_showcase":
+		workshop = CORE_POWER_SHOWCASE.new()
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture_contact_sheet")
+		return
+	if capture_mode == "core_power_timeline":
+		workshop = CORE_POWER_TIMELINE.new()
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture_contact_sheet")
+		return
+	if capture_mode == "helmet_gem_closeup":
+		workshop = HELMET_GEM_CLOSEUP_SHOWCASE.new()
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture_contact_sheet")
+		return
+	if capture_mode == "helmet_gem_static_closeup":
+		workshop = HELMET_GEM_CLOSEUP_SHOWCASE.new()
+		workshop.show_activation_overlay = false
+		get_tree().root.call_deferred("add_child", workshop)
+		call_deferred("capture_contact_sheet")
+		return
 	if capture_mode == "high_contrast_battle": GameManager.profile.settings.high_contrast = true
 	if capture_mode == "reduced_motion_battle": GameManager.profile.settings.reduced_motion = true
 	if capture_mode == "station_live_reduced": GameManager.profile.settings.reduced_motion = true
@@ -88,9 +118,9 @@ func fixture_profile() -> Dictionary:
 	fixture.coins = 1000
 	var blueprint: Dictionary = ProgressionRules.purchase_creature_blueprint(fixture, "mossmunk")
 	var printed: Dictionary = ProgressionRules.print_creature(blueprint.profile, "mossmunk")
-	var armor_blueprint: Dictionary = ProgressionRules.learn_armor_blueprint(printed.profile, "helm")
-	var armor_print: Dictionary = ProgressionRules.print_armor(armor_blueprint.profile, "helm")
-	fixture = ProgressionRules.equip_armor(armor_print.profile, str(armor_print.profile.onboarding.starter_instance_id), str(armor_print.payload.armor_instance_id)).profile
+	var suit_blueprint: Dictionary = ProgressionRules.learn_suit_blueprint(printed.profile, "standard")
+	var suit_print: Dictionary = ProgressionRules.print_suit(suit_blueprint.profile, "standard")
+	fixture = ProgressionRules.equip_suit(suit_print.profile, str(suit_print.profile.onboarding.starter_instance_id), str(suit_print.payload.suit_instance_id)).profile
 	fixture.team = [str(fixture.onboarding.starter_instance_id), str(printed.payload.instance_id)]
 	# A spare print remains off-team so the trade capture demonstrates a legal offer.
 	var spare: Dictionary = ProgressionRules.print_creature(fixture, "mossmunk")
@@ -120,14 +150,14 @@ func team_launch_profile() -> Dictionary:
 		profile = learned.get("profile", profile)
 		var printed: Dictionary = ProgressionRules.print_creature(profile, creature_id)
 		profile = printed.get("profile", profile)
-	var armor_id: String = str(Catalog.ARMOR[0].get("id", ""))
-	var learned_armor: Dictionary = ProgressionRules.learn_armor_blueprint(profile, armor_id)
-	profile = learned_armor.get("profile", profile)
-	var printed_armor: Dictionary = ProgressionRules.print_armor(profile, armor_id)
-	profile = printed_armor.get("profile", profile)
+	var suit_tier: String = str(Catalog.SUITS[0].get("id", ""))
+	var learned_suit: Dictionary = ProgressionRules.learn_suit_blueprint(profile, suit_tier)
+	profile = learned_suit.get("profile", profile)
+	var printed_suit: Dictionary = ProgressionRules.print_suit(profile, suit_tier)
+	profile = printed_suit.get("profile", profile)
 	var bramble_instance: String = str(profile.get("creatures", [])[1].get("instance_id", ""))
-	var armor_instance: String = str(profile.get("armor", [])[0].get("armor_instance_id", ""))
-	var equipped: Dictionary = ProgressionRules.reassign_armor(profile, bramble_instance, armor_instance)
+	var suit_instance: String = str(profile.get("suits", [])[0].get("suit_instance_id", ""))
+	var equipped: Dictionary = ProgressionRules.equip_suit(profile, bramble_instance, suit_instance)
 	profile = equipped.get("profile", profile)
 	profile["team"] = [str(profile.get("creatures", [])[0].get("instance_id", "")), bramble_instance, str(profile.get("creatures", [])[2].get("instance_id", ""))]
 	return profile
@@ -240,7 +270,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "armor_preview", "armor_printing", "armor_raw_hold", "armor_awakened", "armor_shadow_raw_hold", "armor_full_suit_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

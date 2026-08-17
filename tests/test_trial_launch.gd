@@ -24,7 +24,7 @@ func team_ids(state: BattleState) -> Array[String]:
 func _ready() -> void:
 	# This follows the actual Team Builder callbacks used on phone, rather than
 	# assigning a pre-normalized team directly. The profile also carries an
-	# equipped armor and ordinary current-save fields.
+	# equipped full suit and optional Core under ordinary current-save fields.
 	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").get("profile", {})
 	profile["coins"] = 5000
 	for creature_id in ["brambleowl", "verdantitan"]:
@@ -32,14 +32,12 @@ func _ready() -> void:
 		profile = learned.get("profile", profile)
 		var printed: Dictionary = ProgressionRules.print_creature(profile, creature_id)
 		profile = printed.get("profile", profile)
-	var armor_id: String = str(Catalog.ARMOR[0].get("id", ""))
-	var learned_armor: Dictionary = ProgressionRules.learn_armor_blueprint(profile, armor_id)
-	profile = learned_armor.get("profile", profile)
-	var printed_armor: Dictionary = ProgressionRules.print_armor(profile, armor_id)
-	profile = printed_armor.get("profile", profile)
+	var suit_tier := "reinforced"
+	profile = EquipmentRules.learn_suit(profile, suit_tier).get("profile", profile)
+	profile = EquipmentRules.print_suit(profile, suit_tier).get("profile", profile)
 	var bramble_instance: String = str(profile.get("creatures", [])[1].get("instance_id", ""))
-	var armor_instance: String = str(profile.get("armor", [])[0].get("armor_instance_id", ""))
-	var equipped: Dictionary = ProgressionRules.reassign_armor(profile, bramble_instance, armor_instance)
+	var suit_instance: String = str(profile.get("suits", [])[0].get("suit_instance_id", ""))
+	var equipped: Dictionary = EquipmentRules.equip_suit(profile, bramble_instance, suit_instance)
 	profile = equipped.get("profile", profile)
 	GameManager.profile = profile
 	var main := MAIN.instantiate()
@@ -66,8 +64,8 @@ func _ready() -> void:
 	main.start_trial("first_layers_1")
 	await get_tree().process_frame
 	require(main.screen == "battle" and main.battle != null and team_ids(main.battle) == expected_ids, "actual Team Builder save starts Warm Nozzle with Cinderpaw, Brambleowl, and Verdantitan in order")
-	require(main.battle != null and str(main.battle.players[0].get("team", [])[1].get("armor_id", "")) == armor_id, "current owned armor survives the canonical dictionary launch")
-	require(GameManager.profile == before_launch, "trial launch does not mutate inventory, saved team, deck, armor, coins, or revision")
+	require(main.battle != null and str(main.battle.players[0].get("team", [])[1].get("suit_id", "")) == suit_tier, "current owned full suit survives the canonical dictionary launch")
+	require(GameManager.profile == before_launch, "trial launch does not mutate inventory, saved team, deck, suit inventory, coins, or revision")
 	# Android/legacy payload aliases all normalize through BattleState itself.
 	var aliases := BattleState.make_team([{"id":"cinderpaw"}, {"species_id":"brambleowl"}, {"creature":"verdantitan"}], 3)
 	var alias_ids: Array[String] = []
@@ -82,16 +80,16 @@ func _ready() -> void:
 	# validation boundary. This mirrors Android exported execution where a nested
 	# static global lookup was observed returning an empty team.
 	require(BattleState.creature_id_from_entry({"creature_id":"cinderpaw", "id":"instance-not-a-species"}) == "cinderpaw" and BattleState.creature_id_from_entry({"species":"brambleowl"}) == "brambleowl" and BattleState.creature_id_from_entry("verdantitan") == "verdantitan", "BattleState alias extraction is data-only and preserves canonical species candidates")
-	require(BattleState.creature_id_from_entry({"id":"unknown-legacy-instance"}) == "unknown-legacy-instance" and BattleState.armor_id_from_entry({"armor_id":"unknown-legacy-armor"}) == "unknown-legacy-armor", "BattleState alias extractors defer invalid catalog rejection to make_team")
-	var equipped_aliases := BattleState.make_team([{"creature_id":"cinderpaw", "armor_id":armor_id}, "brambleowl", {"species":"verdantitan"}], 4)
+	require(BattleState.creature_id_from_entry({"id":"unknown-legacy-instance"}) == "unknown-legacy-instance" and BattleState.suit_id_from_entry({"suit_id":"unknown-legacy-suit"}) == "unknown-legacy-suit", "BattleState alias extractors defer invalid catalog rejection to make_team")
+	var equipped_aliases := BattleState.make_team([{"creature_id":"cinderpaw", "suit_id":suit_tier}, "brambleowl", {"species":"verdantitan"}], 4)
 	var equipped_ids: Array[String] = []
 	for unit in equipped_aliases.get("team", []): equipped_ids.append(str(unit.get("id", "")))
-	require(equipped_ids == expected_ids and str(equipped_aliases.get("team", [])[0].get("armor_id", "")) == armor_id and int(equipped_aliases.get("team", [])[0].get("max_hp", 0)) == int(Catalog.creature("cinderpaw").get("hp", 0)) + int(ProgressionRules.armor_def(armor_id).get("hp", 0)), "catalog validation still builds equipped aliases while rejecting only invalid data")
+	require(equipped_ids == expected_ids and str(equipped_aliases.get("team", [])[0].get("suit_id", "")) == suit_tier and int(equipped_aliases.get("team", [])[0].get("max_hp", 0)) == int(Catalog.creature("cinderpaw").get("hp", 0)) + int(BattleCatalog.suit(suit_tier).get("hp", 0)), "catalog validation still builds equipped aliases while rejecting only invalid data")
 	var no_owned: Dictionary = ProfileRules.new_profile()
 	no_owned["onboarding"] = {"state":"complete", "starter_id":"", "starter_instance_id":""}
 	var refused: Dictionary = SoloBattleFactory.create(no_owned, ["mossmunk"], 3, 3, 2)
 	require(not bool(refused.get("ok", true)) and str(refused.get("error", "")).contains("No catalog-valid owned print"), "no-owned profile remains safely refused with its actionable error")
-	print("TRIAL_LAUNCH_REPRO saved_team=%s preview=%s built=%s armor=%s" % [GameManager.profile.get("team", []), preview_ids, team_ids(main.battle), armor_id])
+	print("TRIAL_LAUNCH_REPRO saved_team=%s preview=%s built=%s suit=%s" % [GameManager.profile.get("team", []), preview_ids, team_ids(main.battle), suit_tier])
 	main.queue_free()
 	await get_tree().process_frame
 	if failures.is_empty(): print("PASS: canonical Trial launch matches Team Builder preview and preserves profile")

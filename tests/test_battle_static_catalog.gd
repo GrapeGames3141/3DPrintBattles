@@ -17,14 +17,14 @@ func _ready() -> void:
 	for path in ["res://scripts/battle/battle_state.gd", "res://scripts/battle/battle_unit_runtime.gd", "res://scripts/battle/battle_rules.gd", "res://scripts/battle/ai_opponent.gd"]:
 		var source := FileAccess.get_file_as_string(path)
 		require(not source.contains("Catalog.") and not source.contains("ProgressionRules."), "%s has no Catalog or ProgressionRules global boundary" % path.get_file())
-	var player_entries: Array = [{"creature_id":"cinderpaw"}, {"species_id":"brambleowl", "armor_id":"helm"}, {"id":"verdantitan"}]
+	var player_entries: Array = [{"creature_id":"cinderpaw"}, {"species_id":"brambleowl", "suit_id":"reinforced", "core_id":"storm"}, {"id":"verdantitan"}]
 	var rival_entries: Array = [{"species":"mossmunk"}]
 	var state: BattleState = BATTLE_STATE.create(player_entries, rival_entries, 4, 3, 42, BATTLE_STATE.STARTER_LOADOUT)
 	require(state.validation_error(true).is_empty(), "static accessor builds valid player and rival teams")
 	var player_ids: Array[String] = []
 	for unit in state.players[0].get("team", []): player_ids.append(str(unit.get("id", "")))
-	require(player_ids == ["cinderpaw", "brambleowl", "verdantitan"] and str(state.players[0].team[1].get("armor_id", "")) == "helm", "three-unit canonical order and equipped armor survive static construction")
-	require(int(state.players[0].team[1].get("max_hp", 0)) == int(BATTLE_CATALOG.creature("brambleowl").get("hp", 0)) + int(BATTLE_CATALOG.armor("helm").get("hp", 0)), "static armor lookup applies catalog maximum HP")
+	require(player_ids == ["cinderpaw", "brambleowl", "verdantitan"] and str(state.players[0].team[1].get("suit_id", "")) == "reinforced" and str(state.players[0].team[1].get("core_id", "")) == "storm", "three-unit canonical order and full suit/Core survive static construction")
+	require(int(state.players[0].team[1].get("max_hp", 0)) == int(BATTLE_CATALOG.creature("brambleowl").get("hp", 0)) + int(BATTLE_CATALOG.suit("reinforced").get("hp", 0)), "static suit lookup applies catalog maximum HP")
 	var card_result: Dictionary = BATTLE_RULES.apply_intent(state, 0, {"type":"card", "card_id":"raw_filament"})
 	require(bool(card_result.get("ok", false)) and int(state.players[0].get("filament", 0)) == 4, "static support-card lookup resolves an in-hand card")
 	var defend_result: Dictionary = BATTLE_RULES.apply_intent(state, 0, {"type":"defend"})

@@ -22,9 +22,11 @@ func _ready() -> void:
 	require(bool(instance.bound) and not bool(instance.tradable) and str(instance.source) == "starter", "starter instance is permanently bound and nontradable")
 	var second := ProfileRules.choose_starter(chosen, "voltwig")
 	require(not bool(second.ok) and second.profile.creatures.size() == 1, "starter selection refuses later changes and duplicate grants")
-	var legacy := {"schema_version":1,"catalog_version":"0.1.0","revision":9,"coins":320,"spool_level":4,"blueprints":["cinderpaw","aquafin"],"creatures":[{"instance_id":"old-cinder","creature_id":"cinderpaw","armor_id":""},{"instance_id":"old-aqua","creature_id":"aquafin","armor_id":""}],"team":["old-aqua"],"armor":[{"armor_instance_id":"old-armor","armor_id":"helm","equipped_to":""}],"discovered":["cinderpaw","aquafin"]}
+	# Migration is intentionally limited to clean/current-shape saves for this
+	# checkpoint. Older piece-equipment saves are deferred rather than revived.
+	var legacy := {"schema_version":1,"catalog_version":"0.1.0","revision":9,"coins":320,"spool_level":4,"blueprints":["cinderpaw","aquafin"],"creatures":[{"instance_id":"old-cinder","creature_id":"cinderpaw","suit_instance_id":""},{"instance_id":"old-aqua","creature_id":"aquafin","suit_instance_id":""}],"team":["old-aqua"],"suits":[],"cores":[],"discovered":["cinderpaw","aquafin"]}
 	var migrated := ProfileRules.migrate(legacy)
-	require(int(migrated.schema_version) == Catalog.SCHEMA_VERSION and int(migrated.coins) == 320 and migrated.creatures.size() == 2 and migrated.armor.size() == 1, "schema-one migration preserves inventory and progression")
+	require(int(migrated.schema_version) == Catalog.SCHEMA_VERSION and int(migrated.coins) == 320 and migrated.creatures.size() == 2 and migrated.suits.is_empty() and migrated.cores.is_empty(), "schema-one migration preserves current inventory and progression")
 	require(ProfileRules.has_starter(migrated) and str(migrated.onboarding.starter_id) == "aquafin", "legacy migration completes onboarding without extra grant")
 	require(OnboardingState.screen_for_profile(migrated) == "workshop", "migrated profile routes to workshop")
 	var repairable: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
