@@ -162,7 +162,7 @@ func simulate_roster() -> Dictionary:
 	return totals
 
 func _player_intent(state: BattleState) -> Dictionary:
-	if state.turn == 1 and state.opening_player == 0: return {"type":"defend"}
+	if state.turn <= 2: return {"type":"end_turn"}
 	var unit := state.active_unit(0)
 	if int(state.players[0].get("filament", 0)) >= int(unit.get("ability_cost", 99)) and int(unit.get("cooldown_remaining", 0)) == 0 and not bool(unit.get("cooling", false)) and int(unit.get("ability_lock_turns", 0)) == 0:
 		return {"type":"ability"}

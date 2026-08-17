@@ -25,7 +25,7 @@ func _assert_multi_turn_dock_stability(main: Node, dimensions: Vector2i) -> void
 	# Skip the opening restriction so all six player Basic Attacks exercise the
 	# actual impact feedback and presentation re-render path. Voidmanta survives
 	# the deterministic fixture while its Defends keep the rival turn legal.
-	main.battle.turn = 2
+	main.battle.turn = 3
 	main.battle.opening_player = 1
 	main.battle.active_player = 0
 	main.render()
@@ -183,7 +183,7 @@ func _ready() -> void:
 	main.battle = BattleState.create(GameManager.current_team_loadout(), ["voidmanta"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())
 	var legacy_snapshot: Dictionary = main.battle.serialize().duplicate(true)
 	legacy_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":34}
-	legacy_snapshot.turn = 2
+	legacy_snapshot.turn = 3
 	legacy_snapshot.active_player = 0
 	legacy_snapshot.opening_player = 1
 	main.battle = BattleState.from_snapshot(legacy_snapshot)

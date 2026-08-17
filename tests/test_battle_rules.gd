@@ -27,7 +27,7 @@ func _ready() -> void:
 	var armored_state := BattleState.create(["cinderpaw"],["mossmunk"],3,3,2)
 	var armored_snapshot: Dictionary = armored_state.serialize().duplicate(true)
 	armored_snapshot.players[0].team[0] = {"creature_id":"cinderpaw", "health":44, "suit_id":"standard", "core_id":"ember"}
-	armored_snapshot.turn = 2; armored_snapshot.active_player = 0; armored_snapshot.opening_player = 1
+	armored_snapshot.turn = 3; armored_snapshot.active_player = 0; armored_snapshot.opening_player = 1
 	armored_state = BattleState.from_snapshot(armored_snapshot)
 	var armored_attack := BattleRules.apply_intent(armored_state, 0, {"type":"attack"})
 	require(armored_attack.ok and int(armored_state.active_unit(0).get("attack", 0)) == 11 and int(armored_state.active_unit(1).get("hp", 0)) < int(armored_state.active_unit(1).get("max_hp", 0)), "normalized full-suit/Core unit still has legal catalog attack moves")
@@ -36,7 +36,7 @@ func _ready() -> void:
 	var invalid_core_state := BattleState.create([{"creature_id":"cinderpaw", "core_id":"ember"}], ["mossmunk"], 3, 3, 2)
 	require(str(invalid_core_state.active_unit(0).get("core_id", "")) == "", "a Core without a valid suit cannot grant battle effects")
 	var verdant_state := BattleState.create([{"creature_id":"cinderpaw", "suit_id":"standard", "core_id":"verdant"}], ["mossmunk"], 3, 3, 2)
-	verdant_state.turn = 2; verdant_state.active_player = 1; verdant_state.active_unit(0).hp = 20; verdant_state.active_unit(1).attack = 1
+	verdant_state.turn = 3; verdant_state.active_player = 1; verdant_state.active_unit(0).hp = 20; verdant_state.active_unit(1).attack = 1
 	var verdant_hit := BattleRules.apply_intent(verdant_state, 1, {"type":"attack"})
 	require(verdant_hit.ok and int(verdant_state.players[0].team[0].get("hp", 0)) == 23 and not bool(verdant_state.players[0].team[0].get("verdant_ready", true)), "Verdant heals 4 once when damage drops it below half health")
 	verdant_state.active_player = 1
@@ -45,10 +45,10 @@ func _ready() -> void:
 	require(state.players[0].hand.count("raw_filament") == 4, "starter loadout has deterministic opening hand")
 	var before: int = int(state.active_unit(1).hp)
 	var result := BattleRules.apply_intent(state, 0, {"type":"attack"})
-	require(not result.ok, "coin-flip winner cannot attack on opening turn")
-	require(state.active_unit(1).hp == before, "blocked opening attack deals no damage")
+	require(not result.ok and str(result.get("error", "")).contains("setup round"), "setup round blocks the first seat attack")
+	require(state.active_unit(1).hp == before, "blocked setup attack deals no damage")
 	result = BattleRules.apply_intent(state, 0, {"type":"ability"})
-	require(not result.ok, "coin-flip winner cannot use offensive ability on opening turn")
+	require(not result.ok, "setup round blocks the first seat signature ability")
 	var invalid_state := BattleState.create([], ["mossmunk"], 3, 3, 2)
 	var invalid_result := BattleRules.apply_intent(invalid_state, 0, {"type":"attack"})
 	require(not bool(invalid_result.get("ok", false)) and str(invalid_result.get("error", "")).contains("invalid player team"), "invalid team preflight reports setup before opening-turn restrictions")
@@ -56,18 +56,20 @@ func _ready() -> void:
 	require(result.ok, "defend must be legal")
 	require(state.players[0].team[0].shield == 4, "defend grants shield")
 	require(state.active_player == 1 and state.players[1].filament == 3, "turn refill uses integer allowance")
-	result = BattleRules.apply_intent(state, 1, {"type":"end_turn"})
-	require(result.ok and state.active_player == 0, "opponent can end turn")
+	result = BattleRules.apply_intent(state, 1, {"type":"attack"})
+	require(not result.ok and str(result.get("error", "")).contains("setup round"), "second setup seat cannot attack on turn two")
+	result = BattleRules.apply_intent(state, 1, {"type":"defend"})
+	require(result.ok and int(result.get("shield", 0)) == 8 and state.active_player == 0, "second setup seat receives the visible 8-shield reply guard")
 	result = BattleRules.apply_intent(state, 0, {"type":"attack"})
-	require(result.ok, "basic attack is legal after opening turn")
-	require(state.active_unit(1).hp < before, "attack deals damage after opening turn")
+	require(result.ok, "basic attack is legal after both setup actions")
+	require(state.active_unit(1).hp < before, "attack deals damage after symmetric setup")
 	require(Catalog.element_multiplier("Water", "Fire") == 150, "water/fire chart")
 	state = BattleState.create(["cinderpaw","aquafin","voltwig"],["mossmunk","stoneback","galehopper"],3,3,3)
 	result = AIOpponent.choose_intent(state, "Craftsman")
-	require(result.type == "defend", "AI opens with defend when it wins the coin flip")
-	require(BattleRules.apply_intent(state, 1, result).ok and state.active_player == 0, "AI opening intent advances the match")
+	require(result.type == "end_turn", "AI yields during the first setup action")
+	require(BattleRules.apply_intent(state, 1, result).ok and state.active_player == 0, "AI setup intent advances the match")
 	state = BattleState.create(["cinderpaw","aquafin","voltwig"],["mossmunk","stoneback","galehopper"],3,3,3)
-	state.turn = 2
+	state.turn = 3
 	state.active_player = 0
 	state.players[0].team[0].hp = 0
 	BattleRules._defeat(state, 0)
@@ -75,7 +77,7 @@ func _ready() -> void:
 	result = BattleRules.apply_intent(state, 0, {"type":"attack"})
 	require(result.ok, "a Cooling forced replacement may basic attack")
 	state = BattleState.create(["cinderpaw","aquafin","voltwig"],["mossmunk","stoneback","galehopper"],3,3,3)
-	state.turn = 2
+	state.turn = 3
 	state.active_player = 1
 	state.active_unit(0).shield = 100
 	var shielded_hp: int = int(state.active_unit(0).hp)

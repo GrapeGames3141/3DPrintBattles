@@ -4,11 +4,17 @@ extends RefCounted
 ## It repairs only the temporary launch lineup when stale team references exist.
 
 static func create(profile: Dictionary, rival_team: Array, player_cap: int, rival_cap: int, seed: int) -> Dictionary:
+	return create_from_setup(profile, {"team":rival_team,"spool":rival_cap}, player_cap, seed)
+
+## Rich contract/Trial launch seam.  The legacy create() wrapper deliberately
+## remains so existing local-versus callers cannot accidentally drop decks.
+static func create_from_setup(profile: Dictionary, opponent_setup: Dictionary, player_cap: int, seed: int) -> Dictionary:
 	var team_result := player_loadout(profile)
 	var player_team: Array = team_result.get("team", [])
 	if player_team.is_empty():
 		return {"ok":false, "battle":null, "error":str(team_result.get("error", "No catalog-valid owned creature is available.")), "temporary_repair":false}
 	var legal_rival: Array = []
+	var rival_team: Array = opponent_setup.get("team", [])
 	for raw in rival_team:
 		var creature_id := str(raw.get("creature_id", raw.get("id", ""))) if raw is Dictionary else str(raw)
 		if not Catalog.creature(creature_id).is_empty(): legal_rival.append(raw)
@@ -16,8 +22,13 @@ static func create(profile: Dictionary, rival_team: Array, player_cap: int, riva
 		return {"ok":false, "battle":null, "error":"This rival setup has no catalog-valid creatures.", "temporary_repair":false}
 	var deck_result := player_deck(profile)
 	var capped_player: int = clampi(player_cap, 3, 10)
-	var capped_rival: int = clampi(rival_cap, 3, 10)
-	var battle := BattleState.create(player_team, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []))
+	var capped_rival: int = clampi(int(opponent_setup.get("rival_spool", opponent_setup.get("spool", 3))), 3, 10)
+	var opponent_deck: Array = opponent_setup.get("deck", [])
+	var battle := BattleState.create(player_team, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []), opponent_deck)
+	# Contract policy may visibly grant the rival a prepared spool. This is a
+	# frozen setup value (shown in the Proving Door), never a hidden stat change.
+	battle.players[1]["filament"] = clampi(int(opponent_setup.get("rival_starting_filament", 3)), 3, capped_rival)
+	battle.players[1]["tactics"] = str(opponent_setup.get("tactics", ""))
 	var error := battle.validation_error(true)
 	# This is deliberately a second construction attempt, not a bypass: it only
 	# strips optional equipment dictionaries when canonical creature IDs could not be
@@ -27,7 +38,7 @@ static func create(profile: Dictionary, rival_team: Array, player_cap: int, riva
 	if not error.is_empty():
 		var canonical_ids := _team_ids(player_team)
 		if not canonical_ids.is_empty():
-			var retry := BattleState.create(canonical_ids, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []))
+			var retry := BattleState.create(canonical_ids, legal_rival, capped_player, capped_rival, seed, deck_result.get("deck", []), opponent_deck)
 			retry_built_ids = _built_ids(retry, 0)
 			var retry_error := retry.validation_error(true)
 			if retry_error.is_empty():

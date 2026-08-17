@@ -3,6 +3,8 @@ extends RefCounted
 ## Pure Workshop Trial progression. Rewards are resolved from authored catalog
 ## encounter IDs and current owned instance IDs; no combat stat is modified.
 
+const OPPONENT_RULES := preload("res://scripts/core/opponent_rules.gd")
+
 static func ensure_fields(source: Dictionary) -> Dictionary:
 	var p: Dictionary = source.duplicate(true)
 	var campaign: Dictionary = p.get("solo_campaign", {}) if p.get("solo_campaign", {}) is Dictionary else {}
@@ -29,7 +31,7 @@ static func ensure_fields(source: Dictionary) -> Dictionary:
 
 static func encounter_state(source: Dictionary, encounter_id: String) -> Dictionary:
 	var p := ensure_fields(source)
-	var encounter := Catalog.workshop_trial_encounter(encounter_id)
+	var encounter := authored_encounter(Catalog.workshop_trial_encounter(encounter_id))
 	if encounter.is_empty(): return {"ok":false,"profile":p,"error":"That Workshop Trial encounter is unavailable."}
 	var campaign: Dictionary = p["solo_campaign"]
 	var tier_number: int = int(encounter["tier"])
@@ -47,6 +49,35 @@ static func reward_for(encounter: Dictionary) -> Dictionary:
 	if bool(encounter.get("boss", false)):
 		return {"coins":60 + 20 * tier,"xp":35 + 15 * tier,"mastery":5 + 2 * tier}
 	return {"coins":20 + 10 * tier,"xp":15 + 10 * tier,"mastery":2 + tier}
+
+## Trial IDs, order, rewards and opponents stay authored in Catalog. This small
+## adapter adds the fixed tier loadout/deck progression to each battle payload.
+static func authored_encounter(raw: Dictionary) -> Dictionary:
+	if raw.is_empty(): return raw
+	var result := raw.duplicate(true)
+	var tier := clampi(int(result.get("tier", 1)), 1, 5)
+	var boss := bool(result.get("boss", false))
+	var difficulty := str(result.get("ai", "Apprentice"))
+	var suit := ""
+	if tier == 2: suit = "standard"
+	elif tier == 3: suit = "reinforced"
+	elif tier == 4: suit = "masterwork"
+	elif tier >= 5: suit = "legendary"
+	var team: Array = []
+	for index in result.get("team", []).size():
+		var creature_id := str(result["team"][index])
+		var core := ""
+		if tier >= 4 or (tier == 3 and boss): core = OPPONENT_RULES.core_for(str(Catalog.creature(creature_id).get("element", "")))
+		team.append({"creature_id":creature_id,"suit_id":suit,"core_id":core})
+	result["team"] = team
+	if tier <= 1: result["deck"] = OPPONENT_RULES.deck("balanced")
+	elif tier == 2: result["deck"] = OPPONENT_RULES.deck("guard" if boss else "balanced")
+	elif tier == 3: result["deck"] = OPPONENT_RULES.deck("guard" if boss else "control")
+	elif tier == 4: result["deck"] = OPPONENT_RULES.deck("control" if boss else "pressure")
+	else: result["deck"] = OPPONENT_RULES.deck("pressure")
+	result["deck_role"] = "Pressure" if tier >= 4 and not boss else ("Guard" if boss else ("Control" if tier >= 3 else "Balanced"))
+	result["loadout_tier"] = suit if not suit.is_empty() else "None"
+	return result
 
 static func claim_victory(source: Dictionary, encounter_id: String, turns: int) -> Dictionary:
 	var state := encounter_state(source, encounter_id)

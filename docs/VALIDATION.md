@@ -800,3 +800,39 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
   libraries and zero excluded backend/test/tool/docs/cache/raw-armor entries.
 - `adb devices -l` and mDNS discovery both returned empty lists, so no install
   or physical-device smoke was attempted.
+
+## 2026-08-17 0.6.3 Opponent diversity and balance
+
+- Daily Training now freezes a visible contract policy per opponent band. It
+  records equipment/Core coverage, counter mode, tactics, rival spool, rating
+  target/fallback metadata, and a deterministic diversity-selected lineup.
+  The preview and post-result surfaces show living creature portraits plus
+  suit/Core/tactics and claim/practice labels. Final inspected captures are
+  retained at `E:/CodexCache/printforge-validation/` as
+  `proving_576x1024_opponent-diversity.png`,
+  `proving_1280x720_opponent-diversity.png`,
+  `training_result_576x1024_opponent-final.png`, and
+  `training_result_1280x720_opponent-final.png`.
+- The paired deterministic 600-match audit passed with aggregate
+  Apprentice/Circuit/Master rates **68% / 59% / 44%**, opening wins **174/168
+  of 300/300** (a **2pp** delta), and **0** stalls. Contract-band rows B1–B5
+  were **55/42/55**, **67/62/37**, **60/67/37**, **75/70/40**, and
+  **82/52/50** (Apprentice/Circuit/Master). Every match was legal and
+  terminated within the 160-turn cap; every row met its contract tolerance.
+- Focused parser, opponent-rules, AI benchmark (including chooser purity and
+  one successful setup-card guard), battle setup/reply-shield, and audit gates
+  passed. The retained full Godot suite passed **38/38** scenes. Setup is
+  symmetric: neither seat may attack or use Signature on its first action;
+  the second-seat Defend grants exactly 8 reply shield.
+- Android Review now targets
+  `build/android/PrintForge-Legends-0.6.3-opponent-diversity-arm64.apk`,
+  version code **78** / name **0.6.3-opponent-diversity**. The exact-source
+  debug export completed with exit 0 and is **145,019,387 bytes**, SHA-256
+  `5F68E8518CD73A40F6028F7A90990AA09BD56CE1DC0A48B14F41EA6064841090`.
+  `aapt2` confirms package `com.tak.printforge.legends.review`, code 78, and
+  the 0.6.3 name; `apksigner` confirms Android Debug v2/v3 signing. Archive
+  inspection found only `lib/arm64-v8a` native libraries and no direct
+  backend/test/tool/Git/node_modules/source-art/demo entries. The Android
+  preset excludes backend, tests, tools, docs, raw source art, caches, and
+  build output. No physical Android device was attached, so install/smoke is
+  deliberately unclaimed.

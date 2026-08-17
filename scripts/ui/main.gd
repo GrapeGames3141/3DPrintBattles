@@ -12,6 +12,9 @@ const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 const BATTLE_FEEDBACK_PRESENTER := preload("res://scripts/ui/battle_feedback_presenter.gd")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
 const EQUIPMENT_WORKBENCH_VIEW := preload("res://scripts/ui/equipment_workbench_view.gd")
+const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
+# TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
+const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
 const REVIEW_BUILD_LABEL := "0.5.25-alpha-landscape-card-art"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
@@ -50,6 +53,7 @@ var battle_concede_armed := false
 var battle_secondary_open := false
 var battle_secondary_tab := "bench"
 var battle_mode := "training"
+var training_contract_id := ""
 var trial_encounter_id := ""
 var battle_ai_difficulty := "Craftsman"
 var battle_launch_notice := ""
@@ -144,6 +148,9 @@ func navigate_to(target: String) -> void:
 		workshop_view = workshop_return_view
 		workshop_drawer_object = ""
 	screen = target
+	# Daily snapshots are a launch/navigation transition, never a render side
+	# effect. This avoids recursive profile_changed -> render rebuilds.
+	if target == "proving": GameManager.prepare_daily_training(shop_day_key)
 	render()
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -1459,8 +1466,7 @@ func render_settings() -> void:
 		raise.custom_minimum_size = Vector2(120, 48)
 		raise.size_flags_horizontal = Control.SIZE_SHRINK_END
 		row.add_child(raise)
-	for difficulty in AccessibilityRules.DIFFICULTIES:
-		panel.add_child(make_button("Training AI: %s" % difficulty, func(): GameManager.save_settings({"ai_difficulty":difficulty}), Color("588d73") if str(current.ai_difficulty) == difficulty else Color("2f93a8")))
+	panel.add_child(label("Daily contract difficulty is fixed by the Guild: Apprentice, Craftsman, and Master. The legacy Training AI setting remains saved for compatibility but is no longer selectable.", 14, Color("9beaff")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func adjust_audio_setting(key: String, direction: int) -> void:
@@ -1637,9 +1643,9 @@ func render_team() -> void:
 		if instance_id.is_empty(): continue
 		var selected: bool = instance_id in team_draft
 		var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
-		if TieredArmorRoster.has_master(str(creature.get("creature_id", ""))) and not str(creature.get("suit_instance_id", "")).is_empty():
+		if TIERED_ARMOR_ROSTER.has_master(str(creature.get("creature_id", ""))) and not str(creature.get("suit_instance_id", "")).is_empty():
 			var loadout := EquipmentRules.suit_loadout(GameManager.profile, instance_id)
-			var portrait := TieredArmorPalettePreview.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_creature(str(creature.get("creature_id", ""))); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
+			var portrait := TIERED_ARMOR_PREVIEW.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_creature(str(creature.get("creature_id", ""))); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
 			intro.add_child(label("%s • %s" % [str(ArmorCoreDefinitions.suit_definition(str(loadout.get("tier_id", ""))).get("name", "Full Suit")), str(ArmorCoreDefinitions.definition(str(loadout.get("core_id", ""))).get("name", "No Core"))], 13, Color("f1be69")))
 		intro.add_child(make_button(("Remove " if selected else "Add ") + "%s (Mastery %d)" % [creature_name, GameManager.creature_mastery(instance_id)], toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
 	intro.add_child(make_button("Save Team", save_team_draft, Color("a86b2e")))
@@ -1883,16 +1889,34 @@ func render_codex() -> void:
 	for core in Catalog.CORE_BLUEPRINTS:
 		var core_id := str(core.id); var core_owned := 0
 		for row in GameManager.profile.get("cores", []): if row is Dictionary and str(row.get("core_id", "")) == core_id: core_owned += 1
-		intro.add_child(label("%s — %s | owned %d" % [str(core.name), str(ArmorCoreDefinitions.definition(core_id).get("effect", "")), core_owned], 14, Color("dce8f4")))
+		intro.add_child(label("%s - %s | owned %d" % [str(core.name), str(ArmorCoreDefinitions.definition(core_id).get("effect", "")), core_owned], 14, Color("dce8f4")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func render_proving_door() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
 	panel.add_child(label("Proving Door", 25, Color("ffd36c")))
-	panel.add_child(label("Choose a repeatable daily sparring match, a fixed Workshop Trial ladder, or a private local match.", 15, Color("dce8f4")))
-	panel.add_child(label("Daily Training", 20, Color("8deaff")))
-	panel.add_child(label("Today\'s deterministic rival changes by date. Wins grant 20 Forge Coins and 30 XP; defeats grant 8 Forge Coins and 10 XP.", 14, Color("dce8f4")))
-	panel.add_child(make_button("Start Daily Training", start_battle, Color("2f93a8")))
+	panel.add_child(label("Choose a frozen daily contract, a fixed Workshop Trial ladder, or a private local match.", 15, Color("dce8f4")))
+	panel.add_child(label("Daily Training Contracts", 20, Color("8deaff")))
+	var contracts := GameManager.daily_training_contracts()
+	if contracts.is_empty():
+		panel.add_child(label("Daily contracts are prepared when this door opens. Return to the workshop and reopen the Proving Door if needed.", 14, Color("fff0a1")))
+	for contract in contracts:
+		var claimed: bool = str(contract.get("id", "")) in GameManager.profile.get("daily_training", {}).get("claimed_ids", [])
+		var contract_panel := make_panel(Color("12314be8"), Color("70dcea") if not claimed else Color("588d73")); panel.add_child(contract_panel.get_parent())
+		var team_names: Array[String] = []
+		for entry in contract.get("team", []):
+			var unit := Catalog.creature(str(entry.get("creature_id", ""))); team_names.append(str(unit.get("name", "Print")))
+		contract_panel.add_child(label("%s - %s%s" % [str(contract.get("name", "Contract")), str(contract.get("difficulty", "Apprentice")), " (Practice)" if claimed else ""], 18, Color("a9ecff") if not claimed else Color("a8e3a5")))
+		contract_panel.add_child(_contract_portrait_strip(contract.get("team", [])))
+		var tactics := str(contract.get("tactics", ""))
+		var tactics_text := " | %s tactics" % tactics.capitalize() if not tactics.is_empty() else ""
+		contract_panel.add_child(label("Rivals: %s | %s deck%s | spool %d / prepared %d filament | rating %d vs %d" % [", ".join(team_names), str(contract.get("deck_role", "balanced")).capitalize(), tactics_text, int(contract.get("rival_spool", contract.get("spool", 3))), int(contract.get("rival_starting_filament", 3)), int(contract.get("rating", 0)), int(contract.get("player_rating", 0))], 13, Color("dce8f4")))
+		var target_note := "Rated target met" if bool(contract.get("within_target", false)) else "Closest legal rating"
+		contract_panel.add_child(label("Loadout: %s | %s | %s" % [_contract_loadout_text(contract.get("team", [])), str(contract.get("tag", "Daily")), target_note], 12, Color("b9d3e8")))
+		if str(contract.get("equipment_reason", "policy_primary")) != "policy_primary": contract_panel.add_child(label("Equipment policy: %s." % str(contract.get("equipment_reason", "")).replace("_", " "), 11, Color("fff0a1")))
+		var reward: Dictionary = contract.get("reward", {})
+		contract_panel.add_child(label("Reward claimed; replays are practice only." if claimed else "First victory: %d Forge Coins, %d XP." % [int(reward.get("coins", 0)), int(reward.get("xp", 0))], 12, Color("fff0a1")))
+		var launch := make_button("Practice %s" % str(contract.get("name", "Contract")) if claimed else "Accept %s" % str(contract.get("name", "Contract")), start_battle.bind(str(contract.get("id", ""))), Color("588d73") if claimed else Color("2f93a8")); launch.name = "DailyContract%s" % str(contract.get("id", "")); contract_panel.add_child(launch)
 	panel.add_child(label("Workshop Trials", 20, Color("ffd36c")))
 	var campaign: Dictionary = GameManager.profile.get("solo_campaign", {})
 	panel.add_child(label("Five authored tiers, 20 fixed encounters. Tier %d is currently available; first clears grant one-time coins, XP, and team mastery." % int(campaign.get("unlocked_tier", 1)), 14, Color("dce8f4")))
@@ -1923,11 +1947,13 @@ func render_trials() -> void:
 			var completed: bool = bool(state.get("completed", false))
 			var reward: Dictionary = state.get("reward", {})
 			var rival_names: Array[String] = []
-			for creature_id in encounter.get("team", []): rival_names.append(str(Catalog.creature(str(creature_id)).get("name", creature_id)))
+			for entry in encounter.get("team", []):
+				var creature_id := str(entry.get("creature_id", "")) if entry is Dictionary else str(entry)
+				rival_names.append(str(Catalog.creature(creature_id).get("name", creature_id)))
 			var best_turns: int = int(GameManager.profile.get("solo_campaign", {}).get("best_turn_counts", {}).get(encounter_id, 0))
 			var status_text := ("Complete - best %d turns" % best_turns) if completed and best_turns > 0 else ("Complete" if completed else ("Ready" if unlocked else "Locked - clear the prior encounter"))
 			card.add_child(label("%s%s - %s" % ["Boss: " if bool(encounter.get("boss", false)) else "", str(encounter.get("name", "Encounter")), status_text], 16, Color("a8e3a5") if completed else (Color("dce8f4") if unlocked else Color("8492a1"))))
-			card.add_child(label("Rival: %s | %s AI | spool %d" % [", ".join(rival_names), str(encounter.get("ai", "Apprentice")), int(encounter.get("spool", 3))], 13, Color("b9d3e8")))
+			card.add_child(label("Rival: %s | %s AI | %s deck | %s suits | spool %d" % [", ".join(rival_names), str(encounter.get("ai", "Apprentice")), str(encounter.get("deck_role", "Balanced")), str(encounter.get("loadout_tier", "None")).capitalize(), int(encounter.get("spool", 3))], 13, Color("b9d3e8")))
 			card.add_child(label("First clear: %d Forge Coins, %d XP, +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))], 13, Color("fff0a1")))
 			var start := make_button("Replay %s" % str(encounter.get("name", "Trial")) if completed else "Start %s" % str(encounter.get("name", "Trial")), start_trial.bind(encounter_id), Color("588d73") if completed else Color("a86b2e"))
 			start.name = "TrialStart%s" % encounter_id
@@ -1954,6 +1980,36 @@ func _trial_lineup_names(lineup: Array) -> String:
 		if not definition.is_empty(): names.append(str(definition.get("name", creature_id)))
 	return ", ".join(names)
 
+func _contract_loadout_text(lineup: Array) -> String:
+	var pieces: Array[String] = []
+	for entry in lineup:
+		if not entry is Dictionary: continue
+		var suit := str(entry.get("suit_id", "")); var core := str(entry.get("core_id", ""))
+		var creature_id := str(entry.get("creature_id", ""))
+		var creature_name := str(Catalog.creature(creature_id).get("name", creature_id.capitalize()))
+		pieces.append("%s: %s" % [creature_name, (suit.capitalize() if not suit.is_empty() else "No suit") + (" + " + core.capitalize() + " Core" if not core.is_empty() else "")])
+	return ", ".join(pieces) if not pieces.is_empty() else "No equipment"
+
+func _daily_contract(contract_id: String) -> Dictionary:
+	for raw in GameManager.daily_training_contracts():
+		if str(raw.get("id", "")) == contract_id: return raw
+	return {}
+
+func _contract_portrait_strip(lineup: Array) -> Control:
+	var strip := HBoxContainer.new(); strip.name = "DailyContractPortraits"; strip.add_theme_constant_override("separation", 8)
+	for entry in lineup:
+		if not entry is Dictionary: continue
+		var creature_id := str(entry.get("creature_id", ""))
+		var frame := TextureRect.new(); frame.custom_minimum_size = Vector2(64, 64)
+		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var portrait := AtlasTexture.new()
+		portrait.atlas = CreatureSpriteCache.texture_for_creature(creature_id)
+		portrait.region = CreatureSpriteCache.safe_source_region(0)
+		frame.texture = portrait
+		frame.tooltip_text = "%s - %s" % [str(Catalog.creature(creature_id).get("name", creature_id)), _contract_loadout_text([entry])]
+		strip.add_child(frame)
+	return strip
+
 func start_trial(encounter_id: String) -> void:
 	var state := GameManager.campaign_encounter_state(encounter_id)
 	if not bool(state.get("ok", false)) or not bool(state.get("unlocked", false)):
@@ -1962,7 +2018,7 @@ func start_trial(encounter_id: String) -> void:
 	var encounter: Dictionary = state["encounter"]
 	battle_session_generation += 1
 	ai_pending = false
-	var setup := GameManager.create_solo_battle(encounter.get("team", []), int(encounter.get("spool", 3)), _trial_seed(encounter_id))
+	var setup := GameManager.create_solo_battle_from_setup(encounter, _trial_seed(encounter_id))
 	if not bool(setup.get("ok", false)):
 		battle = null
 		_toast(str(setup.get("error", "The Workshop Trial team is not ready.")))
@@ -1979,13 +2035,26 @@ func start_trial(encounter_id: String) -> void:
 	screen = "battle"
 	render()
 
-func start_battle() -> void:
-	# Training begins with the currently selected/available team; one print is valid.
-	var rival_team := GameManager.training_opponent(shop_day_key)
+func start_battle(contract_id := "") -> void:
+	var contract: Dictionary = {}
+	var available := GameManager.daily_training_contracts()
+	# Retained direct callers may skip the Proving Door. Prepare the same frozen
+	# daily snapshot here so the first-contract compatibility path is playable.
+	if available.is_empty():
+		GameManager.prepare_daily_training(shop_day_key)
+		available = GameManager.daily_training_contracts()
+	# Retained tool/tests once called start_battle() without an ID. Preserve that
+	# launch path as an explicit Apprentice Spar/first daily-contract compatibility default.
+	if contract_id.is_empty() and not available.is_empty(): contract_id = str(available[0].get("id", ""))
+	for raw in available:
+		if str(raw.get("id", "")) == contract_id: contract = raw; break
+	if contract.is_empty():
+		_toast("Open the Proving Door to prepare and choose today's daily contract.")
+		return
 	# A new match invalidates every deferred AI callback tied to an older stage.
 	battle_session_generation += 1
 	ai_pending = false
-	var setup := GameManager.create_solo_battle(rival_team, 3, _training_seed(shop_day_key))
+	var setup := GameManager.create_solo_battle_from_setup(contract, _training_seed(shop_day_key + contract_id))
 	if not bool(setup.get("ok", false)):
 		battle = null
 		_toast(str(setup.get("error", "The training team is not ready.")))
@@ -1998,8 +2067,9 @@ func start_battle() -> void:
 	battle_presentation_serial = 0
 	battle_last_actor = 0
 	battle_mode = "training"
+	training_contract_id = contract_id
 	trial_encounter_id = ""
-	battle_ai_difficulty = str(settings().get("ai_difficulty", "Craftsman"))
+	battle_ai_difficulty = str(contract.get("difficulty", "Craftsman"))
 	battle_concede_armed = false
 	battle_secondary_open = false
 	battle_secondary_tab = "bench"
@@ -2047,7 +2117,15 @@ func render_battle_fullscreen(host: Container) -> void:
 	var battle_title := "Proving Grounds"
 	if battle_mode == "trial" and not trial_encounter_id.is_empty():
 		battle_title += " - Trial: %s" % str(Catalog.workshop_trial_encounter(trial_encounter_id).get("name", "Workshop Trial"))
-	intro.add_child(label("%s - %s" % [battle_title, "Your turn" if battle.active_player == 0 else "Rival is thinking"], 22, Color("ffd36c")))
+	elif battle_mode == "training" and not training_contract_id.is_empty():
+		for raw in GameManager.daily_training_contracts():
+			if str(raw.get("id", "")) == training_contract_id:
+				battle_title += " - " + str(raw.get("name", "Daily Contract"))
+				break
+	var turn_caption := "Your turn" if battle.active_player == 0 else "Rival is thinking"
+	if battle.finished:
+		turn_caption = "Training result" if battle_mode == "training" else "Match result"
+	intro.add_child(label("%s - %s" % [battle_title, turn_caption], 22, Color("ffd36c")))
 	if not battle_launch_notice.is_empty():
 		intro.add_child(label("Lineup notice: " + battle_launch_notice, 13, Color("fff0a1")))
 	# An opened tactical panel owns the first fold. Keep the stage compact on both
@@ -2071,6 +2149,18 @@ func render_battle_fullscreen(host: Container) -> void:
 			var trial_state := GameManager.campaign_encounter_state(trial_encounter_id)
 			var reward: Dictionary = trial_state.get("reward", {})
 			intro.add_child(label("Workshop Trial: %s\n%s" % [str(trial_state.get("encounter", {}).get("name", "Encounter")), "Victory claims %d Forge Coins, %d XP, and +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))] if battle.winner == 0 else "Defeats do not grant a Workshop Trial first-clear reward."], 15, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
+		elif battle_mode == "training":
+			var finished_contract: Dictionary = _daily_contract(training_contract_id)
+			var claimed: bool = training_contract_id in GameManager.profile.get("daily_training", {}).get("claimed_ids", [])
+			var reward: Dictionary = finished_contract.get("reward", {})
+			var contract_result := make_panel(Color("17394ee8"), Color("70dcea") if battle.winner == 0 else Color("d27e70"))
+			contract_result.name = "DailyContractResult"
+			intro.add_child(contract_result.get_parent())
+			contract_result.add_child(label("%s - %s" % [str(finished_contract.get("name", "Daily Contract")), "Cleared" if battle.winner == 0 else "Held"], 17, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
+			if battle.winner == 0:
+				contract_result.add_child(label("%s" % ("Practice complete. Today's first-clear reward was already claimed." if claimed else "Return to claim +%d Forge Coins and +%d XP." % [int(reward.get("coins", 0)), int(reward.get("xp", 0))]), 14, Color("fff0a1")))
+			else:
+				contract_result.add_child(label("No daily reward was claimed. The frozen contract remains available for another attempt.", 14, Color("ffaaa1")))
 		intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Proving Door", finish_battle, Color("536c8d")))
 		return
 	# Landscape gives that room to the presentation; Details retains the verbose
@@ -2115,8 +2205,8 @@ func render_battle_action_dock(host: Container) -> void:
 	dock_panel.custom_minimum_size = Vector2(0, 210 if is_portrait_layout() else 142)
 	dock_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	host.add_child(dock_panel)
-	var opening_locked := battle.turn == 1 and battle.active_player == 0 and battle.opening_player == 0
-	var dock_title := label("Moves - Opening: Defend or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"))
+	var opening_locked := battle.turn <= 2
+	var dock_title := label("Moves - Setup: Defend, cards, or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"))
 	if opening_locked: dock_title.name = "BattleOpeningGuidance"
 	dock.add_child(dock_title)
 	var feedback := label(battle_feedback_text(), 14, Color("fff0a1") if not bool(settings().get("high_contrast", false)) else Color.WHITE)
@@ -2331,6 +2421,7 @@ func finish_battle() -> void:
 	var finished_state: BattleState = battle
 	var finished_mode := battle_mode
 	var finished_trial := trial_encounter_id
+	var finished_contract := training_contract_id
 	var won: bool = battle.winner == 0
 	var turns: int = battle.turn
 	battle_session_generation += 1
@@ -2338,12 +2429,21 @@ func finish_battle() -> void:
 	battle = null
 	battle_mode = "training"
 	trial_encounter_id = ""
-	battle_ai_difficulty = str(settings().get("ai_difficulty", "Craftsman"))
+	training_contract_id = ""
+	battle_ai_difficulty = "Craftsman"
 	screen = "trials" if finished_mode == "trial" else "proving"
 	if finished_mode == "trial" and won and not finished_trial.is_empty():
 		if not GameManager.claim_campaign_victory(finished_trial, turns): render()
 	elif finished_mode == "training":
-		if not GameManager.claim_battle_reward(finished_state): render()
+		if won and not finished_contract.is_empty():
+			var reward_result := GameManager.claim_training_victory(finished_contract, shop_day_key)
+			var payload: Dictionary = reward_result.get("payload", {})
+			if bool(payload.get("first_clear", false)):
+				_toast("Contract clear! +%d Forge Coins, +%d XP." % [int(payload.get("reward", {}).get("coins", 0)), int(payload.get("reward", {}).get("xp", 0))])
+			else: _toast("Practice victory recorded. Daily reward already claimed.")
+		else:
+			_toast("Contract lost. Daily rewards are granted only on victory.")
+		render()
 	else:
 		render()
 

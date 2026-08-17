@@ -44,8 +44,11 @@ static func make_team(creature_ids: Array, spool_cap: int, supplied_deck: Array 
 		var signature_cost: int = maxi(1, int(def.ability_cost) - (1 if core_id == "arcane" else 0))
 		var max_hp: int = clampi(int(def.hp) + hp_bonus, 1, 999)
 		team.append(normalize_unit({"id":def.id,"name":def.name,"element":def.element,"hp":max_hp,"max_hp":max_hp,"attack":int(def.attack) + attack_bonus,"speed":clampi(int(def.speed) + speed_bonus, 1, 99),"cost":def.cost,"ability":def.ability,"ability_cost":signature_cost,"cooldown":def.cooldown,"cooldown_remaining":0,"armor":guard_bonus,"suit_id":str(suit_def.get("id", "")),"suit_name":str(suit_def.get("name", "")),"core_id":core_id,"core_name":str(CORE_DEFINITIONS.definition(core_id).get("name", "")),"shield":4 if core_id == "tide" else 0,"verdant_ready":core_id == "verdant","attack_buff":0,"attack_debuff":0,"ability_lock_turns":0,"cooling":false}))
-	var deck: Array[String] = supplied_deck.duplicate() if _valid_supplied_deck(supplied_deck) else STARTER_LOADOUT.duplicate()
-	var hand: Array[String] = []
+	# Public launch seams accept ordinary Array card payloads from profile and
+	# generated opponents. Do not narrow them here; _valid_supplied_deck() owns
+	# content validation and keeps the runtime compatible with serialized arrays.
+	var deck: Array = supplied_deck.duplicate() if _valid_supplied_deck(supplied_deck) else STARTER_LOADOUT.duplicate()
+	var hand: Array = []
 	for draw_index in 4:
 		hand.append(deck.pop_front())
 	return {"team":team,"active":0,"filament":mini(3, spool_cap),"spool_cap":spool_cap,"hand":hand,"deck":deck,"discard":[],"switch_discount":0,"switch_discount_turns":0,"passed_turns":0}

@@ -25,7 +25,7 @@ func _ready() -> void:
 
 func _useful_state(card_id: String) -> BattleState:
 	var state := BattleState.create(["cinderpaw"], ["mossmunk", "aquafin"], 10, 10, 2)
-	state.turn = 2; state.active_player = 1; state.players[1].hand = [card_id]; state.players[1].filament = 9; state.players[1].deck = ["raw_filament", "heated_spool"]
+	state.turn = 3; state.active_player = 1; state.players[1].hand = [card_id]; state.players[1].filament = 9; state.players[1].deck = ["raw_filament", "heated_spool"]
 	var unit := state.active_unit(1); unit.hp = 5; unit.cooldown_remaining = 2; unit.attack_debuff = 2; unit.ability_lock_turns = 1
 	return state
 

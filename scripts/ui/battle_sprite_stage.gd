@@ -2,8 +2,13 @@ class_name BattleSpriteStage
 extends Control
 ## Finite code-native combat presentation. BattleRules remains authoritative.
 
+const CREATURE_SPRITE_CACHE := preload("res://scripts/ui/creature_sprite_cache.gd")
+const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
+# TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
+const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
+const CORE_POWER_VFX := preload("res://scripts/ui/core_power_vfx.gd")
 const CELL := Vector2i(384, 512)
-const ATLAS_GUTTER := CreatureSpriteCache.ATLAS_GUTTER
+const ATLAS_GUTTER := CREATURE_SPRITE_CACHE.ATLAS_GUTTER
 const MOVE_VFX := preload("res://scripts/ui/battle_move_vfx.gd")
 const CARD_CATALOG := preload("res://scripts/battle/battle_catalog.gd")
 const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
@@ -21,19 +26,19 @@ var reduced_motion := false
 var high_contrast := false
 var elapsed := 0.0
 var _last_frame_signature := -1
-var left_armor_preview: TieredArmorPalettePreview
-var right_armor_preview: TieredArmorPalettePreview
-var left_core_vfx: CorePowerVFX
-var right_core_vfx: CorePowerVFX
+var left_armor_preview: Control
+var right_armor_preview: Control
+var left_core_vfx: Control
+var right_core_vfx: Control
 var _core_activation_token := -1
 var _core_activation_finished := true
 
 func _ready() -> void:
 	if custom_minimum_size.y <= 0.0: custom_minimum_size = Vector2(0, 250)
-	left_armor_preview = TieredArmorPalettePreview.new(); left_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(left_armor_preview)
-	right_armor_preview = TieredArmorPalettePreview.new(); right_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(right_armor_preview)
-	left_core_vfx = CorePowerVFX.new(); left_core_vfx.name = "BattleLeftCoreActivation"; add_child(left_core_vfx)
-	right_core_vfx = CorePowerVFX.new(); right_core_vfx.name = "BattleRightCoreActivation"; add_child(right_core_vfx)
+	left_armor_preview = TIERED_ARMOR_PREVIEW.new(); left_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(left_armor_preview)
+	right_armor_preview = TIERED_ARMOR_PREVIEW.new(); right_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(right_armor_preview)
+	left_core_vfx = CORE_POWER_VFX.new(); left_core_vfx.name = "BattleLeftCoreActivation"; add_child(left_core_vfx)
+	right_core_vfx = CORE_POWER_VFX.new(); right_core_vfx.name = "BattleRightCoreActivation"; add_child(right_core_vfx)
 	left_armor_preview.configure_creature(left_id)
 	right_armor_preview.configure_creature(right_id)
 	left_core_vfx.configure_creature(left_id)
@@ -75,8 +80,8 @@ func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, 
 		left_core_vfx.configure_creature(left_id)
 	if right_core_vfx != null:
 		right_core_vfx.configure_creature(right_id)
-	CreatureSpriteCache.texture_for_creature(left_id)
-	CreatureSpriteCache.texture_for_creature(right_id)
+	CREATURE_SPRITE_CACHE.texture_for_creature(left_id)
+	CREATURE_SPRITE_CACHE.texture_for_creature(right_id)
 	_update_processing()
 	queue_redraw()
 
@@ -135,10 +140,10 @@ func _frame_signature() -> int:
 	return _frame_for(true) * 10 + _frame_for(false) + int(presentation_progress() * 100.0) * 100
 
 static func sprite_path_for(creature_id: String) -> String:
-	return CreatureSpriteCache.sprite_path_for(creature_id)
+	return CREATURE_SPRITE_CACHE.sprite_path_for(creature_id)
 
 static func safe_source_region(_creature_id: String, frame: int) -> Rect2:
-	return CreatureSpriteCache.safe_source_region(frame)
+	return CREATURE_SPRITE_CACHE.safe_source_region(frame)
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("0b1728cc"), true)
@@ -150,8 +155,8 @@ func _draw() -> void:
 	var right_offset := offset if event_actor == 1 else Vector2.ZERO
 	var left_destination := _draw_creature(left_id, left_suit_id, left_core_id, Rect2(left_target.position + left_offset, left_target.size), _frame_for(true), false, left_armor_preview)
 	var right_destination := _draw_creature(right_id, right_suit_id, right_core_id, Rect2(right_target.position + right_offset, right_target.size), _frame_for(false), true, right_armor_preview)
-	_sync_core_activation(left_core_vfx, left_destination, not left_suit_id.is_empty() and TieredArmorRoster.has_master(left_id), 0)
-	_sync_core_activation(right_core_vfx, right_destination, not right_suit_id.is_empty() and TieredArmorRoster.has_master(right_id), 1)
+	_sync_core_activation(left_core_vfx, left_destination, not left_suit_id.is_empty() and TIERED_ARMOR_ROSTER.has_master(left_id), 0)
+	_sync_core_activation(right_core_vfx, right_destination, not right_suit_id.is_empty() and TIERED_ARMOR_ROSTER.has_master(right_id), 1)
 	_draw_move_vfx(left_destination, right_destination)
 	_draw_core_activation_halo(left_destination, left_id, left_core_id, 0)
 	_draw_core_activation_halo(right_destination, right_id, right_core_id, 1)
@@ -161,9 +166,9 @@ func _lunge_offset() -> Vector2:
 	var travel := sin(presentation_progress() * PI) * minf(22.0, size.x * 0.035)
 	return Vector2(travel if event_actor == 0 else -travel, 0)
 
-func _draw_creature(id: String, suit_id: String, core_id: String, target: Rect2, frame: int, flip: bool, armor_preview: TieredArmorPalettePreview) -> Rect2:
-	var is_armored := not suit_id.is_empty() and TieredArmorRoster.has_master(id)
-	var texture := CreatureSpriteCache.texture_for_path(TieredArmorRoster.master_path_for(id)) if is_armored else CreatureSpriteCache.texture_for_creature(id)
+func _draw_creature(id: String, suit_id: String, core_id: String, target: Rect2, frame: int, flip: bool, armor_preview: Control) -> Rect2:
+	var is_armored: bool = not suit_id.is_empty() and TIERED_ARMOR_ROSTER.has_master(id)
+	var texture := CREATURE_SPRITE_CACHE.texture_for_path(TIERED_ARMOR_ROSTER.master_path_for(id)) if is_armored else CREATURE_SPRITE_CACHE.texture_for_creature(id)
 	if texture == null: return Rect2()
 	var source := Rect2(Vector2.ZERO, texture.get_size()) if is_armored else safe_source_region(id, frame)
 	var fit: float = minf(target.size.x / source.size.x, target.size.y / source.size.y)
@@ -188,7 +193,7 @@ func _draw_creature(id: String, suit_id: String, core_id: String, target: Rect2,
 		draw_texture_rect_region(texture, destination, source)
 	return destination
 
-func _trigger_core_activation(effect: CorePowerVFX, core_id: String, is_actor: bool) -> void:
+func _trigger_core_activation(effect: Control, core_id: String, is_actor: bool) -> void:
 	if effect == null: return
 	effect.configure_core(core_id)
 	effect.set_reduced_motion(reduced_motion)
@@ -198,7 +203,7 @@ func _trigger_core_activation(effect: CorePowerVFX, core_id: String, is_actor: b
 	else:
 		effect.show_idle()
 
-func _sync_core_activation(effect: CorePowerVFX, destination: Rect2, visible: bool, side: int) -> void:
+func _sync_core_activation(effect: Control, destination: Rect2, visible: bool, side: int) -> void:
 	if effect == null: return
 	var activation_visible := visible and _is_core_activation_visible(side, left_core_id if side == 0 else right_core_id)
 	effect.visible = activation_visible
@@ -257,15 +262,15 @@ func _draw_move_vfx(left: Rect2, right: Rect2) -> void:
 
 func _draw_core_activation_halo(destination: Rect2, creature_id: String, core_id: String, side: int) -> void:
 	if not _is_core_activation_visible(side, core_id) or destination.size.x <= 0.0: return
-	var center := destination.position + destination.size * TieredArmorRoster.gem_anchor_for(creature_id)
+	var center: Vector2 = destination.position + destination.size * TIERED_ARMOR_ROSTER.gem_anchor_for(creature_id)
 	var radius := minf(destination.size.x, destination.size.y) * 0.065
 	var color := Color("f44cff")
 	draw_circle(center, radius, Color(color.r, color.g, color.b, 0.28))
 	draw_arc(center, radius * 1.16, 0.0, TAU, 20, color, 3.0, true)
 	for index in 4:
 		var angle := TAU * float(index) / 4.0 + presentation_progress() * 0.6
-		var inward := center + Vector2(cos(angle), sin(angle)) * radius * 0.78
-		var outward := center + Vector2(cos(angle), sin(angle)) * radius * 1.52
+		var inward: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius * 0.78
+		var outward: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius * 1.52
 		draw_line(inward, outward, Color("ffd6ff"), 2.0, true)
 
 func _draw_impact_marks(point: Vector2, color: Color, impact: String) -> void:

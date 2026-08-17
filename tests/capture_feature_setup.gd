@@ -4,6 +4,21 @@ extends RefCounted
 ## only for process arguments, fixture profile, settle checks, and PNG output.
 
 static func configure_battle(main, mode: String) -> bool:
+	if mode == "training_result":
+		GameManager.prepare_daily_training(main.shop_day_key)
+		var contracts := GameManager.daily_training_contracts()
+		if contracts.is_empty(): return false
+		var contract: Dictionary = contracts[0]
+		var setup := GameManager.create_solo_battle_from_setup(contract, 20260817)
+		main.battle = setup.get("battle", null) as BattleState
+		if main.battle == null: return false
+		main.screen = "battle"
+		main.battle_mode = "training"
+		main.training_contract_id = str(contract.get("id", ""))
+		main.battle_ai_difficulty = str(contract.get("difficulty", "Apprentice"))
+		main.battle.finished = true
+		main.battle.winner = 0
+		return true
 	if mode in ["battle_hand_cards", "battle_hand_cards_focus", "high_contrast_cards"]:
 		main.screen = "battle"
 		main.battle = BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], GameManager.filament_cap(), 3, 2, GameManager.active_deck_cards())

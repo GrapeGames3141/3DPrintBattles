@@ -3,6 +3,9 @@ extends RefCounted
 ## Compact responsive equipment view. Main owns mutations; this class owns layout.
 
 const CORE_DEFS := preload("res://scripts/core/armor_core_definitions.gd")
+const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
+# TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
+const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
 
 static func build(profile: Dictionary, selected_creature_id: String, mode: String, selected_id: String, wide: bool, actions: Dictionary) -> Control:
 	var root := VBoxContainer.new(); root.add_theme_constant_override("separation", 10)
@@ -20,8 +23,8 @@ static func build(profile: Dictionary, selected_creature_id: String, mode: Strin
 	var creature_id := str(creature.get("instance_id", ""))
 	var hero := HBoxContainer.new(); hero.add_theme_constant_override("separation", 18); hero.size_flags_vertical = Control.SIZE_SHRINK_BEGIN; hero.custom_minimum_size = Vector2(0, 210 if not wide else 280); rail.add_child(hero)
 	var species_id := str(creature.get("creature_id", ""))
-	if TieredArmorRoster.has_master(species_id) and not str(creature.get("suit_instance_id", "")).is_empty():
-		var preview := TieredArmorPalettePreview.new(); var hero_size := 300 if wide else 205; preview.custom_minimum_size = Vector2(hero_size, hero_size); preview.custom_maximum_size = Vector2(hero_size, hero_size); preview.size_flags_vertical = Control.SIZE_SHRINK_BEGIN; preview.configure_creature(species_id); preview.configure_tier(selected_id if mode == "suits" else _tier_for_suit(profile, str(creature.get("suit_instance_id", "")))); preview.configure_core(selected_id if mode == "cores" else _core_for_suit(profile, str(creature.get("suit_instance_id", "")))); hero.add_child(preview)
+	if TIERED_ARMOR_ROSTER.has_master(species_id) and not str(creature.get("suit_instance_id", "")).is_empty():
+		var preview := TIERED_ARMOR_PREVIEW.new(); var hero_size := 300 if wide else 205; preview.custom_minimum_size = Vector2(hero_size, hero_size); preview.custom_maximum_size = Vector2(hero_size, hero_size); preview.size_flags_vertical = Control.SIZE_SHRINK_BEGIN; preview.configure_creature(species_id); preview.configure_tier(selected_id if mode == "suits" else _tier_for_suit(profile, str(creature.get("suit_instance_id", "")))); preview.configure_core(selected_id if mode == "cores" else _core_for_suit(profile, str(creature.get("suit_instance_id", "")))); hero.add_child(preview)
 	var hero_copy := VBoxContainer.new(); hero_copy.size_flags_vertical = Control.SIZE_SHRINK_BEGIN; hero.add_child(hero_copy)
 	var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Choose a companion"))
 	hero_copy.add_child(_label(creature_name, 20, Color("9beaff")))

@@ -25,8 +25,8 @@ static func apply_intent(state: BattleState, player: int, intent: Dictionary) ->
 static func _attack(state: BattleState, player: int, ability: bool) -> Dictionary:
 	var attacker := state.active_unit(player)
 	var defender := state.active_unit(1-player)
-	if state.turn == 1 and player == state.opening_player:
-		return {"ok":false,"error":"The coin-flip winner cannot attack on the opening turn."}
+	if state.turn <= 2:
+		return {"ok":false,"error":"The setup round locks attacks and signature abilities until both prints have acted."}
 	if ability and attacker.cooling:
 		return {"ok":false,"error":"This print is cooling after a forced summon."}
 	var signature: Dictionary = {}
@@ -102,10 +102,13 @@ static func _apply_signature_effects(state: BattleState, player: int, signature:
 
 static func _defend(state: BattleState, player: int) -> Dictionary:
 	var unit := state.active_unit(player)
-	unit.shield = int(unit.shield) + 4
-	state.log.append("%s reinforces its layers (+4 shield)." % ("You" if player == 0 else "Rival"))
+	# The second setup action gets a visible reply guard, compensating the
+	# coin-flip winner's first combat initiative without changing unit stats.
+	var shield_amount := 8 if state.turn == 2 else 4
+	unit.shield = int(unit.shield) + shield_amount
+	state.log.append("%s reinforces its layers (+%d shield)." % ["You" if player == 0 else "Rival", shield_amount])
 	_end_turn(state)
-	return {"ok":true,"shield":4}
+	return {"ok":true,"shield":shield_amount}
 
 static func _card(state: BattleState, player: int, card_id: String) -> Dictionary:
 	var card: Dictionary = BATTLE_CATALOG.support_card(card_id)

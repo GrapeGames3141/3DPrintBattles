@@ -25,12 +25,12 @@ func _ready() -> void:
 	require(int(unit.max_hp) == 54 and int(unit.speed) == 8 and int(unit.armor) == 1, "full suit applies hp speed guard modifiers")
 	var invalid := BattleState.create([{"creature_id":"cinderpaw","suit_id":"bad"}], ["mossmunk"], 3, 3, 2)
 	require(int(invalid.active_unit(0).max_hp) == 34 and int(invalid.active_unit(0).armor) == 0, "invalid suit falls back")
-	armored.turn = 2; armored.active_player = 1
+	armored.turn = 3; armored.active_player = 1
 	var hp := int(unit.hp); var hit := BattleRules.apply_intent(armored, 1, {"type":"attack"})
 	require(bool(hit.ok) and int(unit.hp) < hp and int(hit.damage) < int(armored.active_unit(1).attack), "guard reduces incoming damage")
 	var ai_state := BattleState.create(["cinderpaw","aquafin"], ["mossmunk","voltwig"], 3, 3, 3)
-	require(AIOpponent.choose_intent(ai_state, "Master").type == "defend", "AI opening defend legal")
-	ai_state.turn = 2; ai_state.active_player = 1; ai_state.active_unit(1).hp = 5; ai_state.players[1].hand = ["quick_patch"]
+	require(AIOpponent.choose_intent(ai_state, "Master").type == "end_turn", "AI yields the first symmetric setup action")
+	ai_state.turn = 3; ai_state.active_player = 1; ai_state.active_unit(1).hp = 5; ai_state.players[1].hand = ["quick_patch"]
 	require(AIOpponent.choose_intent(ai_state, "Craftsman").type == "card", "AI uses affordable heal")
 	GameManager.profile = settings_result.profile.duplicate(true)
 	GameManager.profile.coins = 0; GameManager.profile.xp = 0; GameManager.profile.spool_level = 3

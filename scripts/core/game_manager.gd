@@ -2,6 +2,7 @@ extends Node
 
 const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 const SOLO_BATTLE_FACTORY := preload("res://scripts/core/solo_battle_factory.gd")
+const OPPONENT_RULES := preload("res://scripts/core/opponent_rules.gd")
 ## Account state facade. All mutations pass through SaveService journal entries.
 
 signal profile_changed
@@ -78,6 +79,10 @@ func active_deck_cards() -> Array:
 func create_solo_battle(rival_team: Array, rival_spool: int, seed: int) -> Dictionary:
 	if _reject_read_only(): return {"ok":false, "battle":null, "error":save_recovery_message()}
 	return SOLO_BATTLE_FACTORY.create(profile, rival_team, filament_cap(), rival_spool, seed)
+
+func create_solo_battle_from_setup(opponent_setup: Dictionary, seed: int) -> Dictionary:
+	if _reject_read_only(): return {"ok":false, "battle":null, "error":save_recovery_message()}
+	return SOLO_BATTLE_FACTORY.create_from_setup(profile, opponent_setup, filament_cap(), seed)
 
 func daily_shop(day_key: String) -> Array:
 	if _reject_read_only(): return []
@@ -221,6 +226,35 @@ func remove_core(suit_instance_id: String) -> bool:
 
 func training_opponent(day_key: String) -> Array:
 	return ProgressionRules.training_opponent(day_key, current_team_creature_ids())
+
+func prepare_daily_training(day_key: String) -> Array:
+	if _reject_read_only(): return []
+	var result := OPPONENT_RULES.prepare_daily(profile, day_key, current_team_loadout(), active_deck_cards())
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "Daily Training is unavailable.")))
+		return []
+	var changed: bool = result.get("profile", {}) != profile
+	profile = result["profile"]
+	if changed: mutated("prepare_daily_training", {"day_key":day_key,"contracts":profile.get("daily_training", {}).get("contracts", [])})
+	return result.get("contracts", [])
+
+func daily_training_contracts() -> Array:
+	return OPPONENT_RULES.contracts(profile)
+
+func claim_training_victory(contract_id: String, day_key: String) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
+	var result := OPPONENT_RULES.claim_victory(profile, contract_id, day_key)
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "Training reward is unavailable.")))
+		return result
+	profile = result["profile"]
+	var payload: Dictionary = result.get("payload", {})
+	if bool(payload.get("first_clear", false)):
+		if int(payload.get("spool_gained", 0)) > 0: toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
+		mutated("daily_training_victory", payload)
+	else:
+		profile_changed.emit()
+	return result
 
 func campaign_encounter_state(encounter_id: String) -> Dictionary:
 	return CAMPAIGN_RULES.encounter_state(profile, encounter_id)

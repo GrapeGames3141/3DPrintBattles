@@ -91,6 +91,14 @@ func _ready() -> void:
 	require(GameManager.profile.team == [starter_id, moss_id, aqua_id] and GameManager.current_team_loadout().size() == 3, "team builder saves three distinct bound instance IDs through stable callbacks")
 	main.start_battle()
 	await get_tree().process_frame
+	# This fixture exercises bench/concede presentation rather than the setup
+	# round; keep the deferred rival callback from racing its explicit player UI.
+	main.ai_pending = true
+	main.battle.turn = 3
+	main.battle.active_player = 0
+	main.battle.opening_player = 1
+	main.render()
+	await get_tree().process_frame
 	main.battle_secondary_open = true
 	main.battle_secondary_tab = "bench"
 	main.render()
@@ -106,6 +114,10 @@ func _ready() -> void:
 	require(not main.battle_concede_armed, "a non-concede solo intent disarms concede before the rival turn")
 	main.start_battle()
 	await get_tree().process_frame
+	main.ai_pending = true
+	main.battle.turn = 3
+	main.battle.active_player = 0
+	main.battle.opening_player = 1
 	main.toggle_battle_concede()
 	main.toggle_battle_concede()
 	require(main.battle != null and main.battle.finished and int(main.battle.winner) == 1, "confirmed solo concede resolves through BattleRules")

@@ -9,6 +9,9 @@ const PRINTER_FRAME_PATHS := [
 	"res://assets/ui/arcane_forge_printer_frame_04.png",
 ]
 const CELL := Vector2i(384, 512)
+const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
+# TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
+const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
 
 var creature_id := "cinderpaw"
 var armor_id := ""
@@ -23,13 +26,13 @@ var printer_frames: Array[Texture2D] = []
 var raw: Texture2D
 var living: Texture2D
 var _last_frame_index := -1
-var equipment_preview: TieredArmorPalettePreview
+var equipment_preview: Control
 
 func _ready() -> void:
 	# The portrait caller deliberately gives the forge more vertical room.
 	# Landscape stays compact enough that its primary controls are on-screen.
 	custom_minimum_size = Vector2(0, 330)
-	equipment_preview = TieredArmorPalettePreview.new(); equipment_preview.name = "ForgeEquipmentPalettePreview"; equipment_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(equipment_preview)
+	equipment_preview = TIERED_ARMOR_PREVIEW.new(); equipment_preview.name = "ForgeEquipmentPalettePreview"; equipment_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(equipment_preview)
 	_load_assets()
 	_update_motion_processing()
 	queue_redraw()
@@ -102,7 +105,7 @@ func _draw() -> void:
 	# the visible gold build surface in the approved printer frames.
 	var printer_bounds := Rect2(size.x * 0.17, 0, size.x * 0.66, size.y)
 	if equipment_preview != null:
-		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE and TieredArmorRoster.has_master(creature_id)
+		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE and TIERED_ARMOR_ROSTER.has_master(creature_id)
 		equipment_preview.configure_creature(creature_id)
 		equipment_preview.configure_tier(armor_id if core_id.is_empty() else "standard")
 		equipment_preview.configure_core(core_id)

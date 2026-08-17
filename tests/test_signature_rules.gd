@@ -21,7 +21,7 @@ func _ready() -> void:
 		for raw_effect in signature.get("effects", []):
 			require(raw_effect is Dictionary and allowed_effects.has(str(raw_effect.get("effect", ""))) and str(raw_effect.get("target", "")) in ["self", "foe"] and int(raw_effect.get("amount", 0)) >= 0, "%s only uses implemented deterministic signature primitives with valid target and amount" % creature_id)
 		var state := BattleState.create([creature_id], ["mossmunk"], 99, 3, 2)
-		state.turn = 2
+		state.turn = 3
 		state.active_player = 0
 		state.opening_player = 1
 		state.players[0].filament = 99
@@ -49,7 +49,7 @@ func _ready() -> void:
 	require(distinct_mappings.size() == Catalog.CREATURES.size(), "all 24 catalog signatures are meaningfully distinct")
 	var cinder := BattleState.create(["cinderpaw"], ["mossmunk"], 9, 3, 2)
 	require(BattleRules.attack_base(cinder.active_unit(0), true) == int(cinder.active_unit(0).get("attack", 0)) + int(Catalog.signature_for_creature("cinderpaw").get("damage_bonus", 0)), "signature attack base uses catalog bonus instead of generic damage")
-	cinder.turn = 2
+	cinder.turn = 3
 	cinder.opening_player = 1
 	cinder.active_player = 0
 	cinder.players[0]["filament"] = 0
@@ -66,7 +66,7 @@ func _ready() -> void:
 	var shielded := BattleRules.apply_intent(cinder, 0, {"type":"ability"})
 	require(bool(shielded.get("ok", false)) and int(shielded.get("damage", -1)) == 0 and int(cinder.active_unit(1).get("hp", 0)) == shielded_hp, "signature obeys shield consumption after minimum armor damage")
 	var lethal := BattleState.create(["voidmanta"], ["mossmunk"], 9, 3, 2)
-	lethal.turn = 2
+	lethal.turn = 3
 	lethal.active_player = 0
 	lethal.opening_player = 1
 	lethal.players[0]["filament"] = 9
@@ -77,36 +77,36 @@ func _ready() -> void:
 	var migrated := ProfileRules.migrate(migrated_source)
 	require(str(migrated.get("catalog_version", "")) == Catalog.CATALOG_VERSION and migrated.get("creatures", []) == migrated_source.get("creatures", []) and migrated.get("team", []) == migrated_source.get("team", []), "catalog-only migration preserves current profile ownership and team")
 	var opening_ai := BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 3)
-	require(AIOpponent.choose_intent(opening_ai, "Apprentice").get("type", "") == "defend", "Apprentice respects opening attack lock")
+	require(AIOpponent.choose_intent(opening_ai, "Apprentice").get("type", "") == "end_turn", "Apprentice yields the first symmetric setup action")
 	var survival_ai := BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 2)
-	survival_ai.turn = 2
+	survival_ai.turn = 3
 	survival_ai.active_player = 1
 	survival_ai.active_unit(1)["hp"] = 4
 	survival_ai.players[1]["hand"] = ["quick_patch"]
 	require(AIOpponent.choose_intent(survival_ai, "Craftsman").get("type", "") == "card", "Craftsman prioritizes affordable survival card")
 	var apprentice_recovery := BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 2)
-	apprentice_recovery.turn = 2; apprentice_recovery.active_player = 1; apprentice_recovery.active_unit(1)["hp"] = 4
+	apprentice_recovery.turn = 3; apprentice_recovery.active_player = 1; apprentice_recovery.active_unit(1)["hp"] = 4
 	apprentice_recovery.players[1]["hand"] = ["arcane_spark", "quick_patch"]
 	require(AIOpponent.choose_intent(apprentice_recovery, "Apprentice") == {"type":"card", "card_id":"quick_patch"}, "Apprentice chooses recovery over earlier attack buff at low health")
 	var lethal_ai := BattleState.create(["mossmunk"], ["cinderpaw"], 9, 9, 2)
-	lethal_ai.turn = 2
+	lethal_ai.turn = 3
 	lethal_ai.active_player = 1
 	lethal_ai.active_unit(0)["hp"] = 15
 	require(AIOpponent.choose_intent(lethal_ai, "Master").get("type", "") == "ability", "Master plans catalog signature lethal damage")
 	var basic_lethal_ai := BattleState.create(["mossmunk"], ["cinderpaw"], 3, 3, 2)
-	basic_lethal_ai.turn = 2
+	basic_lethal_ai.turn = 3
 	basic_lethal_ai.active_player = 1
 	basic_lethal_ai.active_unit(0)["hp"] = 1
 	basic_lethal_ai.active_unit(1)["cooldown_remaining"] = 1
 	require(AIOpponent.choose_intent(basic_lethal_ai, "Craftsman").get("type", "") == "attack", "Craftsman chooses legal lethal basic attack when signature is unavailable")
 	var shield_ai := BattleState.create(["cinderpaw"], ["mossmunk"], 3, 3, 2)
-	shield_ai.turn = 2
+	shield_ai.turn = 3
 	shield_ai.active_player = 1
 	shield_ai.active_unit(1)["hp"] = 4
 	shield_ai.players[1]["hand"] = ["dense_infill"]
 	require(AIOpponent.choose_intent(shield_ai, "Craftsman").get("type", "") == "card", "Craftsman considers defensive shield cards under threat")
 	var switch_ai := BattleState.create(["cinderpaw"], ["mossmunk", "aquafin"], 3, 9, 2)
-	switch_ai.turn = 2
+	switch_ai.turn = 3
 	switch_ai.active_player = 1
 	require(AIOpponent.choose_intent(switch_ai, "Master") == {"type":"switch","index":1}, "Master chooses an affordable elemental switch")
 	if failures.is_empty(): print("PASS: catalog signatures, deterministic effects, migration, and AI policy")

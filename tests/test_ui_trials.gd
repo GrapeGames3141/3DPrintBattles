@@ -22,10 +22,21 @@ func _ready() -> void:
 	await get_tree().process_frame
 	get_viewport().size = Vector2i(576, 1024)
 	main.size = Vector2(576, 1024)
-	main.screen = "proving"
-	main.render()
+	main.navigate_to("proving")
 	await get_tree().process_frame
-	require(main.find_child("OpenWorkshopTrials", true, false) != null and tree_has_text(main, "Daily Training"), "Proving Door separates Daily Training from Workshop Trials")
+	var portrait_strip := main.find_child("DailyContractPortraits", true, false) as HBoxContainer
+	require(main.find_child("OpenWorkshopTrials", true, false) != null and tree_has_text(main, "Daily Training") and portrait_strip != null and portrait_strip.get_child_count() > 0, "Proving Door separates Daily Training from Workshop Trials with living rival portraits")
+	var daily_launch := main.find_child("DailyContractapprentice_spar", true, false) as Button
+	require(daily_launch != null and not daily_launch.disabled, "first frozen daily contract has a reachable launch control")
+	if daily_launch != null: daily_launch.emit_signal("pressed")
+	await get_tree().process_frame
+	require(main.screen == "battle" and main.battle_mode == "training" and main.battle != null, "daily contract launches its frozen rival setup")
+	if main.battle != null:
+		main.battle.finished = true
+		main.battle.winner = 0
+		main.render()
+		await get_tree().process_frame
+	require(main.find_child("DailyContractResult", true, false) != null and tree_has_text(main, "Return to claim"), "daily battle result clearly previews the unclaimed contract reward")
 	main.navigate_to("trials")
 	await get_tree().process_frame
 	var scroll := find_named(main, "TouchFirstScroll") as ScrollContainer

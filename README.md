@@ -51,7 +51,7 @@ The Proving Door deliberately separates repeatable Daily Training from five orde
 
 Profile settings persist text scale (100%, 125%, or 150%), high contrast, reduced motion, and Apprentice/Craftsman/Master training AI. Controls have 44px minimum targets and status/element information is always written as text. Solo Proving Grounds uses an explicit visible-viewport battle composition instead of a nested scrolling stack: its first-render `Moves` dock is terminal in the portrait flow, so changing battle feedback never moves its four actions below the viewport; Basic Attack, Signature Ability, Defend, and End Turn form a two-column portrait grid (four columns on landscape), and every core target is at least 48px high. Battle units derive their equipped full-suit and optional Core IDs from authoritative inventory before combat and presentation, preserving their exact maximum HP, guard, speed, and Core behavior across snapshots. Arcane Core activation is finite and actor-scoped, including reduced-motion playback. Bench, Hand, Details, and Concede remain compact secondary tabs; expanding them preserves an in-frame action row. Training uses the approved transparent 4x2 creature sheets for a responsive 2D stage: idle frames loop independently of deterministic combat, while legal attacks and abilities select wind-up, strike, recovery, and hit frames. Reduced motion holds frame zero. This is a presentation placeholder; final art and audio remain approval-gated.
 
-Profiles receive an idempotent catalog-valid integrity pass even at the current schema. It repairs only unambiguous aliases and team references that already point to owned inventory; an irreparable team is blocked before battle instead of rendering an Unknown zero-stat unit. On a player-owned opening turn, Basic Attack and Signature are visibly disabled while Defend and End Turn remain available.
+Profiles receive an idempotent catalog-valid integrity pass even at the current schema. It repairs only unambiguous aliases and team references that already point to owned inventory; an irreparable team is blocked before battle instead of rendering an Unknown zero-stat unit. Turns one and two are a symmetric setup round: attacks and Signature are visibly disabled for both seats while cards, Defend, and End Turn remain available. The second setup Defend grants a visible 8-shield reply guard; ordinary Defend grants 4.
 
 Save compatibility is explicit: a profile from a schema newer than this build opens read-only with recovery guidance. The client never downgrades, migrates, or writes that future profile; install the newer build or copy the profile and backup before returning to it.
 
@@ -85,3 +85,29 @@ Open `project.godot` in Godot 4.7.1 or run `tests/test_profile_rules.tscn`, `tes
 ## Scope note
 
 Approved creature concepts, final GLB models/animations, GodotSteam, Nakama SDK/runtime deployment, Steam App ID, and production art/audio are intentionally not bundled. The procedural UI makes the vertical slice runnable without credentials or unapproved final assets.
+
+## 0.6.3 opponent diversity review
+
+Daily Training contracts now use data-driven band policies for rating, suit and
+Core coverage, counter behavior, tactics, starting filament, and offense
+preference. The contract preview and result panel show living rival portraits,
+equipment, tactics, and claim/practice state. A deterministic diversity pass
+prevents repeated same-day rival lineups when legal alternatives exist and
+prefers no more than one reused creature across the three 3-unit contracts.
+
+The final paired 600-match audit recorded Apprentice/Circuit/Master win rates
+of **68% / 59% / 44%**, a **2pp** opening-seat delta, and **0** stalls. Band
+rows B1–B5 were **55/42/55**, **67/62/37**, **60/67/37**, **75/70/40**, and
+**82/52/50** respectively (Apprentice/Circuit/Master); each is within its
+published contract tolerance. The 38-scene retained suite passed 38/38.
+
+Reviewed responsive captures are retained outside the repository at
+`E:/CodexCache/printforge-validation/proving_576x1024_opponent-diversity.png`,
+`proving_1280x720_opponent-diversity.png`,
+`training_result_576x1024_opponent-final.png`, and
+`training_result_1280x720_opponent-final.png`. The Android review artifact is
+`build/android/PrintForge-Legends-0.6.3-opponent-diversity-arm64.apk`; its
+verified size is 145,019,387 bytes and SHA-256 is
+`5F68E8518CD73A40F6028F7A90990AA09BD56CE1DC0A48B14F41EA6064841090`.
+Package, signing, ABI, and export-exclusion verification is recorded in
+`docs/VALIDATION.md`.
