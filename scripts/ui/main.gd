@@ -177,25 +177,41 @@ func clear_children(node: Node) -> void:
 		node.remove_child(child)
 		child.queue_free()
 
+func _foundry_surface(color: Color, strength := 0.11) -> Color:
+	var steel := Color("171918")
+	var semantic := Color(color.r, color.g, color.b, 1.0)
+	var result := steel.lerp(semantic, strength)
+	result.a = maxf(0.90, color.a)
+	return result
+
+func _foundry_text_color(color: Color) -> Color:
+	if bool(settings().get("high_contrast", false)): return Color.WHITE
+	# Recast the ubiquitous cool body copy as warm ivory without touching semantic
+	# red/green/cyan/gold messaging supplied by individual screens.
+	for legacy in [Color("dce8f4"), Color("e1eef9"), Color("dbe9f6"), Color("b9d3e8"), Color("d6f7ff"), Color("edf7ff"), Color("c6d7e8")]:
+		if color.is_equal_approx(legacy): return Color("e6dfd0")
+	return color
+
 func panel_style(color: Color, border: Color = Color("6bd6ed")) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	if bool(settings().get("high_contrast", false)):
-		color = Color("07111fff")
+	var high_contrast := bool(settings().get("high_contrast", false))
+	if high_contrast:
+		color = Color("080909ff")
 		border = Color("ffffffff")
-	style.bg_color = color
-	style.border_color = border
-	style.set_border_width_all(3 if bool(settings().get("high_contrast", false)) else 1)
-	style.corner_radius_top_left = 14
-	style.corner_radius_top_right = 14
-	style.corner_radius_bottom_left = 14
-	style.corner_radius_bottom_right = 14
+	style.bg_color = Color("050505") if high_contrast else _foundry_surface(color, 0.10)
+	style.border_color = Color.WHITE if high_contrast else Color("8b7046").lerp(border, 0.32)
+	style.set_border_width_all(3 if high_contrast else 1)
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5
+	style.corner_radius_bottom_right = 5
 	style.content_margin_left = 16
 	style.content_margin_right = 16
 	style.content_margin_top = 13
 	style.content_margin_bottom = 13
-	style.shadow_color = Color(0.02, 0.04, 0.10, 0.5)
-	style.shadow_size = 8
-	style.shadow_offset = Vector2(0, 4)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
+	style.shadow_size = 3
+	style.shadow_offset = Vector2(0, 2)
 	return style
 
 func make_panel(color := Color("172942cc"), border := Color("6bd6ed")) -> VBoxContainer:
@@ -208,15 +224,51 @@ func make_panel(color := Color("172942cc"), border := Color("6bd6ed")) -> VBoxCo
 	panel.add_child(content)
 	return content
 
+func button_style(accent: Color, state: String) -> StyleBoxFlat:
+	var high_contrast := bool(settings().get("high_contrast", false))
+	var style := StyleBoxFlat.new()
+	var face := _foundry_surface(accent, 0.15)
+	var seam := Color("8b7046").lerp(accent, 0.24)
+	if state == "hover" or state == "focus":
+		face = _foundry_surface(accent, 0.23)
+		seam = Color("61c9d3")
+	elif state == "pressed":
+		face = _foundry_surface(Color("b85b32"), 0.18).darkened(0.12)
+		seam = Color("d68a4d")
+	elif state == "disabled":
+		face = Color("20211f")
+		seam = Color("5b5a54")
+	if high_contrast:
+		face = Color("050505")
+		seam = Color.WHITE
+	style.bg_color = face
+	style.border_color = seam
+	style.set_border_width_all(3 if high_contrast else (2 if state in ["hover", "focus", "pressed"] else 1))
+	style.corner_radius_top_left = 5; style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5; style.corner_radius_bottom_right = 5
+	style.content_margin_left = 10; style.content_margin_right = 10
+	style.content_margin_top = 6; style.content_margin_bottom = 6
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
+	style.shadow_size = 2 if state != "pressed" else 1
+	style.shadow_offset = Vector2(0, 2 if state != "pressed" else 1)
+	return style
+
 func make_button(text_value: String, callback: Callable, accent := Color("2f93a8")) -> Button:
 	var button := Button.new()
 	button.text = text_value
 	button.custom_minimum_size = Vector2(0, 44)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", scaled_font(15))
-	button.add_theme_stylebox_override("normal", panel_style(Color(accent, 0.90), Color("a8edff")))
-	button.add_theme_stylebox_override("hover", panel_style(Color(accent, 1.0).lightened(0.12), Color("fff0a1")))
-	button.add_theme_stylebox_override("pressed", panel_style(Color(accent, 1.0).darkened(0.12), Color("ffffff")))
+	button.add_theme_color_override("font_color", Color.WHITE if bool(settings().get("high_contrast", false)) else Color("f0e8d8"))
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", Color("fff2d2"))
+	button.add_theme_color_override("font_focus_color", Color.WHITE)
+	button.add_theme_color_override("font_disabled_color", Color("aaa69c"))
+	button.add_theme_stylebox_override("normal", button_style(accent, "normal"))
+	button.add_theme_stylebox_override("hover", button_style(accent, "hover"))
+	button.add_theme_stylebox_override("pressed", button_style(accent, "pressed"))
+	button.add_theme_stylebox_override("focus", button_style(accent, "focus"))
+	button.add_theme_stylebox_override("disabled", button_style(accent, "disabled"))
 	button.gui_input.connect(func(event: InputEvent):
 		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
 			_focus_after_render = true)
@@ -241,7 +293,10 @@ func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	var value := Label.new()
 	value.text = text_value
 	value.add_theme_font_size_override("font_size", scaled_font(size))
-	value.add_theme_color_override("font_color", color)
+	value.add_theme_color_override("font_color", _foundry_text_color(color))
+	if size >= 24:
+		value.add_theme_color_override("font_outline_color", Color("080909"))
+		value.add_theme_constant_override("outline_size", 1)
 	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return value
 
@@ -254,21 +309,27 @@ func render() -> void:
 	backdrop.texture = REFERENCE_TEXTURE
 	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	backdrop.modulate = Color(0.72, 0.82, 1.0, 0.52)
+	backdrop.modulate = Color(0.72, 0.63, 0.50, 0.48)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(backdrop)
-	var cool_overlay := ColorRect.new()
-	cool_overlay.color = Color("071326b8")
-	cool_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	cool_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(cool_overlay)
+	var steel_overlay := ColorRect.new()
+	steel_overlay.color = Color("0d0e0de0")
+	steel_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	steel_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(steel_overlay)
 	var warm_glow := ColorRect.new()
-	warm_glow.color = Color("8c4e1d3b")
+	warm_glow.color = Color("8d4a2038")
 	warm_glow.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	warm_glow.offset_bottom = 260
 	warm_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(warm_glow)
+	var cyan_balance := ColorRect.new()
+	cyan_balance.color = Color("0b495426")
+	cyan_balance.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	cyan_balance.offset_top = -120
+	cyan_balance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(cyan_balance)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -362,7 +423,7 @@ func render_header(root: VBoxContainer) -> void:
 	header_box.name = "WorkshopHeader"
 	var portrait := size.y > size.x
 	header_box.custom_minimum_size = Vector2(0, 126 if portrait else 90)
-	header_box.add_theme_stylebox_override("panel", panel_style(Color("142840eb"), Color("f1be69")))
+	header_box.add_theme_stylebox_override("panel", panel_style(Color("25211be8"), Color("c39450")))
 	root.add_child(header_box)
 	var header: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
 	header.custom_minimum_size = Vector2(0, 100 if portrait else 64)

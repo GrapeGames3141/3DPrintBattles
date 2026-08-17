@@ -14,16 +14,18 @@ func _style_bar() -> void:
 	var bar := get_v_scroll_bar()
 	bar.name = "TouchScrollBar"
 	bar.custom_minimum_size = Vector2(32, 44)
-	bar.add_theme_stylebox_override("grabber", _bar_style(Color("6bd6ed"), 10))
-	bar.add_theme_stylebox_override("grabber_highlight", _bar_style(Color("ffd36c"), 10))
+	bar.add_theme_stylebox_override("grabber", _bar_style(Color("57bfca"), 4))
+	bar.add_theme_stylebox_override("grabber_highlight", _bar_style(Color("c39450"), 4))
 
 func _bar_style(color: Color, radius: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
+	style.border_color = Color("ecd9ae") if color == Color("c39450") else Color("10292e")
+	style.set_border_width_all(1)
 	style.corner_radius_top_left = radius
 	style.corner_radius_top_right = radius
 	style.corner_radius_bottom_left = radius
 	style.corner_radius_bottom_right = radius
-	style.content_margin_left = 7
-	style.content_margin_right = 7
+	style.content_margin_left = 8
+	style.content_margin_right = 8
 	return style
