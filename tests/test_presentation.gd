@@ -27,6 +27,21 @@ func _ready() -> void:
 	var main := MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
+	var header := main.find_child("WorkshopHeader", true, false) as PanelContainer
+	var header_style := header.get_theme_stylebox("panel") as StyleBoxFlat if header != null else null
+	var shared_keycap: Button = main.make_button("Style probe", func(): pass)
+	var normal_keycap := shared_keycap.get_theme_stylebox("normal") as StyleBoxFlat
+	var hover_keycap := shared_keycap.get_theme_stylebox("hover") as StyleBoxFlat
+	var pressed_keycap := shared_keycap.get_theme_stylebox("pressed") as StyleBoxFlat
+	var focus_keycap := shared_keycap.get_theme_stylebox("focus") as StyleBoxFlat
+	var disabled_keycap := shared_keycap.get_theme_stylebox("disabled") as StyleBoxFlat
+	require(header_style != null and header_style.border_width_left == 1 and header_style.corner_radius_top_left <= 6 and header_style.shadow_size <= 3, "shared runtime header uses a thin small-radius forged plate")
+	require(normal_keycap != null and normal_keycap.corner_radius_top_left <= 6 and normal_keycap.border_width_left == 1 and hover_keycap != null and hover_keycap.border_width_left >= 2 and pressed_keycap != null and pressed_keycap.border_width_left >= 2 and focus_keycap != null and disabled_keycap != null, "shared runtime controls use distinct forged keycap normal, hover, pressed, focus, and disabled styles")
+	GameManager.profile.settings.high_contrast = true
+	var contrast_panel: StyleBoxFlat = main.panel_style(Color("294d57"), Color("c39450"))
+	var contrast_keycap: StyleBoxFlat = main.button_style(Color("294d57"), "normal")
+	GameManager.profile.settings.high_contrast = false
+	require(contrast_panel.border_width_left >= 3 and contrast_panel.border_color.is_equal_approx(Color.WHITE) and contrast_panel.bg_color.get_luminance() < 0.05 and contrast_keycap.border_width_left >= 3 and contrast_keycap.border_color.is_equal_approx(Color.WHITE), "high contrast preserves strongly outlined black and white plates and keycaps")
 	main.start_battle()
 	await get_tree().process_frame
 	# The battle opening may belong to either seat; force a player-view state for the presentation seam.

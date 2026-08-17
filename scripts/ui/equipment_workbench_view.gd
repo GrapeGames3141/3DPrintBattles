@@ -76,17 +76,22 @@ static func build(profile: Dictionary, selected_creature_id: String, mode: Strin
 	return root
 
 static func _label(text: String, size: int, color: Color) -> Label:
-	var value := Label.new(); value.text = text; value.add_theme_font_size_override("font_size", size); value.add_theme_color_override("font_color", color); value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; return value
+	var text_color := Color("e6dfd0") if color.is_equal_approx(Color("dce8f4")) else color
+	var value := Label.new(); value.text = text; value.add_theme_font_size_override("font_size", size); value.add_theme_color_override("font_color", text_color); value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if size >= 19: value.add_theme_color_override("font_outline_color", Color("080909")); value.add_theme_constant_override("outline_size", 1)
+	return value
 static func _button(text: String, action: Callable, color: Color) -> Button:
 	var value := Button.new()
 	value.text = text
 	value.custom_minimum_size = Vector2(0, 48)
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color", "font_disabled_color"]:
-		value.add_theme_color_override(state, Color("edf7ff") if state != "font_disabled_color" else Color("9caebb"))
-	var normal := StyleBoxFlat.new(); normal.bg_color = Color("101c2b"); normal.border_color = color.lightened(0.18); normal.set_border_width_all(1); normal.set_corner_radius_all(8); normal.content_margin_left = 10; normal.content_margin_right = 10; normal.content_margin_top = 7; normal.content_margin_bottom = 7
-	var hover := normal.duplicate(); hover.bg_color = color.darkened(0.58); hover.set_border_width_all(2)
-	var pressed := normal.duplicate(); pressed.bg_color = color.darkened(0.44); pressed.set_border_width_all(2)
-	value.add_theme_stylebox_override("normal", normal); value.add_theme_stylebox_override("hover", hover); value.add_theme_stylebox_override("pressed", pressed); value.add_theme_stylebox_override("focus", hover)
+		value.add_theme_color_override(state, Color("f0e8d8") if state != "font_disabled_color" else Color("aaa69c"))
+	var semantic := Color(color.r, color.g, color.b, 1.0)
+	var normal := StyleBoxFlat.new(); normal.bg_color = Color("171918").lerp(semantic, 0.15); normal.border_color = Color("8b7046").lerp(semantic, 0.24); normal.set_border_width_all(1); normal.set_corner_radius_all(5); normal.content_margin_left = 10; normal.content_margin_right = 10; normal.content_margin_top = 7; normal.content_margin_bottom = 7; normal.shadow_color = Color(0, 0, 0, 0.38); normal.shadow_size = 2; normal.shadow_offset = Vector2(0, 2)
+	var hover := normal.duplicate(); hover.bg_color = Color("171918").lerp(semantic, 0.23); hover.border_color = Color("61c9d3"); hover.set_border_width_all(2)
+	var pressed := normal.duplicate(); pressed.bg_color = Color("2c201b"); pressed.border_color = Color("d68a4d"); pressed.set_border_width_all(2); pressed.shadow_size = 1; pressed.shadow_offset = Vector2(0, 1)
+	var disabled := normal.duplicate(); disabled.bg_color = Color("20211f"); disabled.border_color = Color("5b5a54")
+	value.add_theme_stylebox_override("normal", normal); value.add_theme_stylebox_override("hover", hover); value.add_theme_stylebox_override("pressed", pressed); value.add_theme_stylebox_override("focus", hover); value.add_theme_stylebox_override("disabled", disabled)
 	if action.is_valid(): value.pressed.connect(action)
 	return value
 static func _creature(profile: Dictionary, id: String) -> Dictionary:
