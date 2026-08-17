@@ -6,8 +6,9 @@ const CORE_DEFS := preload("res://scripts/core/armor_core_definitions.gd")
 const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
 # TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
 const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
+const FOUNDRY_THEME := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
 
-static func build(profile: Dictionary, selected_creature_id: String, mode: String, selected_id: String, wide: bool, actions: Dictionary) -> Control:
+static func build(profile: Dictionary, selected_creature_id: String, mode: String, selected_id: String, wide: bool, actions: Dictionary, high_contrast := false) -> Control:
 	var root := VBoxContainer.new(); root.add_theme_constant_override("separation", 10)
 	root.add_child(_label("Equipment Workbench", 25, Color("ffd36c")))
 	root.add_child(_label("One complete suit per companion. Socket one optional Core into that suit.", 14, Color("dce8f4")))
@@ -33,38 +34,38 @@ static func build(profile: Dictionary, selected_creature_id: String, mode: Strin
 	hero_copy.add_child(_label("Socket: " + (str(CORE_DEFS.definition(core).get("name", "Empty")) if not core.is_empty() else "Empty"), 14, Color("dce8f4")))
 	var preview_name := (str(CORE_DEFS.definition(selected_id).get("name", "No Core")) if mode == "cores" else str(CORE_DEFS.suit_definition(selected_id).get("name", "Standard Full Suit")))
 	hero_copy.add_child(_label("Preview: " + preview_name, 13, Color("ffd36c")))
-	if not suit_id.is_empty(): hero_copy.add_child(_button("Remove Suit", actions.get("remove_suit"), Color("536c8d")))
+	if not suit_id.is_empty(): hero_copy.add_child(_button("Remove Suit", actions.get("remove_suit"), Color("536c8d"), high_contrast))
 	if not suit_id.is_empty() and not core.is_empty():
-		var remove_core := _button("Remove Core", actions.get("remove_core").bind(suit_id), Color("536c8d"))
+		var remove_core := _button("Remove Core", actions.get("remove_core").bind(suit_id), Color("536c8d"), high_contrast)
 		remove_core.name = "EquipmentRemoveCore"
 		hero_copy.add_child(remove_core)
 	var creatures := HBoxContainer.new(); creatures.add_theme_constant_override("separation", 6); rail.add_child(creatures)
 	for row in profile.get("creatures", []):
 		var id := str(row.get("instance_id", "")); var name := str(Catalog.creature(str(row.get("creature_id", ""))).get("name", "Print"))
-		creatures.add_child(_button(name, actions.get("select_creature").bind(id), Color("588d73") if id == creature_id else Color("526e93")))
+		creatures.add_child(_button(name, actions.get("select_creature").bind(id), Color("588d73") if id == creature_id else Color("526e93"), high_contrast))
 	var tabs := HBoxContainer.new(); tabs.add_theme_constant_override("separation", 8); interaction.add_child(tabs)
-	tabs.add_child(_button("Full Suits", actions.get("select_mode").bind("suits"), Color("a86b2e") if mode == "suits" else Color("526e93")))
-	tabs.add_child(_button("Cores", actions.get("select_mode").bind("cores"), Color("7142a8") if mode == "cores" else Color("526e93")))
+	tabs.add_child(_button("Full Suits", actions.get("select_mode").bind("suits"), Color("a86b2e") if mode == "suits" else Color("526e93"), high_contrast))
+	tabs.add_child(_button("Cores", actions.get("select_mode").bind("cores"), Color("7142a8") if mode == "cores" else Color("526e93"), high_contrast))
 	var layout: Control = HBoxContainer.new() if wide else VBoxContainer.new(); layout.add_theme_constant_override("separation", 12); interaction.add_child(layout)
 	var tray := GridContainer.new(); tray.columns = 2; tray.size_flags_horizontal = Control.SIZE_EXPAND_FILL; layout.add_child(tray)
 	var detail := VBoxContainer.new(); detail.custom_minimum_size = Vector2(260 if wide else 0, 0); detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL; layout.add_child(detail)
 	if mode == "suits":
 		for suit in Catalog.SUITS:
 			var tier_id := str(suit.id); var learned: bool = tier_id in profile.get("suit_blueprints", []); var owned := _count(profile.get("suits", []), "tier_id", tier_id)
-			tray.add_child(_button("%s\n+%d HP  %d Guard  +%d Speed\n%s / owned %d" % [str(suit.name), int(suit.hp), int(suit.armor), int(suit.speed), "Learned" if learned else "%d FC" % int(suit.blueprint), owned], actions.get("select_item").bind(tier_id), Color("588d73") if selected_id == tier_id else Color("31506e")))
+			tray.add_child(_button("%s\n+%d HP  %d Guard  +%d Speed\n%s / owned %d" % [str(suit.name), int(suit.hp), int(suit.armor), int(suit.speed), "Learned" if learned else "%d FC" % int(suit.blueprint), owned], actions.get("select_item").bind(tier_id), Color("588d73") if selected_id == tier_id else Color("31506e"), high_contrast, true))
 		var suit := CORE_DEFS.suit_definition(selected_id if not selected_id.is_empty() else "standard")
 		detail.add_child(_label(str(suit.get("name", "Select a suit")), 19, Color("ffd36c")))
 		detail.add_child(_label("Exact bonuses: +%d HP, %d Guard, +%d Speed" % [int(suit.get("hp", 0)), int(suit.get("armor", 0)), int(suit.get("speed", 0))], 14, Color("dce8f4")))
 		var learned: bool = str(suit.get("id", "")) in profile.get("suit_blueprints", [])
-		detail.add_child(_button(("Print for %d FC" % int(suit.get("print", 0))) if learned else ("Learn for %d FC" % int(suit.get("blueprint", 0))), actions.get("suit_action").bind(str(suit.get("id", ""))), Color("a86b2e")))
+		detail.add_child(_button(("Print for %d FC" % int(suit.get("print", 0))) if learned else ("Learn for %d FC" % int(suit.get("blueprint", 0))), actions.get("suit_action").bind(str(suit.get("id", ""))), Color("a86b2e"), high_contrast))
 		for row in profile.get("suits", []):
 			if str(row.get("tier_id", "")) == str(suit.get("id", "")):
 				var state := "equipped" if not str(row.get("equipped_to", "")).is_empty() else "free"
-				detail.add_child(_button("Fit %s suit" % state, actions.get("fit_suit").bind(creature_id, str(row.get("suit_instance_id", ""))), Color("588d73")))
+				detail.add_child(_button("Fit %s suit" % state, actions.get("fit_suit").bind(creature_id, str(row.get("suit_instance_id", ""))), Color("588d73"), high_contrast))
 	else:
 		for core_row in Catalog.CORE_BLUEPRINTS:
 			var core_id := str(core_row.id); var learned: bool = core_id in profile.get("core_blueprints", []); var owned := _count(profile.get("cores", []), "core_id", core_id)
-			tray.add_child(_button("%s\n%s\n%s / owned %d" % [str(core_row.name), str(CORE_DEFS.definition(core_id).get("effect", "")), "Learned" if learned else "%d FC" % int(core_row.blueprint), owned], actions.get("select_item").bind(core_id), Color("7142a8") if selected_id == core_id else Color("31506e")))
+			tray.add_child(_button("%s\n%s\n%s / owned %d" % [str(core_row.name), str(CORE_DEFS.definition(core_id).get("effect", "")), "Learned" if learned else "%d FC" % int(core_row.blueprint), owned], actions.get("select_item").bind(core_id), Color("7142a8") if selected_id == core_id else Color("31506e"), high_contrast, true))
 		if selected_id.is_empty():
 			detail.add_child(_label("Select a Core", 19, Color("d3a7ff")))
 			detail.add_child(_label("The socket is empty. Choose a Core card to preview its gem color and effect.", 14, Color("dce8f4")))
@@ -73,29 +74,31 @@ static func build(profile: Dictionary, selected_creature_id: String, mode: Strin
 			detail.add_child(_label(str(selected_core.get("name", "Select a Core")), 19, Color("d3a7ff")))
 			detail.add_child(_label(str(selected_core.get("effect", "")), 14, Color("dce8f4")))
 			var learned: bool = str(selected_core.get("id", "")) in profile.get("core_blueprints", [])
-			detail.add_child(_button(("Print for %d FC" % int(selected_core.get("print", 0))) if learned else ("Learn for %d FC" % int(selected_core.get("blueprint", 0))), actions.get("core_action").bind(str(selected_core.get("id", ""))), Color("7142a8")))
+			detail.add_child(_button(("Print for %d FC" % int(selected_core.get("print", 0))) if learned else ("Learn for %d FC" % int(selected_core.get("blueprint", 0))), actions.get("core_action").bind(str(selected_core.get("id", ""))), Color("7142a8"), high_contrast))
 			if not suit_id.is_empty():
 				for row in profile.get("cores", []):
-					if str(row.get("core_id", "")) == str(selected_core.get("id", "")): detail.add_child(_button("Socket owned Core", actions.get("socket_core").bind(suit_id, str(row.get("core_instance_id", ""))), Color("7142a8")))
+					if str(row.get("core_id", "")) == str(selected_core.get("id", "")): detail.add_child(_button("Socket owned Core", actions.get("socket_core").bind(suit_id, str(row.get("core_instance_id", ""))), Color("7142a8"), high_contrast))
 	return root
 
 static func _label(text: String, size: int, color: Color) -> Label:
 	var text_color := Color("e6dfd0") if color.is_equal_approx(Color("dce8f4")) else color
-	var value := Label.new(); value.text = text; value.add_theme_font_size_override("font_size", size); value.add_theme_color_override("font_color", text_color); value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var value := Label.new(); value.text = text; value.add_theme_font_override("font", FOUNDRY_THEME.display_font()); value.add_theme_font_size_override("font_size", size); value.add_theme_color_override("font_color", text_color); value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if size >= 19: value.add_theme_color_override("font_outline_color", Color("080909")); value.add_theme_constant_override("outline_size", 1)
 	return value
-static func _button(text: String, action: Callable, color: Color) -> Button:
+static func _button(text: String, action: Callable, color: Color, high_contrast := false, inset := false) -> Button:
 	var value := Button.new()
 	value.text = text
-	value.custom_minimum_size = Vector2(0, 48)
+	value.custom_minimum_size = Vector2(0, 76 if text.contains("\n") else 48)
+	value.add_theme_font_override("font", FOUNDRY_THEME.display_font())
+	if text.contains("\n"): value.add_theme_font_size_override("font_size", 12)
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color", "font_disabled_color"]:
 		value.add_theme_color_override(state, Color("f0e8d8") if state != "font_disabled_color" else Color("aaa69c"))
-	var semantic := Color(color.r, color.g, color.b, 1.0)
-	var normal := StyleBoxFlat.new(); normal.bg_color = Color("171918").lerp(semantic, 0.15); normal.border_color = Color("8b7046").lerp(semantic, 0.24); normal.set_border_width_all(1); normal.set_corner_radius_all(5); normal.content_margin_left = 10; normal.content_margin_right = 10; normal.content_margin_top = 7; normal.content_margin_bottom = 7; normal.shadow_color = Color(0, 0, 0, 0.38); normal.shadow_size = 2; normal.shadow_offset = Vector2(0, 2)
-	var hover := normal.duplicate(); hover.bg_color = Color("171918").lerp(semantic, 0.23); hover.border_color = Color("61c9d3"); hover.set_border_width_all(2)
-	var pressed := normal.duplicate(); pressed.bg_color = Color("2c201b"); pressed.border_color = Color("d68a4d"); pressed.set_border_width_all(2); pressed.shadow_size = 1; pressed.shadow_offset = Vector2(0, 1)
-	var disabled := normal.duplicate(); disabled.bg_color = Color("20211f"); disabled.border_color = Color("5b5a54")
-	value.add_theme_stylebox_override("normal", normal); value.add_theme_stylebox_override("hover", hover); value.add_theme_stylebox_override("pressed", pressed); value.add_theme_stylebox_override("focus", hover); value.add_theme_stylebox_override("disabled", disabled)
+	var role := "commit" if color.is_equal_approx(Color("a86b2e")) else ("arcane" if color.is_equal_approx(Color("7142a8")) else ("success" if color.is_equal_approx(Color("588d73")) else "secondary"))
+	if inset:
+		var well := FOUNDRY_THEME.inset(role, high_contrast)
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]: value.add_theme_stylebox_override(state, well)
+	else:
+		value.add_theme_stylebox_override("normal", FOUNDRY_THEME.button(role, "normal", high_contrast)); value.add_theme_stylebox_override("hover", FOUNDRY_THEME.button(role, "hover", high_contrast)); value.add_theme_stylebox_override("pressed", FOUNDRY_THEME.button(role, "pressed", high_contrast)); value.add_theme_stylebox_override("focus", FOUNDRY_THEME.button(role, "focus", high_contrast)); value.add_theme_stylebox_override("disabled", FOUNDRY_THEME.button(role, "disabled", high_contrast))
 	if action.is_valid(): value.pressed.connect(action)
 	return value
 static func _creature(profile: Dictionary, id: String) -> Dictionary:

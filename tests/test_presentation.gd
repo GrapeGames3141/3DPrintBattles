@@ -28,15 +28,15 @@ func _ready() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	var header := main.find_child("WorkshopHeader", true, false) as PanelContainer
-	var header_style := header.get_theme_stylebox("panel") as StyleBoxFlat if header != null else null
+	var header_style := header.get_theme_stylebox("panel") as StyleBoxTexture if header != null else null
 	var shared_keycap: Button = main.make_button("Style probe", func(): pass)
-	var normal_keycap := shared_keycap.get_theme_stylebox("normal") as StyleBoxFlat
-	var hover_keycap := shared_keycap.get_theme_stylebox("hover") as StyleBoxFlat
-	var pressed_keycap := shared_keycap.get_theme_stylebox("pressed") as StyleBoxFlat
-	var focus_keycap := shared_keycap.get_theme_stylebox("focus") as StyleBoxFlat
-	var disabled_keycap := shared_keycap.get_theme_stylebox("disabled") as StyleBoxFlat
-	require(header_style != null and header_style.border_width_left == 1 and header_style.corner_radius_top_left <= 6 and header_style.shadow_size <= 3, "shared runtime header uses a thin small-radius forged plate")
-	require(normal_keycap != null and normal_keycap.corner_radius_top_left <= 6 and normal_keycap.border_width_left == 1 and hover_keycap != null and hover_keycap.border_width_left >= 2 and pressed_keycap != null and pressed_keycap.border_width_left >= 2 and focus_keycap != null and disabled_keycap != null, "shared runtime controls use distinct forged keycap normal, hover, pressed, focus, and disabled styles")
+	var normal_keycap := shared_keycap.get_theme_stylebox("normal") as StyleBoxTexture
+	var hover_keycap := shared_keycap.get_theme_stylebox("hover") as StyleBoxTexture
+	var pressed_keycap := shared_keycap.get_theme_stylebox("pressed") as StyleBoxTexture
+	var focus_keycap := shared_keycap.get_theme_stylebox("focus") as StyleBoxTexture
+	var disabled_keycap := shared_keycap.get_theme_stylebox("disabled") as StyleBoxTexture
+	require(header_style != null and header_style.texture_margin_left > 0 and header_style.expand_margin_left >= 0, "shared runtime header uses a scalable Arcane Foundry panel texture")
+	require(normal_keycap != null and hover_keycap != null and pressed_keycap != null and focus_keycap != null and disabled_keycap != null and normal_keycap.texture != hover_keycap.texture and normal_keycap.texture != pressed_keycap.texture and normal_keycap.texture != disabled_keycap.texture, "shared runtime controls use distinct textured keycap normal, hover, pressed, focus, and disabled styles")
 	GameManager.profile.settings.high_contrast = true
 	var contrast_panel: StyleBoxFlat = main.panel_style(Color("294d57"), Color("c39450"))
 	var contrast_keycap: StyleBoxFlat = main.button_style(Color("294d57"), "normal")

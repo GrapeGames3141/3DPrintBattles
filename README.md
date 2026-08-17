@@ -115,3 +115,17 @@ verified size is 145,019,387 bytes and SHA-256 is
 `5F68E8518CD73A40F6028F7A90990AA09BD56CE1DC0A48B14F41EA6064841090`.
 Package, signing, ABI, and export-exclusion verification is recorded in
 `docs/VALIDATION.md`.
+
+## 0.6.6 Arcane Foundry UI review
+
+The shared Arcane Foundry theme supplies raster nine-slice panel, keycap, and
+Blueprint cartridge chrome with semantic cached interaction states. The
+Blueprint Tray preserves a safe, non-mutating selection step before its
+explicit preview action, using a portrait cartridge strip and a landscape
+grid-plus-detail workspace. High contrast remains a code-native black/white
+fallback and reduced motion bypasses the fixed-geometry reveal. The bundled
+Arvo Bold display font and OFL notice live in `assets/fonts/`.
+
+The retained 41-scene suite and the two-size visual capture matrix are recorded
+in `docs/VALIDATION.md`; captures remain outside Git under
+`E:/CodexCache/printforge-validation/`.

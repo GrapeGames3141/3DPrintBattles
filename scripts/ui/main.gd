@@ -19,7 +19,8 @@ const TIERED_ARMOR_PREVIEW_PATH := "res://scripts/ui/tiered_armor_palette_previe
 const BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/battle_screen_component.gd"
 const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
-const REVIEW_BUILD_LABEL := "0.6.5-missing-runtime-asset"
+const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
+const REVIEW_BUILD_LABEL := "0.6.6-arcane-foundry-ui"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -36,6 +37,7 @@ var workshop_selected := "printer"
 var workshop_view := "overview"
 var workshop_drawer_object := ""
 var printer_picker_open := false
+var printer_blueprint_selected_id := ""
 var workshop_return_view := "overview"
 var pending_starter_id := ""
 var shop_day_key := ""
@@ -240,27 +242,19 @@ func _foundry_text_color(color: Color) -> Color:
 		if color.is_equal_approx(legacy): return Color("e6dfd0")
 	return color
 
-func panel_style(color: Color, border: Color = Color("6bd6ed")) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	var high_contrast := bool(settings().get("high_contrast", false))
-	if high_contrast:
-		color = Color("080909ff")
-		border = Color("ffffffff")
-	style.bg_color = Color("050505") if high_contrast else _foundry_surface(color, 0.10)
-	style.border_color = Color.WHITE if high_contrast else Color("8b7046").lerp(border, 0.32)
-	style.set_border_width_all(3 if high_contrast else 1)
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 13
-	style.content_margin_bottom = 13
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
-	style.shadow_size = 3
-	style.shadow_offset = Vector2(0, 2)
-	return style
+func panel_style(color: Color, border: Color = Color("6bd6ed")) -> StyleBox:
+	var role := "surface"
+	if border.is_equal_approx(Color("f1be69")) or border.is_equal_approx(Color("ffd36c")): role = "commit"
+	elif border.is_equal_approx(Color("ffaaa1")): role = "danger"
+	elif border.is_equal_approx(Color("7142a8")): role = "arcane"
+	return ARCANE_FOUNDRY_THEME_KIT.panel(role, bool(settings().get("high_contrast", false)))
+
+func inset_style(color: Color, border: Color = Color("6bd6ed")) -> StyleBox:
+	var role := "surface"
+	if border.is_equal_approx(Color("f1be69")) or border.is_equal_approx(Color("ffd36c")): role = "commit"
+	elif border.is_equal_approx(Color("ffaaa1")): role = "danger"
+	elif border.is_equal_approx(Color("7142a8")): role = "arcane"
+	return ARCANE_FOUNDRY_THEME_KIT.inset(role, bool(settings().get("high_contrast", false)))
 
 func make_panel(color := Color("172942cc"), border := Color("6bd6ed")) -> VBoxContainer:
 	var panel := PanelContainer.new()
@@ -272,34 +266,13 @@ func make_panel(color := Color("172942cc"), border := Color("6bd6ed")) -> VBoxCo
 	panel.add_child(content)
 	return content
 
-func button_style(accent: Color, state: String) -> StyleBoxFlat:
-	var high_contrast := bool(settings().get("high_contrast", false))
-	var style := StyleBoxFlat.new()
-	var face := _foundry_surface(accent, 0.15)
-	var seam := Color("8b7046").lerp(accent, 0.24)
-	if state == "hover" or state == "focus":
-		face = _foundry_surface(accent, 0.23)
-		seam = Color("61c9d3")
-	elif state == "pressed":
-		face = _foundry_surface(Color("b85b32"), 0.18).darkened(0.12)
-		seam = Color("d68a4d")
-	elif state == "disabled":
-		face = Color("20211f")
-		seam = Color("5b5a54")
-	if high_contrast:
-		face = Color("050505")
-		seam = Color.WHITE
-	style.bg_color = face
-	style.border_color = seam
-	style.set_border_width_all(3 if high_contrast else (2 if state in ["hover", "focus", "pressed"] else 1))
-	style.corner_radius_top_left = 5; style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5; style.corner_radius_bottom_right = 5
-	style.content_margin_left = 10; style.content_margin_right = 10
-	style.content_margin_top = 6; style.content_margin_bottom = 6
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
-	style.shadow_size = 2 if state != "pressed" else 1
-	style.shadow_offset = Vector2(0, 2 if state != "pressed" else 1)
-	return style
+func button_style(accent: Color, state: String) -> StyleBox:
+	var role := "primary"
+	if accent.is_equal_approx(Color("a86b2e")): role = "commit"
+	elif accent.is_equal_approx(Color("536c8d")) or accent.is_equal_approx(Color("526e93")): role = "secondary"
+	elif accent.is_equal_approx(Color("7142a8")): role = "arcane"
+	elif accent.is_equal_approx(Color("588d73")): role = "success"
+	return ARCANE_FOUNDRY_THEME_KIT.button(role, state, bool(settings().get("high_contrast", false)))
 
 func make_button(text_value: String, callback: Callable, accent := Color("2f93a8")) -> Button:
 	var button := Button.new()
@@ -307,6 +280,7 @@ func make_button(text_value: String, callback: Callable, accent := Color("2f93a8
 	button.custom_minimum_size = Vector2(0, 44)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", scaled_font(15))
+	button.add_theme_font_override("font", ARCANE_FOUNDRY_THEME_KIT.display_font())
 	button.add_theme_color_override("font_color", Color.WHITE if bool(settings().get("high_contrast", false)) else Color("f0e8d8"))
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color("fff2d2"))
@@ -341,6 +315,7 @@ func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	var value := Label.new()
 	value.text = text_value
 	value.add_theme_font_size_override("font_size", scaled_font(size))
+	if size >= 18: value.add_theme_font_override("font", ARCANE_FOUNDRY_THEME_KIT.display_font())
 	value.add_theme_color_override("font_color", _foundry_text_color(color))
 	if size >= 24:
 		value.add_theme_color_override("font_outline_color", Color("080909"))
@@ -972,7 +947,7 @@ func render_workshop_closeup(used_today: int) -> void:
 		var split_chrome := _workshop_scene_map(split_map)
 		split_chrome.add_child(_workshop_overview_button())
 		split_chrome.add_child(_workshop_settings_button())
-		if workshop_view == "printer":
+		if workshop_view == "printer" and not picker_open:
 			split_chrome.add_child(_printer_picker_button())
 		for object in view.objects: split_map.add_child(_workshop_object_button(object))
 		if picker_open:
@@ -994,10 +969,13 @@ func render_workshop_closeup(used_today: int) -> void:
 	var chrome := _workshop_scene_map(map)
 	chrome.add_child(_workshop_overview_button())
 	chrome.add_child(_workshop_settings_button())
-	if workshop_view == "printer":
+	if workshop_view == "printer" and not picker_open:
 		chrome.add_child(_printer_picker_button())
 	for object in view.objects: map.add_child(_workshop_object_button(object))
-	_add_workshop_scene_status(map, view, used_today)
+	# The Blueprint Tray owns the nearby explanatory space. Leaving the station
+	# status strip underneath it creates a narrow, unreadable duplicate band.
+	if not picker_open:
+		_add_workshop_scene_status(map, view, used_today)
 	if picker_open:
 		render_printer_blueprint_tray()
 		return
@@ -1017,18 +995,18 @@ func _add_workshop_scene_status(art_plane: Control, view: Dictionary, used_today
 		# compact explanatory tray on the unused lower-left rug/floor instead.
 		strip.anchor_left = 0.04; strip.anchor_right = 0.40
 		strip.anchor_top = 0.78; strip.anchor_bottom = 0.78
-		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = 0; strip.offset_bottom = 58
+		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = 0; strip.offset_bottom = 72
 	elif workshop_view in ["printer", "maker"]:
 		# Live v3 station scenes reserve their lower landmarks for the printer bed or
 		# three plinths. A compact top strip leaves both controls and prop bases clear.
 		strip.anchor_left = 0.14; strip.anchor_right = 0.84
 		strip.anchor_top = 0.025; strip.anchor_bottom = 0.025
-		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = 0; strip.offset_bottom = 58
+		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = 0; strip.offset_bottom = 72
 	else:
 		strip.anchor_top = 1.0; strip.anchor_bottom = 1.0
 		strip.offset_left = 0; strip.offset_right = 0; strip.offset_top = -94; strip.offset_bottom = -14
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.add_theme_stylebox_override("panel", panel_style(Color("102940e8"), Color("f1be69")))
+	strip.add_theme_stylebox_override("panel", inset_style(Color("102940e8"), Color("f1be69")))
 	scene_map.add_child(strip)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 3)
@@ -1114,52 +1092,102 @@ func _printer_idle_texture(definition: Dictionary) -> Texture2D:
 	var raw_path := str(definition.get("raw_print", ""))
 	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
 
-func _printer_blueprint_card(creature_id: String) -> Control:
+func _printer_blueprint_card(creature_id: String, selected := false) -> Control:
 	var definition := Catalog.creature(creature_id)
 	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
 	var price := int(rarity.get("print", 0))
 	var owned := _printer_owned_count(creature_id)
-	var card := PanelContainer.new()
+	var card := Control.new()
 	card.name = "PrinterBlueprintCard%s" % creature_id.capitalize()
 	card.set_meta("creature_id", creature_id)
 	card.set_meta("price", price)
 	card.set_meta("owned_count", owned)
-	card.custom_minimum_size = Vector2(190, 0)
+	var portrait := is_portrait_layout()
+	card.custom_minimum_size = Vector2(156 if portrait else 168, 208 if portrait else 156)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", panel_style(Color("102940ec"), Color(str(rarity.get("color", "6bd6ed")))))
+	var select_button := Button.new()
+	select_button.name = "PrinterSelect%s" % creature_id.capitalize()
+	select_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The cartridge already exposes its concise Inspect/Selected state in the
+	# card itself. Keep the richer text as the accessibility name instead of a
+	# hover tooltip that can obscure a neighbouring cartridge on touch devices.
+	select_button.accessibility_name = ("Selected " if selected else "Inspect ") + str(definition.get("name", creature_id)) + " blueprint"
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		select_button.add_theme_stylebox_override(state, ARCANE_FOUNDRY_THEME_KIT.cartridge(selected or state in ["hover", "focus"], bool(settings().get("high_contrast", false))))
+	select_button.pressed.connect(select_printer_blueprint.bind(creature_id))
+	card.add_child(select_button)
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 6)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
+	content.add_theme_constant_override("separation", 3)
 	card.add_child(content)
-	var identity := HBoxContainer.new()
-	identity.add_theme_constant_override("separation", 8)
-	content.add_child(identity)
+	var title := label(str(definition.get("name", creature_id)), 16, Color("ffd36c") if selected else Color("ffffff"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(title)
 	var preview := TextureRect.new()
 	preview.name = "PrinterBlueprintIdleArt"
-	preview.custom_minimum_size = Vector2(76, 104)
+	preview.custom_minimum_size = Vector2(0, 108 if portrait else 64)
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.texture = _printer_idle_texture(definition)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	identity.add_child(preview)
-	var facts := VBoxContainer.new()
-	facts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	identity.add_child(facts)
-	facts.add_child(label(str(definition.get("name", creature_id)), 17, Color("ffffff")))
-	facts.add_child(label("%s - %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 13, Color("b8dcef")))
-	facts.add_child(label("Forge Coin print: %d" % price, 13, Color("ffd36c")))
-	facts.add_child(label("Owned prints: %d" % owned, 13, Color("a8e3a5")))
-	var preview_button := make_button("Preview %s" % str(definition.get("name", creature_id)), open_printer.bind(creature_id), Color("a86b2e"))
+	content.add_child(preview)
+	var facts := label("%s / %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 12, Color("b8dcef"))
+	facts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(facts)
+	var indicator := label("Selected" if selected else "Inspect", 12, Color("ffd36c") if selected else Color("dce8f4"))
+	indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(indicator)
+	return card
+
+func select_printer_blueprint(creature_id: String) -> void:
+	printer_blueprint_selected_id = creature_id
+	render()
+
+func _printer_blueprint_detail(creature_id: String, use_tray_heading := false) -> Control:
+	var definition := Catalog.creature(creature_id)
+	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
+	var detail := VBoxContainer.new()
+	detail.name = "PrinterBlueprintDetail"
+	detail.add_theme_constant_override("separation", 8)
+	var detail_heading := label("Blueprint Tray - Choose a Print" if use_tray_heading else "Blueprint Detail", 18, Color("ffd36c") if use_tray_heading else Color("9beaff"))
+	detail_heading.name = "PrinterBlueprintTrayTitle" if use_tray_heading else "PrinterBlueprintDetailTitle"
+	detail_heading.custom_minimum_size = Vector2(0, 28)
+	detail.add_child(detail_heading)
+	var art := TextureRect.new()
+	art.name = "PrinterBlueprintDetailArt"
+	art.custom_minimum_size = Vector2(0, 180)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.texture = _printer_idle_texture(definition)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail.add_child(art)
+	detail.add_child(label(str(definition.get("name", creature_id)), 23, Color("ffd36c")))
+	detail.add_child(label("%s  •  %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 14, Color("b8dcef")))
+	detail.add_child(label("Forge Coin print: %d" % int(rarity.get("print", 0)), 14, Color("a8e3a5")))
+	detail.add_child(label("Owned prints: %d" % _printer_owned_count(creature_id), 14, Color("a8e3a5")))
+	detail.add_child(label("Previewing is safe. Coins and inventory remain unchanged until Begin Print reaches the secured commit seam.", 14, Color("e6dfd0")))
+	var preview_button := make_button("Preview in Arcane Forge", open_printer.bind(creature_id), Color("a86b2e"))
 	preview_button.name = "PrinterPreview%s" % creature_id.capitalize()
 	preview_button.tooltip_text = "Preview %s in the Arcane Forge" % str(definition.get("name", creature_id))
-	content.add_child(preview_button)
-	return card
+	detail.add_child(preview_button)
+	return detail
 
 func render_printer_blueprint_tray(host: Control = null) -> void:
 	var tray := make_panel(Color("15344bea"), Color("f1be69"))
 	tray.get_parent().name = "PrinterBlueprintTray"
 	(host if host != null else body).add_child(tray.get_parent())
-	tray.add_child(label("Blueprint Tray - Choose a Print", 21, Color("ffd36c")))
-	tray.add_child(label("Previewing is safe: Forge Coins and inventory change only when Begin Print reaches the secured commit seam.", 14, Color("dce8f4")))
+	var wide := not is_portrait_layout()
+	if not wide:
+		var title_inset := Control.new()
+		title_inset.custom_minimum_size = Vector2(0, 10)
+		tray.add_child(title_inset)
+		var tray_title := label("Blueprint Tray - Choose a Print", 21, Color("ffd36c"))
+		tray_title.name = "PrinterBlueprintTrayTitle"
+		tray_title.custom_minimum_size = Vector2(0, 30)
+		tray_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		tray.add_child(tray_title)
+		tray.add_child(label("Previewing is safe: Forge Coins and inventory change only when Begin Print reaches the secured commit seam.", 14, Color("dce8f4")))
 	var ids := printer_blueprint_ids()
 	if ids.is_empty():
 		var empty := label("No learned creature blueprints are ready. Visit Forge Offers to learn a pattern, then return to this bench.", 16, Color("fff0a1"))
@@ -1170,14 +1198,46 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 		tray.add_child(offers)
 		tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
 		return
-	var cards := GridContainer.new()
-	cards.name = "PrinterBlueprintGrid"
-	cards.columns = 1 if is_portrait_layout() else 2
-	cards.add_theme_constant_override("h_separation", 10)
-	cards.add_theme_constant_override("v_separation", 10)
-	tray.add_child(cards)
+	if printer_blueprint_selected_id not in ids: printer_blueprint_selected_id = str(ids[0])
+	var workspace: Control = HBoxContainer.new() if wide else VBoxContainer.new()
+	workspace.name = "PrinterBlueprintWorkspace"
+	workspace.add_theme_constant_override("separation", 12)
+	tray.add_child(workspace)
+	# Fixed geometry: only alpha changes, so opening the tray never shifts the
+	# touch targets. Reduced Motion presents the completed state immediately.
+	if not bool(settings().get("reduced_motion", false)):
+		workspace.modulate.a = 0.0
+		var reveal := create_tween()
+		reveal.tween_property(workspace, "modulate:a", 1.0, 0.12)
+	var cards_host: Control
+	if wide:
+		cards_host = GridContainer.new()
+		(cards_host as GridContainer).columns = 2
+		cards_host.custom_minimum_size = Vector2(380, 0)
+	else:
+		var scroller := ScrollContainer.new()
+		scroller.name = "PrinterBlueprintCartridgeStrip"
+		scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		scroller.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroller.custom_minimum_size = Vector2(0, 222)
+		workspace.add_child(scroller)
+		var strip := HBoxContainer.new()
+		strip.name = "PrinterBlueprintCartridgeStripContents"
+		strip.add_theme_constant_override("separation", 10)
+		scroller.add_child(strip)
+		cards_host = strip
+	cards_host.name = "PrinterBlueprintGrid"
+	cards_host.add_theme_constant_override("separation", 10)
+	if wide:
+		workspace.add_child(cards_host)
 	for creature_id in ids:
-		cards.add_child(_printer_blueprint_card(creature_id))
+		cards_host.add_child(_printer_blueprint_card(creature_id, creature_id == printer_blueprint_selected_id))
+	var detail_panel := PanelContainer.new()
+	detail_panel.name = "PrinterBlueprintDetailPanel"
+	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_panel.add_theme_stylebox_override("panel", inset_style(Color("102940ec"), Color("6bd6ed")))
+	detail_panel.add_child(_printer_blueprint_detail(printer_blueprint_selected_id, wide))
+	workspace.add_child(detail_panel)
 	tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
 
 func _workshop_action_label(target: String) -> String:
@@ -1216,6 +1276,27 @@ func open_printer_picker() -> void:
 	workshop_drawer_object = ""
 	printer_picker_open = true
 	render()
+	# The generic shell restores its first focus target after every render. Keep
+	# that focus restoration from auto-scrolling this tray title under the fixed
+	# header, then deliberately focus the first cartridge at scroll position zero.
+	call_deferred("_focus_printer_picker_origin")
+
+func _focus_printer_picker_origin() -> void:
+	if not printer_picker_open: return
+	var scroll := find_child("TouchFirstScroll", true, false) as ScrollContainer
+	if scroll == null: return
+	scroll.follow_focus = false
+	# Containers finalize their content minimum size one frame after this method
+	# is deferred. Wait for that pass before setting the origin, otherwise Godot
+	# clamps the old scroll value and restores the focused map object instead.
+	await get_tree().process_frame
+	if not is_instance_valid(scroll) or not printer_picker_open: return
+	scroll.scroll_vertical = 0
+	var first := find_child("PrinterSelectCinderpaw", true, false) as Button
+	if first != null and first.is_visible_in_tree(): first.grab_focus()
+	await get_tree().process_frame
+	if not is_instance_valid(scroll) or not printer_picker_open: return
+	scroll.scroll_vertical = 0
 
 func close_printer_picker() -> void:
 	if not printer_picker_open:
@@ -1520,6 +1601,17 @@ func render_settings() -> void:
 		row.add_child(raise)
 	panel.add_child(label("Daily contract difficulty is fixed by the Guild: Apprentice, Craftsman, and Master. The legacy Training AI setting remains saved for compatibility but is no longer selectable.", 14, Color("9beaff")))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+	# The shared keyboard-first focus pass targets the first text-scale button.
+	# On a short landscape viewport Godot can then retain that button's old scroll
+	# offset and hide the Settings heading. Reset only the initial route origin;
+	# later keyboard/touch focus still uses the normal ScrollContainer behavior.
+	call_deferred("_restore_settings_scroll_origin")
+
+func _restore_settings_scroll_origin() -> void:
+	await get_tree().process_frame
+	if screen != "settings": return
+	var scroll := find_child("TouchFirstScroll", true, false) as ScrollContainer
+	if is_instance_valid(scroll): scroll.scroll_vertical = 0
 
 func adjust_audio_setting(key: String, direction: int) -> void:
 	var levels: Array[int] = AudioSettings.LEVELS
@@ -1741,7 +1833,7 @@ func render_armor() -> void:
 	if workbench == null:
 		panel.add_child(label("The Equipment Workbench could not load. Return to the Workshop and try again; your profile has not changed.", 15, Color("ffcfbf")))
 	else:
-		panel.add_child(workbench.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}))
+		panel.add_child(workbench.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}, bool(settings().get("high_contrast", false))))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func equipment_select_creature(instance_id: String) -> void: equipment_selected_creature_id = instance_id; render()
@@ -1794,6 +1886,24 @@ func _selected_equipment_creature_species() -> String:
 				return species_id
 	return "cinderpaw"
 
+func centered_card_gallery(host: Container, gallery_name: String, columns: int) -> GridContainer:
+	# Card fronts deliberately retain their authored silhouette and native spacing.
+	# Give a narrow portrait gallery a full-width host, then center the natural
+	# two-column bounds inside it instead of stretching cards into dead space.
+	var gallery_host := CenterContainer.new()
+	gallery_host.name = gallery_name + "Host"
+	gallery_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gallery_host.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	host.add_child(gallery_host)
+	var cards := GridContainer.new()
+	cards.name = gallery_name
+	cards.columns = columns
+	cards.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cards.add_theme_constant_override("h_separation", 8)
+	cards.add_theme_constant_override("v_separation", 8)
+	gallery_host.add_child(cards)
+	return cards
+
 func render_deck() -> void:
 	var panel := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(panel.get_parent())
 	if deck_slot_id.is_empty(): deck_slot_id = str(GameManager.profile.get("active_deck_id", ProgressionRules.STARTER_DECK_ID))
@@ -1815,7 +1925,7 @@ func render_deck() -> void:
 				break
 	var selected := Catalog.support_card(deck_selected_card_id)
 	if not selected.is_empty():
-		var selected_tray := make_panel(Color("10273ad8"), Color("ffd36c")); panel.add_child(selected_tray.get_parent()); selected_tray.name = "DeckSelectedCardTray"
+		var selected_tray := make_panel(Color("10273ad8"), Color("ffd36c")); selected_tray.get_parent().add_theme_stylebox_override("panel", inset_style(Color("10273ad8"), Color("ffd36c"))); panel.add_child(selected_tray.get_parent()); selected_tray.name = "DeckSelectedCardTray"
 		var selected_owned: int = int(GameManager.profile.support_cards.get(deck_selected_card_id, 0)); var selected_copies: int = deck_draft.count(deck_selected_card_id)
 		selected_tray.add_child(label("Selected: %s" % str(selected.name), 19, Color("fff0a1")))
 		selected_tray.add_child(label("Owned: %d | Draft copies: %d / %d | %d Filament" % [selected_owned, selected_copies, selected_owned, int(selected.cost)], 14, Color("9beaff")))
@@ -1825,7 +1935,7 @@ func render_deck() -> void:
 		var selected_actions := HBoxContainer.new(); selected_tray.add_child(selected_actions)
 		var selected_remove := make_button("Remove selected", change_deck_draft.bind(deck_selected_card_id, false), Color("536c8d")); selected_remove.name = "DeckSelectedRemove"; selected_remove.disabled = selected_copies <= 0; selected_actions.add_child(selected_remove)
 		var selected_add := make_button("Add selected (%d/%d)" % [selected_copies, selected_owned], change_deck_draft.bind(deck_selected_card_id, true), Color("2f93a8")); selected_add.name = "DeckSelectedAdd"; selected_add.disabled = deck_draft.size() >= 15 or selected_copies >= selected_owned; selected_actions.add_child(selected_add)
-	var cards := GridContainer.new(); cards.name = "DeckCardGallery"; cards.columns = 2 if is_portrait_layout() else 4; cards.add_theme_constant_override("h_separation", 8); cards.add_theme_constant_override("v_separation", 8); panel.add_child(cards)
+	var cards := centered_card_gallery(panel, "DeckCardGallery", 2 if is_portrait_layout() else 4)
 	for card in Catalog.SUPPORT_CARDS:
 		var card_id := str(card.id); var owned: int = int(GameManager.profile.support_cards.get(card_id, 0))
 		if owned <= 0: continue
@@ -1854,7 +1964,7 @@ func render_card_archive() -> void:
 	var filters := HBoxContainer.new(); panel.add_child(filters)
 	var all_filter := make_button("All cards", func(): card_archive_owned_only = false; render(), Color("2f93a8") if not card_archive_owned_only else Color("536c8d")); all_filter.name = "ArchiveFilterAll"; filters.add_child(all_filter)
 	var owned_filter := make_button("Owned only", func(): card_archive_owned_only = true; render(), Color("2f93a8") if card_archive_owned_only else Color("536c8d")); owned_filter.name = "ArchiveFilterOwned"; filters.add_child(owned_filter)
-	var cards := GridContainer.new(); cards.name = "CardArchiveGallery"; cards.columns = 2 if is_portrait_layout() else 4; cards.add_theme_constant_override("h_separation", 8); cards.add_theme_constant_override("v_separation", 8); panel.add_child(cards)
+	var cards := centered_card_gallery(panel, "CardArchiveGallery", 2 if is_portrait_layout() else 4)
 	for card in Catalog.SUPPORT_CARDS:
 		var owned := int(GameManager.profile.support_cards.get(str(card.id), 0))
 		if card_archive_owned_only and owned <= 0: continue
@@ -2254,6 +2364,7 @@ func render_battle_fullscreen(host: Container) -> void:
 
 func render_battle_summary(host: Container) -> void:
 	var summary := make_panel(Color("10273ad8"), Color("517b9a"))
+	summary.get_parent().add_theme_stylebox_override("panel", inset_style(Color("10273ad8"), Color("517b9a")))
 	summary.name = "BattleSummary"
 	var panel := summary.get_parent() as PanelContainer
 	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN

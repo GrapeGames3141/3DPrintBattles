@@ -27,13 +27,13 @@ func _ready() -> void:
 		push_error("Equipment Workbench must expose a visible named Remove Core action for a socketed Core.")
 		get_tree().quit(1)
 		return
-	var normal := remove_core.get_theme_stylebox("normal") as StyleBoxFlat
-	var hover := remove_core.get_theme_stylebox("hover") as StyleBoxFlat
-	var pressed := remove_core.get_theme_stylebox("pressed") as StyleBoxFlat
-	var focus := remove_core.get_theme_stylebox("focus") as StyleBoxFlat
-	var disabled := remove_core.get_theme_stylebox("disabled") as StyleBoxFlat
-	if normal == null or normal.border_width_left != 1 or normal.corner_radius_top_left > 6 or hover == null or hover.border_width_left < 2 or pressed == null or pressed.border_width_left < 2 or focus == null or disabled == null:
-		push_error("Equipment Workbench actions must use the shared small-radius forged keycap state contract.")
+	var normal := remove_core.get_theme_stylebox("normal") as StyleBoxTexture
+	var hover := remove_core.get_theme_stylebox("hover") as StyleBoxTexture
+	var pressed := remove_core.get_theme_stylebox("pressed") as StyleBoxTexture
+	var focus := remove_core.get_theme_stylebox("focus") as StyleBoxTexture
+	var disabled := remove_core.get_theme_stylebox("disabled") as StyleBoxTexture
+	if normal == null or hover == null or pressed == null or focus == null or disabled == null or normal.texture == hover.texture or normal.texture == pressed.texture or normal.texture == disabled.texture:
+		push_error("Equipment Workbench actions must use the shared textured Arcane Foundry keycap state contract.")
 		get_tree().quit(1)
 		return
 	print("PASS test_equipment_workbench_ui")

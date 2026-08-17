@@ -1,6 +1,7 @@
 class_name TouchScrollContainer
 extends ScrollContainer
 ## Shared touch-first scroller for long non-battle activity screens.
+const FOUNDRY_THEME := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
 
 func _ready() -> void:
 	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -14,8 +15,8 @@ func _style_bar() -> void:
 	var bar := get_v_scroll_bar()
 	bar.name = "TouchScrollBar"
 	bar.custom_minimum_size = Vector2(32, 44)
-	bar.add_theme_stylebox_override("grabber", _bar_style(Color("57bfca"), 4))
-	bar.add_theme_stylebox_override("grabber_highlight", _bar_style(Color("c39450"), 4))
+	bar.add_theme_stylebox_override("grabber", FOUNDRY_THEME.button("primary", "normal", false))
+	bar.add_theme_stylebox_override("grabber_highlight", FOUNDRY_THEME.button("commit", "hover", false))
 
 func _bar_style(color: Color, radius: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

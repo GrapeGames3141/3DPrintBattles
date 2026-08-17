@@ -20,6 +20,12 @@ func control_in_view(control: Control, viewport_size: Vector2i) -> bool:
 	var rect := control.get_global_rect()
 	return rect.size.x >= 44.0 and rect.size.y >= 44.0 and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(viewport_size.x) and rect.end.y <= float(viewport_size.y)
 
+func rect_within(child: Control, parent: Control, viewport_size: Vector2i) -> bool:
+	if child == null or parent == null: return false
+	var rect := child.get_global_rect()
+	var bounds := parent.get_global_rect()
+	return rect.position.x >= bounds.position.x and rect.position.y >= bounds.position.y and rect.end.x <= bounds.end.x and rect.end.y <= bounds.end.y and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(viewport_size.x) and rect.end.y <= float(viewport_size.y)
+
 func hotspot_in_map_view(hotspot: Control, map: Control) -> bool:
 	var hotspot_rect := hotspot.get_global_rect()
 	var map_rect := map.get_global_rect().grow(-4.0)
@@ -77,9 +83,17 @@ func _ready() -> void:
 	require(picker_ids == ["cinderpaw", "mossmunk"], "Blueprint Tray lists only learned catalog IDs in deterministic order")
 	var cinder_card := main.find_child("PrinterBlueprintCardCinderpaw", true, false) as Control
 	var moss_card := main.find_child("PrinterBlueprintCardMossmunk", true, false) as Control
+	var tray_panel := main.find_child("PrinterBlueprintTray", true, false) as PanelContainer
+	require(tray_panel != null and tray_panel.get_theme_stylebox("panel") is StyleBoxTexture, "Blueprint Tray uses the dimensional raster nine-slice rather than a flat panel")
+	if main.is_portrait_layout():
+		require(main.find_child("PrinterBlueprintCartridgeStrip", true, false) != null, "portrait Blueprint Tray uses a touch-scroll cartridge strip")
+	else:
+		require(main.find_child("PrinterBlueprintWorkspace", true, false) != null, "landscape Blueprint Tray uses a selection/detail workspace")
 	require(cinder_card != null and int(cinder_card.get_meta("price", -1)) == int(Catalog.rarity("common").print) and int(cinder_card.get_meta("owned_count", -1)) == 1, "starter card shows catalog price and exact owned count")
 	require(moss_card != null and int(moss_card.get_meta("price", -1)) == int(Catalog.rarity("common").print) and int(moss_card.get_meta("owned_count", -1)) == 0 and moss_card.find_child("PrinterBlueprintIdleArt", true, false) != null, "non-starter card shows art, catalog price, and zero owned prints")
 	require(GameManager.profile == profile_before_picker, "opening the picker and cards does not mutate profile authority")
+	main.select_printer_blueprint("mossmunk")
+	await get_tree().process_frame
 	var moss_preview := main.find_child("PrinterPreviewMossmunk", true, false) as Button
 	require(moss_preview != null, "non-starter Preview action is present")
 	if moss_preview != null:
@@ -147,6 +161,19 @@ func _ready() -> void:
 		require(live_layer != null and main.find_child("WorkshopStationLiveLayer", true, false) == live_layer, "Workshop component reattaches one persistent live layer at %s" % viewport_size)
 		var responsive_picker := main.find_child("PrinterBlueprintTrayButton", true, false) as Control
 		require(responsive_picker != null and control_in_view(responsive_picker, viewport_size), "Choose a Print remains visible and touch-safe at %s" % viewport_size)
+		main.open_printer_picker()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var responsive_tray := main.find_child("PrinterBlueprintTray", true, false) as PanelContainer
+		var responsive_title := main.find_child("PrinterBlueprintTrayTitle", true, false) as Label
+		var responsive_title_panel := main.find_child("PrinterBlueprintDetailPanel", true, false) as PanelContainer if not main.is_portrait_layout() else responsive_tray
+		var first_cartridge := main.find_child("PrinterSelectCinderpaw", true, false) as Button
+		var responsive_header := main.find_child("WorkshopHeader", true, false) as Control
+		var clears_header := responsive_title != null and responsive_header != null and responsive_title.get_global_rect().position.y >= responsive_header.get_global_rect().end.y + 4.0
+		require(rect_within(responsive_title, responsive_title_panel, viewport_size) and clears_header, "Blueprint Tray heading starts fully within its panel, below the header, and inside the viewport at %s" % viewport_size)
+		require(first_cartridge != null and first_cartridge.is_visible_in_tree() and first_cartridge.focus_mode != Control.FOCUS_NONE, "first Blueprint cartridge is focusable at %s" % viewport_size)
+		main.close_printer_picker()
+		await get_tree().process_frame
 		main.open_workshop_view("overview")
 		await get_tree().process_frame
 		for zone_name in zone_names:

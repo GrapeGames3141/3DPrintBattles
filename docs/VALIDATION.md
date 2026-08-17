@@ -881,3 +881,70 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
   preset excludes backend, tests, tools, docs, raw source art, caches, and
   build output. No physical Android device was attached, so install/smoke is
   deliberately unclaimed.
+
+## 2026-08-17 0.6.6 Arcane Foundry UI review
+
+- The Arcane Foundry shell uses generated raster nine-slice panel and keycap
+  assets for normal interaction, with cached semantic states for panel,
+  cartridge, and button roles. High contrast deliberately substitutes
+  code-native black/white `StyleBoxFlat` controls. The bundled display face is
+  Arvo Bold under its included OFL notice at `assets/fonts/Arvo-OFL.txt`.
+- The Blueprint Tray now has deterministic non-mutating selection and a detail
+  action: portrait renders its cartridge strip plus detail below it, while
+  landscape renders a grid beside detail. The reveal only fades a pre-sized
+  wrapper; reduced motion is immediate and never changes layout geometry.
+- Fresh isolated per-scene validation completed all **41/41** retained Godot
+  scenes with a 180-second maximum per scene. Thirty-nine scenes emitted
+  `PASS`; the AI and card-balance audit scenes intentionally emit only their
+  audit summaries and were separately rerun with exit 0. Logs are retained
+  under `E:/CodexCache/printforge-foundry-ui/logs/retained-*.log`.
+- Fresh inspected OpenGL capture matrix (all exit 0) is retained outside Git at
+  `E:/CodexCache/printforge-validation/`. It includes
+  `workshop_printer_picker`, `battle_review`, `armor`, `training_result`,
+  `card_archive`, `deck_cards`, `settings`, and `high_contrast_battle`, each
+  at `576x1024` and `1280x720` with the `arcane-foundry-ui` tag. The revised
+  Workbench captures are additionally tagged `arcane-foundry-ui-r2`.
+
+### Final Arcane Foundry UI pass (2026-08-17)
+
+- The final OpenGL matrix was regenerated after the compact nine-slice and
+  Blueprint detail fixes. All 16 expected files carry the
+  `arcane-foundry-ui-final` tag under `E:/CodexCache/printforge-validation/`:
+  `workshop_printer_picker`, `battle_review`, `armor`, `training_result`,
+  `card_archive`, `deck_cards`, `settings`, and `high_contrast_battle`, each at
+  `576x1024` and `1280x720`. Every original-size image was inspected. The
+  final pass confirms the Blueprint title stays visible at the scroll origin,
+  cards contain only concise selector copy, the detail pane owns print/owned
+  metadata, Settings opens at its heading, the Workbench uses compact controls,
+  and high contrast uses the intentional native fallback. The capture runner
+  PIDs were 21984, 22192, 26640, 21020, 26500, 23812, 2616, 23928, 27028,
+  9384, 2984, 19004, 3948, 15672, 26192, and 860; it reported `Captured=true`
+  for every output.
+- The authoritative isolated ProcessStartInfo suite manifest is
+  `E:/CodexCache/printforge-foundry-ui/retained-suite-final-arcane-ui/suite-manifest.jsonl`.
+  It records **41/41 exit code 0**, no timeouts, fresh E:-scoped
+  `APPDATA`/`LOCALAPPDATA`/`TEMP` for every scene, and console PIDs per scene.
+  This supersedes the earlier convenience-log runner, which did not reliably
+  expose Godot exit codes.
+- A final fresh-cache Godot 4.7.1 editor parse/import exited 0. The focused
+  `test_arcane_foundry_theme`, `test_presentation`,
+  `test_equipment_workbench_ui`, and `test_ui_workshop_nav` records are all
+  present with exit code 0 in that manifest. The navigation test no longer
+  emits a freed-scroll script error; ordinary Godot teardown leak warnings are
+  retained in its per-scene stderr log.
+- The final compact-runtime debug export is
+  `build/android/PrintForge-Legends-0.6.6-arcane-foundry-ui-arm64.apk`,
+  version code **81**, version name **0.6.6-arcane-foundry-ui**, package
+  `com.tak.printforge.legends.review`, size **147,114,930 bytes**, SHA-256
+  `BF3E1AE59207A59C2EDF4419C857ECA31B1FE9DC9BAB183CFB34B74C270F15B4`.
+  `apksigner` verifies debug v2/v3 signing; archive inspection found only
+  `lib/arm64-v8a` native libraries and **0** backend/test/tool/docs entries.
+  `aapt` reports the expected package/version before its established
+  non-fatal `android:required` manifest parsing warning.
+- Runtime texture cleanup retained only seven compact Foundry plates (panel,
+  four keycap states, cartridge, and shallow inset) under
+  `assets/ui/arcane_foundry/`. The deterministic builder reads the approved
+  source plates under `docs/art/source/ui/arcane-foundry-v2/` directly and no
+  longer emits raw or trim intermediates. The focused theme contract and
+  Forward+ spot captures for Blueprint Tray, Battle, and Equipment Workbench
+  at `576x1024` and `1280x720` passed with the `compact-final` tag.

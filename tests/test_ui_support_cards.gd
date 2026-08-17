@@ -3,6 +3,13 @@ const MAIN := preload("res://scenes/main.tscn")
 var failures: Array[String] = []
 func require(value: bool, message: String) -> void:
 	if not value: failures.append(message); push_error(message)
+
+func horizontally_centered(child: Control, host: Control) -> bool:
+	if child == null or host == null: return false
+	var child_center := child.get_global_rect().get_center().x
+	var host_center := host.get_global_rect().get_center().x
+	return absf(child_center - host_center) <= 2.0
+
 func _ready() -> void:
 	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
 	profile.coins = 9999
@@ -12,7 +19,10 @@ func _ready() -> void:
 	var portrait := Vector2i(576, 1024)
 	get_viewport().size = portrait; main.size = Vector2(portrait)
 	main.screen = "archive"; main.render(); await get_tree().process_frame
-	require(main.find_child("CardArchiveGallery", true, false) != null and main.find_child("ArchiveFilterAll", true, false) is Button and main.find_child("ArchiveFilterOwned", true, false) is Button, "archive navigation, gallery and filters render")
+	var archive_gallery := main.find_child("CardArchiveGallery", true, false) as GridContainer
+	var archive_host := main.find_child("CardArchiveGalleryHost", true, false) as CenterContainer
+	require(archive_gallery != null and main.find_child("ArchiveFilterAll", true, false) is Button and main.find_child("ArchiveFilterOwned", true, false) is Button, "archive navigation, gallery and filters render")
+	require(horizontally_centered(archive_gallery, archive_host), "portrait archive gallery centers its authored two-column card bounds within the Foundry host")
 	main.card_archive_owned_only = true; main.render(); await get_tree().process_frame
 	var archive_card := main.find_child("ArchiveCard*", true, false) as Button; require(archive_card != null and archive_card.custom_minimum_size.y >= 48 and archive_card.focus_mode == Control.FOCUS_ALL, "archive card is touch/controller actionable")
 	_require_card_front(archive_card, false, false, "archive full card")
@@ -20,6 +30,9 @@ func _ready() -> void:
 	main.show_card_archive_detail(Catalog.support_card("quick_patch")); await get_tree().process_frame
 	require(_named_count(main, "CardArchiveDetail") == 1 and main.find_child("CardArchiveDetail", true, false).get_child(0).text.contains("Quick Patch"), "archive replaces detail with one current panel")
 	main.screen = "deck"; main.deck_draft = GameManager.active_deck_cards(); main.deck_draft.pop_back(); main.render(); await get_tree().process_frame
+	var deck_gallery := main.find_child("DeckCardGallery", true, false) as GridContainer
+	var deck_host := main.find_child("DeckCardGalleryHost", true, false) as CenterContainer
+	require(horizontally_centered(deck_gallery, deck_host), "portrait deck gallery centers its authored two-column card bounds within the Foundry host")
 	var copies_before: int = main.deck_draft.count("arcane_spark")
 	var deck_card := _card_with_tooltip(main, "Arcane Spark")
 	require(deck_card != null, "Arcane Spark visual deck card exists")
