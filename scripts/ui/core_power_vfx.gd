@@ -3,13 +3,14 @@ extends Control
 ## Image-authored helmet-gem activation. Atlas frames are tinted, never redrawn procedurally.
 
 const CORE_DEFINITIONS := preload("res://scripts/core/armor_core_definitions.gd")
+const ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
 const MASTER_PATH := "res://assets/armor/tiered/cinderpaw_tiered_armor_signature_green_alpha_v3.png"
 const ATLAS_PATH := "res://assets/vfx/helmet_core_activation_grayscale_v1.png"
 const ATLAS_SHADER := preload("res://assets/vfx/helmet_core_activation_additive.gdshader")
 const ACTIVATION_DURATION := 0.9
 const CELL_SIZE := Vector2i(384, 512)
 ## Measured against the square signature-green runtime master.
-const HELMET_GEM_CENTER_NORMALIZED := Vector2(0.689, 0.239)
+const HELMET_GEM_CENTER_NORMALIZED := Vector2(0.694, 0.241)
 ## The grayscale cells are image-authored but their nonblack content is not
 ## perfectly centered. These luminance-weighted content anchors map the real
 ## charge/peak/fade artwork (rather than each cell's geometric midpoint) onto
@@ -21,6 +22,7 @@ const ATLAS_CONTENT_CENTERS := [
 
 var core_id := ""
 var core: Dictionary = {}
+var creature_id := "cinderpaw"
 var reduced_motion := false
 var phase := "idle"
 var activation_progress := 0.0
@@ -44,6 +46,13 @@ func configure_core(next_core_id: String) -> void:
 	core_id = next_core_id if CORE_DEFINITIONS.CORES.has(next_core_id) else ""
 	core = CORE_DEFINITIONS.definition(core_id)
 	show_idle()
+
+func configure_creature(next_creature_id: String) -> void:
+	creature_id = next_creature_id if ROSTER.ROSTER.has(next_creature_id) else "cinderpaw"
+	_refresh_effect()
+
+func gem_anchor() -> Vector2:
+	return ROSTER.gem_anchor_for(creature_id)
 
 func set_reduced_motion(enabled: bool) -> void:
 	reduced_motion = enabled
@@ -128,6 +137,9 @@ func has_active_atlas_overlay() -> bool:
 static func master_source_for_core(next_core_id: String) -> String:
 	return MASTER_PATH if CORE_DEFINITIONS.CORES.has(next_core_id) else ""
 
+static func master_source_for_creature_core(creature_id: String, next_core_id: String) -> String:
+	return ROSTER.master_path_for(creature_id) if CORE_DEFINITIONS.CORES.has(next_core_id) else ""
+
 static func atlas_source_for_core(next_core_id: String) -> String:
 	return ATLAS_PATH if CORE_DEFINITIONS.CORES.has(next_core_id) else ""
 
@@ -188,7 +200,7 @@ func _refresh_effect() -> void:
 	material.set_shader_parameter("intensity", _frame_intensity(frame_index))
 	_effect.material = material
 	var fitted := fitted_master_rect_for_size(size)
-	var center := master_local_to_control(size, HELMET_GEM_CENTER_NORMALIZED)
+	var center := master_local_to_control(size, gem_anchor())
 	var effect_size := Vector2(fitted.size.x * 0.235, fitted.size.x * 0.315)
 	var content_anchor := atlas_content_center_for_frame(frame_index) / Vector2(CELL_SIZE)
 	_effect.position = center - effect_size * content_anchor
@@ -197,7 +209,7 @@ func _refresh_effect() -> void:
 
 func _draw() -> void:
 	if core.is_empty() or frame_index < 0: return
-	var center := master_local_to_control(size, HELMET_GEM_CENTER_NORMALIZED)
+	var center := master_local_to_control(size, gem_anchor())
 	var radius := minf(size.x, size.y) * (0.070 if phase == "peak" else 0.040)
 	var color := Color(core.get("color", Color.WHITE))
 	draw_circle(center, radius, Color(color.r, color.g, color.b, 0.42 if phase == "peak" else 0.16))

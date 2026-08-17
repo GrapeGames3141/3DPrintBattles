@@ -8,13 +8,16 @@ func _ready() -> void:
 	GameManager.profile = profile
 	for dimensions in [Vector2i(576, 1024), Vector2i(1280, 720)]:
 		await _capture_forge(profile, dimensions, "legendary", false, ArcaneForgeSequence.IDLE, "forge_suit_select")
+		await _capture_forge(profile, dimensions, "legendary", false, ArcaneForgeSequence.IDLE, "forge_aquafin_suit_select", "aquafin")
 		await _capture_forge(profile, dimensions, "legendary", false, ArcaneForgeSequence.PRINTING, "forge_suit_printing")
 		await _capture_forge(profile, dimensions, "legendary", false, ArcaneForgeSequence.RAW_HOLD, "forge_suit_raw_hold")
 		await _capture_forge(profile, dimensions, "arcane", true, ArcaneForgeSequence.IDLE, "forge_core_select")
 		await _capture_forge(profile, dimensions, "arcane", true, ArcaneForgeSequence.PRINTING, "forge_core_printing")
 		await _capture_forge(profile, dimensions, "arcane", true, ArcaneForgeSequence.RAW_HOLD, "forge_core_raw_hold")
 		await _capture_screen(profile, dimensions, "team", "team_armored_cinderpaw")
+		await _capture_screen(profile, dimensions, "team", "team_armored_aquafin")
 		await _capture_battle(profile, dimensions)
+		await _capture_battle(profile, dimensions, "aquafin")
 		await _capture_battle_multiturn(profile, dimensions)
 	print("CAPTURED Forge, Team, and Battle equipment showcase")
 	get_tree().quit()
@@ -23,6 +26,8 @@ func _fixture_profile() -> Dictionary:
 	var profile := ProfileRules.new_profile()
 	profile["coins"] = 9999
 	profile = ProfileRules.choose_starter(profile, "cinderpaw").get("profile", profile)
+	profile = ProgressionRules.purchase_creature_blueprint(profile, "aquafin").get("profile", profile)
+	profile = ProgressionRules.print_creature(profile, "aquafin").get("profile", profile)
 	for tier_id in ArmorCoreDefinitions.ARMOR_TIERS:
 		profile = EquipmentRules.learn_suit(profile, tier_id).get("profile", profile)
 		profile = EquipmentRules.print_suit(profile, tier_id).get("profile", profile)
@@ -30,18 +35,25 @@ func _fixture_profile() -> Dictionary:
 		profile = EquipmentRules.learn_core(profile, core_key).get("profile", profile)
 		profile = EquipmentRules.print_core(profile, core_key).get("profile", profile)
 	var creature_id := str(profile.get("onboarding", {}).get("starter_instance_id", ""))
+	var aquafin_id := str(profile.get("creatures", [])[-1].get("instance_id", ""))
 	var suit_id := str(profile.get("suits", [])[4].get("suit_instance_id", ""))
 	var core_id := str(profile.get("cores", [])[4].get("core_instance_id", ""))
 	profile = EquipmentRules.equip_suit(profile, creature_id, suit_id).get("profile", profile)
 	profile = EquipmentRules.socket_core(profile, suit_id, core_id).get("profile", profile)
+	var aquafin_suit_id := str(profile.get("suits", [])[3].get("suit_instance_id", ""))
+	var aquafin_core_id := str(profile.get("cores", [])[3].get("core_instance_id", ""))
+	profile = EquipmentRules.equip_suit(profile, aquafin_id, aquafin_suit_id).get("profile", profile)
+	profile = EquipmentRules.socket_core(profile, aquafin_suit_id, aquafin_core_id).get("profile", profile)
+	profile["team"] = [creature_id, aquafin_id]
 	return profile
 
-func _capture_forge(profile: Dictionary, dimensions: Vector2i, item_id: String, is_core: bool, phase: String, tag: String) -> void:
+func _capture_forge(profile: Dictionary, dimensions: Vector2i, item_id: String, is_core: bool, phase: String, tag: String, creature_id := "cinderpaw") -> void:
 	var main := _main(profile, dimensions)
 	main.set("screen", "printer")
 	main.set("printer_is_armor", true)
 	main.set("printer_is_core", is_core)
 	main.set("printer_armor_id", item_id)
+	main.set("printer_creature_id", creature_id)
 	main.set("printer_price", int((ArmorCoreDefinitions.core_blueprint_definition(item_id) if is_core else ProgressionRules.armor_def(item_id)).get("print", 0)))
 	var sequence := ArcaneForgeSequence.create(false, true)
 	if phase != ArcaneForgeSequence.IDLE:
@@ -61,10 +73,11 @@ func _capture_screen(profile: Dictionary, dimensions: Vector2i, screen: String, 
 	main.call("render")
 	await _save(main, dimensions, tag)
 
-func _capture_battle(profile: Dictionary, dimensions: Vector2i) -> void:
+func _capture_battle(profile: Dictionary, dimensions: Vector2i, creature_id := "cinderpaw") -> void:
 	var main := _main(profile, dimensions)
 	main.set("screen", "battle")
-	main.set("battle", BattleState.create(GameManager.current_team_loadout(), ["mossmunk"], 3, 3, 2, GameManager.active_deck_cards()))
+	var loadout := GameManager.current_team_loadout() if creature_id == "cinderpaw" else [{"creature_id":creature_id, "suit_id":"masterwork", "core_id":"storm"}]
+	main.set("battle", BattleState.create(loadout, ["mossmunk"], 3, 3, 2, GameManager.active_deck_cards()))
 	main.set("battle_last_event", "ability")
 	main.set("battle_last_actor", 0)
 	main.set("battle_presentation_serial", 1)
@@ -72,11 +85,11 @@ func _capture_battle(profile: Dictionary, dimensions: Vector2i) -> void:
 	for _frame in 4: await get_tree().process_frame
 	var activation := main.find_child("BattleLeftCoreActivation", true, false) as CorePowerVFX
 	if activation != null:
-		activation.configure_core("arcane")
+		activation.configure_core("arcane" if creature_id == "cinderpaw" else "storm")
 		activation.show_peak()
 	else:
 		push_error("Battle Arcane Core activation node was not present for visual QA.")
-	await _save(main, dimensions, "battle_armored_cinderpaw_arcane_peak")
+	await _save(main, dimensions, "battle_armored_cinderpaw_arcane_peak" if creature_id == "cinderpaw" else "battle_armored_aquafin_storm_peak")
 
 func _capture_battle_multiturn(profile: Dictionary, dimensions: Vector2i) -> void:
 	var main := _main(profile, dimensions)

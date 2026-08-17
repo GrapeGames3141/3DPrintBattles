@@ -748,3 +748,16 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
 - 2026-08-14 checkpoint 2 direct E: verification: parser PID 24656 exited 0; bounded profile/onboarding test PID 7016 exited 0; bounded battle regression PID 18272 exited 0; bounded OpenGL visual capture PID 24988 exited 0. No Godot console processes remained.
 - 2026-08-14 checkpoint 2 transition follow-up: parser PID 15652, profile rules test PID 17056, and battle rules test PID 19712 each exited 0. Fresh-scene OpenGL capture runs PID 11420 (1280x720) and PID 6200 (1920x1080) wrote four inspected PNGs to `E:/CodexCache/printforge-validation/`; no Godot process remained.
 - 2026-08-14 header-layout correction: isolated-mode capture PIDs 12700, 9448, 12436, and 21792 generated tagged onboarding/workshop files at 1280x720 and 1920x1080. The exact `workshop_*_headerfix.png` files were visually inspected at original detail and show the full `PRINTFORGE LEGENDS` title, subtitle, and ~20px top margin. Final parser PID 23756, profile test PID 23292, and battle test PID 26296 exited 0; no Godot process remained.
+## 2026-08-16 0.6.1 armor-roster staging validation
+
+- Full E:-isolated retained suite passed 34/34 Godot scenes. Expected
+  environment-only output: Windows root-certificate-store warning and preexisting
+  headless dummy-renderer cleanup warnings.
+- Renderer-backed review is retained in `docs/art/review/armor-roster-0.6.0/`:
+  24-creature no-Core, Standard, Arcane, and Legendary contact sheets at
+  576x1024 and 1280x720, plus Aquafin Team, Workbench, and Battle Core captures
+  at both sizes. Visual inspection confirmed source identity colors stay stable.
+- The 0.6.0 export succeeded before the requested non-overwriting preset bump.
+  Android Review now targets `PrintForge-Legends-0.6.1-armor-roster-arm64.apk`,
+  version code 76/name `0.6.1-armor-roster`; rerun export is required after this
+  preset update.

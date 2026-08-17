@@ -115,7 +115,7 @@ func _assert_runtime_assets() -> void:
 	var shader_text := FileAccess.get_file_as_string(ProjectSettings.globalize_path(VFX_SHADER_PATH))
 	require(shader_text.contains("blend_add") and shader_text.contains("brightness") and shader_text.contains("authored_gem_exclusion"), "atlas shader uses additive halo/spark tint, makes black pixels inert, and suppresses its guide diamond")
 	var palette_shader_text := FileAccess.get_file_as_string(ProjectSettings.globalize_path(PALETTE_SHADER_PATH))
-	require(palette_shader_text.contains("vec3 luminance_palette") and palette_shader_text.contains("luminance_palette(luminance, plate_shadow.rgb") and palette_shader_text.contains("float gem_mask = gemstone_material_mask") and palette_shader_text.contains("vec3 gem_colored = luminance_palette"), "plate and gemstone shader paths call one shared luminance palette function")
+	require(palette_shader_text.contains("vec3 luminance_palette") and palette_shader_text.contains("luminance_palette(luminance, plate_shadow.rgb") and palette_shader_text.contains("float gem_mask = gemstone_material_mask(source.rgb) * helmet_gem_region_mask(UV)") and palette_shader_text.contains("vec3 gem_colored = luminance_palette"), "plate and helmet-local gemstone shader paths call one shared luminance palette function")
 	var preview_text := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://scripts/ui/tiered_armor_palette_preview.gd"))
 	require(not palette_shader_text.contains("core_gem_mask") and not preview_text.contains("GEM_MASK_PATH") and not preview_text.contains("helmet_gem_full_interior_mask"), "runtime uses source-derived green material selection with no hand-authored gem mask path")
 
@@ -144,7 +144,7 @@ func _assert_preview_masks() -> void:
 		require((effect_origin + effect_size * peak_anchor).distance_to(mapped) <= 0.01, "atlas peak content maps exactly onto the baked gem across fitted layouts")
 	var legendary: Dictionary = PREVIEW.PALETTES.legendary
 	for source_color in [Color("ff7d2a"), Color("f7df9a"), Color("e9f5ff"), Color("b8c2c8")]:
-		require(PREVIEW.armor_mask_for_color(source_color) <= 0.0 and PREVIEW.recolor_source_color(source_color, legendary).is_equal_approx(source_color), "bezel and non-gem source colors remain stable through armor tier selection")
+		require(PREVIEW.recolor_masked_source_color(source_color, 0.0, legendary).is_equal_approx(source_color), "bezel and non-gem source colors remain stable through armor tier selection")
 	var sample := Color("5f7386")
 	var sample_luminance := _luminance(sample)
 	var shared_plate := PREVIEW.luminance_palette(sample_luminance, Color(legendary.shadow), Color(legendary.primary), Color(legendary.highlight))

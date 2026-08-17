@@ -1,0 +1,293 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "creature_id": "cinderpaw",
+      "source": "assets/armor/tiered/cinderpaw_tiered_armor_signature_green_alpha_v3.png",
+      "mask": "assets/armor/tiered/masks/cinderpaw_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 126128,
+      "soft_edge_pixels": 42296,
+      "exclusions": []
+    },
+    {
+      "creature_id": "aquafin",
+      "source": "assets/armor/tiered/aquafin_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/aquafin_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 191494,
+      "soft_edge_pixels": 79893,
+      "exclusions": []
+    },
+    {
+      "creature_id": "voltwig",
+      "source": "assets/armor/tiered/voltwig_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/voltwig_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 81665,
+      "soft_edge_pixels": 17423,
+      "exclusions": []
+    },
+    {
+      "creature_id": "mossmunk",
+      "source": "assets/armor/tiered/mossmunk_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/mossmunk_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 120486,
+      "soft_edge_pixels": 27959,
+      "exclusions": []
+    },
+    {
+      "creature_id": "frostling",
+      "source": "assets/armor/tiered/frostling_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/frostling_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 247385,
+      "soft_edge_pixels": 127896,
+      "exclusions": []
+    },
+    {
+      "creature_id": "stoneback",
+      "source": "assets/armor/tiered/stoneback_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/stoneback_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 227010,
+      "soft_edge_pixels": 52640,
+      "exclusions": []
+    },
+    {
+      "creature_id": "galehopper",
+      "source": "assets/armor/tiered/galehopper_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/galehopper_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 141360,
+      "soft_edge_pixels": 44035,
+      "exclusions": []
+    },
+    {
+      "creature_id": "sparkotter",
+      "source": "assets/armor/tiered/sparkotter_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/sparkotter_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 248932,
+      "soft_edge_pixels": 59580,
+      "exclusions": []
+    },
+    {
+      "creature_id": "glassdrake",
+      "source": "assets/armor/tiered/glassdrake_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/glassdrake_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 160098,
+      "soft_edge_pixels": 31142,
+      "exclusions": []
+    },
+    {
+      "creature_id": "coralisk",
+      "source": "assets/armor/tiered/coralisk_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/coralisk_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 145276,
+      "soft_edge_pixels": 49941,
+      "exclusions": []
+    },
+    {
+      "creature_id": "runestag",
+      "source": "assets/armor/tiered/runestag_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/runestag_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 223753,
+      "soft_edge_pixels": 85776,
+      "exclusions": []
+    },
+    {
+      "creature_id": "brambleowl",
+      "source": "assets/armor/tiered/brambleowl_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/brambleowl_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 102945,
+      "soft_edge_pixels": 30214,
+      "exclusions": []
+    },
+    {
+      "creature_id": "ironmaw",
+      "source": "assets/armor/tiered/ironmaw_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/ironmaw_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 143698,
+      "soft_edge_pixels": 56706,
+      "exclusions": []
+    },
+    {
+      "creature_id": "aurorawing",
+      "source": "assets/armor/tiered/aurorawing_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/aurorawing_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 122908,
+      "soft_edge_pixels": 84501,
+      "exclusions": []
+    },
+    {
+      "creature_id": "thunderelk",
+      "source": "assets/armor/tiered/thunderelk_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/thunderelk_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 150562,
+      "soft_edge_pixels": 32393,
+      "exclusions": []
+    },
+    {
+      "creature_id": "coalgriffin",
+      "source": "assets/armor/tiered/coalgriffin_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/coalgriffin_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 129952,
+      "soft_edge_pixels": 26819,
+      "exclusions": []
+    },
+    {
+      "creature_id": "tidewhale",
+      "source": "assets/armor/tiered/tidewhale_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/tidewhale_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 175686,
+      "soft_edge_pixels": 61350,
+      "exclusions": []
+    },
+    {
+      "creature_id": "skyforge",
+      "source": "assets/armor/tiered/skyforge_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/skyforge_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 153433,
+      "soft_edge_pixels": 153452,
+      "exclusions": []
+    },
+    {
+      "creature_id": "pyraxis",
+      "source": "assets/armor/tiered/pyraxis_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/pyraxis_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 188426,
+      "soft_edge_pixels": 56809,
+      "exclusions": []
+    },
+    {
+      "creature_id": "verdantitan",
+      "source": "assets/armor/tiered/verdantitan_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/verdantitan_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 182238,
+      "soft_edge_pixels": 42443,
+      "exclusions": []
+    },
+    {
+      "creature_id": "miragefox",
+      "source": "assets/armor/tiered/miragefox_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/miragefox_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 149688,
+      "soft_edge_pixels": 75004,
+      "exclusions": []
+    },
+    {
+      "creature_id": "voidmanta",
+      "source": "assets/armor/tiered/voidmanta_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/voidmanta_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 255335,
+      "soft_edge_pixels": 125091,
+      "exclusions": []
+    },
+    {
+      "creature_id": "worldcoil",
+      "source": "assets/armor/tiered/worldcoil_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/worldcoil_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 92504,
+      "soft_edge_pixels": 15929,
+      "exclusions": []
+    },
+    {
+      "creature_id": "starloom",
+      "source": "assets/armor/tiered/starloom_tiered_armor_signature_green_alpha_v1.png",
+      "mask": "assets/armor/tiered/masks/starloom_armor_plate_mask_v1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "covered_pixels_at_10pct": 173446,
+      "soft_edge_pixels": 69618,
+      "exclusions": []
+    }
+  ]
+}

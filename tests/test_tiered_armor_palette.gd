@@ -2,6 +2,7 @@ extends Node
 ## Ensures every visual tier remains shader-only over the same alpha master.
 
 const PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
+const ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
 const MASTER_PATH := PREVIEW.MASTER_PATH
 const SHADER_PATH := "res://assets/armor/tiered/cinderpaw_tier_palette.gdshader"
 var failures: Array[String] = []
@@ -28,12 +29,15 @@ func _ready() -> void:
 	for filename in DirAccess.get_files_at(tiered_dir):
 		if filename.to_lower().ends_with(".png"):
 			pngs.append(filename)
-	require(pngs == ["cinderpaw_tiered_armor_signature_green_alpha_v3.png"], "tiered armor directory retains only the approved v3 signature-green master")
+	var recognized_masters := true
+	for filename in pngs:
+		recognized_masters = recognized_masters and ROSTER.expected_file_names().has(filename)
+	require(pngs.has("cinderpaw_tiered_armor_signature_green_alpha_v3.png") and recognized_masters, "tiered armor directory contains only registered creature masters, with Cinderpaw v3 retained")
 	var shader_text := FileAccess.get_file_as_string(ProjectSettings.globalize_path(SHADER_PATH))
-	for uniform_name in ["plate_shadow", "plate_primary", "plate_highlight", "plate_mask_min_saturation", "plate_mask_min_blue_dominance"]:
+	for uniform_name in ["plate_shadow", "plate_primary", "plate_highlight", "plate_mask_texture"]:
 		require(shader_text.contains(uniform_name), "palette shader exposes %s" % uniform_name)
 	if failures.is_empty():
-		print("PASS: tiered armor alpha master and five shader-only palette contracts")
+		print("PASS: Cinderpaw alpha master and five shader-only palette contracts")
 	call_deferred("finish")
 
 func _assert_alpha_and_mask_contract(image: Image) -> void:
