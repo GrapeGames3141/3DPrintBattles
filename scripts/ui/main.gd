@@ -17,6 +17,8 @@ const EQUIPMENT_WORKBENCH_VIEW_PATH := "res://scripts/ui/equipment_workbench_vie
 const TIERED_ARMOR_ROSTER_PATH := "res://scripts/ui/tiered_armor_roster.gd"
 const TIERED_ARMOR_PREVIEW_PATH := "res://scripts/ui/tiered_armor_palette_preview.gd"
 const BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/battle_screen_component.gd"
+const BATTLE_VIEW_COMPONENT_PATH := "res://scripts/ui/battle_view_component.gd"
+const BLUEPRINT_TRAY_VIEW := preload("res://scripts/ui/blueprint_tray_view.gd")
 const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
 const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
@@ -93,9 +95,11 @@ var workshop_station_live_capture_progress := -1
 var workshop_station_live_capture_seed := 17
 var overview_layout_portrait := false
 var _workshop_screen_component := WorkshopScreenComponent.new()
+var _blueprint_tray_view := BLUEPRINT_TRAY_VIEW.new()
 # Battle, Forge, cards, and equipment are intentionally absent from the first
 # workshop frame. Their resources now load only when their screen is requested.
 var _battle_screen_component = null
+var _battle_view_component = null
 var _forge_screen_component = null
 var _audio_director := AudioDirector.new()
 
@@ -122,6 +126,13 @@ func _battle_component():
 		if script == null: return null
 		_battle_screen_component = script.new()
 	return _battle_screen_component
+
+func _battle_view():
+	if _battle_view_component == null:
+		var script = _optional_script(BATTLE_VIEW_COMPONENT_PATH, "Battle layout")
+		if script == null: return null
+		_battle_view_component = script.new()
+	return _battle_view_component
 
 func _forge_component():
 	if _forge_screen_component == null:
@@ -1064,181 +1075,29 @@ func render_workshop_drawer(view: Dictionary, host: Control = null) -> void:
 	action_tiles.add_child(make_button("Close Tray", close_workshop_drawer, Color("536c8d")))
 
 func printer_blueprint_ids() -> Array[String]:
-	var ids: Array[String] = []
-	for stored_id in GameManager.profile.get("blueprints", []):
-		var creature_id := str(stored_id)
-		if not creature_id.is_empty() and not Catalog.creature(creature_id).is_empty() and creature_id not in ids:
-			ids.append(creature_id)
-	ids.sort_custom(func(left: String, right: String) -> bool: return str(Catalog.creature(left).get("name", left)) < str(Catalog.creature(right).get("name", right)))
-	return ids
-
-func _printer_owned_count(creature_id: String) -> int:
-	var count := 0
-	for instance in GameManager.profile.get("creatures", []):
-		if str(instance.get("creature_id", "")) == creature_id:
-			count += 1
-	return count
-
-func _printer_idle_texture(definition: Dictionary) -> Texture2D:
-	var path := str(definition.get("sprite_sheet", ""))
-	var sheet := ResourceLoader.load(path) as Texture2D if not path.is_empty() else null
-	if sheet != null:
-		var atlas := AtlasTexture.new()
-		atlas.atlas = sheet
-		# Stay two pixels inside the 384x512 idle cell so linear filtering cannot
-		# leak a neighboring animation frame into this compact picker thumbnail.
-		atlas.region = Rect2(2, 2, 380, 508)
-		return atlas
-	var raw_path := str(definition.get("raw_print", ""))
-	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
-
-func _printer_blueprint_card(creature_id: String, selected := false) -> Control:
-	var definition := Catalog.creature(creature_id)
-	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
-	var price := int(rarity.get("print", 0))
-	var owned := _printer_owned_count(creature_id)
-	var card := Control.new()
-	card.name = "PrinterBlueprintCard%s" % creature_id.capitalize()
-	card.set_meta("creature_id", creature_id)
-	card.set_meta("price", price)
-	card.set_meta("owned_count", owned)
-	var portrait := is_portrait_layout()
-	card.custom_minimum_size = Vector2(156 if portrait else 168, 208 if portrait else 156)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var select_button := Button.new()
-	select_button.name = "PrinterSelect%s" % creature_id.capitalize()
-	select_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The cartridge already exposes its concise Inspect/Selected state in the
-	# card itself. Keep the richer text as the accessibility name instead of a
-	# hover tooltip that can obscure a neighbouring cartridge on touch devices.
-	select_button.accessibility_name = ("Selected " if selected else "Inspect ") + str(definition.get("name", creature_id)) + " blueprint"
-	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		select_button.add_theme_stylebox_override(state, ARCANE_FOUNDRY_THEME_KIT.cartridge(selected or state in ["hover", "focus"], bool(settings().get("high_contrast", false))))
-	select_button.pressed.connect(select_printer_blueprint.bind(creature_id))
-	card.add_child(select_button)
-	var content := VBoxContainer.new()
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
-	content.add_theme_constant_override("separation", 3)
-	card.add_child(content)
-	var title := label(str(definition.get("name", creature_id)), 16, Color("ffd36c") if selected else Color("ffffff"))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(title)
-	var preview := TextureRect.new()
-	preview.name = "PrinterBlueprintIdleArt"
-	preview.custom_minimum_size = Vector2(0, 108 if portrait else 64)
-	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	preview.texture = _printer_idle_texture(definition)
-	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(preview)
-	var facts := label("%s / %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 12, Color("b8dcef"))
-	facts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(facts)
-	var indicator := label("Selected" if selected else "Inspect", 12, Color("ffd36c") if selected else Color("dce8f4"))
-	indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(indicator)
-	return card
+	# Retained facade for navigation tests and callers outside the tray view.
+	return _blueprint_tray_view.blueprint_ids(GameManager.profile)
 
 func select_printer_blueprint(creature_id: String) -> void:
+	# Main owns the selected ID; the view only emits this callback.
 	printer_blueprint_selected_id = creature_id
 	render()
 
-func _printer_blueprint_detail(creature_id: String, use_tray_heading := false) -> Control:
-	var definition := Catalog.creature(creature_id)
-	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
-	var detail := VBoxContainer.new()
-	detail.name = "PrinterBlueprintDetail"
-	detail.add_theme_constant_override("separation", 8)
-	var detail_heading := label("Blueprint Tray - Choose a Print" if use_tray_heading else "Blueprint Detail", 18, Color("ffd36c") if use_tray_heading else Color("9beaff"))
-	detail_heading.name = "PrinterBlueprintTrayTitle" if use_tray_heading else "PrinterBlueprintDetailTitle"
-	detail_heading.custom_minimum_size = Vector2(0, 28)
-	detail.add_child(detail_heading)
-	var art := TextureRect.new()
-	art.name = "PrinterBlueprintDetailArt"
-	art.custom_minimum_size = Vector2(0, 180)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.texture = _printer_idle_texture(definition)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	detail.add_child(art)
-	detail.add_child(label(str(definition.get("name", creature_id)), 23, Color("ffd36c")))
-	detail.add_child(label("%s  •  %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 14, Color("b8dcef")))
-	detail.add_child(label("Forge Coin print: %d" % int(rarity.get("print", 0)), 14, Color("a8e3a5")))
-	detail.add_child(label("Owned prints: %d" % _printer_owned_count(creature_id), 14, Color("a8e3a5")))
-	detail.add_child(label("Previewing is safe. Coins and inventory remain unchanged until Begin Print reaches the secured commit seam.", 14, Color("e6dfd0")))
-	var preview_button := make_button("Preview in Arcane Forge", open_printer.bind(creature_id), Color("a86b2e"))
-	preview_button.name = "PrinterPreview%s" % creature_id.capitalize()
-	preview_button.tooltip_text = "Preview %s in the Arcane Forge" % str(definition.get("name", creature_id))
-	detail.add_child(preview_button)
-	return detail
-
 func render_printer_blueprint_tray(host: Control = null) -> void:
-	var tray := make_panel(Color("15344bea"), Color("f1be69"))
-	tray.get_parent().name = "PrinterBlueprintTray"
-	(host if host != null else body).add_child(tray.get_parent())
-	var wide := not is_portrait_layout()
-	if not wide:
-		var title_inset := Control.new()
-		title_inset.custom_minimum_size = Vector2(0, 10)
-		tray.add_child(title_inset)
-		var tray_title := label("Blueprint Tray - Choose a Print", 21, Color("ffd36c"))
-		tray_title.name = "PrinterBlueprintTrayTitle"
-		tray_title.custom_minimum_size = Vector2(0, 30)
-		tray_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		tray.add_child(tray_title)
-		tray.add_child(label("Previewing is safe: Forge Coins and inventory change only when Begin Print reaches the secured commit seam.", 14, Color("dce8f4")))
-	var ids := printer_blueprint_ids()
-	if ids.is_empty():
-		var empty := label("No learned creature blueprints are ready. Visit Forge Offers to learn a pattern, then return to this bench.", 16, Color("fff0a1"))
-		empty.name = "PrinterBlueprintEmptyState"
-		tray.add_child(empty)
-		var offers := make_button("Open Forge Offers", navigate_to.bind("shop"), Color("2f93a8"))
-		offers.name = "PrinterBlueprintEmptyOffers"
-		tray.add_child(offers)
-		tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
-		return
-	if printer_blueprint_selected_id not in ids: printer_blueprint_selected_id = str(ids[0])
-	var workspace: Control = HBoxContainer.new() if wide else VBoxContainer.new()
-	workspace.name = "PrinterBlueprintWorkspace"
-	workspace.add_theme_constant_override("separation", 12)
-	tray.add_child(workspace)
-	# Fixed geometry: only alpha changes, so opening the tray never shifts the
-	# touch targets. Reduced Motion presents the completed state immediately.
-	if not bool(settings().get("reduced_motion", false)):
-		workspace.modulate.a = 0.0
-		var reveal := create_tween()
-		reveal.tween_property(workspace, "modulate:a", 1.0, 0.12)
-	var cards_host: Control
-	if wide:
-		cards_host = GridContainer.new()
-		(cards_host as GridContainer).columns = 2
-		cards_host.custom_minimum_size = Vector2(380, 0)
-	else:
-		var scroller := ScrollContainer.new()
-		scroller.name = "PrinterBlueprintCartridgeStrip"
-		scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		scroller.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		scroller.custom_minimum_size = Vector2(0, 222)
-		workspace.add_child(scroller)
-		var strip := HBoxContainer.new()
-		strip.name = "PrinterBlueprintCartridgeStripContents"
-		strip.add_theme_constant_override("separation", 10)
-		scroller.add_child(strip)
-		cards_host = strip
-	cards_host.name = "PrinterBlueprintGrid"
-	cards_host.add_theme_constant_override("separation", 10)
-	if wide:
-		workspace.add_child(cards_host)
-	for creature_id in ids:
-		cards_host.add_child(_printer_blueprint_card(creature_id, creature_id == printer_blueprint_selected_id))
-	var detail_panel := PanelContainer.new()
-	detail_panel.name = "PrinterBlueprintDetailPanel"
-	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_panel.add_theme_stylebox_override("panel", inset_style(Color("102940ec"), Color("6bd6ed")))
-	detail_panel.add_child(_printer_blueprint_detail(printer_blueprint_selected_id, wide))
-	workspace.add_child(detail_panel)
-	tray.add_child(make_button("Close Blueprint Tray", close_printer_picker, Color("536c8d")))
+	printer_blueprint_selected_id = _blueprint_tray_view.render(host if host != null else body, printer_blueprint_selected_id, {
+		"profile": GameManager.profile,
+		"portrait": is_portrait_layout(),
+		"reduced_motion": bool(settings().get("reduced_motion", false)),
+		"label": label,
+		"make_button": make_button,
+		"make_panel": make_panel,
+		"inset_style": inset_style,
+		"cartridge_style": func(selected: bool) -> StyleBox: return ARCANE_FOUNDRY_THEME_KIT.cartridge(selected, bool(settings().get("high_contrast", false))),
+		"select_blueprint": select_printer_blueprint,
+		"preview_print": open_printer,
+		"open_offers": navigate_to.bind("shop"),
+		"close_tray": close_printer_picker
+	})
 
 func _workshop_action_label(target: String) -> String:
 	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "archive":"Open Support Card Archive", "armor":"Open Equipment Workbench", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
@@ -2272,31 +2131,11 @@ func _trial_seed(encounter_id: String) -> int:
 
 func render_battle_fullscreen(host: Container) -> void:
 	if battle == null or not battle.validation_error().is_empty():
-		var unavailable := make_panel(Color("19334de8"), Color("ffaaa1"))
-		host.add_child(unavailable.get_parent())
-		unavailable.add_child(label("Proving Grounds unavailable", 24, Color("ffaaa1")))
-		unavailable.add_child(label("Your current team needs a catalog-valid ready print before a training match can begin.", 16, Color("dce8f4")))
-		unavailable.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+		var unavailable_view = _battle_view()
+		if unavailable_view != null: unavailable_view.render_unavailable(host, _battle_view_context())
 		return
-	var frame := PanelContainer.new()
-	frame.name = "BattleFullscreenPanel"
-	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	frame.custom_minimum_size = Vector2(0, 420)
-	frame.add_theme_stylebox_override("panel", panel_style(Color("19334de8"), Color("f1be69")))
-	host.add_child(frame)
-	var intro := VBoxContainer.new()
-	intro.name = "BattleFullscreenContent"
-	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	intro.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	intro.add_theme_constant_override("separation", 8)
-	frame.add_child(intro)
-	status = label("", 14, Color("fff0a1"))
-	status.name = "BattleStatus"
-	# Do not reserve a blank status row on the first action fold. Errors opt in
-	# through _toast(), keeping the visible move dock compact on small portrait.
-	status.visible = false
-	intro.add_child(status)
+	var battle_view = _battle_view()
+	if battle_view == null: return
 	var battle_title := "Proving Grounds"
 	if battle_mode == "trial" and not trial_encounter_id.is_empty():
 		battle_title += " - Trial: %s" % str(Catalog.workshop_trial_encounter(trial_encounter_id).get("name", "Workshop Trial"))
@@ -2308,51 +2147,21 @@ func render_battle_fullscreen(host: Container) -> void:
 	var turn_caption := "Your turn" if battle.active_player == 0 else "Rival is thinking"
 	if battle.finished:
 		turn_caption = "Training result" if battle_mode == "training" else "Match result"
-	intro.add_child(label("%s - %s" % [battle_title, turn_caption], 22, Color("ffd36c")))
-	if not battle_launch_notice.is_empty():
-		intro.add_child(label("Lineup notice: " + battle_launch_notice, 13, Color("fff0a1")))
-	# An opened tactical panel owns the first fold. Keep the stage compact on both
-	# phone and landscape so every visual card can remain fully reachable.
 	var compact_secondary := battle_secondary_open
 	var battle_component = _battle_component()
 	if battle_component == null:
-		intro.add_child(label("Battle presentation could not load. Return to the Workshop and try again; no battle reward was changed.", 16, Color("ffcfbf")))
-		intro.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+		battle_view.render_unavailable(host, _battle_view_context())
 		return
 	var stage = battle_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (64 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
-	stage.size_flags_vertical = Control.SIZE_FILL if compact_secondary else Control.SIZE_EXPAND_FILL
-	battle_component.attach(intro)
-	# Keep the read-only portrait recap above the action dock.  The dock is the
-	# last normal-flow child, so changing combat feedback or the battle log cannot
-	# walk the primary controls below the visible phone fold on a later render.
-	if not battle_secondary_open and is_portrait_layout():
-		render_battle_summary(intro)
-	if battle.active_player == 0 and not battle.finished:
-		render_battle_action_dock(intro)
-		render_battle_secondary(intro)
+	var context := _battle_view_context()
+	context.merge({"title": battle_title, "turn_caption": turn_caption, "stage": stage}, true)
+	var shell: Dictionary = battle_view.build_shell(host, context)
+	status = shell.get("status", null) as Label
+	var intro := shell.get("content", null) as VBoxContainer
+	battle_view.render_active_content(intro, context)
 	if battle.finished:
-		var outcome := "Victory!" if battle.winner == 0 else "Defeat."
-		intro.add_child(label("%s - Core Printer status resolved." % outcome, 22, Color("ffd36c")))
-		if battle_mode == "trial" and not trial_encounter_id.is_empty():
-			var trial_state := GameManager.campaign_encounter_state(trial_encounter_id)
-			var reward: Dictionary = trial_state.get("reward", {})
-			intro.add_child(label("Workshop Trial: %s\n%s" % [str(trial_state.get("encounter", {}).get("name", "Encounter")), "Victory claims %d Forge Coins, %d XP, and +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))] if battle.winner == 0 else "Defeats do not grant a Workshop Trial first-clear reward."], 15, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
-		elif battle_mode == "training":
-			var finished_contract: Dictionary = _daily_contract(training_contract_id)
-			var claimed: bool = training_contract_id in GameManager.profile.get("daily_training", {}).get("claimed_ids", [])
-			var reward: Dictionary = finished_contract.get("reward", {})
-			var contract_result := make_panel(Color("17394ee8"), Color("70dcea") if battle.winner == 0 else Color("d27e70"))
-			contract_result.name = "DailyContractResult"
-			intro.add_child(contract_result.get_parent())
-			contract_result.add_child(label("%s - %s" % [str(finished_contract.get("name", "Daily Contract")), "Cleared" if battle.winner == 0 else "Held"], 17, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
-			if battle.winner == 0:
-				contract_result.add_child(label("%s" % ("Practice complete. Today's first-clear reward was already claimed." if claimed else "Return to claim +%d Forge Coins and +%d XP." % [int(reward.get("coins", 0)), int(reward.get("xp", 0))]), 14, Color("fff0a1")))
-			else:
-				contract_result.add_child(label("No daily reward was claimed. The frozen contract remains available for another attempt.", 14, Color("ffaaa1")))
-		intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Proving Door", finish_battle, Color("536c8d")))
+		_render_battle_finished_result(intro)
 		return
-	# Landscape gives that room to the presentation; Details retains the verbose
-	# recap there. Portrait renders its compact recap before the terminal dock.
 	if battle.active_player == 1 and not battle.finished and not ai_pending:
 		ai_pending = true
 		var scheduled_state := battle
@@ -2362,198 +2171,52 @@ func render_battle_fullscreen(host: Container) -> void:
 		else:
 			call_deferred("run_ai_after_presentation", scheduled_state, scheduled_generation)
 
-func render_battle_summary(host: Container) -> void:
-	var summary := make_panel(Color("10273ad8"), Color("517b9a"))
-	summary.get_parent().add_theme_stylebox_override("panel", inset_style(Color("10273ad8"), Color("517b9a")))
-	summary.name = "BattleSummary"
-	var panel := summary.get_parent() as PanelContainer
-	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	panel.custom_minimum_size = Vector2(0, 142)
-	host.add_child(panel)
-	for player in [1, 0]:
-		var unit := battle.active_unit(player)
-		var suit_id := str(unit.get("suit_id", ""))
-		var max_hp: int = int(unit.get("max_hp", 1))
-		var base_hp: int = int(Catalog.creature(str(unit.get("id", ""))).get("hp", max_hp))
-		summary.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 16, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-		summary.add_child(label("Suit: None" if suit_id.is_empty() else "Suit: %s | +%d maximum HP | %d guard | Core: %s" % [str(unit.get("suit_name", "Full suit")), max_hp - base_hp, int(unit.get("armor", 0)), str(unit.get("core_name", "None"))], 13, Color("f1be69")))
-		summary.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
-		summary.add_child(label("Effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8")))
-	# A capped, single-line recap keeps the portrait first fold deterministic as
-	# a battle history grows. The full history remains available in Details.
-	var log_line := label("Latest: " + str(battle.log.back() if not battle.log.is_empty() else "Battle ready"), 13, Color("d0dfeb"))
-	log_line.name = "BattleSummaryLatestEvent"
-	log_line.clip_text = true
-	log_line.autowrap_mode = TextServer.AUTOWRAP_OFF
-	summary.add_child(log_line)
+func _battle_view_context() -> Dictionary:
+	return {
+		"battle": battle,
+		"portrait": is_portrait_layout(),
+		"secondary_open": battle_secondary_open,
+		"secondary_tab": battle_secondary_tab,
+		"active_player": battle.active_player if battle != null else -1,
+		"finished": battle.finished if battle != null else false,
+		"launch_notice": battle_launch_notice,
+		"high_contrast": bool(settings().get("high_contrast", false)),
+		"feedback": battle_feedback_text() if battle != null else "",
+		"concede_armed": battle_concede_armed,
+		"label": label,
+		"make_button": make_button,
+		"make_panel": make_panel,
+		"panel_style": panel_style,
+		"inset_style": inset_style,
+		"new_scroll": func() -> ScrollContainer: return TOUCH_SCROLL_CONTAINER.new(),
+		"new_card_view": _new_support_card_view,
+		"return_workshop": navigate_to.bind("workshop"),
+		"submit_action": submit_battle_action,
+		"submit_switch": submit_battle_switch,
+		"submit_card": submit_battle_card,
+		"toggle_secondary": toggle_battle_secondary,
+		"select_tab": set_battle_secondary_tab,
+		"toggle_concede": toggle_battle_concede,
+		"cancel_concede": cancel_battle_concede
+	}
 
-func render_battle_action_dock(host: Container) -> void:
-	var dock := make_panel(Color("214969ee"), Color("6de4ff"))
-	dock.name = "BattleActionDock"
-	var dock_panel := dock.get_parent() as PanelContainer
-	dock_panel.custom_minimum_size = Vector2(0, 210 if is_portrait_layout() else 142)
-	dock_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	host.add_child(dock_panel)
-	var opening_locked := battle.turn <= 2
-	var dock_title := label("Moves - Setup: Defend, cards, or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"))
-	if opening_locked: dock_title.name = "BattleOpeningGuidance"
-	dock.add_child(dock_title)
-	var feedback := label(battle_feedback_text(), 14, Color("fff0a1") if not bool(settings().get("high_contrast", false)) else Color.WHITE)
-	feedback.name = "BattleImpactBanner"
-	# Keep transient impact copy to one predictable dock row. Long-form combat
-	# history is preserved in Details instead of resizing touch controls.
-	feedback.autowrap_mode = TextServer.AUTOWRAP_OFF
-	feedback.clip_text = true
-	feedback.custom_minimum_size.y = 20
-	dock.add_child(feedback)
-	var actions := GridContainer.new()
-	actions.name = "BattleActionGrid"
-	actions.columns = 2 if is_portrait_layout() else 4
-	actions.custom_minimum_size = Vector2(0, 104 if is_portrait_layout() else 48)
-	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_theme_constant_override("h_separation", 8)
-	actions.add_theme_constant_override("v_separation", 8)
-	dock.add_child(actions)
-	var unit: Dictionary = battle.active_unit(0)
-	var attack_value: int = int(unit.get("attack", 0))
-	var ability_name := str(unit.get("ability", "Signature"))
-	if ability_name.is_empty(): ability_name = "Signature"
-	var ability_cost: int = int(unit.get("ability_cost", 0))
-	var basic := make_button("Basic Attack (%d)" % attack_value, submit_battle_action.bind("attack"))
-	basic.name = "BattleActionBasicAttack"
-	basic.custom_minimum_size.y = 48
-	basic.disabled = opening_locked
-	actions.add_child(basic)
-	var ability := make_button("%s (%d FC)" % [ability_name, ability_cost], submit_battle_action.bind("ability"))
-	ability.name = "BattleActionSignatureAbility"
-	ability.custom_minimum_size.y = 48
-	ability.disabled = opening_locked or int(unit.get("cooldown_remaining", 0)) > 0 or int(battle.players[0].get("filament", 0)) < ability_cost
-	actions.add_child(ability)
-	var defend := make_button("Defend", submit_battle_action.bind("defend"), Color("526e93"))
-	defend.name = "BattleActionDefend"
-	defend.custom_minimum_size.y = 48
-	actions.add_child(defend)
-	var end_turn := make_button("End Turn", submit_battle_action.bind("end_turn"), Color("536c8d"))
-	end_turn.name = "BattleActionEndTurn"
-	end_turn.custom_minimum_size.y = 48
-	actions.add_child(end_turn)
-	var signature_effect := label("Signature effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8"))
-	signature_effect.name = "BattleSignatureDescription"
-	signature_effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	# The card detail itself occupies this explanatory role while the tactical
-	# drawer is open. Removing this duplicate line preserves a complete card
-	# viewport on a short landscape screen without hiding any move control.
-	signature_effect.visible = not battle_secondary_open
-	dock.add_child(signature_effect)
-	var secondary := make_button("Hide Bench, Hand & Details" if battle_secondary_open else "Bench, Hand & Details", toggle_battle_secondary, Color("536c8d"))
-	secondary.name = "BattleSecondaryToggle"
-	secondary.custom_minimum_size = Vector2(0, 48)
-	dock.add_child(secondary)
-
-func render_battle_secondary(host: Container) -> void:
-	if not battle_secondary_open:
-		return
-	# The Hand keeps its portrait cards intact. Its own vertical touch scroll keeps
-	# the large card carousel reachable without pushing the primary move dock off
-	# the first fold on a phone or on a short landscape screen.
-	var secondary_panel := PanelContainer.new()
-	secondary_panel.name = "BattleSecondaryPanel"
-	secondary_panel.add_theme_stylebox_override("panel", panel_style(Color("172e43ee"), Color("7bcbe5")))
-	secondary_panel.custom_minimum_size = Vector2(0, (282 if is_portrait_layout() else 260) if battle_secondary_tab == "hand" else 160)
-	secondary_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	host.add_child(secondary_panel)
-	# Keep the scroll viewport from advertising its whole card-content height to
-	# the outer battle VBox. Otherwise Godot expands the tactical panel below a
-	# short landscape frame before it has a chance to scroll it.
-	var viewport := Control.new()
-	viewport.name = "BattleSecondaryViewport"
-	viewport.clip_contents = true
-	viewport.custom_minimum_size = Vector2.ZERO
-	secondary_panel.add_child(viewport)
-	var scroll := TOUCH_SCROLL_CONTAINER.new()
-	scroll.name = "BattleSecondaryScroll"
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE)
-	scroll.custom_minimum_size = Vector2.ZERO
-	viewport.add_child(scroll)
-	var panel := VBoxContainer.new()
-	panel.name = "BattleSecondaryContent"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_constant_override("separation", 8)
-	scroll.add_child(panel)
-	panel.add_child(label("Tactics", 16, Color("9beaff")))
-	var tabs := GridContainer.new()
-	tabs.name = "BattleSecondaryTabs"
-	tabs.columns = 2 if is_portrait_layout() else 4
-	tabs.add_theme_constant_override("h_separation", 8)
-	tabs.add_theme_constant_override("v_separation", 8)
-	panel.add_child(tabs)
-	for tab_data in [["bench", "Bench", "BattleSecondaryBenchTab"], ["hand", "Hand", "BattleSecondaryHandTab"], ["details", "Details", "BattleSecondaryDetailsTab"], ["concede", "Concede", "BattleSecondaryConcedeTab"]]:
-		var tab_id := str(tab_data[0])
-		var tab_button := make_button(str(tab_data[1]), set_battle_secondary_tab.bind(tab_id), Color("2f93a8") if battle_secondary_tab == tab_id else Color("536c8d"))
-		tab_button.name = str(tab_data[2])
-		tabs.add_child(tab_button)
-	if battle_secondary_tab == "bench":
-		render_battle_bench_tab(panel)
-	elif battle_secondary_tab == "hand":
-		render_battle_hand_tab(panel)
-	elif battle_secondary_tab == "details":
-		render_battle_details_tab(panel)
-	else:
-		render_battle_concede_tab(panel)
-
-func render_battle_bench_tab(panel: Container) -> void:
-	panel.add_child(label("Bench", 16, Color("9beaff")))
-	var switches := GridContainer.new()
-	switches.name = "BattleBenchGrid"
-	switches.columns = 2 if is_portrait_layout() else 3
-	switches.add_theme_constant_override("h_separation", 8)
-	switches.add_theme_constant_override("v_separation", 8)
-	panel.add_child(switches)
-	var switch_count := 0
-	for bench_index in battle.players[0].team.size():
-		if bench_index == int(battle.players[0].active):
-			continue
-		var bench_unit: Dictionary = battle.players[0].team[bench_index]
-		if int(bench_unit.get("hp", 0)) > 0:
-			var switch_button := make_button("Switch %s" % str(bench_unit.get("name", "Unknown")), submit_battle_switch.bind(bench_index))
-			switch_button.name = "BattleSwitch%s" % str(bench_unit.get("id", "Unknown"))
-			switches.add_child(switch_button)
-			switch_count += 1
-	if switch_count == 0:
-		switches.add_child(label("No healthy bench prints.", 14, Color("b9cad7")))
-
-func render_battle_hand_tab(panel: Container) -> void:
-	panel.add_child(label("Hand — Deck %d | Discard %d" % [battle.players[0].deck.size(), battle.players[0].get("discard", []).size()], 16, Color("9beaff")))
-	var cards := GridContainer.new()
-	cards.name = "BattleHandGrid"
-	cards.columns = 4
-	cards.add_theme_constant_override("h_separation", 8)
-	cards.add_theme_constant_override("v_separation", 8)
-	# Portrait cards stay portrait at every device size. A bounded horizontal
-	# carousel protects their readable rules/target copy instead of flattening
-	# four cards into landscape info tiles.
-	var carousel := ScrollContainer.new()
-	carousel.name = "BattleHandCarousel"
-	carousel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	carousel.custom_minimum_size = Vector2(0, 238)
-	carousel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(carousel)
-	carousel.add_child(cards)
-	var counts := {}
-	for raw_id in battle.players[0].hand: counts[str(raw_id)] = int(counts.get(str(raw_id), 0)) + 1
-	for card_id in counts:
-		var definition := Catalog.support_card(str(card_id))
-		var reason := SupportCardRules.legality_reason(battle, 0, definition)
-		var card = _new_support_card_view()
-		if card != null:
-			card.configure(definition, int(counts[card_id]), reason, false, true); card.pressed.connect(submit_battle_card.bind(str(card_id)))
-			card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-			card.name = "BattleCard%s" % str(card_id).capitalize()
-			cards.add_child(card)
-	cards.custom_minimum_size = Vector2(maxi(1, counts.size()) * 158, 225)
+func _render_battle_finished_result(intro: Container) -> void:
+	var outcome := "Victory!" if battle.winner == 0 else "Defeat."
+	intro.add_child(label("%s - Core Printer status resolved." % outcome, 22, Color("ffd36c")))
+	if battle_mode == "trial" and not trial_encounter_id.is_empty():
+		var trial_state := GameManager.campaign_encounter_state(trial_encounter_id)
+		var reward: Dictionary = trial_state.get("reward", {})
+		intro.add_child(label("Workshop Trial: %s\n%s" % [str(trial_state.get("encounter", {}).get("name", "Encounter")), "Victory claims %d Forge Coins, %d XP, and +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))] if battle.winner == 0 else "Defeats do not grant a Workshop Trial first-clear reward."], 15, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
+	elif battle_mode == "training":
+		var finished_contract: Dictionary = _daily_contract(training_contract_id)
+		var claimed: bool = training_contract_id in GameManager.profile.get("daily_training", {}).get("claimed_ids", [])
+		var reward: Dictionary = finished_contract.get("reward", {})
+		var contract_result := make_panel(Color("17394ee8"), Color("70dcea") if battle.winner == 0 else Color("d27e70"))
+		contract_result.name = "DailyContractResult"
+		intro.add_child(contract_result.get_parent())
+		contract_result.add_child(label("%s - %s" % [str(finished_contract.get("name", "Daily Contract")), "Cleared" if battle.winner == 0 else "Held"], 17, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
+		contract_result.add_child(label("Practice complete. Today's first-clear reward was already claimed." if claimed else "Return to claim +%d Forge Coins and +%d XP." % [int(reward.get("coins", 0)), int(reward.get("xp", 0))] if battle.winner == 0 else "No daily reward was claimed. The frozen contract remains available for another attempt.", 14, Color("fff0a1") if battle.winner == 0 else Color("ffaaa1")))
+	intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Proving Door", finish_battle, Color("536c8d")))
 
 func submit_battle_card(card_id: String) -> void:
 	_audio_director.cue("card")
@@ -2562,34 +2225,6 @@ func submit_battle_card(card_id: String) -> void:
 func battle_feedback_text() -> String:
 	var presenter = _optional_script(BATTLE_FEEDBACK_PRESENTER_PATH, "Battle feedback")
 	return str(presenter.format(battle, battle_last_event, _audio_director.last_caption)) if presenter != null else _audio_director.last_caption
-
-func render_battle_details_tab(panel: Container) -> void:
-	for player in [1, 0]:
-		var unit := battle.active_unit(player)
-		var suit_id := str(unit.get("suit_id", ""))
-		var max_hp: int = int(unit.get("max_hp", 1))
-		var base_hp: int = int(Catalog.creature(str(unit.get("id", ""))).get("hp", max_hp))
-		panel.add_child(label(("Rival" if player == 1 else "You") + ": " + str(unit.get("name", "Unknown")) + "  %d/%d HP - %s" % [int(unit.get("hp", 0)), max_hp, str(unit.get("element", "Unknown"))], 15, Color("ffaaa1") if player == 1 else Color("a9ecff")))
-		panel.add_child(label("Suit: None" if suit_id.is_empty() else "Suit: %s | +%d maximum HP | %d guard | Core: %s" % [str(unit.get("suit_name", "Full suit")), max_hp - base_hp, int(unit.get("armor", 0)), str(unit.get("core_name", "None"))], 13, Color("f1be69")))
-		panel.add_child(label("Filament %d/%d | Attack %d | %s (%d; cd %d)" % [int(battle.players[player].get("filament", 0)), int(battle.players[player].get("spool_cap", 0)), int(unit.get("attack", 0)), str(unit.get("ability", "Signature")), int(unit.get("ability_cost", 0)), int(unit.get("cooldown_remaining", 0))], 13, Color("d9e7f3")))
-		panel.add_child(label("Signature effect: " + Catalog.signature_description(str(unit.get("id", ""))), 12, Color("b9d3e8")))
-	panel.add_child(label("Battle log\n" + "\n".join(battle.log.slice(maxi(0, battle.log.size()-4))), 13, Color("d0dfeb")))
-
-func render_battle_concede_tab(panel: Container) -> void:
-	var concede_row := HBoxContainer.new()
-	concede_row.add_theme_constant_override("separation", 8)
-	panel.add_child(concede_row)
-	if battle_concede_armed:
-		var confirm := make_button("Confirm Concede", toggle_battle_concede, Color("9a5b6f"))
-		confirm.name = "BattleActionConfirmConcede"
-		concede_row.add_child(confirm)
-		var cancel := make_button("Cancel Concede", cancel_battle_concede, Color("536c8d"))
-		cancel.name = "BattleActionCancelConcede"
-		concede_row.add_child(cancel)
-	else:
-		var concede := make_button("Concede", toggle_battle_concede, Color("9a5b6f"))
-		concede.name = "BattleActionConcede"
-		concede_row.add_child(concede)
 
 func toggle_battle_secondary() -> void:
 	battle_secondary_open = not battle_secondary_open

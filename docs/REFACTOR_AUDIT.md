@@ -2,6 +2,14 @@
 
 ## Completed behavior-preserving cleanup
 
+- Extracted the Printer Bench Blueprint Tray into `BlueprintTrayView`, retaining
+  Main's `printer_blueprint_ids()` and `select_printer_blueprint()` facades for
+  direct UI tests and existing callers.
+- Added `BattleViewComponent` as the rebuildable fullscreen battle shell for
+  the summary, action dock, and tactical tabs. `BattleScreenComponent` still
+  owns the persistent lazy `BattleSpriteStage`; Main retains intents, AI,
+  navigation, and rewards.
+
 - Removed unused caller-supplied `price` parameters from the three GameManager
   progression methods. ProgressionRules remains the single catalog-authoritative
   source for blueprint and print prices.
@@ -28,9 +36,9 @@
 
 ## Deferred higher-risk cleanup
 
-- Move the remaining surrounding Workshop/Battle/Forge markup out of Main.
-  This checkpoint persists the expensive presentation nodes first; moving every
-  control callback at once would risk navigation behavior.
+- Move the remaining surrounding Workshop/Forge markup out of Main. The Printer
+  Tray and battle shell now use narrow rebuildable views, while Main retains
+  their navigation, action, AI, and reward authority.
 - Replace dynamic Dictionary profile and serialized authority payloads with
   complete typed models. `BattleUnitRuntime` is deliberately an adapter so old
   saves, intents, and catalog IDs remain compatible.
