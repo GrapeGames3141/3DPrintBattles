@@ -102,7 +102,8 @@ func _draw() -> void:
 	# the visible gold build surface in the approved printer frames.
 	var printer_bounds := Rect2(size.x * 0.17, 0, size.x * 0.66, size.y)
 	if equipment_preview != null:
-		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE
+		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE and TieredArmorRoster.has_master(creature_id)
+		equipment_preview.configure_creature(creature_id)
 		equipment_preview.configure_tier(armor_id if core_id.is_empty() else "standard")
 		equipment_preview.configure_core(core_id)
 		equipment_preview.position = Vector2(size.x * 0.74, 12)

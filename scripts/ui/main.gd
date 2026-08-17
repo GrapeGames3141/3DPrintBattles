@@ -1504,7 +1504,7 @@ func render_printer() -> void:
 	var print_type := ("Printed Core" if printer_is_core else "Complete suit") if printer_is_armor else str(definition.element)
 	panel.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
 	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
-	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
+	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
 	_forge_screen_component.attach(panel)
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
@@ -1546,7 +1546,7 @@ func _printer_progress_text() -> String:
 
 func _refresh_printer_presentation() -> void:
 	if screen != "printer" or printer_sequence == null: return
-	_forge_screen_component.refresh(printer_creature_id if not printer_is_armor else "cinderpaw", bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
+	_forge_screen_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
 	if is_instance_valid(printer_progress_label):
 		printer_progress_label.text = _printer_progress_text()
 
@@ -1637,9 +1637,9 @@ func render_team() -> void:
 		if instance_id.is_empty(): continue
 		var selected: bool = instance_id in team_draft
 		var creature_name := str(Catalog.creature(str(creature.get("creature_id", ""))).get("name", "Unknown"))
-		if str(creature.get("creature_id", "")) == "cinderpaw" and not str(creature.get("suit_instance_id", "")).is_empty():
+		if TieredArmorRoster.has_master(str(creature.get("creature_id", ""))) and not str(creature.get("suit_instance_id", "")).is_empty():
 			var loadout := EquipmentRules.suit_loadout(GameManager.profile, instance_id)
-			var portrait := TieredArmorPalettePreview.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
+			var portrait := TieredArmorPalettePreview.new(); portrait.custom_minimum_size = Vector2(160, 160); portrait.configure_creature(str(creature.get("creature_id", ""))); portrait.configure_tier(str(loadout.get("tier_id", "standard"))); portrait.configure_core(str(loadout.get("core_id", ""))); intro.add_child(portrait)
 			intro.add_child(label("%s • %s" % [str(ArmorCoreDefinitions.suit_definition(str(loadout.get("tier_id", ""))).get("name", "Full Suit")), str(ArmorCoreDefinitions.definition(str(loadout.get("core_id", ""))).get("name", "No Core"))], 13, Color("f1be69")))
 		intro.add_child(make_button(("Remove " if selected else "Add ") + "%s (Mastery %d)" % [creature_name, GameManager.creature_mastery(instance_id)], toggle_team_draft_member.bind(instance_id), Color("588d73") if selected else Color("2f93a8")))
 	intro.add_child(make_button("Save Team", save_team_draft, Color("a86b2e")))
@@ -1699,7 +1699,7 @@ func open_armor_printer(armor_id: String) -> void:
 	printer_is_armor = true
 	printer_is_core = false
 	printer_armor_id = armor_id
-	printer_creature_id = "cinderpaw"
+	printer_creature_id = _selected_equipment_creature_species()
 	printer_price = int(definition.get("print", 0))
 	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)), true)
 	printer_tick_accumulator = 0.0; printer_presentation_seconds = 0.0; printer_failure = ""
@@ -1711,9 +1711,17 @@ func open_core_printer(core_id: String) -> void:
 	var definition := ArmorCoreDefinitions.core_blueprint_definition(core_id)
 	if definition.is_empty() or core_id not in GameManager.profile.get("core_blueprints", []):
 		_toast("That Core blueprint is not learned yet."); return
-	printer_is_armor = true; printer_is_core = true; printer_armor_id = core_id; printer_creature_id = "cinderpaw"; printer_price = int(definition.print)
+	printer_is_armor = true; printer_is_core = true; printer_armor_id = core_id; printer_creature_id = _selected_equipment_creature_species(); printer_price = int(definition.print)
 	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)), true)
 	printer_tick_accumulator = 0.0; printer_presentation_seconds = 0.0; printer_failure = ""; printer_return_screen = "armor"; screen = "printer"; render()
+
+func _selected_equipment_creature_species() -> String:
+	for creature in GameManager.profile.get("creatures", []):
+		if str(creature.get("instance_id", "")) == equipment_selected_creature_id:
+			var species_id := str(creature.get("creature_id", ""))
+			if Catalog.creature(species_id).is_empty() == false:
+				return species_id
+	return "cinderpaw"
 
 func render_deck() -> void:
 	var panel := make_panel(Color("19334de8"), Color("b88bff")); body.add_child(panel.get_parent())

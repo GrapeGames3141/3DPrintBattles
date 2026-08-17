@@ -1,11 +1,13 @@
 class_name TieredArmorPalettePreview
 extends Control
-## One texture + one shader material, parameterized into visual armor tiers.
+## One creature master + one shader material, parameterized into visual tiers.
 
+const ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
+# Legacy Cinderpaw constant retained for existing showcase/test callers.
 const MASTER_PATH := "res://assets/armor/tiered/cinderpaw_tiered_armor_signature_green_alpha_v3.png"
 const SHADER := preload("res://assets/armor/tiered/cinderpaw_tier_palette.gdshader")
 const CORES := preload("res://scripts/core/armor_core_definitions.gd")
-const GEM_CENTER_NORMALIZED := Vector2(0.689, 0.239)
+const GEM_CENTER_NORMALIZED := Vector2(0.694, 0.241)
 const PALETTES := {
 	"standard": {"name":"Standard", "subtitle":"Gunmetal field plate", "shadow":Color("111a24"), "primary":Color("3d5365"), "highlight":Color("98aab3")},
 	"reinforced": {"name":"Reinforced", "subtitle":"Bronze forge plate", "shadow":Color("332016"), "primary":Color("8d5430"), "highlight":Color("e2ae68")},
@@ -16,13 +18,14 @@ const PALETTES := {
 
 var tier_id := "standard"
 var core_id := ""
+var creature_id := "cinderpaw"
 var image: TextureRect
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	image = TextureRect.new()
 	image.name = "TieredArmorMaster"
-	image.texture = load(MASTER_PATH) as Texture2D
+	image.texture = load(master_path()) as Texture2D
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -37,11 +40,29 @@ func configure_core(next_core_id: String) -> void:
 	core_id = next_core_id if CORES.CORES.has(next_core_id) else ""
 	_apply_palette()
 
+func configure_creature(next_creature_id: String) -> void:
+	creature_id = next_creature_id if ROSTER.ROSTER.has(next_creature_id) else "cinderpaw"
+	if image != null:
+		image.texture = load(master_path()) as Texture2D
+	_apply_palette()
+
+func master_path() -> String:
+	return ROSTER.master_path_for(creature_id)
+
+func gem_anchor() -> Vector2:
+	return ROSTER.gem_anchor_for(creature_id)
+
+func gem_radius() -> Vector2:
+	return ROSTER.gem_radius_for(creature_id)
+
 func palette() -> Dictionary:
 	return Dictionary(PALETTES.get(tier_id, PALETTES.standard)).duplicate(true)
 
 static func source_path_for_tier(next_tier_id: String) -> String:
 	return MASTER_PATH if PALETTES.has(next_tier_id) else ""
+
+static func source_path_for_creature_tier(next_creature_id: String, next_tier_id: String) -> String:
+	return ROSTER.master_path_for(next_creature_id) if PALETTES.has(next_tier_id) else ""
 
 static func apply_core_tint_sample(source: Color, mask_alpha: float, core_color: Color, installed: bool) -> Color:
 	if mask_alpha <= 0.0:
@@ -79,8 +100,21 @@ static func gem_mask_for_color(color: Color) -> float:
 	var green_dominance := color.g - maxf(color.r, color.b)
 	return _smoothstep(0.012, 0.040, saturation) * _smoothstep(0.006, 0.035, green_dominance)
 
+static func gem_region_mask(normalized_position: Vector2, anchor: Vector2, radius: Vector2) -> float:
+	var safe_radius := Vector2(maxf(radius.x, 0.001), maxf(radius.y, 0.001))
+	var delta := (normalized_position - anchor) / safe_radius
+	# Feather only inside the measured ellipse; nothing outside the declared
+	# helmet-local bound may receive a Core tint.
+	return 1.0 - _smoothstep(0.82, 1.0, delta.length_squared())
+
+static func gem_mask_for_creature(color: Color, normalized_position: Vector2, next_creature_id: String) -> float:
+	return gem_mask_for_color(color) * gem_region_mask(normalized_position, ROSTER.gem_anchor_for(next_creature_id), ROSTER.gem_radius_for(next_creature_id))
+
 static func recolor_source_color(color: Color, selected_palette: Dictionary) -> Color:
-	var mask := armor_mask_for_color(color)
+	return recolor_masked_source_color(color, armor_mask_for_color(color), selected_palette)
+
+static func recolor_masked_source_color(color: Color, mask_alpha: float, selected_palette: Dictionary) -> Color:
+	var mask := clampf(mask_alpha, 0.0, 1.0)
 	if mask <= 0.0:
 		return color
 	var luminance := color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722
@@ -106,11 +140,12 @@ func _apply_palette() -> void:
 	material.set_shader_parameter("plate_shadow", palette_data.shadow)
 	material.set_shader_parameter("plate_primary", palette_data.primary)
 	material.set_shader_parameter("plate_highlight", palette_data.highlight)
-	material.set_shader_parameter("plate_mask_min_saturation", 0.16)
-	material.set_shader_parameter("plate_mask_min_blue_dominance", 0.075)
+	material.set_shader_parameter("plate_mask_texture", load(ROSTER.plate_mask_path_for(creature_id)) as Texture2D)
 	var core_data: Dictionary = CORES.definition(core_id)
 	material.set_shader_parameter("core_tint", core_data.get("color", Color.WHITE))
 	material.set_shader_parameter("core_installed", 1.0 if not core_data.is_empty() else 0.0)
 	material.set_shader_parameter("gem_mask_min_saturation", 0.012)
 	material.set_shader_parameter("gem_mask_min_green_dominance", 0.006)
+	material.set_shader_parameter("gem_anchor", gem_anchor())
+	material.set_shader_parameter("gem_radius", gem_radius())
 	image.material = material

@@ -34,6 +34,10 @@ func _ready() -> void:
 	right_armor_preview = TieredArmorPalettePreview.new(); right_armor_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(right_armor_preview)
 	left_core_vfx = CorePowerVFX.new(); left_core_vfx.name = "BattleLeftCoreActivation"; add_child(left_core_vfx)
 	right_core_vfx = CorePowerVFX.new(); right_core_vfx.name = "BattleRightCoreActivation"; add_child(right_core_vfx)
+	left_armor_preview.configure_creature(left_id)
+	right_armor_preview.configure_creature(right_id)
+	left_core_vfx.configure_creature(left_id)
+	right_core_vfx.configure_creature(right_id)
 	_update_processing()
 	queue_redraw()
 
@@ -63,6 +67,14 @@ func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, 
 			_trigger_core_activation(right_core_vfx, right_core_id, actor == 1)
 		elif resolved_kind != "ability":
 			_clear_core_activations()
+	if left_armor_preview != null:
+		left_armor_preview.configure_creature(left_id)
+	if right_armor_preview != null:
+		right_armor_preview.configure_creature(right_id)
+	if left_core_vfx != null:
+		left_core_vfx.configure_creature(left_id)
+	if right_core_vfx != null:
+		right_core_vfx.configure_creature(right_id)
 	CreatureSpriteCache.texture_for_creature(left_id)
 	CreatureSpriteCache.texture_for_creature(right_id)
 	_update_processing()
@@ -138,11 +150,11 @@ func _draw() -> void:
 	var right_offset := offset if event_actor == 1 else Vector2.ZERO
 	var left_destination := _draw_creature(left_id, left_suit_id, left_core_id, Rect2(left_target.position + left_offset, left_target.size), _frame_for(true), false, left_armor_preview)
 	var right_destination := _draw_creature(right_id, right_suit_id, right_core_id, Rect2(right_target.position + right_offset, right_target.size), _frame_for(false), true, right_armor_preview)
-	_sync_core_activation(left_core_vfx, left_destination, left_id == "cinderpaw" and not left_suit_id.is_empty(), 0)
-	_sync_core_activation(right_core_vfx, right_destination, right_id == "cinderpaw" and not right_suit_id.is_empty(), 1)
+	_sync_core_activation(left_core_vfx, left_destination, not left_suit_id.is_empty() and TieredArmorRoster.has_master(left_id), 0)
+	_sync_core_activation(right_core_vfx, right_destination, not right_suit_id.is_empty() and TieredArmorRoster.has_master(right_id), 1)
 	_draw_move_vfx(left_destination, right_destination)
-	_draw_core_activation_halo(left_destination, left_core_id, 0)
-	_draw_core_activation_halo(right_destination, right_core_id, 1)
+	_draw_core_activation_halo(left_destination, left_id, left_core_id, 0)
+	_draw_core_activation_halo(right_destination, right_id, right_core_id, 1)
 
 func _lunge_offset() -> Vector2:
 	if event_kind not in ["attack", "ability"] or not is_event_active(): return Vector2.ZERO
@@ -150,23 +162,24 @@ func _lunge_offset() -> Vector2:
 	return Vector2(travel if event_actor == 0 else -travel, 0)
 
 func _draw_creature(id: String, suit_id: String, core_id: String, target: Rect2, frame: int, flip: bool, armor_preview: TieredArmorPalettePreview) -> Rect2:
-	var is_armored_cinderpaw := id == "cinderpaw" and not suit_id.is_empty()
-	var texture := CreatureSpriteCache.texture_for_path(TieredArmorPalettePreview.MASTER_PATH) if is_armored_cinderpaw else CreatureSpriteCache.texture_for_creature(id)
+	var is_armored := not suit_id.is_empty() and TieredArmorRoster.has_master(id)
+	var texture := CreatureSpriteCache.texture_for_path(TieredArmorRoster.master_path_for(id)) if is_armored else CreatureSpriteCache.texture_for_creature(id)
 	if texture == null: return Rect2()
-	var source := Rect2(Vector2.ZERO, texture.get_size()) if is_armored_cinderpaw else safe_source_region(id, frame)
+	var source := Rect2(Vector2.ZERO, texture.get_size()) if is_armored else safe_source_region(id, frame)
 	var fit: float = minf(target.size.x / source.size.x, target.size.y / source.size.y)
 	var fitted := source.size * fit
 	var destination := Rect2(target.position + (target.size - fitted) * 0.5, fitted)
 	if armor_preview != null:
-		armor_preview.visible = is_armored_cinderpaw
-		if is_armored_cinderpaw:
+		armor_preview.visible = is_armored
+		if is_armored:
+			armor_preview.configure_creature(id)
 			armor_preview.configure_tier(suit_id)
 			armor_preview.configure_core(core_id)
 			armor_preview.position = destination.position
 			armor_preview.size = destination.size
 			armor_preview.pivot_offset = destination.size * 0.5
 			armor_preview.scale = Vector2(-1, 1) if flip else Vector2.ONE
-	if is_armored_cinderpaw: return destination
+	if is_armored: return destination
 	if flip:
 		draw_set_transform(Vector2(destination.position.x + destination.size.x, destination.position.y), 0.0, Vector2(-1, 1))
 		draw_texture_rect_region(texture, Rect2(Vector2.ZERO, destination.size), source)
@@ -242,9 +255,9 @@ func _draw_move_vfx(left: Rect2, right: Rect2) -> void:
 	elif event_kind == "switch":
 		draw_line(origin + Vector2(-20, 0), origin + Vector2(20, 0), color, 3.0, true)
 
-func _draw_core_activation_halo(destination: Rect2, core_id: String, side: int) -> void:
+func _draw_core_activation_halo(destination: Rect2, creature_id: String, core_id: String, side: int) -> void:
 	if not _is_core_activation_visible(side, core_id) or destination.size.x <= 0.0: return
-	var center := destination.position + destination.size * CorePowerVFX.HELMET_GEM_CENTER_NORMALIZED
+	var center := destination.position + destination.size * TieredArmorRoster.gem_anchor_for(creature_id)
 	var radius := minf(destination.size.x, destination.size.y) * 0.065
 	var color := Color("f44cff")
 	draw_circle(center, radius, Color(color.r, color.g, color.b, 0.28))

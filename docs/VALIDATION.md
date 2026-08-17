@@ -748,3 +748,35 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
 - 2026-08-14 checkpoint 2 direct E: verification: parser PID 24656 exited 0; bounded profile/onboarding test PID 7016 exited 0; bounded battle regression PID 18272 exited 0; bounded OpenGL visual capture PID 24988 exited 0. No Godot console processes remained.
 - 2026-08-14 checkpoint 2 transition follow-up: parser PID 15652, profile rules test PID 17056, and battle rules test PID 19712 each exited 0. Fresh-scene OpenGL capture runs PID 11420 (1280x720) and PID 6200 (1920x1080) wrote four inspected PNGs to `E:/CodexCache/printforge-validation/`; no Godot process remained.
 - 2026-08-14 header-layout correction: isolated-mode capture PIDs 12700, 9448, 12436, and 21792 generated tagged onboarding/workshop files at 1280x720 and 1920x1080. The exact `workshop_*_headerfix.png` files were visually inspected at original detail and show the full `PRINTFORGE LEGENDS` title, subtitle, and ~20px top margin. Final parser PID 23756, profile test PID 23292, and battle test PID 26296 exited 0; no Godot process remained.
+## 2026-08-16 0.6.1 armor-roster staging validation
+
+- Full E:-isolated retained suite passed 34/34 Godot scenes. Expected
+  environment-only output: Windows root-certificate-store warning and preexisting
+  headless dummy-renderer cleanup warnings.
+- Renderer-backed review is retained in `docs/art/review/armor-roster-0.6.0/`:
+  24-creature no-Core, Standard, Arcane, and Legendary contact sheets at
+  576x1024 and 1280x720, plus Aquafin Team, Workbench, and Battle Core captures
+  at both sizes. Visual inspection confirmed source identity colors stay stable.
+- The 0.6.0 export succeeded before the requested non-overwriting preset bump.
+  Android Review now targets `PrintForge-Legends-0.6.1-armor-roster-arm64.apk`,
+  version code 76/name `0.6.1-armor-roster`; rerun export is required after this
+  preset update.
+
+## 2026-08-16 Arcane Foundry UI + armor-roster integration
+
+- A fresh index-derived E: worktree parsed and imported 214 assets with Godot
+  4.7.1, exit 0 (wrapper PID 14600; Godot PIDs 12600/22008). The durable merged
+  worktree parser also exited 0 (wrapper PID 16644; Godot PIDs 7620/11624).
+- The retained suite passed 34/34 scenes in isolated E:-based app-data roots;
+  the per-scene exit/PID manifest is
+  `E:/CodexCache/printforge-validation/armor-ui-merge-20260816/full-34-manifest.csv`.
+- Inspected merged OpenGL captures: Workbench Aquafin
+  `capture-equipment/images/equipment_workbench_aquafin_576x1024.png` and
+  `equipment_workbench_aquafin_1280x720.png` (wrapper PID 4672; Godot PIDs
+  24884/21288); armored Aquafin battle
+  `capture-battle/images/battle_armored_aquafin_storm_peak_576x1024.png` and
+  `battle_armored_aquafin_storm_peak_1280x720.png` (wrapper PID 26472; Godot
+  PIDs 14648/1932). The captures retain the Arcane Foundry shell and show the
+  selected roster armor master at both sizes.
+- Initial durable launcher/cache stalls were retained as bootstrap evidence;
+  fresh and direct-to-file runs passed, so no gameplay or source fix was needed.
