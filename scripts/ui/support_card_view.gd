@@ -1,6 +1,6 @@
 class_name SupportCardView
 extends Button
-## A single, portrait-first card renderer shared by archive, deck, shop and battle.
+## Portrait-first Arcane Foundry Pattern Plate shared by archive, deck, shop and battle.
 ## Art never carries copy: every player-facing label remains a real Godot control.
 const CARD_RULES := preload("res://scripts/battle/support_card_rules.gd")
 const ATLAS_PATHS := {"resources":"res://assets/cards/support_cards_resources_landscape_v2.png", "defense":"res://assets/cards/support_cards_defense_landscape_v2.png", "offense":"res://assets/cards/support_cards_offense_landscape_v2.png", "utility":"res://assets/cards/support_cards_utility_landscape_v2.png"}
@@ -23,26 +23,27 @@ func configure(definition: Dictionary, copies := 1, disabled_reason := "", hidde
 	focus_mode = Control.FOCUS_ALL if interactive else Control.FOCUS_NONE
 	mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
 	disabled = not disabled_reason.is_empty() or not interactive
-	add_theme_stylebox_override("normal", _outer_frame(definition, disabled_reason, hidden))
-	add_theme_stylebox_override("hover", _outer_frame(definition, disabled_reason, hidden, true))
-	add_theme_stylebox_override("pressed", _outer_frame(definition, disabled_reason, hidden, true))
-	add_theme_stylebox_override("disabled", _outer_frame(definition, disabled_reason, hidden))
+	add_theme_stylebox_override("normal", _outer_frame(disabled_reason, hidden))
+	add_theme_stylebox_override("hover", _outer_frame(disabled_reason, hidden, true))
+	add_theme_stylebox_override("pressed", _outer_frame(disabled_reason, hidden, true))
+	add_theme_stylebox_override("disabled", _outer_frame(disabled_reason, hidden))
 	name = name if not name.is_empty() else "SupportCardView"
 	if hidden:
 		_build_hidden_back()
 	else:
 		_build_front(definition, copies, disabled_reason, compact)
 
-func _outer_frame(definition: Dictionary, disabled_reason: String, hidden: bool, hover := false) -> StyleBoxFlat:
-	var rarity := str(definition.get("rarity", "common"))
+func _outer_frame(disabled_reason: String, hidden: bool, hover := false) -> StyleBoxFlat:
 	var frame := StyleBoxFlat.new()
-	frame.bg_color = Color("111c2f") if not hidden else Color("121b2b")
-	frame.border_color = _rarity_color(rarity).lightened(0.18) if hover and disabled_reason.is_empty() else _rarity_color(rarity)
-	frame.set_border_width_all(3)
-	frame.corner_radius_top_left = 12; frame.corner_radius_top_right = 12
-	frame.corner_radius_bottom_left = 12; frame.corner_radius_bottom_right = 12
-	frame.shadow_color = Color(0.0, 0.0, 0.0, 0.48); frame.shadow_size = 5; frame.shadow_offset = Vector2(0, 3)
-	frame.content_margin_left = 5; frame.content_margin_right = 5; frame.content_margin_top = 5; frame.content_margin_bottom = 5
+	frame.bg_color = Color("121519") if not hidden else Color("141619")
+	# The outer seam is an aged-brass forged-steel edge. Rarity belongs to the small
+	# pip below the art rather than turning every whole card into a rainbow frame.
+	frame.border_color = Color("64b9c2") if hover and disabled_reason.is_empty() else Color("8b7046")
+	frame.set_border_width_all(1)
+	frame.corner_radius_top_left = 5; frame.corner_radius_top_right = 5
+	frame.corner_radius_bottom_left = 5; frame.corner_radius_bottom_right = 5
+	frame.shadow_color = Color(0.0, 0.0, 0.0, 0.42); frame.shadow_size = 3; frame.shadow_offset = Vector2(0, 2)
+	frame.content_margin_left = 3; frame.content_margin_right = 3; frame.content_margin_top = 3; frame.content_margin_bottom = 3
 	return frame
 
 func _build_hidden_back() -> void:
@@ -65,32 +66,34 @@ func _build_front(definition: Dictionary, copies: int, disabled_reason: String, 
 	var content := VBoxContainer.new()
 	content.name = "CardContent"
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_theme_constant_override("separation", 3 if compact else 4)
+	content.add_theme_constant_override("separation", 2 if compact else 3)
 	inset.add_child(content)
+	# Arcane Foundry: a clear, single title rail with an integrated spool token.
 	var title_plate := PanelContainer.new()
 	title_plate.name = "CardTitlePlate"
 	title_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_plate.custom_minimum_size = Vector2(0, 24 if compact else 28)
+	title_plate.custom_minimum_size = Vector2(0, 23 if compact else 27)
 	title_plate.add_theme_stylebox_override("panel", _title_frame(definition))
 	content.add_child(title_plate)
 	var title_row := Control.new()
 	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title_plate.add_child(title_row)
-	var title := _text(str(definition.get("name", "Support Card")), 12 if compact else 14, Color("fff0a1"))
+	var title := _text(str(definition.get("name", "Support Card")), 12 if compact else 14, Color("f7ead0"))
 	title.name = "CardTitle"
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 1)
-	title.offset_right = -34
+	title.offset_right = -28
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title_row.add_child(title)
-	var cost := _text("%d F" % int(definition.get("cost", 0)), 11 if compact else 12, Color("102033"))
+	var token_size := 21.0 if compact else 23.0
+	var cost := _text("%dF" % int(definition.get("cost", 0)), 9 if compact else 10, Color("172333"))
 	cost.name = "CardCostBadge"
 	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	cost.custom_minimum_size = Vector2(30, 22)
+	cost.custom_minimum_size = Vector2(token_size, token_size)
 	cost.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 1)
-	cost.offset_left = -30
+	cost.offset_left = -token_size
 	cost.add_theme_stylebox_override("normal", _badge_frame())
 	title_row.add_child(cost)
 	# Approved v2 atlas cells and the visible viewport are both 3:2. The aspect
@@ -101,7 +104,7 @@ func _build_front(definition: Dictionary, copies: int, disabled_reason: String, 
 	art_aspect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_aspect.ratio = 1.5
 	art_aspect.stretch_mode = AspectRatioContainer.STRETCH_WIDTH_CONTROLS_HEIGHT
-	art_aspect.custom_minimum_size = Vector2(0, 92 if compact else 108)
+	art_aspect.custom_minimum_size = Vector2(0, 94 if compact else 110)
 	content.add_child(art_aspect)
 	var art_frame := PanelContainer.new()
 	art_frame.name = "CardArtWindow"
@@ -115,26 +118,65 @@ func _build_front(definition: Dictionary, copies: int, disabled_reason: String, 
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.texture = atlas_region(definition)
 	art_frame.add_child(art)
-	var role := _text("%s  •  %s" % [str(definition.get("rarity", "common")).capitalize(), str(definition.get("role", "utility")).capitalize()], 9 if compact else 10, _rarity_color(str(definition.get("rarity", "common"))))
+	# A quiet technical metadata seam carries the only rarity-color treatment.
+	var metadata := PanelContainer.new()
+	metadata.name = "CardMetadataStrip"
+	metadata.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	metadata.custom_minimum_size = Vector2(0, 14 if compact else 16)
+	metadata.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	metadata.add_theme_stylebox_override("panel", _metadata_frame())
+	content.add_child(metadata)
+	var metadata_contents := Control.new()
+	metadata_contents.name = "CardMetadataContents"
+	metadata_contents.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	metadata_contents.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	metadata_contents.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 0)
+	metadata.add_child(metadata_contents)
+	var pip := PanelContainer.new()
+	pip.name = "CardRarityPip"
+	pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pip.custom_minimum_size = Vector2(6, 6)
+	pip.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	pip.offset_left = 4; pip.offset_top = -3; pip.offset_right = 10; pip.offset_bottom = 3
+	pip.add_theme_stylebox_override("panel", _rarity_pip_frame(str(definition.get("rarity", "common"))))
+	metadata_contents.add_child(pip)
+	var role := _text("%s / %s" % [str(definition.get("rarity", "common")).capitalize(), str(definition.get("role", "utility")).capitalize()], 8 if compact else 9, _role_color(str(definition.get("role", "utility"))))
 	role.name = "CardRarityRole"
 	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(role)
+	role.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	role.autowrap_mode = TextServer.AUTOWRAP_OFF
+	role.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	role.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 0)
+	role.offset_left = 12; role.offset_right = -2
+	metadata_contents.add_child(role)
 	var rules := _text(CARD_RULES.rules_text(definition), 9 if compact else 11, Color("e8f1fa"))
 	rules.name = "CardRulesPanel"
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rules.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rules.add_theme_stylebox_override("normal", _rules_frame())
 	content.add_child(rules)
-	var target := _text("Target: " + CARD_RULES.target_text(definition), 8 if compact else 9, Color("b9dff1"))
+	# Target and ownership are deliberately subordinate to the rules field.
+	var target_rail := PanelContainer.new()
+	target_rail.name = "CardTargetRail"
+	target_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	target_rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	target_rail.add_theme_stylebox_override("panel", _target_frame(definition))
+	content.add_child(target_rail)
+	var footer := VBoxContainer.new()
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer.add_theme_constant_override("separation", 0)
+	target_rail.add_child(footer)
+	var target := _text("Target: " + CARD_RULES.target_text(definition), 8 if compact else 9, Color("c4e6ea"))
 	target.name = "CardTargetFooter"
 	target.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	target.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(target)
+	footer.add_child(target)
 	if copies > 1:
-		var count := _text("In hand / owned: x%d" % copies, 8 if compact else 9, Color("b3e8a3"))
+		var count := _text("Owned: x%d" % copies, 8 if compact else 9, Color("b6d8b7"))
 		count.name = "CardOwnershipCount"
 		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		content.add_child(count)
+		footer.add_child(count)
 	if not disabled_reason.is_empty():
 		var disabled_banner := _text(disabled_reason, 8 if compact else 9, Color("fff0e2"))
 		disabled_banner.name = "CardLegalityBanner"
@@ -145,44 +187,61 @@ func _build_front(definition: Dictionary, copies: int, disabled_reason: String, 
 
 func _inset_frame(definition: Dictionary) -> StyleBoxFlat:
 	var frame := StyleBoxFlat.new()
-	frame.bg_color = Color("1a2c43")
-	frame.border_color = Color("ad7b35")
-	frame.set_border_width_all(2)
-	frame.corner_radius_top_left = 8; frame.corner_radius_top_right = 8
-	frame.corner_radius_bottom_left = 8; frame.corner_radius_bottom_right = 8
-	frame.content_margin_left = 5; frame.content_margin_right = 5; frame.content_margin_top = 5; frame.content_margin_bottom = 5
+	frame.bg_color = Color("202426")
+	frame.border_color = Color("705f43")
+	frame.set_border_width_all(1)
+	frame.corner_radius_top_left = 3; frame.corner_radius_top_right = 3
+	frame.corner_radius_bottom_left = 3; frame.corner_radius_bottom_right = 3
+	frame.content_margin_left = 3; frame.content_margin_right = 3; frame.content_margin_top = 3; frame.content_margin_bottom = 3
 	return frame
 
 func _badge_frame() -> StyleBoxFlat:
-	var frame := StyleBoxFlat.new(); frame.bg_color = Color("f0bd62"); frame.border_color = Color("ffe5a7")
-	frame.set_border_width_all(1); frame.corner_radius_top_left = 6; frame.corner_radius_top_right = 6; frame.corner_radius_bottom_left = 6; frame.corner_radius_bottom_right = 6
+	var frame := StyleBoxFlat.new(); frame.bg_color = Color("b98b4d"); frame.border_color = Color("ecd9ae")
+	frame.set_border_width_all(1); frame.corner_radius_top_left = 12; frame.corner_radius_top_right = 12; frame.corner_radius_bottom_left = 12; frame.corner_radius_bottom_right = 12
 	return frame
 
 func _title_frame(definition: Dictionary) -> StyleBoxFlat:
 	var frame := StyleBoxFlat.new()
-	frame.bg_color = Color("263b53")
-	frame.border_color = _rarity_color(str(definition.get("rarity", "common"))).darkened(0.15)
+	frame.bg_color = Color("292a29")
+	frame.border_color = Color("8a7048")
 	frame.set_border_width_all(1)
-	frame.corner_radius_top_left = 5; frame.corner_radius_top_right = 5
-	frame.corner_radius_bottom_left = 5; frame.corner_radius_bottom_right = 5
-	frame.content_margin_left = 4; frame.content_margin_right = 3; frame.content_margin_top = 1; frame.content_margin_bottom = 1
+	frame.corner_radius_top_left = 3; frame.corner_radius_top_right = 3
+	frame.corner_radius_bottom_left = 3; frame.corner_radius_bottom_right = 3
+	frame.content_margin_left = 4; frame.content_margin_right = 2; frame.content_margin_top = 1; frame.content_margin_bottom = 1
 	return frame
 
 func _art_frame(definition: Dictionary) -> StyleBoxFlat:
-	var frame := StyleBoxFlat.new(); frame.bg_color = Color("091426"); frame.border_color = _rarity_color(str(definition.get("rarity", "common"))).darkened(0.2)
-	frame.set_border_width_all(2); frame.corner_radius_top_left = 5; frame.corner_radius_top_right = 5; frame.corner_radius_bottom_left = 5; frame.corner_radius_bottom_right = 5
-	frame.content_margin_left = 2; frame.content_margin_right = 2; frame.content_margin_top = 2; frame.content_margin_bottom = 2
+	var frame := StyleBoxFlat.new(); frame.bg_color = Color("101314"); frame.border_color = Color("9a7744")
+	frame.set_border_width_all(1); frame.corner_radius_top_left = 2; frame.corner_radius_top_right = 2; frame.corner_radius_bottom_left = 2; frame.corner_radius_bottom_right = 2
+	frame.content_margin_left = 1; frame.content_margin_right = 1; frame.content_margin_top = 1; frame.content_margin_bottom = 1
+	return frame
+
+func _metadata_frame() -> StyleBoxFlat:
+	var frame := StyleBoxFlat.new(); frame.bg_color = Color("1a2021"); frame.border_color = Color("4ca5ae")
+	frame.border_width_bottom = 1
+	frame.content_margin_left = 3; frame.content_margin_right = 3; frame.content_margin_top = 1; frame.content_margin_bottom = 1
+	return frame
+
+func _rarity_pip_frame(rarity: String) -> StyleBoxFlat:
+	var frame := StyleBoxFlat.new(); frame.bg_color = _rarity_color(rarity); frame.border_color = Color("fff0d0")
+	frame.set_border_width_all(1); frame.corner_radius_top_left = 4; frame.corner_radius_top_right = 4; frame.corner_radius_bottom_left = 4; frame.corner_radius_bottom_right = 4
 	return frame
 
 func _rules_frame() -> StyleBoxFlat:
-	var frame := StyleBoxFlat.new(); frame.bg_color = Color("0c1d31"); frame.border_color = Color("314f69")
-	frame.set_border_width_all(1); frame.corner_radius_top_left = 4; frame.corner_radius_top_right = 4; frame.corner_radius_bottom_left = 4; frame.corner_radius_bottom_right = 4
+	var frame := StyleBoxFlat.new(); frame.bg_color = Color("16191a"); frame.border_color = Color("4a4d4b")
+	frame.set_border_width_all(1); frame.corner_radius_top_left = 2; frame.corner_radius_top_right = 2; frame.corner_radius_bottom_left = 2; frame.corner_radius_bottom_right = 2
 	frame.content_margin_left = 4; frame.content_margin_right = 4; frame.content_margin_top = 3; frame.content_margin_bottom = 3
+	return frame
+
+func _target_frame(definition: Dictionary) -> StyleBoxFlat:
+	var frame := StyleBoxFlat.new(); frame.bg_color = Color("1b1e1e"); frame.border_color = Color("8a7048")
+	frame.border_width_top = 1
+	frame.content_margin_left = 3; frame.content_margin_right = 3; frame.content_margin_top = 1; frame.content_margin_bottom = 1
 	return frame
 
 func _disabled_frame() -> StyleBoxFlat:
 	var frame := StyleBoxFlat.new(); frame.bg_color = Color("803f45"); frame.border_color = Color("ffaaa1")
-	frame.set_border_width_all(1); frame.corner_radius_top_left = 4; frame.corner_radius_top_right = 4; frame.corner_radius_bottom_left = 4; frame.corner_radius_bottom_right = 4
+	frame.set_border_width_all(1); frame.corner_radius_top_left = 3; frame.corner_radius_top_right = 3; frame.corner_radius_bottom_left = 3; frame.corner_radius_bottom_right = 3
 	frame.content_margin_left = 3; frame.content_margin_right = 3; frame.content_margin_top = 2; frame.content_margin_bottom = 2
 	return frame
 
@@ -192,6 +251,13 @@ func _rarity_color(rarity: String) -> Color:
 		"rare": return Color("73dfff")
 		"uncommon": return Color("87db91")
 		_: return Color("d1b77d")
+
+func _role_color(role: String) -> Color:
+	match role:
+		"resources": return Color("b99a62")
+		"defense": return Color("75aeb2")
+		"offense": return Color("d47a43")
+		_: return Color("a48bad")
 
 static func atlas_texture_for_test(atlas_id: String) -> Texture2D:
 	if not ATLAS_PATHS.has(atlas_id): return null

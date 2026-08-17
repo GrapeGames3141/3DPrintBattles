@@ -92,14 +92,26 @@ func _require_card_front(card: Button, disabled := false, decorative := false, c
 	if hidden:
 		require(card.find_child("CardBackArt", true, false) != null and card.find_child("CardTitlePlate", true, false) == null and card.tooltip_text == "Hidden support card", context + " is private, art-only and has no redundant plaque")
 		return
-	for field in ["CardInsetBorder", "CardTitlePlate", "CardTitle", "CardCostBadge", "CardArtAspect", "CardArtWindow", "CardArt", "CardRarityRole", "CardRulesPanel", "CardTargetFooter"]:
+	for field in ["CardInsetBorder", "CardTitlePlate", "CardTitle", "CardCostBadge", "CardArtAspect", "CardArtWindow", "CardArt", "CardMetadataStrip", "CardRarityPip", "CardRarityRole", "CardRulesPanel", "CardTargetRail", "CardTargetFooter"]:
 		require(card.find_child(field, true, false) != null, context + " has required " + field)
 	var title := card.find_child("CardTitle", true, false) as Label
+	var cost := card.find_child("CardCostBadge", true, false) as Label
+	var metadata := card.find_child("CardMetadataStrip", true, false) as Control
+	var pip := card.find_child("CardRarityPip", true, false) as Control
+	var role := card.find_child("CardRarityRole", true, false) as Label
 	var rules := card.find_child("CardRulesPanel", true, false) as Label
+	var target_rail := card.find_child("CardTargetRail", true, false) as Control
 	var target := card.find_child("CardTargetFooter", true, false) as Label
 	var art := card.find_child("CardArt", true, false) as TextureRect
 	var art_window := card.find_child("CardArtWindow", true, false) as Control
 	require(title != null and title.visible and not title.text.is_empty() and rules != null and rules.visible and not rules.text.is_empty() and target != null and target.visible and target.text.begins_with("Target:"), context + " visibly renders title, exact rules, and target")
+	var outer := card.get_theme_stylebox("normal") as StyleBoxFlat
+	require(outer != null and outer.border_width_left == 1 and outer.border_width_top == 1 and outer.corner_radius_top_left <= 5, context + " uses the thin clipped manufactured outer seam")
+	require(cost != null and cost.text.ends_with("F") and not cost.text.contains(" F") and is_equal_approx(cost.custom_minimum_size.x, cost.custom_minimum_size.y) and cost.custom_minimum_size.x <= 23.0, context + " integrates a compact circular spool-cost token in the title rail")
+	require(metadata != null and pip != null and pip.custom_minimum_size.x <= 6.0 and target_rail != null and target != null and target.is_ancestor_of(target_rail) == false and target_rail.is_ancestor_of(target), context + " separates rarity into a small metadata pip and places target copy in a footer rail")
+	require(role != null and role.autowrap_mode == TextServer.AUTOWRAP_OFF and role.get_global_rect().size.x >= 24.0 and role.get_global_rect().size.y >= 8.0, context + " keeps a readable compact rarity/category label on the metadata rail")
+	var ownership := card.find_child("CardOwnershipCount", true, false) as Label
+	if ownership != null: require(target_rail != null and target_rail.is_ancestor_of(ownership) and ownership.text.begins_with("Owned:"), context + " keeps ownership count subordinate in the target rail")
 	require(art != null and art.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED and art_window != null and art_window.get_global_rect().size.y >= 48.0 and absf(art_window.get_global_rect().size.x / maxf(1.0, art_window.get_global_rect().size.y) - 1.5) <= 0.03, context + " contains full landscape atlas art in an exact 3:2 framed window")
 	if art != null and art.texture is AtlasTexture:
 		var region := art.texture as AtlasTexture
