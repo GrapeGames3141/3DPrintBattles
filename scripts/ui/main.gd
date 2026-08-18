@@ -2,8 +2,8 @@ extends Control
 
 ## Runtime-safe workshop presentation; final character art remains approval-gated.
 const REFERENCE_TEXTURE := preload("res://assets/ui/workshop/workshop-theme-reference-fallback.jpg")
-const WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_landscape_v3.png")
-const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_portrait_v3.png")
+const WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_landscape_v4.png")
+const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/workshop_overview_portrait_v4.png")
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
@@ -22,7 +22,7 @@ const BLUEPRINT_TRAY_VIEW := preload("res://scripts/ui/blueprint_tray_view.gd")
 const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
 const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
-const REVIEW_BUILD_LABEL := "0.6.6-arcane-foundry-ui"
+const REVIEW_BUILD_LABEL := "0.6.7-workshop-hub"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -549,7 +549,7 @@ func _workshop_views() -> Array:
 		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "description":"The left Arcane Forge holds learned blueprints and printed companions.", "rect":Rect2(0.08, 0.32, 0.28, 0.44), "objects":[{"id":"forge_machine", "name":"Arcane Forge", "description":"Prepare a learned blueprint for a safe, witnessed print.", "target":"printer", "rect":Rect2(0.34, 0.27, 0.36, 0.56)}, {"id":"collection_case", "name":"Collection Case", "description":"Review your learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.08, 0.06, 0.25, 0.66)}]},
 		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, equipment, calibration", "description":"Shape your active team and every field-ready loadout.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Team Board", "description":"Set one to three printed companions as your active team.", "target":"team", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Choose and name a legal fifteen-card support deck.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"card_archive", "name":"Support Card Archive", "description":"Browse card art, rules, targets and owned copies.", "target":"archive", "rect":Rect2(0.26, 0.52, 0.28, 0.18)}, {"id":"armor_tools", "name":"Equipment Workbench", "description":"Learn, print, fit, socket, remove, and move full suits and Cores.", "target":"armor", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Calibration Dial", "description":"Run today's finite calibration pattern for a measured reward.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
 		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "description":"Browse fixed daily offers, records, and a local kid-safe trade demo.", "rect":Rect2(0.65, 0.30, 0.23, 0.34), "objects":[{"id":"offer_screen", "name":"Forge Offers", "description":"Review today's deterministic blueprint, card, and armor offers.", "target":"shop", "rect":Rect2(0.57, 0.35, 0.10, 0.29)}, {"id":"forgedex_screen", "name":"Forgedex Terminal", "description":"Track every discovered creature blueprint.", "target":"codex", "rect":Rect2(0.67, 0.35, 0.11, 0.29)}, {"id":"trade_terminal", "name":"Guild Trade Table", "description":"Open a credential-free two-profile escrow demonstration.", "target":"trade", "rect":Rect2(0.78, 0.35, 0.12, 0.29)}]},
-		{"id":"proving", "name":"Proving Door", "callout":"Daily Training, Trials, Local Versus", "description":"Step through the center door for daily training, ordered Workshop Trials, or a private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Proving Door", "description":"Choose a repeatable daily rival or an ordered Workshop Trial with fixed first-clear rewards.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
+		{"id":"proving", "name":"Battle Arena", "callout":"Daily Training, Trials, Local Versus", "description":"Enter the Battle Arena for daily training, ordered Workshop Trials, or a private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Battle Arena", "description":"Choose a repeatable daily rival or an ordered Workshop Trial with fixed first-clear rewards.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
 		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "description":"Visit printed companions for one calm, limited XP lesson each day.", "rect":Rect2(0.37, 0.63, 0.27, 0.29), "objects":[{"id":"yard_companions", "name":"Daily Print Yard", "description":"Share today's local filament lesson with your current collection.", "target":"yard", "rect":Rect2(0.31, 0.44, 0.34, 0.28)}]}
 	]
 
@@ -561,25 +561,33 @@ func _workshop_view_data(view_id: String) -> Dictionary:
 func _workshop_overview_texture() -> Texture2D:
 	return WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE if is_portrait_layout() else WORKSHOP_OVERVIEW_LANDSCAPE_TEXTURE
 
-func _workshop_overview_zones() -> Array:
-	# v3 plates are separate compositions, not crops. Rectangles are normalized
-	# directly against each plate's pictured props.
+func _workshop_overview_hotspots() -> Array:
+	# The v6 plates are full-room compositions. Each transparent target follows a
+	# pictured physical object, so the overview goes straight to its destination.
 	if is_portrait_layout():
 		return [
-			{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "rect":Rect2(0.06, 0.51, 0.37, 0.25)},
-			{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "rect":Rect2(0.58, 0.50, 0.36, 0.25)},
-			{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "rect":Rect2(0.61, 0.23, 0.31, 0.25)},
-			{"id":"proving", "name":"Proving Door", "callout":"Training and Local Versus", "rect":Rect2(0.42, 0.13, 0.18, 0.35)},
-			# Keep the portrait yard zone above the compact in-map status tray so it
-			# remains reachable without a body scroll on small 576x1024 devices.
-			{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "rect":Rect2(0.40, 0.59, 0.20, 0.14)}
+			{"id":"printer", "name":"Arcane Forge Printer", "description":"Choose a learned blueprint to print.", "target":"printer", "rect":Rect2(0.03, 0.45, 0.30, 0.15)},
+			{"id":"collection", "name":"Printer Drawers", "description":"Review learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.06, 0.60, 0.28, 0.18)},
+			{"id":"team", "name":"Team Display", "description":"Set your active team of printed companions.", "target":"team", "rect":Rect2(0.18, 0.10, 0.43, 0.13)},
+			{"id":"armor", "name":"Equipment Cubby", "description":"Manage suits and Cores beside the team display.", "target":"armor", "rect":Rect2(0.62, 0.10, 0.16, 0.20)},
+			{"id":"battle_arena", "name":"Battle Arena", "description":"Choose daily training, Workshop Trials, or Local Versus.", "target":"proving", "rect":Rect2(0.24, 0.39, 0.54, 0.14)},
+			{"id":"card_archive", "name":"Support Card Deck", "description":"Browse the Support Card Archive.", "target":"archive", "rect":Rect2(0.72, 0.69, 0.17, 0.13)},
+			{"id":"shop", "name":"Forge Offers Panel", "description":"Review today's deterministic Forge Offers.", "target":"shop", "rect":Rect2(0.68, 0.50, 0.09, 0.13)},
+			{"id":"codex", "name":"Forgedex Panel", "description":"Track discovered creature blueprints.", "target":"codex", "rect":Rect2(0.77, 0.50, 0.09, 0.13)},
+			{"id":"trade", "name":"Guild Trade Panel", "description":"Open the credential-free local trade table.", "target":"trade", "rect":Rect2(0.86, 0.50, 0.10, 0.13)},
+			{"id":"calibration", "name":"Calibration Dial", "description":"Claim one calibrated workshop reward.", "target":"calibration", "rect":Rect2(0.29, 0.53, 0.07, 0.07)}
 		]
 	return [
-		{"id":"printer", "name":"Printer Bench", "callout":"Arcane Forge and Collection", "rect":Rect2(0.06, 0.48, 0.36, 0.34)},
-		{"id":"maker", "name":"Maker Bench", "callout":"Team, decks, armor, calibration", "rect":Rect2(0.60, 0.57, 0.35, 0.28)},
-		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "rect":Rect2(0.59, 0.29, 0.22, 0.29)},
-		{"id":"proving", "name":"Proving Door", "callout":"Training and Local Versus", "rect":Rect2(0.44, 0.16, 0.14, 0.46)},
-		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "rect":Rect2(0.40, 0.63, 0.16, 0.14)}
+		{"id":"printer", "name":"Arcane Forge Printer", "description":"Choose a learned blueprint to print.", "target":"printer", "rect":Rect2(0.07, 0.43, 0.20, 0.27)},
+		{"id":"collection", "name":"Printer Drawers", "description":"Review learned blueprints and printed companions.", "target":"collection", "rect":Rect2(0.22, 0.66, 0.12, 0.24)},
+		{"id":"team", "name":"Team Display", "description":"Set your active team of printed companions.", "target":"team", "rect":Rect2(0.32, 0.08, 0.25, 0.16)},
+		{"id":"armor", "name":"Equipment Cubby", "description":"Manage suits and Cores beside the team display.", "target":"armor", "rect":Rect2(0.58, 0.08, 0.13, 0.20)},
+		{"id":"battle_arena", "name":"Battle Arena", "description":"Choose daily training, Workshop Trials, or Local Versus.", "target":"proving", "rect":Rect2(0.31, 0.47, 0.40, 0.22)},
+		{"id":"card_archive", "name":"Support Card Deck", "description":"Browse the Support Card Archive.", "target":"archive", "rect":Rect2(0.78, 0.76, 0.11, 0.13)},
+		{"id":"shop", "name":"Forge Offers Panel", "description":"Review today's deterministic Forge Offers.", "target":"shop", "rect":Rect2(0.73, 0.47, 0.07, 0.16)},
+		{"id":"codex", "name":"Forgedex Panel", "description":"Track discovered creature blueprints.", "target":"codex", "rect":Rect2(0.80, 0.47, 0.07, 0.16)},
+		{"id":"trade", "name":"Guild Trade Panel", "description":"Open the credential-free local trade table.", "target":"trade", "rect":Rect2(0.87, 0.47, 0.07, 0.16)},
+		{"id":"calibration", "name":"Calibration Dial", "description":"Claim one calibrated workshop reward.", "target":"calibration", "rect":Rect2(0.25, 0.63, 0.05, 0.07)}
 	]
 
 func _workshop_texture(view_id: String) -> Texture2D:
@@ -799,23 +807,31 @@ func _add_workshop_pan_affordance(map: Control, art_plane: Control) -> void:
 	button.pressed.connect(_toggle_workshop_pan.bind(map, art_plane))
 	map.add_child(button)
 
-func _workshop_zone_button(view: Dictionary) -> Button:
-	var rect: Rect2 = view.rect
+func _workshop_overview_hotspot_node_suffix(hotspot_id: String) -> String:
+	var suffixes := {"battle_arena":"BattleArena", "card_archive":"CardArchive"}
+	return str(suffixes.get(hotspot_id, hotspot_id.capitalize()))
+
+func _workshop_overview_hotspot_button(hotspot: Dictionary) -> Button:
+	var rect: Rect2 = hotspot.rect
 	var button := Button.new()
-	button.name = "WorkshopZone%s" % str(view.id).capitalize()
+	button.name = "WorkshopHotspot%s" % _workshop_overview_hotspot_node_suffix(str(hotspot.id))
 	button.text = ""
-	button.tooltip_text = "%s: %s" % [str(view.name), str(view.callout)]
-	button.accessibility_name = "%s work area" % str(view.name)
+	button.tooltip_text = "%s: %s" % [str(hotspot.name), str(hotspot.description)]
+	button.accessibility_name = str(hotspot.name)
 	button.anchor_left = rect.position.x; button.anchor_top = rect.position.y; button.anchor_right = rect.end.x; button.anchor_bottom = rect.end.y
 	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
 	button.custom_minimum_size = Vector2(44, 44)
 	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.set_meta("workshop_target", str(hotspot.target))
 	button.add_theme_stylebox_override("normal", workshop_hotspot_style())
 	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
 	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
 	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
-	_add_workshop_hotspot_overlay(button, Color("9beaff"))
-	button.pressed.connect(open_workshop_view.bind(str(view.id)))
+	# Overview targets deliberately have no visual hover/focus treatment: their
+	# pictured prop is the affordance, while tooltip, focus, and cursor retain
+	# discoverability without drawing a box over the v6 art.
+	button.pressed.connect(activate_workshop_overview_hotspot.bind(str(hotspot.id)))
 	return button
 
 func _workshop_object_rect(object: Dictionary) -> Rect2:
@@ -918,11 +934,11 @@ func _workshop_overview_button() -> Button:
 func render_workshop_overview(used_today: int) -> void:
 	overview_layout_portrait = is_portrait_layout()
 	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 215.0) if overview_layout_portrait else maxf(500.0, get_viewport().get_visible_rect().size.y - 150.0)
-	# v3 overview plates are aspect-specific, static establishing shots. They never
+	# v6 overview plates are aspect-specific, static full-room shots. They never
 	# host mutable-looking printer/team overlays or motion; those belong in stations.
-	var map := _workshop_surface("WorkshopMap", _workshop_overview_texture(), overview_height, null, true, "overview", false, false)
+	var map := _workshop_surface("WorkshopMap", _workshop_overview_texture(), overview_height, null, false, "overview", false, false)
 	map.add_child(_workshop_settings_button())
-	for view in _workshop_overview_zones(): map.add_child(_workshop_zone_button(view))
+	for hotspot in _workshop_overview_hotspots(): map.add_child(_workshop_overview_hotspot_button(hotspot))
 	_add_workshop_overview_status(map, used_today)
 
 func render_workshop_closeup(used_today: int) -> void:
@@ -1044,7 +1060,7 @@ func _add_workshop_overview_status(art_plane: Control, used_today: int) -> void:
 	content.add_theme_constant_override("separation", 3)
 	strip.add_child(content)
 	content.add_child(label("Explore the Workshop", 16, Color("9beaff")))
-	content.add_child(label("Focus a soft-lit work area to move closer. XP %d / %d | Calibration %d / %d" % [int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 13, Color("dce8f4")))
+	content.add_child(label("Select a pictured tool or display to use it directly. XP %d / %d | Calibration %d / %d" % [int(GameManager.profile.xp), GameManager.filament_cap() * 100, used_today, ProgressionRules.DAILY_CALIBRATION_LIMIT], 13, Color("dce8f4")))
 
 func _workshop_scene_map(art_plane: Control) -> Control:
 	return art_plane.get_parent() as Control
@@ -1100,7 +1116,7 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 	})
 
 func _workshop_action_label(target: String) -> String:
-	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "archive":"Open Support Card Archive", "armor":"Open Equipment Workbench", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Proving Door", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
+	var names := {"printer":"Open Arcane Forge", "collection":"Open Collection", "team":"Edit Team", "deck":"Edit Deck Slots", "archive":"Open Support Card Archive", "armor":"Open Equipment Workbench", "calibration":"Run Calibration", "shop":"Open Forge Offers", "codex":"Open Forgedex", "trade":"Open Guild Trade", "proving":"Open Battle Arena", "trials":"Open Workshop Trials", "local_vs":"Start Local Versus", "yard":"Visit Print Yard"}
 	return str(names.get(target, "Open Station"))
 
 func open_workshop_view(view_id: String) -> void:
@@ -1168,7 +1184,7 @@ func _workshop_stations() -> Array:
 		{"id":"forge","name":"Printer Bench","description":"The left Arcane Forge holds every learned blueprint and printed companion.","actions":[{"label":"Open Arcane Forge","target":"printer"},{"label":"Open Collection","target":"collection"}],"rect":Rect2(0.05,0.48,0.17,0.23)},
 		{"id":"maker","name":"Maker Bench","description":"Shape the active team, named deck slots, full-suit/Core loadouts, and daily calibration patterns at one maker table.","actions":[{"label":"Edit Team","target":"team"},{"label":"Edit Deck Slots","target":"deck"},{"label":"Open Equipment Workbench","target":"armor"},{"label":"Run Calibration","target":"calibration"}],"rect":Rect2(0.27,0.68,0.25,0.17)},
 		{"id":"terminal","name":"Forge Terminal","description":"Browse deterministic offers, track creature records, or open the kid-safe local trade table.","actions":[{"label":"Open Forge Offers","target":"shop"},{"label":"Open Forgedex","target":"codex"},{"label":"Open Trade Table","target":"trade"}],"rect":Rect2(0.76,0.50,0.19,0.23)},
-		{"id":"door","name":"Proving Door","description":"Challenge today’s deterministic training rival or pass the device for a local match.","actions":[{"label":"Start Training","target":"proving"},{"label":"Start Local Versus","target":"local_vs"}],"rect":Rect2(0.41,0.25,0.19,0.33)},
+		{"id":"door","name":"Battle Arena","description":"Challenge today’s deterministic training rival or pass the device for a local match.","actions":[{"label":"Start Training","target":"proving"},{"label":"Start Local Versus","target":"local_vs"}],"rect":Rect2(0.41,0.25,0.19,0.33)},
 		{"id":"yard","name":"Print Yard","description":"Visit companions for one daily XP filament lesson.","actions":[{"label":"Visit Print Yard","target":"yard"}],"rect":Rect2(0.05,0.77,0.18,0.13)},
 		{"id":"settings","name":"Settings","description":"Adjust text, contrast, motion, and AI training difficulty.","actions":[{"label":"Open Settings","target":"settings"}],"rect":Rect2(0.84,0.08,0.12,0.11)}]
 
@@ -1188,6 +1204,26 @@ func _workshop_hotspot(station: Dictionary) -> Button:
 	button.add_theme_stylebox_override("hover", panel_style(Color("2f93a8ed"), Color("ffffff")))
 	button.pressed.connect(func(): workshop_selected = str(station.id); render())
 	return button
+
+func activate_workshop_overview_hotspot(hotspot_id: String) -> void:
+	# Kept as a callable seam for keyboard/UI tests. The overview is a direct
+	# object map; it never opens legacy station close-ups before routing.
+	for hotspot in _workshop_overview_hotspots():
+		if str(hotspot.id) != hotspot_id:
+			continue
+		if str(hotspot.target) == "calibration":
+			claim_overview_calibration()
+		else:
+			_run_workshop_station(str(hotspot.target))
+		return
+	push_error("Unknown workshop overview hotspot: %s" % hotspot_id)
+
+func claim_overview_calibration() -> void:
+	# The dial is a one-press claim, not a navigation detour. GameManager owns the
+	# daily cap and mutation, and its profile_changed signal refreshes this view.
+	var reward := GameManager.complete_workshop_job(100, shop_day_key)
+	if reward > 0:
+		_toast("Calibration claim: +%d Forge Coins." % reward)
 
 func _run_workshop_station(id: String) -> void:
 	match id:
@@ -1820,6 +1856,9 @@ func render_card_archive() -> void:
 	panel.add_child(label("Support Card Archive", 25, Color("9beaff")))
 	panel.add_child(label("30 offline tactical cards. Non-turn-ending; no reshuffle.", 15, Color("dce8f4")))
 	panel.add_child(label("Deck 15 / opening 4 / hand cap 4 / draw 1 per turn.", 15, Color("dce8f4")))
+	var edit_deck := make_button("Edit Deck", navigate_to.bind("deck"), Color("a86b2e"))
+	edit_deck.name = "ArchiveEditDeck"
+	panel.add_child(edit_deck)
 	var filters := HBoxContainer.new(); panel.add_child(filters)
 	var all_filter := make_button("All cards", func(): card_archive_owned_only = false; render(), Color("2f93a8") if not card_archive_owned_only else Color("536c8d")); all_filter.name = "ArchiveFilterAll"; filters.add_child(all_filter)
 	var owned_filter := make_button("Owned only", func(): card_archive_owned_only = true; render(), Color("2f93a8") if card_archive_owned_only else Color("536c8d")); owned_filter.name = "ArchiveFilterOwned"; filters.add_child(owned_filter)
@@ -1936,12 +1975,12 @@ func render_codex() -> void:
 
 func render_proving_door() -> void:
 	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
-	panel.add_child(label("Proving Door", 25, Color("ffd36c")))
+	panel.add_child(label("Battle Arena Hub", 25, Color("ffd36c")))
 	panel.add_child(label("Choose a frozen daily contract, a fixed Workshop Trial ladder, or a private local match.", 15, Color("dce8f4")))
 	panel.add_child(label("Daily Training Contracts", 20, Color("8deaff")))
 	var contracts := GameManager.daily_training_contracts()
 	if contracts.is_empty():
-		panel.add_child(label("Daily contracts are prepared when this door opens. Return to the workshop and reopen the Proving Door if needed.", 14, Color("fff0a1")))
+		panel.add_child(label("Daily contracts are prepared when the Battle Arena opens. Return to the workshop and reopen the Battle Arena if needed.", 14, Color("fff0a1")))
 	for contract in contracts:
 		var claimed: bool = str(contract.get("id", "")) in GameManager.profile.get("daily_training", {}).get("claimed_ids", [])
 		var contract_panel := make_panel(Color("12314be8"), Color("70dcea") if not claimed else Color("588d73")); panel.add_child(contract_panel.get_parent())
@@ -2001,7 +2040,7 @@ func render_trials() -> void:
 			start.name = "TrialStart%s" % encounter_id
 			start.disabled = not unlocked
 			card.add_child(start)
-	body.add_child(make_button("Back to Proving Door", navigate_to.bind("proving"), Color("536c8d")))
+	body.add_child(make_button("Back to Battle Arena", navigate_to.bind("proving"), Color("536c8d")))
 
 func _trial_lineup_preview() -> Dictionary:
 	# Preview and launch intentionally use the same factory contract: no separate
@@ -2091,7 +2130,7 @@ func start_battle(contract_id := "") -> void:
 	for raw in available:
 		if str(raw.get("id", "")) == contract_id: contract = raw; break
 	if contract.is_empty():
-		_toast("Open the Proving Door to prepare and choose today's daily contract.")
+		_toast("Open the Battle Arena to prepare and choose today's daily contract.")
 		return
 	# A new match invalidates every deferred AI callback tied to an older stage.
 	battle_session_generation += 1
@@ -2216,7 +2255,7 @@ func _render_battle_finished_result(intro: Container) -> void:
 		intro.add_child(contract_result.get_parent())
 		contract_result.add_child(label("%s - %s" % [str(finished_contract.get("name", "Daily Contract")), "Cleared" if battle.winner == 0 else "Held"], 17, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
 		contract_result.add_child(label("Practice complete. Today's first-clear reward was already claimed." if claimed else "Return to claim +%d Forge Coins and +%d XP." % [int(reward.get("coins", 0)), int(reward.get("xp", 0))] if battle.winner == 0 else "No daily reward was claimed. The frozen contract remains available for another attempt.", 14, Color("fff0a1") if battle.winner == 0 else Color("ffaaa1")))
-	intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Proving Door", finish_battle, Color("536c8d")))
+	intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Battle Arena", finish_battle, Color("536c8d")))
 
 func submit_battle_card(card_id: String) -> void:
 	_audio_director.cue("card")

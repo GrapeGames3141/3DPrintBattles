@@ -53,14 +53,16 @@ func _ready() -> void:
 	var map := main.find_child("WorkshopMap", true, false) as Control
 	require(map != null, "overview has a dedicated spatial workshop map")
 	require(main.find_child("WorkshopStationLiveLayer", true, false) == null and main.find_child("WorkshopAmbientLayer", true, false) == null, "static overview has no live printer, team, or ambient artifact")
-	var zone_names := ["WorkshopZonePrinter", "WorkshopZoneMaker", "WorkshopZoneTerminal", "WorkshopZoneProving", "WorkshopZoneYard"]
-	for zone_name in zone_names:
-		var zone := main.find_child(str(zone_name), true, false) as Button
-		require(zone != null and zone.text.is_empty() and not zone.tooltip_text.is_empty() and not zone.accessibility_name.is_empty(), "%s is an accessible unlabeled spatial zone" % zone_name)
-		require(zone != null and zone.custom_minimum_size.x >= 44.0 and zone.custom_minimum_size.y >= 44.0, "%s preserves a 44-unit target" % zone_name)
-		require(zone != null and zone.find_child("WorkshopHotspotOverlay", true, false) != null, "%s has a physical-item overlay" % zone_name)
+	var hotspot_names := ["WorkshopHotspotPrinter", "WorkshopHotspotCollection", "WorkshopHotspotTeam", "WorkshopHotspotArmor", "WorkshopHotspotBattleArena", "WorkshopHotspotCardArchive", "WorkshopHotspotShop", "WorkshopHotspotCodex", "WorkshopHotspotTrade", "WorkshopHotspotCalibration"]
+	for hotspot_name in hotspot_names:
+		var hotspot := main.find_child(str(hotspot_name), true, false) as Button
+		require(hotspot != null and hotspot.text.is_empty() and not hotspot.tooltip_text.is_empty() and not hotspot.accessibility_name.is_empty(), "%s is an accessible unlabeled direct-object target" % hotspot_name)
+		require(hotspot != null and hotspot.custom_minimum_size.x >= 44.0 and hotspot.custom_minimum_size.y >= 44.0 and hotspot.mouse_default_cursor_shape == Control.CURSOR_POINTING_HAND, "%s preserves a 44-unit pointer target" % hotspot_name)
+		require(hotspot != null and hotspot.find_child("WorkshopHotspotOverlay", true, false) == null, "%s has no visible overview overlay" % hotspot_name)
+	require(descendant_count(main, "WorkshopHotspotOverlay") == 0, "overview has no WorkshopHotspotOverlay boxes")
+	require(main.find_child("WorkshopHotspotDoor", true, false) == null and main.find_child("WorkshopHotspotYard", true, false) == null and main.find_child("WorkshopZonePrinter", true, false) == null, "overview has no legacy Door, Yard, or broad station-zone hotspot")
 	require(descendant_count(main, "WorkshopHotspotRune") == 0 and descendant_count(main, "Rune") == 0, "workshop navigation does not render diamond rune glyph controls")
-	for view_id in ["printer", "maker", "terminal", "proving", "yard"]:
+	for view_id in ["printer", "maker"]:
 		main.open_workshop_view(view_id)
 		await get_tree().process_frame
 		var closeup := main.find_child("WorkshopCloseupMap", true, false) as Control
@@ -69,6 +71,12 @@ func _ready() -> void:
 		for object in view.objects:
 			var object_button := main.find_child("WorkshopObject%s" % str(object.id).capitalize(), true, false) as Button
 			require(object_button != null and object_button.text.is_empty() and not object_button.accessibility_name.is_empty(), "%s object hotspot is accessible without a plaque" % str(object.id))
+	main.open_workshop_view("overview")
+	var calibration_revision := int(GameManager.profile.revision)
+	var calibration_count := int(GameManager.profile.daily_job_count)
+	main.activate_workshop_overview_hotspot("calibration")
+	await get_tree().process_frame
+	require(main.screen == "workshop" and main.workshop_view == "overview" and int(GameManager.profile.revision) == calibration_revision + 1 and int(GameManager.profile.daily_job_count) == calibration_count + 1, "Calibration dial claims exactly once and stays on the overview")
 	main.open_workshop_view("printer")
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -136,12 +144,23 @@ func _ready() -> void:
 	await get_tree().process_frame
 	require(main.screen == "workshop" and main.workshop_view == "printer" and main.printer_picker_open, "Printer station action opens selection rather than silently choosing the starter")
 	main.close_printer_picker()
-	for entry in [{"target":"collection", "screen":"collection"}, {"target":"team", "screen":"team"}, {"target":"deck", "screen":"deck"}, {"target":"armor", "screen":"armor"}, {"target":"calibration", "screen":"calibration"}, {"target":"shop", "screen":"shop"}, {"target":"codex", "screen":"codex"}, {"target":"trade", "screen":"trade"}, {"target":"yard", "screen":"yard"}]:
+	for entry in [{"target":"collection", "screen":"collection"}, {"target":"team", "screen":"team"}, {"target":"armor", "screen":"armor"}, {"target":"battle_arena", "screen":"proving"}, {"target":"card_archive", "screen":"archive"}, {"target":"shop", "screen":"shop"}, {"target":"codex", "screen":"codex"}, {"target":"trade", "screen":"trade"}]:
 		main.screen = "workshop"
-		main.workshop_view = "overview"
-		main._run_workshop_station(str(entry.target))
+		main.open_workshop_view("overview")
+		main.activate_workshop_overview_hotspot(str(entry.target))
 		await get_tree().process_frame
-		require(main.screen == str(entry.screen), "%s remains routed through the contextual station action" % str(entry.target))
+		require(main.screen == str(entry.screen), "%s routes directly from its overview object" % str(entry.target))
+	main.screen = "workshop"
+	main.open_workshop_view("overview")
+	main.activate_workshop_overview_hotspot("printer")
+	await get_tree().process_frame
+	require(main.screen == "workshop" and main.workshop_view == "printer" and main.printer_picker_open, "printer overview object opens the existing picker flow directly")
+	main.close_printer_picker()
+	main.screen = "workshop"
+	main.open_workshop_view("overview")
+	main.activate_workshop_overview_hotspot("card_archive")
+	await get_tree().process_frame
+	require(main.find_child("ArchiveEditDeck", true, false) is Button, "Support Card Archive keeps the Deck Builder reachable with Edit Deck")
 	for viewport_size in [Vector2i(1280, 720), Vector2i(576, 1024), Vector2i(720, 1280)]:
 		get_viewport().size = viewport_size
 		main.size = Vector2(viewport_size)
@@ -150,8 +169,8 @@ func _ready() -> void:
 		await get_tree().process_frame
 		await get_tree().process_frame
 		map = main.find_child("WorkshopMap", true, false) as Control
-		var expected_overview_path := "res://assets/ui/workshop/workshop_overview_portrait_v3.png" if viewport_size.y > viewport_size.x else "res://assets/ui/workshop/workshop_overview_landscape_v3.png"
-		require(map != null and str(map.get_meta("workshop_stage_texture", "")) == expected_overview_path, "overview selects the distinct v3 stage plate for %s" % viewport_size)
+		var expected_overview_path := "res://assets/ui/workshop/workshop_overview_portrait_v4.png" if viewport_size.y > viewport_size.x else "res://assets/ui/workshop/workshop_overview_landscape_v4.png"
+		require(map != null and str(map.get_meta("workshop_stage_texture", "")) == expected_overview_path, "overview selects the distinct v4 stage plate for %s" % viewport_size)
 		main.open_workshop_view("printer")
 		await get_tree().process_frame
 		var live_layer := main.find_child("WorkshopStationLiveLayer", true, false)
@@ -176,9 +195,9 @@ func _ready() -> void:
 		await get_tree().process_frame
 		main.open_workshop_view("overview")
 		await get_tree().process_frame
-		for zone_name in zone_names:
-			var zone := main.find_child(str(zone_name), true, false) as Control
-			require(zone != null and control_in_view(zone, viewport_size), "%s stays in bounds at %s (rect %s)" % [zone_name, viewport_size, zone.get_global_rect() if zone != null else Rect2()])
+		for hotspot_name in hotspot_names:
+			var hotspot := main.find_child(str(hotspot_name), true, false) as Control
+			require(hotspot != null and control_in_view(hotspot, viewport_size), "%s stays in bounds at %s (rect %s)" % [hotspot_name, viewport_size, hotspot.get_global_rect() if hotspot != null else Rect2()])
 		main.open_workshop_view("maker")
 		await get_tree().process_frame
 		await get_tree().process_frame

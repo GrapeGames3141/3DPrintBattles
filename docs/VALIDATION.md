@@ -948,3 +948,27 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
   longer emits raw or trim intermediates. The focused theme contract and
   Forward+ spot captures for Blueprint Tray, Battle, and Equipment Workbench
   at `576x1024` and `1280x720` passed with the `compact-final` tag.
+
+## 2026-08-17 0.6.7 Workshop Hub validation
+
+- Godot 4.7.1 parser/import completed with exit 0. Focused navigation, live,
+  depth, export-boundary, and startup gates also exited 0. The full suite
+  passed **42/42** scenes with **38** `PASS` markers; its manifest is
+  `E:/CodexCache/printforge-workshop-hub/full-suite/suite-manifest.json`.
+- The v4 direct-object Workshop Hub captures were visually inspected at
+  `E:/CodexCache/printforge-validation/workshop_1280x720_workshop-hub-067.png`
+  (capture PIDs 21368/5340) and
+  `E:/CodexCache/printforge-validation/workshop_576x1024_workshop-hub-067.png`
+  (capture PIDs 24652/412).
+- Android review export:
+  `build/android/PrintForge-Legends-0.6.7-workshop-hub-arm64.apk`; package
+  `com.tak.printforge.legends.review`, version code **82**, **151,072,534**
+  bytes, SHA-256
+  `A67E0909E76DACF07C3E20FFB44B95F9DB1D1E785FE4CA786BC4712DA96E9FB7`.
+  It is debug v2/v3 signed, arm64-only, and archive inspection found **0**
+  forbidden backend/tests/tools/docs entries. Export Godot PIDs 12832/7372,
+  task Java PIDs 19212/25812/2388, and adb PID 13244 were all cleaned up.
+- APK and README DriveFS copies to
+  `H:/My Drive/AI Projects/PrintForge` were verified by size and SHA-256;
+  cloud synchronization was not independently confirmed. No physical-device
+  smoke was performed.
