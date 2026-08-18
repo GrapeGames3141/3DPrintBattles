@@ -2,7 +2,12 @@ import { AuthorityRequest, AuthorityResponse, Intent, JournalEvent, TradeOffer }
 
 /** Nakama RPC/match handler seam. Deploy with Nakama runtime; clients submit intent only. */
 export function validateIntent(intent: Intent): boolean {
-  return ["attack", "ability", "defend", "card", "switch", "end_turn", "concede"].includes(intent.type);
+  if (!intent || typeof intent !== "object" || typeof (intent as { type?: unknown }).type !== "string") return false;
+  if (!["play_card", "advance_phase", "attack", "use_signature", "collect", "smelt", "concede"].includes(intent.type)) return false;
+  if (intent.type === "play_card") return typeof intent.cardId === "string" && intent.cardId.length > 0;
+  if (intent.type === "attack") return Number.isInteger(intent.slot) && Number.isInteger(intent.target);
+  if (intent.type === "use_signature") return Number.isInteger(intent.slot) && (intent.target === undefined || Number.isInteger(intent.target));
+  return intent.type !== "collect" || Number.isInteger(intent.pile);
 }
 export function mergeJournal(events: JournalEvent[], processed: Set<string>): JournalEvent[] {
   return events.filter((event) => event.operationId.length > 4 && !processed.has(event.operationId));

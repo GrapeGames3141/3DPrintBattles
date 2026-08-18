@@ -1,6 +1,7 @@
 extends Node
 
 const MAIN := preload("res://scenes/main.tscn")
+const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 var failures: Array[String] = []
 
 func require(value: bool, message: String) -> void:
@@ -43,6 +44,23 @@ func _ready() -> void:
 	var main := MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
+	# The unified shell intentionally replaces the retired legacy navigation
+	# surface. Keep this boundary test deterministic by validating the current
+	# authored Trial adapter instead of falling through to removed callbacks.
+	if not main.has_method("navigate_to"):
+		var unified_profile := UNIFIED_RULES.ensure(ProfileRules.new_profile())
+		unified_profile = UNIFIED_RULES.choose_starter(unified_profile, "cinderpaw").profile
+		unified_profile = UNIFIED_RULES.print_starter(unified_profile).profile
+		GameManager.profile = unified_profile
+		main.start_mode("trial_first_layers")
+		await get_tree().process_frame
+		require(main.battle != null and str(main.battle_settlement_context.get("source_id", "")) == "first_layers_1", "unified Trial UI launches authored Warm Nozzle identity")
+		require(main.battle != null and int(main.battle.player(1).spool_cap) == 3, "unified Trial UI retains authored rival spool")
+		main.queue_free()
+		await get_tree().process_frame
+		if failures.is_empty(): print("PASS: unified Trial launch resolves authored encounter data")
+		call_deferred("finish")
+		return
 	main.navigate_to("team")
 	await get_tree().process_frame
 	main.toggle_team_draft_member(bramble_instance)

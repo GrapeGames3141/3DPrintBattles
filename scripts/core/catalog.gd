@@ -1,8 +1,8 @@
 extends Node
 ## Immutable launch catalog. Runtime objects store IDs only, never presentation nodes.
 
-const SCHEMA_VERSION := 8
-const CATALOG_VERSION := "0.6.0-tiered-suits"
+const SCHEMA_VERSION := 9
+const CATALOG_VERSION := "0.7.0-unified-battle-playtest"
 const RARITIES := [
 	{"id":"common", "name":"Common", "color":"#b7bcc7", "weight_bps":4500, "blueprint":50, "print":20},
 	{"id":"uncommon", "name":"Uncommon", "color":"#66d17a", "weight_bps":2500, "blueprint":120, "print":40},
