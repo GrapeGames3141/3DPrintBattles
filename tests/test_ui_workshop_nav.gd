@@ -16,9 +16,12 @@ func escape(main: Control) -> void:
 	main._unhandled_key_input(event)
 	await get_tree().process_frame
 
-func control_in_view(control: Control, viewport_size: Vector2i) -> bool:
+func control_in_view(control: Control, _requested_viewport_size: Vector2i) -> bool:
 	var rect := control.get_global_rect()
-	return rect.size.x >= 44.0 and rect.size.y >= 44.0 and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= float(viewport_size.x) and rect.end.y <= float(viewport_size.y)
+	# Godot's square-base canvas can be taller than the raw capture window under
+	# expand stretch. Compare virtual control rects to that actual canvas space.
+	var canvas_size := get_viewport().get_visible_rect().size
+	return rect.size.x >= 44.0 and rect.size.y >= 44.0 and rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= canvas_size.x and rect.end.y <= canvas_size.y
 
 func hotspot_in_map_view(hotspot: Control, map: Control) -> bool:
 	var hotspot_rect := hotspot.get_global_rect()
@@ -105,7 +108,7 @@ func _ready() -> void:
 	GameManager.profile = empty_profile
 	main.cancel_printer_preview()
 	await get_tree().process_frame
-	for viewport_size in [Vector2i(1280, 720), Vector2i(576, 1024), Vector2i(720, 1280)]:
+	for viewport_size in [Vector2i(1280, 576), Vector2i(1280, 720), Vector2i(576, 1024), Vector2i(720, 1280)]:
 		get_viewport().size = viewport_size
 		main.size = Vector2(viewport_size)
 		main.screen = "workshop"
@@ -116,9 +119,24 @@ func _ready() -> void:
 		map = main.find_child("WorkshopMap", true, false) as Control
 		var expected_overview_path := "res://assets/ui/workshop/workshop_overview_portrait_v4.png" if viewport_size.y > viewport_size.x else "res://assets/ui/workshop/workshop_overview_landscape_v4.png"
 		require(map != null and str(map.get_meta("workshop_stage_texture", "")) == expected_overview_path, "overview selects the orientation-matched direct-object map at %s" % viewport_size)
+		var foreground_plane := main.find_child("WorkshopMapArtPlane", true, false) as Control
+		var backdrop := main.find_child("WorkshopCoverBackdrop", true, false) as TextureRect
+		if viewport_size.y <= viewport_size.x:
+			require(backdrop != null and foreground_plane != null and is_equal_approx(float(map.get_meta("workshop_art_zoom", 0.0)), 1.12) and foreground_plane.get_global_rect().get_center().distance_to(map.get_global_rect().get_center()) <= 1.0, "landscape uses a centered modest-zoom foreground over the dim full-bleed backdrop at %s" % viewport_size)
+		else:
+			require(backdrop == null and foreground_plane != null and is_equal_approx(float(map.get_meta("workshop_art_zoom", 0.0)), 1.0), "portrait keeps its unmodified overview plane at %s" % viewport_size)
 		for hotspot_name in hotspot_names:
 			var responsive_hotspot := main.find_child(hotspot_name, true, false) as Control
-			require(responsive_hotspot != null and control_in_view(responsive_hotspot, viewport_size), "%s stays in bounds at %s (rect %s)" % [hotspot_name, viewport_size, responsive_hotspot.get_global_rect() if responsive_hotspot != null else Rect2()])
+			require(responsive_hotspot != null and control_in_view(responsive_hotspot, viewport_size) and hotspot_in_map_view(responsive_hotspot, map), "%s stays in the visible overview map at %s (rect %s)" % [hotspot_name, viewport_size, responsive_hotspot.get_global_rect() if responsive_hotspot != null else Rect2()])
+		if viewport_size == Vector2i(1280, 576):
+			for route in [{"target":"team", "screen":"team"}, {"target":"card_archive", "screen":"archive"}, {"target":"shop", "screen":"shop"}]:
+				main.activate_workshop_overview_hotspot(str(route.target))
+				await get_tree().process_frame
+				require(main.screen == str(route.screen), "extra-wide %s target keeps its direct route" % str(route.target))
+				main.screen = "workshop"
+				main.open_workshop_view("overview")
+				await get_tree().process_frame
+				await get_tree().process_frame
 		main.activate_workshop_overview_hotspot("printer")
 		await get_tree().process_frame
 		await get_tree().process_frame

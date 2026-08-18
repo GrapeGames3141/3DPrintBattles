@@ -935,10 +935,15 @@ func render_workshop_overview(used_today: int) -> void:
 	overview_layout_portrait = is_portrait_layout()
 	# Reserve enough portrait space for the bottom-row direct-object targets; the
 	# prior 215px allowance clipped the Support Card Deck target on 576x1024.
-	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 235.0) if overview_layout_portrait else maxf(500.0, get_viewport().get_visible_rect().size.y - 150.0)
+	var viewport_height := get_viewport().get_visible_rect().size.y
+	var overview_height := maxf(620.0, viewport_height - 235.0) if overview_layout_portrait else (maxf(360.0, viewport_height - 210.0) if viewport_height <= 600.0 else maxf(500.0, viewport_height - 150.0))
 	# v6 overview plates are aspect-specific, static full-room shots. They never
 	# host mutable-looking printer/team overlays or motion; those belong in stations.
-	var map := _workshop_surface("WorkshopMap", _workshop_overview_texture(), overview_height, null, false, "overview", false, false)
+	# Landscape keeps the complete orientation-matched foreground plane for its
+	# normalized hotspot map, with a dim covered backdrop and modest zoom to
+	# reduce empty side pillars without losing any pictured direct-object target.
+	var landscape := not overview_layout_portrait
+	var map := _workshop_surface("WorkshopMap", _workshop_overview_texture(), overview_height, null, false, "overview", landscape, false, Vector2(0.5, 0.5), 1.12 if landscape else 1.0)
 	map.add_child(_workshop_settings_button())
 	for hotspot in _workshop_overview_hotspots(): map.add_child(_workshop_overview_hotspot_button(hotspot))
 	_add_workshop_overview_status(map, used_today)
