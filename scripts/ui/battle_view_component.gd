@@ -2,33 +2,6 @@ class_name BattleViewComponent
 extends RefCounted
 ## Rebuildable battle shell. Main retains BattleState, rewards, AI, and callbacks.
 
-func _section_heading(text_value: String, size: int, color: Color, role: String, context: Dictionary) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.name = "BattleSectionHeader"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", context.section_header_style.call(role))
-	var title: Label = context.label.call(text_value, size, color)
-	title.name = "BattleSectionHeaderTitle"
-	# Keep the portrait battle dock in its established first fold; larger text can
-	# still expand this naturally, but the default header need not claim 30px.
-	title.custom_minimum_size.y = 24
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel.add_child(title)
-	return panel
-
-func _status_chip(text_value: String, color: Color, role: String, context: Dictionary) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.name = "BattleStatusChip"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", context.status_chip_style.call(role))
-	var value: Label = context.label.call(text_value, 13, color)
-	value.name = "BattleStatusChipLabel"
-	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	value.clip_text = true
-	value.autowrap_mode = TextServer.AUTOWRAP_OFF
-	panel.add_child(value)
-	return panel
-
 func render_unavailable(host: Container, context: Dictionary) -> void:
 	var unavailable: VBoxContainer = context.make_panel.call(Color("19334de8"), Color("ffaaa1"))
 	host.add_child(unavailable.get_parent())
@@ -108,15 +81,15 @@ func render_action_dock(host: Container, context: Dictionary) -> void:
 	dock_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	host.add_child(dock_panel)
 	var opening_locked: bool = int(battle.turn) <= 2
-	var dock_title := _section_heading("Moves - Setup: Defend, cards, or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"), "commit" if opening_locked else "secondary", context)
+	var dock_title: Label = context.label.call("Moves - Setup: Defend, cards, or End Turn" if opening_locked else "Moves", 16 if opening_locked else 18, Color("fff0a1") if opening_locked else Color("d7f8ff"))
 	if opening_locked: dock_title.name = "BattleOpeningGuidance"
 	dock.add_child(dock_title)
-	var feedback_chip := _status_chip(str(context.feedback), Color.WHITE if bool(context.high_contrast) else Color("fff0a1"), "commit", context)
-	feedback_chip.name = "BattleImpactChip"
-	feedback_chip.custom_minimum_size.y = 24
-	var feedback := feedback_chip.find_child("BattleStatusChipLabel", true, false) as Label
-	if feedback != null: feedback.name = "BattleImpactBanner"
-	dock.add_child(feedback_chip)
+	var feedback: Label = context.label.call(str(context.feedback), 14, Color.WHITE if bool(context.high_contrast) else Color("fff0a1"))
+	feedback.name = "BattleImpactBanner"
+	feedback.autowrap_mode = TextServer.AUTOWRAP_OFF
+	feedback.clip_text = true
+	feedback.custom_minimum_size.y = 20
+	dock.add_child(feedback)
 	var actions := GridContainer.new()
 	actions.name = "BattleActionGrid"
 	actions.columns = 2 if portrait else 4
@@ -166,7 +139,7 @@ func render_secondary(host: Container, context: Dictionary) -> void:
 	var panel := VBoxContainer.new()
 	panel.name = "BattleSecondaryContent"; panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL; panel.add_theme_constant_override("separation", 8)
 	scroll.add_child(panel)
-	panel.add_child(_section_heading("Tactics", 16, Color("9beaff"), "secondary", context))
+	panel.add_child(context.label.call("Tactics", 16, Color("9beaff")))
 	var tabs := GridContainer.new()
 	tabs.name = "BattleSecondaryTabs"; tabs.columns = 2 if portrait else 4; tabs.add_theme_constant_override("h_separation", 8); tabs.add_theme_constant_override("v_separation", 8)
 	panel.add_child(tabs)

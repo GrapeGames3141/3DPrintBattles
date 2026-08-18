@@ -35,9 +35,6 @@ func _ready() -> void:
 func _prepare_capture() -> void:
 	await get_tree().process_frame
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
-	var requested_text_scale := requested_text_scale_bps()
-	if requested_text_scale > 0:
-		GameManager.profile.settings.text_scale_bps = requested_text_scale
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
 		GameManager.profile = legacy_trial_profile()
 	if capture_mode in ["trials_teamlaunch", "trial_battle_teamlaunch"]:
@@ -292,9 +289,3 @@ func requested_tag() -> String:
 		if arg.begins_with("--capture-tag="):
 			return arg.trim_prefix("--capture-tag=").validate_filename()
 	return ""
-
-func requested_text_scale_bps() -> int:
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--capture-text-scale-bps="):
-			return clampi(int(arg.trim_prefix("--capture-text-scale-bps=")), 10000, 15000)
-	return 0
