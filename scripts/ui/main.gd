@@ -288,8 +288,9 @@ func button_style(accent: Color, state: String) -> StyleBox:
 func make_button(text_value: String, callback: Callable, accent := Color("2f93a8")) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 44)
+	button.custom_minimum_size = Vector2(0, 48)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.add_theme_font_size_override("font_size", scaled_font(15))
 	button.add_theme_font_override("font", ARCANE_FOUNDRY_THEME_KIT.display_font())
 	button.add_theme_color_override("font_color", Color.WHITE if bool(settings().get("high_contrast", false)) else Color("f0e8d8"))
@@ -309,6 +310,29 @@ func make_button(text_value: String, callback: Callable, accent := Color("2f93a8
 		_audio_director.cue("press")
 		callback.call())
 	return button
+
+func make_section_header(text_value: String, size := 18, color := Color("ffd36c"), role := "commit") -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "FoundrySectionHeader"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", ARCANE_FOUNDRY_THEME_KIT.section_header(role, bool(settings().get("high_contrast", false))))
+	var title := label(text_value, size, color)
+	title.name = "FoundrySectionHeaderTitle"
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.custom_minimum_size.y = maxi(30, scaled_font(size) + 12)
+	panel.add_child(title)
+	return panel
+
+func make_status_chip(text_value: String, role := "surface", color := Color("dce8f4")) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "FoundryStatusChip"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", ARCANE_FOUNDRY_THEME_KIT.status_chip(role, bool(settings().get("high_contrast", false))))
+	var value := label(text_value, 13, color)
+	value.name = "FoundryStatusChipLabel"
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	panel.add_child(value)
+	return panel
 
 func workshop_hotspot_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -479,11 +503,16 @@ func render_header(root: VBoxContainer) -> void:
 		compatibility.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		header.add_child(compatibility)
 	elif GameManager.has_selected_starter():
-		var account := label("Forge Coins  %d\nSpool  %d / 10" % [int(GameManager.profile.coins), GameManager.filament_cap()], 16, Color("d6f7ff"))
-		account.custom_minimum_size = Vector2(0 if portrait else 190, 40 if portrait else 58)
-		account.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
-		account.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
-		account.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var account := VBoxContainer.new()
+		account.name = "WorkshopProgressStatus"
+		var large_text := int(settings().get("text_scale_bps", 10000)) >= 12500
+		account.custom_minimum_size = Vector2(0 if portrait else (320 if large_text else 222), 0)
+		account.size_flags_horizontal = Control.SIZE_EXPAND_FILL if portrait else Control.SIZE_SHRINK_BEGIN
+		account.add_theme_constant_override("separation", 4)
+		var spool_capacity := GameManager.filament_cap()
+		var xp_threshold := maxi(100, spool_capacity * 100)
+		account.add_child(make_status_chip("SPOOL CAPACITY  %d / 10" % spool_capacity, "secondary", Color("d6f7ff")))
+		account.add_child(make_status_chip("XP  %d / %d    •    %d Forge Coins" % [int(GameManager.profile.get("xp", 0)), xp_threshold, int(GameManager.profile.coins)], "commit", Color("fff0a1")))
 		header.add_child(account)
 	else:
 		var ceremony := label("AWAKENING CEREMONY", 15, Color("fff0a1"))
@@ -1087,11 +1116,13 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 	printer_blueprint_selected_id = _blueprint_tray_view.render(host if host != null else body, printer_blueprint_selected_id, {
 		"profile": GameManager.profile,
 		"portrait": is_portrait_layout(),
+		"compact_host": host != null,
 		"reduced_motion": bool(settings().get("reduced_motion", false)),
 		"label": label,
 		"make_button": make_button,
 		"make_panel": make_panel,
 		"inset_style": inset_style,
+		"section_header_style": func(role: String) -> StyleBox: return ARCANE_FOUNDRY_THEME_KIT.section_header(role, bool(settings().get("high_contrast", false))),
 		"cartridge_style": func(selected: bool) -> StyleBox: return ARCANE_FOUNDRY_THEME_KIT.cartridge(selected, bool(settings().get("high_contrast", false))),
 		"select_blueprint": select_printer_blueprint,
 		"preview_print": open_printer,
@@ -1435,13 +1466,15 @@ func confirm_calibration_step() -> void:
 func render_settings() -> void:
 	var panel := make_panel(Color("19334de8"), Color("ffd36c")); body.add_child(panel.get_parent())
 	var current := settings()
-	panel.add_child(label("Workshop Settings", 25, Color("ffd36c")))
+	panel.add_child(make_section_header("Workshop Settings", 23, Color("ffd36c"), "commit"))
 	panel.add_child(label("Installed review build: " + REVIEW_BUILD_LABEL, 13, Color("9beaff")))
 	panel.add_child(label("Settings are saved to this profile. Text, contrast, and motion controls never change battle rules.", 15, Color("dce8f4")))
+	panel.add_child(make_section_header("Accessibility", 16, Color("9beaff"), "secondary"))
 	for scale in AccessibilityRules.TEXT_SCALES:
 		panel.add_child(make_button("Text size %d%%" % (int(scale) / 100), func(): GameManager.save_settings({"text_scale_bps":scale}), Color("588d73") if int(current.text_scale_bps) == int(scale) else Color("2f93a8")))
 	panel.add_child(make_button("High contrast: %s" % ("On" if bool(current.high_contrast) else "Off"), func(): GameManager.save_settings({"high_contrast":not bool(current.high_contrast)})))
 	panel.add_child(make_button("Reduced motion: %s" % ("On" if bool(current.reduced_motion) else "Off"), func(): GameManager.save_settings({"reduced_motion":not bool(current.reduced_motion)})))
+	panel.add_child(make_section_header("Audio Mix", 16, Color("9beaff"), "secondary"))
 	panel.add_child(label("Audio mix - procedural workshop tones only. Captions remain visible for gameplay cues.", 15, Color("9beaff")))
 	for audio_key in ["master_bps", "music_bps", "sfx_bps"]:
 		var title: String = str({"master_bps":"Master", "music_bps":"Music", "sfx_bps":"SFX"}[audio_key])
@@ -1692,8 +1725,31 @@ func render_armor() -> void:
 	if workbench == null:
 		panel.add_child(label("The Equipment Workbench could not load. Return to the Workshop and try again; your profile has not changed.", 15, Color("ffcfbf")))
 	else:
-		panel.add_child(workbench.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}, bool(settings().get("high_contrast", false))))
+		panel.add_child(workbench.build(GameManager.profile, equipment_selected_creature_id, equipment_mode, equipment_selected_id, not is_portrait_layout(), {"select_creature":equipment_select_creature,"select_mode":equipment_select_mode,"select_item":equipment_select_item,"suit_action":equipment_suit_action,"core_action":equipment_core_action,"fit_suit":equipment_fit_suit,"remove_suit":equipment_remove_suit,"remove_core":equipment_remove_core,"socket_core":equipment_socket_core}, bool(settings().get("high_contrast", false)), int(settings().get("text_scale_bps", 10000))))
 	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+	# The generic first-button pass would target a hero action below the title and
+	# auto-scroll a large-text Workbench before its first paint. Keep keyboard
+	# focus, but restore the route's visual origin after the focus settles.
+	_focus_after_render = false
+	call_deferred("_focus_armor_origin")
+
+func _focus_armor_origin() -> void:
+	var scroll := find_child("TouchFirstScroll", true, false) as ScrollContainer
+	if scroll == null: return
+	scroll.follow_focus = false
+	scroll.scroll_vertical = 0
+	for node in find_children("*", "Button", true, false):
+		var button := node as Button
+		if button != null and button.is_visible_in_tree() and not button.disabled:
+			button.grab_focus()
+			break
+	call_deferred("_restore_armor_scroll_origin")
+
+func _restore_armor_scroll_origin() -> void:
+	var scroll := find_child("TouchFirstScroll", true, false) as ScrollContainer
+	if scroll == null: return
+	scroll.scroll_vertical = 0
+	scroll.follow_focus = true
 
 func equipment_select_creature(instance_id: String) -> void: equipment_selected_creature_id = instance_id; render()
 func equipment_select_mode(next_mode: String) -> void:
@@ -2188,6 +2244,8 @@ func _battle_view_context() -> Dictionary:
 		"make_panel": make_panel,
 		"panel_style": panel_style,
 		"inset_style": inset_style,
+		"section_header_style": func(role: String) -> StyleBox: return ARCANE_FOUNDRY_THEME_KIT.section_header(role, bool(settings().get("high_contrast", false))),
+		"status_chip_style": func(role: String) -> StyleBox: return ARCANE_FOUNDRY_THEME_KIT.status_chip(role, bool(settings().get("high_contrast", false))),
 		"new_scroll": func() -> ScrollContainer: return TOUCH_SCROLL_CONTAINER.new(),
 		"new_card_view": _new_support_card_view,
 		"return_workshop": navigate_to.bind("workshop"),

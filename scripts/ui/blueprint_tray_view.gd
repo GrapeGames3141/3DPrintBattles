@@ -6,6 +6,18 @@ extends RefCounted
 var _cached_profile_blueprints: Array = []
 var _cached_ids: Array[String] = []
 
+func _section_heading(text_value: String, size: int, color: Color, role: String, context: Dictionary) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "BlueprintTraySectionHeader"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", context.section_header_style.call(role))
+	var title: Label = context.label.call(text_value, size, color)
+	title.name = "BlueprintTraySectionHeaderTitle"
+	title.custom_minimum_size.y = 30
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	panel.add_child(title)
+	return panel
+
 func blueprint_ids(profile: Dictionary) -> Array[String]:
 	var stored_blueprints: Array = profile.get("blueprints", [])
 	if stored_blueprints != _cached_profile_blueprints:
@@ -86,9 +98,12 @@ func _detail(creature_id: String, use_tray_heading: bool, context: Dictionary) -
 	var detail := VBoxContainer.new()
 	detail.name = "PrinterBlueprintDetail"
 	detail.add_theme_constant_override("separation", 8)
+	# The landscape detail panel is already an inset well; keeping its title as a
+	# direct child preserves the established first-fold geometry at short heights.
 	var heading: Label = context.label.call("Blueprint Tray - Choose a Print" if use_tray_heading else "Blueprint Detail", 18, Color("ffd36c") if use_tray_heading else Color("9beaff"))
 	heading.name = "PrinterBlueprintTrayTitle" if use_tray_heading else "PrinterBlueprintDetailTitle"
-	heading.custom_minimum_size = Vector2(0, 28)
+	heading.custom_minimum_size.y = 30
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail.add_child(heading)
 	var art := TextureRect.new()
 	art.name = "PrinterBlueprintDetailArt"
@@ -113,15 +128,18 @@ func render(host: Control, selected_id: String, context: Dictionary) -> String:
 	var tray: VBoxContainer = context.make_panel.call(Color("15344bea"), Color("f1be69"))
 	tray.get_parent().name = "PrinterBlueprintTray"
 	host.add_child(tray.get_parent())
-	var wide := not bool(context.portrait)
-	if not wide:
+	# The Printer station reserves a narrow landscape side column. Treat that
+	# local host like a compact tray instead of squeezing a two-column detail
+	# workspace into it; the standalone Tray still uses its broad layout.
+	var wide := not bool(context.portrait) and not bool(context.get("compact_host", false))
+	if bool(context.portrait):
 		var title_inset := Control.new()
 		title_inset.custom_minimum_size = Vector2(0, 10)
 		tray.add_child(title_inset)
-		var tray_title: Label = context.label.call("Blueprint Tray - Choose a Print", 21, Color("ffd36c"))
-		tray_title.name = "PrinterBlueprintTrayTitle"
-		tray_title.custom_minimum_size = Vector2(0, 30)
-		tray_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var tray_title := _section_heading("Blueprint Tray - Choose a Print", 21, Color("ffd36c"), "commit", context)
+		tray_title.name = "BlueprintTrayHeader"
+		var tray_title_label := tray_title.find_child("BlueprintTraySectionHeaderTitle", true, false) as Label
+		if tray_title_label != null: tray_title_label.name = "PrinterBlueprintTrayTitle"
 		tray.add_child(tray_title)
 		tray.add_child(context.label.call("Previewing is safe: Forge Coins and inventory change only when Begin Print reaches the secured commit seam.", 14, Color("dce8f4")))
 	var ids := blueprint_ids(context.profile)
@@ -171,7 +189,10 @@ func render(host: Control, selected_id: String, context: Dictionary) -> String:
 	detail_panel.name = "PrinterBlueprintDetailPanel"
 	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_panel.add_theme_stylebox_override("panel", context.inset_style.call(Color("102940ec"), Color("6bd6ed")))
-	detail_panel.add_child(_detail(selected_id, wide, context))
+	# In a compact landscape side host the detail well owns the tray heading,
+	# just like the full landscape workspace. Portrait keeps its heading above
+	# the horizontal cartridge strip for easier touch scanning.
+	detail_panel.add_child(_detail(selected_id, not bool(context.portrait), context))
 	workspace.add_child(detail_panel)
 	tray.add_child(context.make_button.call("Close Blueprint Tray", context.close_tray, Color("536c8d")))
 	return selected_id
