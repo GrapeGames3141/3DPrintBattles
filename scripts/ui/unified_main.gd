@@ -40,6 +40,11 @@ func _ready() -> void:
 	GameManager.profile_changed.connect(render); GameManager.toast_requested.connect(func(message): toast = message; render())
 	screen = "onboarding" if str(GameManager.profile.get("onboarding", {}).get("state", "choose_starter")) == "choose_starter" else "workshop"
 	render()
+	print("PRINTFORGE_STARTUP marker=ui_ready screen=%s renderer=%s" % [screen, RenderingServer.get_current_rendering_method()])
+	call_deferred("_emit_first_frame_marker")
+func _emit_first_frame_marker() -> void:
+	await get_tree().process_frame
+	print("PRINTFORGE_STARTUP marker=first_frame screen=%s viewport=%dx%d" % [screen, int(size.x), int(size.y)])
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and is_inside_tree(): render()
 func portrait() -> bool: return size.y > size.x
