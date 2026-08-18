@@ -59,13 +59,13 @@ func _ready() -> void:
 	main.activate_workshop_overview_hotspot("calibration")
 	await get_tree().process_frame
 	require(main.screen == "workshop" and main.workshop_view == "overview" and int(GameManager.profile.revision) == calibration_revision + 1 and int(GameManager.profile.daily_job_count) == calibration_count + 1, "Calibration dial claims exactly once and remains on the overview")
-	for entry in [{"target":"collection", "screen":"collection"}, {"target":"team", "screen":"team"}, {"target":"armor", "screen":"armor"}, {"target":"battle_arena", "screen":"proving"}, {"target":"card_archive", "screen":"archive"}, {"target":"shop", "screen":"shop"}, {"target":"codex", "screen":"codex"}, {"target":"trade", "screen":"trade"}]:
+	for entry in [{"target":"collection", "screen":"collection"}, {"target":"team", "screen":"team"}, {"target":"armor", "screen":"armor"}, {"target":"battle_arena", "screen":"proving"}, {"target":"card_archive", "screen":"unified_library"}, {"target":"shop", "screen":"unified_market"}, {"target":"codex", "screen":"codex"}, {"target":"trade", "screen":"trade"}]:
 		main.screen = "workshop"
 		main.open_workshop_view("overview")
 		main.activate_workshop_overview_hotspot(str(entry.target))
 		await get_tree().process_frame
 		require(main.screen == str(entry.screen), "%s routes directly from its pictured overview object" % str(entry.target))
-		if str(entry.target) == "card_archive": require(main.find_child("ArchiveEditDeck", true, false) is Button, "Support Card Archive keeps Edit Deck reachable")
+		if str(entry.target) == "card_archive": require(main.find_child("UnifiedLibraryDeck", true, false) is Button, "Card Library keeps Deck Blueprint Rack reachable")
 	main.screen = "workshop"
 	main.open_workshop_view("overview")
 	var printer_hotspot := main.find_child("WorkshopHotspotPrinter", true, false) as Button
@@ -129,7 +129,7 @@ func _ready() -> void:
 			var responsive_hotspot := main.find_child(hotspot_name, true, false) as Control
 			require(responsive_hotspot != null and control_in_view(responsive_hotspot, viewport_size) and hotspot_in_map_view(responsive_hotspot, map), "%s stays in the visible overview map at %s (rect %s)" % [hotspot_name, viewport_size, responsive_hotspot.get_global_rect() if responsive_hotspot != null else Rect2()])
 		if viewport_size == Vector2i(1280, 576):
-			for route in [{"target":"team", "screen":"team"}, {"target":"card_archive", "screen":"archive"}, {"target":"shop", "screen":"shop"}]:
+			for route in [{"target":"team", "screen":"team"}, {"target":"card_archive", "screen":"unified_library"}, {"target":"shop", "screen":"unified_market"}]:
 				main.activate_workshop_overview_hotspot(str(route.target))
 				await get_tree().process_frame
 				require(main.screen == str(route.screen), "extra-wide %s target keeps its direct route" % str(route.target))

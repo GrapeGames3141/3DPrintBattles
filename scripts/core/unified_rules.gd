@@ -5,6 +5,7 @@ extends RefCounted
 
 const STARTER_IDS: Array[String] = ["cinderpaw", "aquafin", "voltwig"]
 const PACKS := {"pack_3":{"count":3,"price":60}, "pack_5":{"count":5,"price":90}, "pack_10":{"count":10,"price":160}}
+const SINGLE_PRICES := {"common":18,"uncommon":28,"rare":42,"epic":64,"legendary":90,"mythic":120,"prismatic":140,"primordial":160}
 const PRINT_TICKS := {"common":1,"uncommon":2,"rare":2,"epic":3,"legendary":3,"mythic":4,"prismatic":4,"primordial":5}
 const PRINTER_NODES := {
 	"calibrated_rails":{"cost":60,"group":"Fabrication","requires":[]}, "heated_bed":{"cost":120,"group":"Fabrication","requires":["calibrated_rails"]}, "rapid_start":{"cost":180,"group":"Fabrication","requires":["heated_bed"]},
@@ -138,6 +139,35 @@ static func buy_pack(source: Dictionary, pack_id: String, random_bytes: PackedBy
 static func clear_pack_reveal(source: Dictionary) -> Dictionary:
 	var p := ensure(source); var cards: Array = p.pending_pack_reveal.get("cards", []) if p.pending_pack_reveal is Dictionary else []
 	p.pending_pack_reveal = {}; return ok(p, {"cards":cards})
+
+## Market singles are a small deterministic shelf, not a browseable locked
+## catalog. The day key is supplied by the facade so a server can reproduce the
+## exact offer list; buying validates against the same list atomically.
+static func market_offers(day_key: String) -> Array:
+	var source := all_cards(); var seed := 19
+	for byte in day_key.to_utf8_buffer(): seed = int((seed * 131 + int(byte)) & 0x7fffffff)
+	var offers: Array = []
+	while offers.size() < mini(8, source.size()):
+		seed = _next(seed)
+		var card_def: Dictionary = source[seed % source.size()]
+		var id := str(card_def.get("id", ""))
+		var duplicate := false
+		for offered in offers:
+			if str(offered.get("id", "")) == id: duplicate = true; break
+		if duplicate: continue
+		offers.append({"id":id,"price":int(SINGLE_PRICES.get(str(card_def.get("rarity", "common")), 18)),"day_key":day_key})
+	return offers
+
+static func buy_market_card(source: Dictionary, card_id: String, day_key: String) -> Dictionary:
+	var p := ensure(source); var offered: Dictionary = {}
+	for offer in market_offers(day_key):
+		if str(offer.get("id", "")) == card_id: offered = offer; break
+	if offered.is_empty(): return fail(p, "That card is not offered in the current Market.")
+	if int(p.get("coins", 0)) < int(offered.price): return fail(p, "Not enough Forge Coins.")
+	p.coins = int(p.coins) - int(offered.price)
+	p.owned_cards[card_id] = int(p.owned_cards.get(card_id, 0)) + 1
+	# Ownership is the only single-purchase effect: build/XP state is untouched.
+	return ok(p, {"card_id":card_id,"price":int(offered.price),"day_key":day_key})
 
 static func apply_printer_nodes(source: Dictionary, desired: Array) -> Dictionary:
 	var p := ensure(source); var wanted := desired.duplicate(); var cost := 0; var refund := 0

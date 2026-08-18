@@ -81,6 +81,21 @@ func buy_card_pack(pack_id: String) -> Dictionary:
 	mutated("buy_card_pack", result.payload)
 	return result
 
+func current_market_offers(day_key: String = "") -> Array:
+	var resolved := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
+	return UNIFIED_RULES.market_offers(resolved)
+
+func buy_market_card(card_id: String, day_key: String = "") -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
+	var resolved := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
+	var result := UNIFIED_RULES.buy_market_card(profile, card_id, resolved)
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "Market offer unavailable.")))
+		return result
+	profile = result.profile
+	mutated("buy_market_card", result.payload)
+	return result
+
 func claim_pending_pack_reveal() -> Array:
 	if _reject_read_only(): return []
 	var cards: Array = profile.get("pending_pack_reveal", {}).get("cards", []) if profile.get("pending_pack_reveal", {}) is Dictionary else []

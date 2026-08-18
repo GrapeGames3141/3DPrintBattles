@@ -18,6 +18,12 @@ func tree_has_text(node: Node, fragment: String) -> bool:
 		if tree_has_text(child, fragment): return true
 	return false
 
+func has_scroll_container(node: Node) -> bool:
+	if node is ScrollContainer: return true
+	for child in node.get_children():
+		if has_scroll_container(child): return true
+	return false
+
 func new_unified_profile() -> Dictionary:
 	var profile := UNIFIED_RULES.ensure(ProfileRules.new_profile())
 	profile = UNIFIED_RULES.choose_starter(profile, "cinderpaw").profile
@@ -27,6 +33,13 @@ func _ready() -> void:
 	GameManager.profile = new_unified_profile()
 	var main := MAIN.instantiate()
 	add_child(main)
+	await get_tree().process_frame
+	require(main.get_script().resource_path == "res://scripts/ui/main.gd", "main.tscn ships the established Arcane Foundry controller")
+	for route in [["shop", "unified_market", "Foundry Market"], ["archive", "unified_library", "Card Library"], ["deck", "unified_deck", "Deck Blueprint Rack"], ["calibration", "unified_upgrades", "Printer Upgrade Grid"]]:
+		main.navigate_to(str(route[0]))
+		await get_tree().process_frame
+		require(main.screen == str(route[1]) and not has_scroll_container(main) and tree_has_text(main, str(route[2])), "workshop route %s opens its paged no-scroll unified Foundry surface" % str(route[0]))
+	main.navigate_to("workshop")
 	await get_tree().process_frame
 	# Tier progression remains an authoritative lock rather than a retired legacy
 	# navigation callback.
@@ -40,6 +53,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	require(main.battle != null and str(main.battle_settlement_context.get("source_id", "")) == "first_layers_1", "First Layers launches the authored first encounter through the unified UI")
 	require(main.battle != null and int(main.battle.player(1).spool_cap) == 3 and str(main.battle_mode) == "trial_first_layers", "Trial UI preserves authored rival spool and arena mode")
+	require(not has_scroll_container(main) and tree_has_text(main, "Foundry Battle") and tree_has_text(main, "Hand 1 / 1"), "shipped unified battle uses a no-scroll Foundry shell with a paged hand")
 	if main.battle != null:
 		main.battle.finished = true
 		main.battle.winner = 0

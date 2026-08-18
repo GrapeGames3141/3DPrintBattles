@@ -1,4 +1,8 @@
-# 0.7 Unified Battle Playtest
+# 0.7.5 UI Recovery Playtest
+
+Prepared review metadata: `0.7.5-ui-recovery-playtest` (Windows file version
+`0.7.5.0`; Android version code `95`). This document describes the source
+playtest scope; no 0.7.5 artifact is implied until the export gate completes.
 
 This work remains on `feature/unified-card-battle-redesign`; do not merge until a human playtest signs off.
 

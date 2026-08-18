@@ -10,6 +10,7 @@ const TIERED_ARMOR_PALETTE_SHOWCASE := preload("res://tests/tiered_armor_palette
 const CORE_POWER_SHOWCASE := preload("res://tests/core_power_showcase.gd")
 const CORE_POWER_TIMELINE := preload("res://tests/core_power_timeline.gd")
 const HELMET_GEM_CLOSEUP_SHOWCASE := preload("res://tests/helmet_gem_closeup_showcase.gd")
+const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -35,6 +36,11 @@ func _ready() -> void:
 func _prepare_capture() -> void:
 	await get_tree().process_frame
 	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
+	if capture_mode.begins_with("unified_"):
+		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
+		GameManager.profile.coins = 720
+		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
+		GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
 		GameManager.profile = legacy_trial_profile()
 	if capture_mode in ["trials_teamlaunch", "trial_battle_teamlaunch"]:
@@ -105,6 +111,13 @@ func _prepare_capture() -> void:
 			if capture_mode == "trade_settled":
 				var settled: Dictionary = workshop.local_trade.confirm(1, workshop.local_trade.creator_revision, workshop.local_trade.partner_revision)
 				if bool(settled.get("settled", false)): GameManager.profile = settled.creator
+	elif capture_mode == "unified_battle":
+		var setup: Dictionary = GameManager.create_unified_battle("trial_first_layers", {}, 61)
+		workshop.battle = setup.get("battle", null)
+		workshop.battle_mode = "trial_first_layers"
+		workshop.battle_settlement_context = setup.get("settlement_context", {})
+		workshop.screen = "unified_battle"
+	elif capture_mode == "unified_library_inspector": workshop.screen = "unified_library"; workshop.unified_inspector_id = "cinderpaw"; workshop.unified_inspector_tab = "stats"
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	if capture_mode == "proving":
 		# The real navigation path freezes the daily contracts before rendering;
@@ -250,6 +263,13 @@ func wait_frames(count: int) -> void:
 func wait_for_stable_header() -> void:
 	# Avoid capturing before a resized window has completed its first container pass.
 	for _frame in 60:
+		if capture_mode == "unified_battle":
+			var battle_heading := workshop.find_child("UnifiedBattleHeading", true, false) as Control
+			if battle_heading and battle_heading.is_visible_in_tree() and battle_heading.get_global_rect().get_area() > 0.0 and battle_heading.get_global_rect().end.y <= get_viewport().get_visible_rect().end.y:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
 		var header := workshop.find_child("WorkshopHeader", true, false) as Control
 		var bottom_safe := true
 		if capture_mode in ["art_gallery_page1", "art_gallery_page2"]:
@@ -279,7 +299,8 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards"]: return mode
+			if mode in ["unified_library_inspector", "unified_battle"]: return mode
+			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards", "unified_market", "unified_library", "unified_deck", "unified_upgrades"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:

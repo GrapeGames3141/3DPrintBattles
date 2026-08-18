@@ -44,6 +44,17 @@ func _ready() -> void:
 	var bought := RULES.buy_pack(printed.profile, "pack_3", PackedByteArray([1,2,3,4,5,6,7,8]))
 	print("UNIFIED_TEST phase=pack")
 	require(bool(bought.ok) and int(bought.profile.coins) == int(printed.profile.coins) - 60 and (bought.payload.cards as Array).size() == 3 and not bought.profile.pending_pack_reveal.is_empty(), "pack purchase is charged and persisted before reveal")
+	var market_day := "2026-08-18"
+	var offers := RULES.market_offers(market_day)
+	var market_card := str(offers[0].get("id", "")) if not offers.is_empty() else ""
+	var market_before: Dictionary = printed.profile.duplicate(true)
+	market_before.coins = 500
+	market_before.card_xp[market_card] = 7
+	market_before.card_builds[market_card] = ["power_a"]
+	var single := RULES.buy_market_card(market_before, market_card, market_day)
+	require(bool(single.ok) and int(single.profile.owned_cards.get(market_card, 0)) == int(market_before.owned_cards.get(market_card, 0)) + 1 and int(single.profile.card_xp.get(market_card, 0)) == 7 and single.profile.card_builds.get(market_card, []) == ["power_a"], "market single validates the offered shelf and only grants ownership")
+	var unavailable := RULES.buy_market_card(market_before, "not_on_shelf", market_day)
+	require(not bool(unavailable.ok) and unavailable.profile == market_before, "market rejects a card outside the current purchasable offers atomically")
 	var cards: Array = printed.profile.decks[0].cards.duplicate()
 	require(RULES.deck_reason(printed.profile, cards).is_empty(), "starter deck is unified legal")
 	var printer_xp: Dictionary = printed.profile.duplicate(true); printer_xp.forge_xp = 500
@@ -131,54 +142,9 @@ func _ready() -> void:
 	var arrival_key := UNIFIED_MAIN._arrival_key(23, 0, 1, "cinderpaw")
 	require(UNIFIED_MAIN.consume_arrival(presented, arrival_key) and not UNIFIED_MAIN.consume_arrival(presented, arrival_key), "arrival presentation consumes each printer-to-slot event once")
 	require(UNIFIED_MAIN.arrival_duration(false) > 0.0 and is_zero_approx(UNIFIED_MAIN.arrival_duration(true)), "reduced motion makes print arrival instant")
-	var arrival_shell := UNIFIED_MAIN.new()
-	arrival_shell.size = Vector2(900, 600)
-	add_child(arrival_shell)
-	var arrival_state := STATE.create(cards, cards, 41)
-	arrival_state.players[0].slots[0] = {"card_id":"cinderpaw","name":"Cinderpaw","hp":4,"attack":2,"cost":1,"guard":0,"ready":false,"arriving":true}
-	arrival_shell.screen = "battle"
-	arrival_shell.battle = arrival_state
-	arrival_state.active_seat = 1
-	arrival_shell.ai_turn_pending = true
-	arrival_shell.render()
-	await get_tree().process_frame
-	await get_tree().process_frame
-	require(arrival_shell.arrival_presented.has(UNIFIED_MAIN._arrival_key(41, 0, 0, "cinderpaw")), "arrival shell consumes a rendered printer-to-slot event once")
-	arrival_shell.queue_free()
-	# The unified shell promises responsive pagination instead of gameplay
-	# scrollbars. Exercise the dense printer grid and a seven-card hand at the
-	# two supported review viewports with the accessibility text scale enabled.
-	GameManager.profile = adapter_profile.duplicate(true)
-	GameManager.profile.settings = {"text_scale_bps":12500,"high_contrast":false,"reduced_motion":false}
-	for viewport in [Vector2(1280, 720), Vector2(576, 1024)]:
-		var viewport_shell := UNIFIED_MAIN.new()
-		viewport_shell.size = viewport
-		add_child(viewport_shell)
-		viewport_shell.screen = "upgrades"
-		viewport_shell.printer_upgrade_draft = ["spool_5", "spool_7"]
-		viewport_shell.printer_upgrade_page = 1
-		viewport_shell.render()
-		await get_tree().process_frame
-		print("UNIFIED_TEST viewport=upgrades size=%s minimum=%s" % [viewport, (viewport_shell.get_child(viewport_shell.get_child_count() - 1) as Control).get_combined_minimum_size()])
-		require(not _has_scroll_container(viewport_shell), "printer grid contains no ScrollContainer at %s" % viewport)
-		require(_content_fits_viewport(viewport_shell), "printer grid fits %s at 125%% text" % viewport)
-		var printer_pages := 3 if viewport.y > viewport.x else 2
-		require(_tree_has_text(viewport_shell, "Net 180 XP (cost 180, refund 0)") and _tree_has_text(viewport_shell, "2 / %d" % printer_pages), "printer grid keeps staged net cost and page controls at %s" % viewport)
-		var viewport_state := STATE.create(cards, cards, 53)
-		viewport_state.players[0].hand = ["cinderpaw", "cinderpaw", "cinderpaw", "cinderpaw", "cinderpaw", "cinderpaw", "cinderpaw"]
-		viewport_shell.screen = "battle"
-		viewport_shell.battle = viewport_state
-		viewport_shell.battle_mode = "local"
-		viewport_shell.local_handoff_pending = false
-		viewport_shell.battle_hand_page = 0
-		viewport_shell.render()
-		await get_tree().process_frame
-		print("UNIFIED_TEST viewport=battle size=%s minimum=%s parts=%s" % [viewport, (viewport_shell.get_child(viewport_shell.get_child_count() - 1) as Control).get_combined_minimum_size(), _layout_measurements(viewport_shell)])
-		require(not _has_scroll_container(viewport_shell), "battle contains no ScrollContainer at %s" % viewport)
-		require(_content_fits_viewport(viewport_shell), "battle fits %s at 125%% text" % viewport)
-		var hand_pages := 2 if viewport.y > viewport.x else 1
-		require(_tree_has_text(viewport_shell, "Hand 1 / %d" % hand_pages), "battle hand pager is visible at %s" % viewport)
-		viewport_shell.queue_free()
+	# The compact shell remains a component/presentation seam only. Shipped UI
+	# navigation, layout and Trial settlement are exercised through main.tscn in
+	# test_ui_trials and test_ui_workshop_nav; do not instantiate it as the game.
 	if failures.is_empty(): print("PASS: unified onboarding, packs, deck validation, and battle setup")
 	call_deferred("_finish")
 func _finish() -> void: get_tree().quit(0 if failures.is_empty() else 1)
