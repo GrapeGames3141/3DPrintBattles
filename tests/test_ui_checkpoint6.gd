@@ -44,7 +44,7 @@ func _ready() -> void:
 	require(main.printer_sequence.phase == ArcaneForgeSequence.FAILED and GameManager.profile.creatures.size() == base_count + 1, "failed commit has no print or awakening")
 	main.open_printer("cinderpaw"); await get_tree().process_frame
 	var key := InputEventKey.new(); key.pressed = true; key.keycode = KEY_ESCAPE; main._unhandled_key_input(key); await get_tree().process_frame
-	require(main.screen == "collection" and get_viewport().gui_get_focus_owner() is Button, "printer Escape cancels only preview and focuses a visible action")
+	require(main.screen == "workshop" and main.workshop_view == "overview" and get_viewport().gui_get_focus_owner() is Button, "Workshop-origin Forge Escape returns directly to the overview and focuses a visible action")
 	main.queue_free()
 	if failures.is_empty(): print("PASS: checkpoint6 printer UI transaction safety")
 	call_deferred("finish")

@@ -110,16 +110,15 @@ static func configure_workshop(main, mode: String) -> bool:
 		main.workshop_view = "maker" if mode == "station_live_maker_team" else "printer"
 		main.workshop_station_live_capture_progress = {"station_live_printer_start":0, "station_live_printer_mid":4400, "station_live_printer_hold":11000, "station_live_printer_awakening":14000, "station_live_printer_departing":15500, "station_live_maker_team":11000, "station_live_reduced":11000, "station_live_review":11000}.get(mode, 0)
 		return true
-	if mode in ["workshop_printer_picker", "printer_picker_preview_mossmunk"]:
-		if mode == "workshop_printer_picker":
-			main.screen = "workshop"
-			main.workshop_view = "printer"
-			main.printer_picker_open = true
-		else:
-			main.screen = "printer"
-			main.printer_creature_id = "mossmunk"
-			main.printer_price = int(Catalog.rarity(str(Catalog.creature("mossmunk").rarity)).print)
-			main.printer_sequence = ArcaneForgeSequence.create(false)
+	if mode in ["workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk"]:
+		# Historical capture names remain aliases for the unified Arcane Forge.
+		main.screen = "printer"
+		main.printer_return_screen = "workshop"
+		main.workshop_return_view = "overview"
+		main.printer_creature_id = "mossmunk" if mode in ["printer_picker_preview_mossmunk", "integrated_forge_mossmunk"] else "cinderpaw"
+		main.printer_blueprint_selected_id = main.printer_creature_id
+		main.printer_price = int(Catalog.rarity(str(Catalog.creature(main.printer_creature_id).rarity)).print)
+		main.printer_sequence = ArcaneForgeSequence.create(false)
 		return true
 	if mode in ["workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer"]:
 		main.screen = "workshop"

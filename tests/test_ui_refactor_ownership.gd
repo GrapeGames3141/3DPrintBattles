@@ -21,11 +21,9 @@ func _ready() -> void:
 	var main := MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
-	main.screen = "workshop"
-	main.workshop_view = "printer"
 	main.open_printer_picker()
 	await get_tree().process_frame
-	require(main.printer_blueprint_ids().has("mossmunk") and main.find_child("PrinterBlueprintCardMossmunk", true, false) != null, "BlueprintTrayView owns the rendered learned-blueprint card")
+	require(main.screen == "printer" and main.printer_blueprint_ids().has("mossmunk") and main.find_child("PrinterBlueprintCardMossmunk", true, false) != null and main.find_child("PrinterBlueprintSelector", true, false) != null, "BlueprintTrayView owns the integrated learned-blueprint cards")
 	main.select_printer_blueprint("mossmunk")
 	await get_tree().process_frame
 	require(main.printer_blueprint_selected_id == "mossmunk", "select_printer_blueprint facade preserves Main-owned selection")

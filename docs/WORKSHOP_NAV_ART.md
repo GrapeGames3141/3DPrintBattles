@@ -19,8 +19,8 @@ print asset was regenerated or modified.
 The implementation reads these only through `res://assets/ui/workshop/` in
 `scripts/ui/main.gd`. The images use each file's native 3:2 ratio, so
 normalized hotspots remain on their pictured props in portrait and landscape.
-The compact physical-item glow overlays and Blueprint Tray are code-native UI,
-not baked text or button plaques in the art.
+The compact physical-item glow overlays and integrated Forge blueprint selector
+are code-native UI, not baked text or button plaques in the art.
 
 ## Ambient and responsive presentation
 
@@ -37,14 +37,13 @@ The Workshop overview and close-ups use the approved art planes. Close-ups use a
 
 `WorkshopStationLiveLayer` composites the existing alpha Arcane Forge printer frames, catalog raw-print forms, living idle cells, and current active-team instances only into focused Printer and Maker station crops. Its integer-clock sequence is deterministic for capture/testing: ten seconds of bottom-up raw reveal, a raw hold, calm awakening/crossfade, departure, then a seeded choice among learned blueprint IDs. It never calls `GameManager`, saves, journals, changes coins, or changes the team. Reduced Motion is a static, readable raw-print frame. The empty plate regions are deliberate station integration space, not missing generated art.
 
-## Printer Blueprint Tray
+## Integrated Arcane Forge selector
 
-The Printer Bench owns a visible `Choose a Print` station control in the clear
-right-hand floor/cabinet region, away from the presentation-only live Forge.
-It opens a responsive Blueprint Tray rather than silently selecting the
-starter or detouring through Collection. Each tile is built from profile-owned
-catalog IDs only and shows the same idle-cell art, element, rarity, exact
-catalog print price, and owned instance count used by the Forge preview. The
-tray is two columns in the desktop station split and one column below the
-portrait scene. Opening, closing, and previewing stay presentation-only; the
-existing Arcane Forge commit seam remains the only coin/inventory authority.
+The overview printer opens the Arcane Forge directly; it no longer visits the
+legacy Printer Bench close-up or a separate Blueprint Tray. At idle, learned
+catalog cartridges are embedded beside the desktop Forge or below the large
+portrait printer. Each compact card shows idle-cell art, element, rarity, exact
+catalog cost, and owned count. Selecting a card updates the dormant plate and
+fact summary in place without changing profile state. The selector locks once
+printing begins, and the existing Arcane Forge commit seam remains the only
+coin/inventory authority.

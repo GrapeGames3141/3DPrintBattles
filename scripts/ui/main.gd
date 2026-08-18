@@ -22,7 +22,7 @@ const BLUEPRINT_TRAY_VIEW := preload("res://scripts/ui/blueprint_tray_view.gd")
 const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
 const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
-const REVIEW_BUILD_LABEL := "0.6.7-workshop-hub"
+const REVIEW_BUILD_LABEL := "0.6.8-integrated-forge"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -906,10 +906,10 @@ func _workshop_settings_button() -> Button:
 	return button
 
 func _printer_picker_button() -> Button:
-	var button := make_button("Close Blueprint Tray" if printer_picker_open else "Choose a Print", close_printer_picker if printer_picker_open else open_printer_picker, Color("a86b2e"))
+	var button := make_button("Open Arcane Forge", open_printer_picker, Color("a86b2e"))
 	button.name = "PrinterBlueprintTrayButton"
-	button.tooltip_text = "Choose a learned creature blueprint to preview in the Arcane Forge"
-	button.accessibility_name = "Choose a Print Blueprint Tray"
+	button.tooltip_text = "Open the Arcane Forge and choose a learned creature blueprint"
+	button.accessibility_name = "Open Arcane Forge"
 	# Keep selection reachable in the physical Printer station without covering the
 	# presentation-only Forge. The right floor/cabinet stays clear in both crops.
 	button.anchor_left = 0.70; button.anchor_right = 0.88
@@ -933,7 +933,9 @@ func _workshop_overview_button() -> Button:
 
 func render_workshop_overview(used_today: int) -> void:
 	overview_layout_portrait = is_portrait_layout()
-	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 215.0) if overview_layout_portrait else maxf(500.0, get_viewport().get_visible_rect().size.y - 150.0)
+	# Reserve enough portrait space for the bottom-row direct-object targets; the
+	# prior 215px allowance clipped the Support Card Deck target on 576x1024.
+	var overview_height := maxf(620.0, get_viewport().get_visible_rect().size.y - 235.0) if overview_layout_portrait else maxf(500.0, get_viewport().get_visible_rect().size.y - 150.0)
 	# v6 overview plates are aspect-specific, static full-room shots. They never
 	# host mutable-looking printer/team overlays or motion; those belong in stations.
 	var map := _workshop_surface("WorkshopMap", _workshop_overview_texture(), overview_height, null, false, "overview", false, false)
@@ -946,7 +948,9 @@ func render_workshop_closeup(used_today: int) -> void:
 	if view.is_empty():
 		open_workshop_view("overview")
 		return
-	var picker_open := workshop_view == "printer" and printer_picker_open
+	# `printer_picker_open` is retained as a serialized/caller compatibility bit,
+	# never as a visible intermediate route. Creature selection lives in Forge.
+	var picker_open := false
 	# A selected tool gets a dedicated right-hand blueprint tray on desktop.
 	# Portrait deliberately keeps the proven art-over-tray composition instead.
 	if not is_portrait_layout() and (not workshop_drawer_object.is_empty() or picker_open):
@@ -1091,15 +1095,25 @@ func render_workshop_drawer(view: Dictionary, host: Control = null) -> void:
 	action_tiles.add_child(make_button("Close Tray", close_workshop_drawer, Color("536c8d")))
 
 func printer_blueprint_ids() -> Array[String]:
-	# Retained facade for navigation tests and callers outside the tray view.
+	# Retained facade for callers outside the integrated selector.
 	return _blueprint_tray_view.blueprint_ids(GameManager.profile)
 
 func select_printer_blueprint(creature_id: String) -> void:
-	# Main owns the selected ID; the view only emits this callback.
+	# Main owns the selected ID and dormant Forge preview; this remains
+	# authority-neutral until the existing commit seam reaches raw completion.
+	if printer_is_armor or printer_sequence == null or printer_sequence.phase != ArcaneForgeSequence.IDLE:
+		return
+	if creature_id not in printer_blueprint_ids():
+		return
 	printer_blueprint_selected_id = creature_id
+	printer_creature_id = creature_id
+	var definition := Catalog.creature(creature_id)
+	printer_price = int(Catalog.rarity(str(definition.get("rarity", "common"))).get("print", 0))
 	render()
 
 func render_printer_blueprint_tray(host: Control = null) -> void:
+	# Compatibility name: the former separate tray is now cards embedded directly
+	# in the Arcane Forge. It deliberately owns no preview or close action.
 	printer_blueprint_selected_id = _blueprint_tray_view.render(host if host != null else body, printer_blueprint_selected_id, {
 		"profile": GameManager.profile,
 		"portrait": is_portrait_layout(),
@@ -1110,9 +1124,7 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 		"inset_style": inset_style,
 		"cartridge_style": func(selected: bool) -> StyleBox: return ARCANE_FOUNDRY_THEME_KIT.cartridge(selected, bool(settings().get("high_contrast", false))),
 		"select_blueprint": select_printer_blueprint,
-		"preview_print": open_printer,
-		"open_offers": navigate_to.bind("shop"),
-		"close_tray": close_printer_picker
+		"open_offers": navigate_to.bind("shop")
 	})
 
 func _workshop_action_label(target: String) -> String:
@@ -1142,42 +1154,42 @@ func close_workshop_drawer() -> void:
 	render()
 
 func open_printer_picker() -> void:
-	# The Printer Bench is self-sufficient: selection is deliberate and never
-	# guesses a starter blueprint or mutates profile state.
-	if screen != "workshop":
-		screen = "workshop"
-	workshop_view = "printer"
-	workshop_selected = "printer"
-	workshop_drawer_object = ""
-	printer_picker_open = true
-	render()
-	# The generic shell restores its first focus target after every render. Keep
-	# that focus restoration from auto-scrolling this tray title under the fixed
-	# header, then deliberately focus the first cartridge at scroll position zero.
-	call_deferred("_focus_printer_picker_origin")
+	# Legacy facade: route straight into the unified creature Forge. There is no
+	# visible intermediate close-up or Blueprint Tray state.
+	var ids := printer_blueprint_ids()
+	if printer_blueprint_selected_id not in ids:
+		printer_blueprint_selected_id = str(ids[0]) if not ids.is_empty() else ""
+	open_printer(printer_blueprint_selected_id)
 
 func _focus_printer_picker_origin() -> void:
-	if not printer_picker_open: return
-	var scroll := find_child("TouchFirstScroll", true, false) as ScrollContainer
-	if scroll == null: return
-	scroll.follow_focus = false
-	# Containers finalize their content minimum size one frame after this method
-	# is deferred. Wait for that pass before setting the origin, otherwise Godot
-	# clamps the old scroll value and restores the focused map object instead.
+	if screen != "printer" or printer_is_armor or printer_sequence == null or printer_sequence.phase != ArcaneForgeSequence.IDLE: return
+	# The outer vertical scroller can retain focus-driven offset from the previous
+	# shell. Reset it even in landscape, which has no nested cartridge strip.
+	var outer_scroll := find_child("TouchFirstScroll", true, false) as ScrollContainer
+	if outer_scroll != null:
+		outer_scroll.follow_focus = false
+		outer_scroll.scroll_vertical = 0
+	var cartridge_scroll := find_child("PrinterBlueprintCartridgeStrip", true, false) as ScrollContainer
+	if cartridge_scroll != null:
+		cartridge_scroll.follow_focus = false
+		cartridge_scroll.scroll_horizontal = 0
 	await get_tree().process_frame
-	if not is_instance_valid(scroll) or not printer_picker_open: return
-	scroll.scroll_vertical = 0
+	if screen != "printer": return
+	if is_instance_valid(outer_scroll): outer_scroll.scroll_vertical = 0
+	if is_instance_valid(cartridge_scroll): cartridge_scroll.scroll_horizontal = 0
 	var first := find_child("PrinterSelectCinderpaw", true, false) as Button
 	if first != null and first.is_visible_in_tree(): first.grab_focus()
 	await get_tree().process_frame
-	if not is_instance_valid(scroll) or not printer_picker_open: return
-	scroll.scroll_vertical = 0
+	if screen != "printer": return
+	if is_instance_valid(outer_scroll): outer_scroll.scroll_vertical = 0
+	if is_instance_valid(cartridge_scroll): cartridge_scroll.scroll_horizontal = 0
 
 func close_printer_picker() -> void:
-	if not printer_picker_open:
-		return
+	# Deprecated facade retained for old callers. The integrated screen uses its
+	# normal idle Back action rather than exposing a tray close action.
 	printer_picker_open = false
-	render()
+	if screen == "printer" and printer_sequence != null and printer_sequence.phase == ArcaneForgeSequence.IDLE:
+		cancel_printer_preview()
 
 func _workshop_stations() -> Array:
 	return [
@@ -1518,76 +1530,121 @@ func adjust_audio_setting(key: String, direction: int) -> void:
 	_audio_director.configure(settings(), false)
 
 func open_printer(creature_id: String) -> void:
-	var definition := Catalog.creature(creature_id)
-	if definition.is_empty() or creature_id not in GameManager.profile.get("blueprints", []):
+	if not creature_id.is_empty() and (Catalog.creature(creature_id).is_empty() or creature_id not in GameManager.profile.get("blueprints", [])):
 		_toast("That blueprint is not learned yet.")
 		return
 	printer_creature_id = creature_id
+	printer_blueprint_selected_id = creature_id
 	printer_armor_id = ""
 	printer_is_armor = false
-	printer_price = int(Catalog.rarity(str(definition.rarity)).print)
+	printer_is_core = false
+	var definition := Catalog.creature(creature_id)
+	printer_price = int(Catalog.rarity(str(definition.get("rarity", "common"))).get("print", 0)) if not definition.is_empty() else 0
 	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)))
 	printer_tick_accumulator = 0.0
 	printer_presentation_seconds = 0.0
 	printer_failure = ""
-	printer_return_screen = screen
-	if screen == "workshop": workshop_return_view = workshop_view
+	# Re-selecting from an existing Forge (for tests or future keyboard routing)
+	# must preserve its original caller instead of making Back a no-op.
+	if screen != "printer":
+		printer_return_screen = screen
+	# Creature Forge entry from any Workshop surface always returns to the direct
+	# overview. The old printer close-up is no longer part of this route.
+	if screen == "workshop": workshop_return_view = "overview"
+	printer_picker_open = false
 	screen = "printer"
 	render()
+	call_deferred("_focus_printer_picker_origin")
 
 func render_printer() -> void:
 	var definition := Catalog.creature(printer_creature_id)
-	if (definition.is_empty() and not printer_is_armor) or printer_sequence == null:
-		screen = "collection"
-		render()
+	if printer_sequence == null:
+		cancel_printer_preview()
 		return
 	printer_progress_label = null
 	var panel := make_panel(Color("152d49ec"), Color("f1be69"))
 	body.add_child(panel.get_parent())
 	panel.add_child(label("Arcane Forge", 27, Color("ffd36c")))
-	var print_name := (str(ArmorCoreDefinitions.core_blueprint_definition(printer_armor_id).get("name", "Core")) if printer_is_core else str(ProgressionRules.armor_def(printer_armor_id).get("name", "Full Suit"))) if printer_is_armor else str(definition.name)
-	var print_type := ("Printed Core" if printer_is_core else "Complete suit") if printer_is_armor else str(definition.element)
-	panel.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
-	panel.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
+	var print_name := (str(ArmorCoreDefinitions.core_blueprint_definition(printer_armor_id).get("name", "Core")) if printer_is_core else str(ProgressionRules.armor_def(printer_armor_id).get("name", "Full Suit"))) if printer_is_armor else str(definition.get("name", "No learned blueprint selected"))
+	var print_type := ("Printed Core" if printer_is_core else "Complete suit") if printer_is_armor else str(definition.get("element", "Creature blueprint"))
+	var portrait := is_portrait_layout()
+	var layout: Control = VBoxContainer.new() if portrait else HBoxContainer.new()
+	layout.name = "IntegratedForgeLayout"
+	layout.add_theme_constant_override("separation", 14)
+	panel.add_child(layout)
+	var printer_column := VBoxContainer.new()
+	printer_column.name = "ArcaneForgePrinterColumn"
+	printer_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	printer_column.size_flags_stretch_ratio = 1.35 if not portrait else 1.0
+	layout.add_child(printer_column)
 	var forge_component = _forge_component()
 	if forge_component != null:
-		forge_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
-		forge_component.attach(panel)
+		forge_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 500 if portrait else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
+		forge_component.attach(printer_column)
 	else:
-		panel.add_child(label("Forge preview is unavailable, but this screen remains safe to exit without changing your profile.", 14, Color("ffcfbf")))
+		printer_column.add_child(label("Forge preview is unavailable, but this screen remains safe to exit without changing your profile.", 14, Color("ffcfbf")))
+	var action_column: VBoxContainer = printer_column if portrait else VBoxContainer.new()
+	if not portrait:
+		action_column.name = "ArcaneForgeSelectorColumn"
+		action_column.custom_minimum_size = Vector2(330, 0)
+		action_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		layout.add_child(action_column)
+	if not printer_is_armor and printer_sequence.phase == ArcaneForgeSequence.IDLE:
+		var facts := make_panel(Color("102940ec"), Color("6bd6ed"))
+		facts.get_parent().name = "PrinterSelectionFacts"
+		action_column.add_child(facts.get_parent())
+		facts.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 17, Color("9beaff")))
+		facts.add_child(label("Owned prints: %d | Available Forge Coins: %d" % [_blueprint_tray_view.owned_count(GameManager.profile, printer_creature_id), int(GameManager.profile.coins)], 14, Color("e6dfd0")))
+		facts.add_child(label("Selecting a cartridge updates this dormant build plate only. Coins and inventory change only at the secured completion seam.", 13, Color("dce8f4")))
+		render_printer_blueprint_tray(action_column)
+	else:
+		action_column.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
+		action_column.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.coins), 15, Color("dce8f4")))
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
-			panel.add_child(label("Preview the dormant print on the build plate. Begin only when ready.", 16, Color("fff0a1")))
-			panel.add_child(make_button("Begin Print (%d FC)" % printer_price, begin_printer, Color("a86b2e")))
-			panel.add_child(make_button("Cancel Preview", cancel_printer_preview, Color("536c8d")))
+			if printer_is_armor:
+				action_column.add_child(label("Preview the dormant print on the build plate. Begin only when ready.", 16, Color("fff0a1")))
+			elif definition.is_empty():
+				action_column.add_child(label("No learned creature blueprints are ready. Visit Forge Offers to learn a pattern, then return to this Forge.", 16, Color("fff0a1")))
+				var offers := make_button("Open Forge Offers", navigate_to.bind("shop"), Color("2f93a8"))
+				offers.name = "PrinterBlueprintEmptyOffers"
+				action_column.add_child(offers)
+			else:
+				action_column.add_child(label("Choose a blueprint, then begin when ready.", 16, Color("fff0a1")))
+				var begin := make_button("Begin Print (%d FC)" % printer_price, begin_printer, Color("a86b2e"))
+				begin.name = "BeginCreaturePrint"
+				action_column.add_child(begin)
+			var back := make_button("Back to Workshop Overview" if printer_return_screen == "workshop" else "Back to Collection", cancel_printer_preview, Color("536c8d"))
+			back.name = "ArcaneForgeBack"
+			action_column.add_child(back)
 		ArcaneForgeSequence.PRINTING:
 			printer_progress_label = label(_printer_progress_text(), 16, Color("9beaff"))
 			printer_progress_label.name = "PrinterProgressStatus"
-			panel.add_child(printer_progress_label)
-			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+			action_column.add_child(printer_progress_label)
+			action_column.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.RAW_COMPLETE:
-			panel.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
+			action_column.add_child(label("Raw print complete. Securing the Forge transaction...", 16, Color("fff0a1")))
 		ArcaneForgeSequence.RAW_HOLD:
 			var hold_text := ("Completed Core rests for a moment before transfer to the Equipment Workbench." if printer_is_core else "Completed full suit rests for a moment before transfer to the Equipment Workbench.") if printer_is_armor else "Raw print complete. The Forge record is secure; the dormant form rests for a moment before awakening."
-			panel.add_child(label(hold_text, 16, Color("fff0a1")))
-			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+			action_column.add_child(label(hold_text, 16, Color("fff0a1")))
+			action_column.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENING:
-			panel.add_child(label("Filament awakening in progress. The new print is already safely recorded.", 16, Color("9beaff")))
-			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+			action_column.add_child(label("Filament awakening in progress. The new print is already safely recorded.", 16, Color("9beaff")))
+			action_column.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.DEPARTING:
 			var departing_name := print_name
-			panel.add_child(label("%s leaves the build plate for the workbench." % departing_name, 16, Color("a8e3a5")))
-			panel.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
+			action_column.add_child(label("%s leaves the build plate for the workbench." % departing_name, 16, Color("a8e3a5")))
+			action_column.add_child(make_button("Skip Animation", skip_printer, Color("526e93")))
 		ArcaneForgeSequence.AWAKENED:
 			var completion_text := ("Core secured: %s is ready for the Equipment Workbench." if printer_is_core else "Full suit secured: %s is ready for the Equipment Workbench.") % print_name if printer_is_armor else "Welcome, %s! Your living print is ready for the Collection." % str(definition.name)
-			panel.add_child(label(completion_text, 20, Color("a8e3a5")))
-			panel.add_child(make_button("Print Another" if not printer_is_armor else "Print Another Equipment Item", return_to_printer_picker, Color("a86b2e")))
-			panel.add_child(make_button("Return to Printer Bench" if not printer_is_armor else "Return to Equipment Workbench", return_to_printer_station, Color("536c8d")))
+			action_column.add_child(label(completion_text, 20, Color("a8e3a5")))
+			action_column.add_child(make_button("Print Another" if not printer_is_armor else "Print Another Equipment Item", return_to_printer_picker, Color("a86b2e")))
+			action_column.add_child(make_button(("Return to Workshop Overview" if printer_return_screen == "workshop" else "Return to Collection") if not printer_is_armor else "Return to Equipment Workbench", return_to_printer_station, Color("536c8d")))
 		ArcaneForgeSequence.FAILED:
-			panel.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
-			panel.add_child(make_button("Return to Collection", navigate_to.bind("collection"), Color("536c8d")))
+			action_column.add_child(label("The Forge could not complete this print: %s" % printer_failure, 17, Color("ffaaa1")))
+			action_column.add_child(make_button("Return to Collection", navigate_to.bind("collection"), Color("536c8d")))
 		_:
-			panel.add_child(label("Preview closed without changing your profile.", 16, Color("dce8f4")))
+			action_column.add_child(label("Preview closed without changing your profile.", 16, Color("dce8f4")))
 
 func _printer_progress_text() -> String:
 	if printer_sequence == null: return ""
@@ -1646,7 +1703,7 @@ func return_to_printer_station() -> void:
 		return
 	if printer_return_screen == "workshop":
 		screen = "workshop"
-		workshop_view = "printer"
+		workshop_view = "overview"
 		workshop_selected = "printer"
 		workshop_drawer_object = ""
 		render()
@@ -1657,11 +1714,21 @@ func return_to_printer_picker() -> void:
 	if printer_return_screen == "armor":
 		open_armor_printer(printer_armor_id)
 		return
-	if printer_return_screen == "workshop":
-		printer_picker_open = true
-		return_to_printer_station()
-		return
-	navigate_to("collection")
+	# Keep creature printing in the same integrated Forge. This is presentation
+	# state only and deliberately does not touch profile, coins, or revision.
+	var ids := printer_blueprint_ids()
+	if printer_blueprint_selected_id not in ids:
+		printer_blueprint_selected_id = str(ids[0]) if not ids.is_empty() else ""
+	printer_creature_id = printer_blueprint_selected_id
+	var definition := Catalog.creature(printer_creature_id)
+	printer_price = int(Catalog.rarity(str(definition.get("rarity", "common"))).get("print", 0)) if not definition.is_empty() else 0
+	printer_sequence = ArcaneForgeSequence.create(bool(settings().get("reduced_motion", false)))
+	printer_tick_accumulator = 0.0
+	printer_presentation_seconds = 0.0
+	printer_failure = ""
+	screen = "printer"
+	render()
+	call_deferred("_focus_printer_picker_origin")
 
 func render_collection() -> void:
 	var intro := make_panel(Color("19334de8"), Color("8deaff")); body.add_child(intro.get_parent())

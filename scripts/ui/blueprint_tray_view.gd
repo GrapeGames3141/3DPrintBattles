@@ -1,7 +1,7 @@
 class_name BlueprintTrayView
 extends RefCounted
-## Builds the station-local Blueprint Tray from Main-supplied UI primitives.
-## Main owns navigation, open/close state, and the selected blueprint ID.
+## Compact learned-blueprint cartridge selector embedded in Main's Arcane Forge.
+## Main owns the dormant preview, navigation, and all transaction authority.
 
 var _cached_profile_blueprints: Array = []
 var _cached_ids: Array[String] = []
@@ -18,7 +18,7 @@ func blueprint_ids(profile: Dictionary) -> Array[String]:
 		_cached_ids.sort_custom(func(left: String, right: String) -> bool: return str(Catalog.creature(left).get("name", left)) < str(Catalog.creature(right).get("name", right)))
 	return _cached_ids.duplicate()
 
-func _owned_count(profile: Dictionary, creature_id: String) -> int:
+func owned_count(profile: Dictionary, creature_id: String) -> int:
 	var count := 0
 	for instance in profile.get("creatures", []):
 		if str(instance.get("creature_id", "")) == creature_id:
@@ -31,7 +31,7 @@ func _idle_texture(definition: Dictionary) -> Texture2D:
 	if sheet != null:
 		var atlas := AtlasTexture.new()
 		atlas.atlas = sheet
-		# Stay inside the idle cell so filtered compact thumbnails cannot leak frames.
+		# Stay inside the idle cell so compact thumbnails cannot leak animation frames.
 		atlas.region = Rect2(2, 2, 380, 508)
 		return atlas
 	var raw_path := str(definition.get("raw_print", ""))
@@ -45,20 +45,28 @@ func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	card.name = "PrinterBlueprintCard%s" % creature_id.capitalize()
 	card.set_meta("creature_id", creature_id)
 	card.set_meta("price", int(rarity.get("print", 0)))
-	card.set_meta("owned_count", _owned_count(context.profile, creature_id))
-	card.custom_minimum_size = Vector2(156 if portrait else 168, 208 if portrait else 156)
+	card.set_meta("owned_count", owned_count(context.profile, creature_id))
+	card.custom_minimum_size = Vector2(168 if portrait else 146, 210 if portrait else 174)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var select_button := Button.new()
 	select_button.name = "PrinterSelect%s" % creature_id.capitalize()
 	select_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	select_button.accessibility_name = ("Selected " if selected else "Inspect ") + str(definition.get("name", creature_id)) + " blueprint"
+	select_button.custom_minimum_size = Vector2(44, 44)
+	select_button.tooltip_text = "Select %s for the dormant Arcane Forge build plate" % str(definition.get("name", creature_id))
+	select_button.accessibility_name = ("Selected " if selected else "Select ") + str(definition.get("name", creature_id)) + " blueprint"
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		select_button.add_theme_stylebox_override(state, context.cartridge_style.call(selected or state in ["hover", "focus"]))
 	select_button.pressed.connect(context.select_blueprint.bind(creature_id))
 	card.add_child(select_button)
 	var content := VBoxContainer.new()
+	content.name = "PrinterBlueprintCardContent"
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Preserve a clear cushion inside the raster cartridge rim for title and facts.
+	content.offset_left = 13
+	content.offset_top = 13
+	content.offset_right = -13
+	content.offset_bottom = -13
 	content.add_theme_constant_override("separation", 3)
 	card.add_child(content)
 	var title: Label = context.label.call(str(definition.get("name", creature_id)), 16, Color("ffd36c") if selected else Color.WHITE)
@@ -66,7 +74,7 @@ func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	content.add_child(title)
 	var preview := TextureRect.new()
 	preview.name = "PrinterBlueprintIdleArt"
-	preview.custom_minimum_size = Vector2(0, 108 if portrait else 64)
+	preview.custom_minimum_size = Vector2(0, 106 if portrait else 72)
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.texture = _idle_texture(definition)
@@ -75,103 +83,38 @@ func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	var facts: Label = context.label.call("%s / %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 12, Color("b8dcef"))
 	facts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(facts)
-	var indicator: Label = context.label.call("Selected" if selected else "Inspect", 12, Color("ffd36c") if selected else Color("dce8f4"))
-	indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(indicator)
+	var ownership: Label = context.label.call("%d FC  |  owned %d" % [int(rarity.get("print", 0)), owned_count(context.profile, creature_id)], 12, Color("a8e3a5"))
+	ownership.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(ownership)
 	return card
 
-func _detail(creature_id: String, use_tray_heading: bool, context: Dictionary) -> Control:
-	var definition := Catalog.creature(creature_id)
-	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
-	var detail := VBoxContainer.new()
-	detail.name = "PrinterBlueprintDetail"
-	detail.add_theme_constant_override("separation", 8)
-	var heading: Label = context.label.call("Blueprint Tray - Choose a Print" if use_tray_heading else "Blueprint Detail", 18, Color("ffd36c") if use_tray_heading else Color("9beaff"))
-	heading.name = "PrinterBlueprintTrayTitle" if use_tray_heading else "PrinterBlueprintDetailTitle"
-	heading.custom_minimum_size = Vector2(0, 28)
-	detail.add_child(heading)
-	var art := TextureRect.new()
-	art.name = "PrinterBlueprintDetailArt"
-	art.custom_minimum_size = Vector2(0, 180)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.texture = _idle_texture(definition)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	detail.add_child(art)
-	detail.add_child(context.label.call(str(definition.get("name", creature_id)), 23, Color("ffd36c")))
-	detail.add_child(context.label.call("%s  •  %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 14, Color("b8dcef")))
-	detail.add_child(context.label.call("Forge Coin print: %d" % int(rarity.get("print", 0)), 14, Color("a8e3a5")))
-	detail.add_child(context.label.call("Owned prints: %d" % _owned_count(context.profile, creature_id), 14, Color("a8e3a5")))
-	detail.add_child(context.label.call("Previewing is safe. Coins and inventory remain unchanged until Begin Print reaches the secured commit seam.", 14, Color("e6dfd0")))
-	var preview_button: Button = context.make_button.call("Preview in Arcane Forge", context.preview_print.bind(creature_id), Color("a86b2e"))
-	preview_button.name = "PrinterPreview%s" % creature_id.capitalize()
-	preview_button.tooltip_text = "Preview %s in the Arcane Forge" % str(definition.get("name", creature_id))
-	detail.add_child(preview_button)
-	return detail
-
 func render(host: Control, selected_id: String, context: Dictionary) -> String:
-	var tray: VBoxContainer = context.make_panel.call(Color("15344bea"), Color("f1be69"))
-	tray.get_parent().name = "PrinterBlueprintTray"
-	host.add_child(tray.get_parent())
-	var wide := not bool(context.portrait)
-	if not wide:
-		var title_inset := Control.new()
-		title_inset.custom_minimum_size = Vector2(0, 10)
-		tray.add_child(title_inset)
-		var tray_title: Label = context.label.call("Blueprint Tray - Choose a Print", 21, Color("ffd36c"))
-		tray_title.name = "PrinterBlueprintTrayTitle"
-		tray_title.custom_minimum_size = Vector2(0, 30)
-		tray_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		tray.add_child(tray_title)
-		tray.add_child(context.label.call("Previewing is safe: Forge Coins and inventory change only when Begin Print reaches the secured commit seam.", 14, Color("dce8f4")))
+	var selector: VBoxContainer = context.make_panel.call(Color("15344bea"), Color("f1be69"))
+	selector.get_parent().name = "PrinterBlueprintSelector"
+	host.add_child(selector.get_parent())
+	var title: Label = context.label.call("Learned Blueprint Cartridges", 18, Color("ffd36c"))
+	title.name = "PrinterBlueprintSelectorTitle"
+	selector.add_child(title)
 	var ids := blueprint_ids(context.profile)
 	if ids.is_empty():
-		var empty: Label = context.label.call("No learned creature blueprints are ready. Visit Forge Offers to learn a pattern, then return to this bench.", 16, Color("fff0a1"))
+		var empty: Label = context.label.call("No learned creature blueprints are ready for the dormant build plate.", 15, Color("fff0a1"))
 		empty.name = "PrinterBlueprintEmptyState"
-		tray.add_child(empty)
-		var offers: Button = context.make_button.call("Open Forge Offers", context.open_offers, Color("2f93a8"))
-		offers.name = "PrinterBlueprintEmptyOffers"
-		tray.add_child(offers)
-		tray.add_child(context.make_button.call("Close Blueprint Tray", context.close_tray, Color("536c8d")))
-		return selected_id
+		selector.add_child(empty)
+		return ""
 	if selected_id not in ids:
 		selected_id = str(ids[0])
-	var workspace: Control = HBoxContainer.new() if wide else VBoxContainer.new()
-	workspace.name = "PrinterBlueprintWorkspace"
-	workspace.add_theme_constant_override("separation", 12)
-	tray.add_child(workspace)
-	if not bool(context.reduced_motion):
-		workspace.modulate.a = 0.0
-		var reveal := host.create_tween()
-		reveal.tween_property(workspace, "modulate:a", 1.0, 0.12)
-	var cards_host: Control
-	if wide:
-		cards_host = GridContainer.new()
-		(cards_host as GridContainer).columns = 2
-		cards_host.custom_minimum_size = Vector2(380, 0)
-	else:
-		var scroller := ScrollContainer.new()
-		scroller.name = "PrinterBlueprintCartridgeStrip"
-		scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		scroller.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		scroller.custom_minimum_size = Vector2(0, 222)
-		workspace.add_child(scroller)
-		var strip := HBoxContainer.new()
-		strip.name = "PrinterBlueprintCartridgeStripContents"
-		strip.add_theme_constant_override("separation", 10)
-		scroller.add_child(strip)
-		cards_host = strip
-	cards_host.name = "PrinterBlueprintGrid"
+	# One horizontal shelf works in both responsive compositions. Landscape keeps
+	# Begin and Back in the first fold while further cartridges scroll sideways.
+	var scroller := ScrollContainer.new()
+	scroller.name = "PrinterBlueprintCartridgeStrip"
+	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroller.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroller.custom_minimum_size = Vector2(0, 222 if bool(context.portrait) else 186)
+	selector.add_child(scroller)
+	var cards_host := HBoxContainer.new()
+	cards_host.name = "PrinterBlueprintCartridgeStripContents"
 	cards_host.add_theme_constant_override("separation", 10)
-	if wide:
-		workspace.add_child(cards_host)
+	scroller.add_child(cards_host)
 	for creature_id in ids:
 		cards_host.add_child(_card(creature_id, creature_id == selected_id, context))
-	var detail_panel := PanelContainer.new()
-	detail_panel.name = "PrinterBlueprintDetailPanel"
-	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_panel.add_theme_stylebox_override("panel", context.inset_style.call(Color("102940ec"), Color("6bd6ed")))
-	detail_panel.add_child(_detail(selected_id, wide, context))
-	workspace.add_child(detail_panel)
-	tray.add_child(context.make_button.call("Close Blueprint Tray", context.close_tray, Color("536c8d")))
 	return selected_id

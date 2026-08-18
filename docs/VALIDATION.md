@@ -972,3 +972,31 @@ The checkpoint adds `test_profile_rules.tscn` for version migration, one-time st
   `H:/My Drive/AI Projects/PrintForge` were verified by size and SHA-256;
   cloud synchronization was not independently confirmed. No physical-device
   smoke was performed.
+
+## 2026-08-17 0.6.8 Integrated Forge validation
+
+- The Workshop printer now opens the integrated Arcane Forge directly. Its
+  learned-blueprint selector updates the dormant build plate in place and the
+  secured raw-completion commit seam remains unchanged. Primary isolated Godot
+  4.7.1 parser/import runs (PIDs **23740** and **14688**) both exited **0**.
+- The final isolated suite completed **42/42** scenes with **38** `PASS`
+  markers and exit **0**. Its manifest is retained at
+  `E:/CodexCache/printforge-integrated-forge/full-suite-final/suite-manifest.json`.
+- Accepted OpenGL captures were visually inspected for the direct Forge route,
+  first-fold controls, and horizontal cartridge shelf:
+  `E:/CodexCache/printforge-validation/integrated_forge_1280x720_068-accepted.png`
+  (PIDs **26812**/**2460**) and
+  `E:/CodexCache/printforge-validation/integrated_forge_576x1024_068-accepted.png`
+  (PIDs **25496**/**8244**). Both capture runs exited **0**.
+- Android review export completed with exit **0**: Godot PIDs **12856** and
+  **11476**; task Java PIDs **13720**, **18168**, and **20248**; adb PID
+  **21432**. No task-started processes remained afterward. The artifact is
+  `build/android/PrintForge-Legends-0.6.8-integrated-forge-arm64.apk`, version
+  code **83**, version name **0.6.8-integrated-forge**, size **151,072,534**
+  bytes, SHA-256
+  `CDEB59F5C95166EE2E8FA508C8DA19F3938C41118EE4BEA5D90F22C4C23D9B83`.
+  It is v2/v3 signed, arm64-only, and archive inspection found **0** forbidden
+  backend/tests/tools/docs entries.
+- APK and README copies to `H:/My Drive/AI Projects/PrintForge` were verified
+  by size and SHA-256. DriveFS cloud synchronization was not independently
+  confirmed, and no physical Android device was attached for this validation.
