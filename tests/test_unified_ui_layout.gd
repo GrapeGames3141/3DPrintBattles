@@ -49,8 +49,9 @@ func _button_named(node: Node, fragment: String) -> Button:
 
 func _ready() -> void:
 	for viewport in [Vector2(1280, 720), Vector2(576, 1024)]:
-		for surface in ["onboarding", "unified_market", "unified_library", "unified_deck", "unified_upgrades", "unified_battle"]:
+		for surface in ["onboarding", "unified_market", "unified_library", "unified_deck", "unified_upgrades", "unified_forgedex", "unified_battle"]:
 			GameManager.profile = ProfileRules.new_profile() if surface == "onboarding" else _legal_profile()
+			if surface == "unified_market": GameManager.buy_card_pack("pack_3")
 			var subviewport := SubViewport.new()
 			subviewport.size = Vector2i(viewport)
 			subviewport.size_2d_override = Vector2i(viewport)
@@ -82,7 +83,7 @@ func _ready() -> void:
 			require(main.get_script().resource_path == "res://scripts/ui/main.gd", "%s ships main.gd" % surface)
 			require(not _has_scroll(main), "%s has no ScrollContainer at %s" % [surface, viewport])
 			var pager_nodes := _pager_labels(main)
-			if surface in ["onboarding", "unified_market", "unified_library", "unified_deck", "unified_upgrades", "unified_battle"]:
+			if surface in ["onboarding", "unified_market", "unified_library", "unified_deck", "unified_upgrades", "unified_forgedex", "unified_battle"]:
 				for pager in pager_nodes:
 					var label := pager as Label
 					require(label.autowrap_mode == TextServer.AUTOWRAP_OFF and _bottom_in_bounds(label, viewport), "%s pager is no-wrap/in bounds at %s rect=%s" % [surface, viewport, _rect_text(label)])
@@ -93,6 +94,7 @@ func _ready() -> void:
 				"unified_library": required = ["Deck Blueprint Rack", "Back to Workshop"]
 				"unified_deck": required = ["Save battle deck", "Back to Workshop"]
 				"unified_upgrades": required = ["Apply staged upgrades", "Back to Workshop"]
+				"unified_forgedex": required = ["Open Equipment Workbench", "Back to Workshop"]
 				"unified_battle": required = ["Advance phase", "Return to Workshop"]
 			for text in required:
 				var required_button := _button_named(main, text)
@@ -108,6 +110,9 @@ func _ready() -> void:
 				await get_tree().process_frame
 				var modal := main.find_child("UnifiedCardInspector", true, false) as Control
 				require(modal != null and modal.get_global_rect().position.is_equal_approx(Vector2.ZERO) and modal.get_global_rect().size.is_equal_approx(viewport), "library inspector covers viewport at %s" % viewport)
+			if surface == "unified_market":
+				var reveal := main.find_child("UnifiedPackReveal", true, false) as Control
+				require(reveal != null and not _has_scroll(reveal) and reveal.get_global_rect().position.is_equal_approx(Vector2.ZERO) and reveal.get_global_rect().size.is_equal_approx(viewport), "market pack reveal covers viewport without scrolling at %s" % viewport)
 			main.queue_free()
 			await get_tree().process_frame
 			subviewport.queue_free()

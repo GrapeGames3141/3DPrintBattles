@@ -41,6 +41,10 @@ func _prepare_capture() -> void:
 		GameManager.profile.coins = 720
 		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
 		GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
+		if capture_mode == "unified_pack_reveal":
+			GameManager.profile = UNIFIED_RULES.buy_pack(GameManager.profile, "pack_5", PackedByteArray([1,2,3,4,5,6,7,8])).profile
+		if capture_mode == "unified_forgedex":
+			UNIFIED_RULES.grant_card(GameManager.profile, "mossmunk")
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
 		GameManager.profile = legacy_trial_profile()
 	if capture_mode in ["trials_teamlaunch", "trial_battle_teamlaunch"]:
@@ -117,6 +121,8 @@ func _prepare_capture() -> void:
 		workshop.battle_mode = "trial_first_layers"
 		workshop.battle_settlement_context = setup.get("settlement_context", {})
 		workshop.screen = "unified_battle"
+	elif capture_mode == "unified_pack_reveal": workshop.screen = "unified_market"
+	elif capture_mode == "unified_forgedex": workshop.screen = "unified_forgedex"
 	elif capture_mode == "unified_library_inspector": workshop.screen = "unified_library"; workshop.unified_inspector_id = "cinderpaw"; workshop.unified_inspector_tab = "stats"
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	if capture_mode == "proving":
@@ -299,7 +305,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["unified_library_inspector", "unified_battle"]: return mode
+			if mode in ["unified_library_inspector", "unified_battle", "unified_pack_reveal", "unified_forgedex"]: return mode
 			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards", "unified_market", "unified_library", "unified_deck", "unified_upgrades"]: return mode
 	return "onboarding"
 

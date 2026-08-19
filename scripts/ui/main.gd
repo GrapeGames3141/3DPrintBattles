@@ -25,7 +25,8 @@ const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme
 const UNIFIED_BATTLE_RULES := preload("res://scripts/battle/unified_battle_rules.gd")
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_AI := preload("res://scripts/battle/unified_ai_opponent.gd")
-const REVIEW_BUILD_LABEL := "0.7.5-ui-recovery-playtest"
+const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
+const REVIEW_BUILD_LABEL := "0.7.6-card-acquisition-playtest"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -76,8 +77,10 @@ var unified_page := 0
 var unified_deck_draft: Array = []
 var unified_printer_draft: Array = []
 var unified_printer_page := 0
+var unified_codex_page := 0
 var unified_inspector_id := ""
 var unified_inspector_tab := "card"
+var unified_reveal_page := 0
 var body: VBoxContainer
 var status: Label
 var battle_last_event := ""
@@ -226,7 +229,7 @@ func _process(delta: float) -> void:
 func navigate_to(target: String) -> void:
 	# Foundry hotspots now resolve to the unified card surfaces. Legacy routes
 	# remain available to retained screens under their explicit legacy ids.
-	var unified_targets := {"shop":"unified_market", "archive":"unified_library", "deck":"unified_deck", "calibration":"unified_upgrades"}
+	var unified_targets := {"shop":"unified_market", "archive":"unified_library", "deck":"unified_deck", "calibration":"unified_upgrades", "codex":"unified_forgedex"}
 	if unified_targets.has(target): target = str(unified_targets[target])
 	if screen == "workshop" and target != "workshop":
 		workshop_return_view = workshop_view
@@ -439,7 +442,11 @@ func render() -> void:
 			_focus_after_render = false
 			call_deferred("focus_first_button")
 		return
-	if screen in ["unified_market", "unified_library", "unified_deck", "unified_upgrades"]:
+	# `codex` is retained as a legacy navigation token for old callers, but its
+	# player-facing presentation is now the bounded unified Forgedex.
+	if screen == "codex":
+		screen = "unified_forgedex"
+	if screen in ["unified_market", "unified_library", "unified_deck", "unified_upgrades", "unified_forgedex"]:
 		render_unified_foundry_surface(root)
 		if _focus_after_render:
 			_focus_after_render = false
@@ -2457,7 +2464,7 @@ func _present_unified_arrival(card: Control, arrival_key: String) -> void:
 
 func _unified_cards_page(cards: Array, on_select: Callable) -> Control:
 	var column := VBoxContainer.new()
-	var per_page := 4 if is_portrait_layout() else 8
+	var per_page := 2 if is_portrait_layout() else 4
 	var pages := maxi(1, int(ceil(float(cards.size()) / float(per_page))))
 	unified_page = clampi(unified_page, 0, pages - 1)
 	var grid := GridContainer.new()
@@ -2469,36 +2476,34 @@ func _unified_cards_page(cards: Array, on_select: Callable) -> Control:
 	for definition in cards.slice(unified_page * per_page, mini(cards.size(), (unified_page + 1) * per_page)):
 		var card: Dictionary = definition
 		var id := str(card.get("id", ""))
-		var price_text := "%d FC" % int(card.get("market_price", 0)) if card.has("market_price") else "%dF" % int(card.get("cost", 0))
-		var button := make_button("%s\n%s · %s" % [str(card.get("name", id)), str(card.get("type", "card")).capitalize(), price_text], on_select.bind(id), Color("a86b2e") if card.has("market_price") else Color("2f93a8"))
-		button.name = "UnifiedCard%s" % id.capitalize()
-		var art := _unified_card_thumbnail(card)
-		if art != null:
-			button.icon = art
-			button.expand_icon = true
-			button.add_theme_constant_override("icon_max_width", 42)
-		grid.add_child(button)
-	var pager := HBoxContainer.new(); pager.name = "UnifiedFoundryPager"; pager.alignment = BoxContainer.ALIGNMENT_CENTER; pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER; column.add_child(pager)
-	var previous := make_button("‹", func(): unified_page = posmod(unified_page - 1, pages); render(), Color("536c8d")); previous.custom_minimum_size = Vector2(48, 44); previous.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; previous.size_flags_vertical = Control.SIZE_SHRINK_CENTER; pager.add_child(previous)
+		var copies := int(GameManager.profile.get("owned_cards", {}).get(id, 0))
+		var market_price := int(card.get("market_price", -1))
+		var status := "x%d in deck" % int(card.get("deck_count", 0)) if card.has("deck_count") else ""
+		var view := UNIFIED_CARD_VIEW.new()
+		view.name = "UnifiedCardView%s" % id.capitalize()
+		view.configure(card, copies, market_price, status, true, true)
+		view.pressed.connect(on_select.bind(id))
+		grid.add_child(view)
+	var pager := HBoxContainer.new()
+	pager.name = "UnifiedFoundryPager"
+	pager.alignment = BoxContainer.ALIGNMENT_CENTER
+	pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	column.add_child(pager)
+	var previous := make_button("Previous", func(): unified_page = posmod(unified_page - 1, pages); render(), Color("536c8d"))
+	previous.custom_minimum_size = Vector2(48, 44)
+	previous.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	previous.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pager.add_child(previous)
 	pager.add_child(_compact_pager_label("%d / %d" % [unified_page + 1, pages]))
-	var next := make_button("›", func(): unified_page = posmod(unified_page + 1, pages); render(), Color("536c8d")); next.custom_minimum_size = Vector2(48, 44); next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; next.size_flags_vertical = Control.SIZE_SHRINK_CENTER; pager.add_child(next)
+	var next := make_button("Next", func(): unified_page = posmod(unified_page + 1, pages); render(), Color("536c8d"))
+	next.custom_minimum_size = Vector2(48, 44)
+	next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pager.add_child(next)
 	return column
 
 func _unified_card_thumbnail(card: Dictionary) -> Texture2D:
-	var id := str(card.get("id", ""))
-	if str(card.get("type", "")) == "creature" and not Catalog.creature(id).is_empty():
-		var atlas := AtlasTexture.new()
-		atlas.atlas = CreatureSpriteCache.texture_for_creature(id)
-		atlas.region = CreatureSpriteCache.safe_source_region(0)
-		return atlas
-	if card.has("art"):
-		var support_view = load(SUPPORT_CARD_VIEW_PATH)
-		if support_view != null: return support_view.atlas_region(card)
-	if str(card.get("type", "")) == "equipment":
-		var card_back := load("res://assets/cards/support_card_back_source_v1.png") as Texture2D
-		if card_back != null: return card_back
-	var art_path := str(card.get("sprite_sheet", "")); if art_path.is_empty(): art_path = "res://assets/cards/creatures/%s_v1.png" % id
-	return load(art_path) as Texture2D if ResourceLoader.exists(art_path) else null
+	return UNIFIED_CARD_VIEW.art_for_definition(card)
 
 func _unified_battle_background_path() -> String:
 	var arena := "daily_arena"
@@ -2539,8 +2544,56 @@ func _render_unified_inspector() -> void:
 		content.add_child(make_button("Respec build", func(): GameManager.respec_card_build(unified_inspector_id); render(), Color("536c8d")))
 	content.add_child(make_button("Close", func(): unified_inspector_id = ""; render(), Color("536c8d")))
 
+func _render_unified_forgedex_page(host: Container) -> void:
+	var creatures: Array = []
+	for definition in UNIFIED_RULES.all_cards():
+		if str(definition.get("type", "")) == "creature": creatures.append(definition)
+	var per_page := 2 if is_portrait_layout() else 4
+	var pages := maxi(1, int(ceil(float(creatures.size()) / float(per_page))))
+	unified_codex_page = clampi(unified_codex_page, 0, pages - 1)
+	host.add_child(label("Creature blueprints · %d / %d discovered" % [GameManager.profile.get("discovered", []).size(), creatures.size()], 15, Color("dce8f4")))
+	var grid := GridContainer.new()
+	grid.name = "UnifiedForgedexGrid"
+	grid.columns = 2 if is_portrait_layout() else 4
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	host.add_child(grid)
+	for definition in creatures.slice(unified_codex_page * per_page, mini(creatures.size(), (unified_codex_page + 1) * per_page)):
+		var creature_id := str(definition.get("id", ""))
+		var known: bool = creature_id in GameManager.profile.get("discovered", [])
+		var printed := int(GameManager.profile.get("print_history", {}).get("creatures", {}).get(creature_id, 0))
+		var mastery := 0
+		for row in GameManager.profile.get("creatures", []):
+			if row is Dictionary and str(row.get("creature_id", "")) == creature_id: mastery += GameManager.creature_mastery(str(row.get("instance_id", "")))
+		var status := ("Blueprint" if creature_id in GameManager.profile.get("blueprints", []) else "Seen") + " · P%d · M%d" % [printed, mastery]
+		var view := UNIFIED_CARD_VIEW.new()
+		view.name = "UnifiedForgedexCard%s" % creature_id.capitalize()
+		view.configure(definition, int(GameManager.profile.get("owned_cards", {}).get(creature_id, 0)), -1, status, true, known, not known)
+		if known: view.pressed.connect(func(): unified_inspector_id = creature_id; unified_inspector_tab = "stats"; render())
+		grid.add_child(view)
+	var pager := HBoxContainer.new()
+	pager.name = "UnifiedForgedexPager"
+	pager.alignment = BoxContainer.ALIGNMENT_CENTER
+	pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	host.add_child(pager)
+	var previous := make_button("Previous", func(): unified_codex_page = posmod(unified_codex_page - 1, pages); render(), Color("536c8d"))
+	previous.custom_minimum_size = Vector2(48, 44)
+	previous.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	previous.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pager.add_child(previous)
+	pager.add_child(_compact_pager_label("%d / %d" % [unified_codex_page + 1, pages]))
+	var next := make_button("Next", func(): unified_codex_page = posmod(unified_codex_page + 1, pages); render(), Color("536c8d"))
+	next.custom_minimum_size = Vector2(48, 44)
+	next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pager.add_child(next)
+	var suit_count := (GameManager.profile.get("suits", []) as Array).size()
+	var core_count := (GameManager.profile.get("cores", []) as Array).size()
+	host.add_child(label("Armor records · %d suit prints · %d cores" % [suit_count, core_count], 14, Color("b9d3e8")))
+	host.add_child(make_button("Open Equipment Workbench", navigate_to.bind("armor"), Color("526e93")))
+
 func render_unified_foundry_surface(host: Container) -> void:
-	var title_map := {"unified_market":"Foundry Market", "unified_library":"Card Library", "unified_deck":"Deck Blueprint Rack", "unified_upgrades":"Printer Upgrade Grid"}
+	var title_map := {"unified_market":"Foundry Market", "unified_library":"Card Library", "unified_deck":"Deck Blueprint Rack", "unified_upgrades":"Printer Upgrade Grid", "unified_forgedex":"Forgedex"}
 	host.add_child(label(str(title_map.get(screen, "Foundry")), 25, Color("ffd36c")))
 	var coins := int(GameManager.profile.get("coins", 0))
 	host.add_child(label("Forge Coins %d · Forge XP %d" % [coins, int(GameManager.profile.get("forge_xp", 0))], 14, Color("9beaff")))
@@ -2551,16 +2604,14 @@ func render_unified_foundry_surface(host: Container) -> void:
 		# phone-width viewport. Stacking them keeps the Back action in bounds.
 		var packs: Container = VBoxContainer.new() if is_portrait_layout() else HBoxContainer.new(); packs.name = "UnifiedMarketPacks"; host.add_child(packs)
 		for product in [{"id":"pack_3","label":"3-card pack · 60 FC"},{"id":"pack_5","label":"5-card pack · 90 FC"},{"id":"pack_10","label":"10-card pack · 160 FC"}]:
-			packs.add_child(make_button(str(product.label), func(): GameManager.buy_card_pack(str(product.id)); render(), Color("a86b2e")))
+			packs.add_child(make_button(str(product.label), _buy_unified_pack.bind(str(product.id)), Color("a86b2e")))
 		var singles: Array = []
 		for offer in GameManager.current_market_offers(shop_day_key):
 			var definition := UNIFIED_RULES.card(str(offer.get("id", "")))
 			if not definition.is_empty():
 				definition["market_price"] = int(offer.get("price", 0)); singles.append(definition)
 		host.add_child(label("Today’s available singles", 16, Color("fff0a1")))
-		host.add_child(_unified_cards_page(singles, func(id): GameManager.buy_market_card(id, shop_day_key); render()))
-		var pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {})
-		if not pending.is_empty(): host.add_child(make_button("Reveal %d cards" % (pending.get("cards", []) as Array).size(), func(): GameManager.claim_pending_pack_reveal(); render(), Color("588d73")))
+		host.add_child(_unified_cards_page(singles, _buy_unified_market_card))
 	elif screen == "unified_library":
 		var owned: Array = []
 		for definition in UNIFIED_RULES.all_cards():
@@ -2580,11 +2631,17 @@ func render_unified_foundry_surface(host: Container) -> void:
 		for definition in UNIFIED_RULES.all_cards():
 			if int(GameManager.profile.get("owned_cards", {}).get(str(definition.get("id", "")), 0)) > 0: owned_deck.append(definition)
 		for definition in owned_deck: definition["name"] = "%s · x%d in deck" % [str(definition.get("name", "")), unified_deck_draft.count(str(definition.get("id", "")))]
+		for definition in owned_deck:
+			var definition_id := str(definition.get("id", ""))
+			definition["name"] = str(UNIFIED_RULES.card(definition_id).get("name", definition_id))
+			definition["deck_count"] = unified_deck_draft.count(definition_id)
 		host.add_child(_unified_cards_page(owned_deck, func(id):
 			if id in unified_deck_draft: unified_deck_draft.erase(id)
 			elif unified_deck_draft.size() < 15 and unified_deck_draft.count(id) < mini(3, int(GameManager.profile.get("owned_cards", {}).get(id, 0))): unified_deck_draft.append(id)
 			render()))
 		host.add_child(make_button("Save battle deck", func(): GameManager.save_unified_deck(unified_deck_draft); render(), Color("588d73")))
+	elif screen == "unified_forgedex":
+		_render_unified_forgedex_page(host)
 	else:
 		if unified_printer_draft.is_empty(): unified_printer_draft = GameManager.profile.get("printer_nodes", []).duplicate()
 		var ids: Array = UNIFIED_RULES.PRINTER_NODES.keys(); var per_page := 4 if is_portrait_layout() else 6; var pages := maxi(1, int(ceil(float(ids.size()) / float(per_page))))
@@ -2611,6 +2668,98 @@ func render_unified_foundry_surface(host: Container) -> void:
 		host.add_child(make_button("Apply staged upgrades", func(): GameManager.apply_printer_upgrades(unified_printer_draft); render(), Color("a86b2e")))
 	host.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 	_render_unified_inspector()
+	if screen == "unified_market": _render_unified_pack_reveal()
+
+func _buy_unified_pack(pack_id: String) -> void:
+	var result := GameManager.buy_card_pack(pack_id)
+	if not bool(result.get("ok", false)):
+		_toast(str(result.get("error", "Pack unavailable.")))
+	else:
+		unified_reveal_page = 0
+		_toast("Pack opened. Review each card before keeping it.")
+	render()
+
+func _buy_unified_market_card(card_id: String) -> void:
+	var result := GameManager.buy_market_card(card_id, shop_day_key)
+	if not bool(result.get("ok", false)):
+		_toast(str(result.get("error", "Market offer unavailable.")))
+	else:
+		var card := UNIFIED_RULES.card(card_id)
+		var message := "%s added to your Library." % str(card.get("name", card_id))
+		if bool(result.get("payload", {}).get("blueprint_unlocked", false)): message += " Blueprint and Forgedex entry unlocked."
+		_toast(message)
+	render()
+
+func _render_unified_pack_reveal() -> void:
+	var pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {})
+	var cards: Array = pending.get("cards", []) if pending is Dictionary else []
+	if cards.is_empty(): return
+	var modal := ColorRect.new()
+	modal.name = "UnifiedPackReveal"
+	modal.color = Color("07111bf2")
+	modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(modal)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal.add_child(center)
+	var shell := PanelContainer.new()
+	var reveal_height := 470.0 if is_portrait_layout() else 460.0
+	shell.custom_minimum_size = Vector2(minf(1040, size.x - 24), minf(reveal_height, size.y - 24))
+	shell.add_theme_stylebox_override("panel", panel_style(Color("102940fa"), Color("f1be69")))
+	center.add_child(shell)
+	var content := VBoxContainer.new()
+	content.name = "UnifiedPackRevealContent"
+	content.add_theme_constant_override("separation", 8)
+	shell.add_child(content)
+	content.add_child(label("Foundry pack reveal", 24, Color("ffd36c")))
+	var unlocks: Array = pending.get("blueprint_unlocks", []) if pending is Dictionary else []
+	content.add_child(label("%d cards · duplicates are kept%s" % [cards.size(), " · blueprint unlocked" if not unlocks.is_empty() else ""], 14, Color("dce8f4")))
+	var per_page := 2 if is_portrait_layout() else 4
+	var pages := maxi(1, int(ceil(float(cards.size()) / float(per_page))))
+	unified_reveal_page = clampi(unified_reveal_page, 0, pages - 1)
+	# Keep a short reveal centered in its ceremonial panel instead of leaving a
+	# large, accidental-looking empty rail on the right at desktop widths.
+	var grid_center := CenterContainer.new()
+	grid_center.name = "UnifiedPackRevealCardCenter"
+	grid_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(grid_center)
+	var grid := GridContainer.new()
+	grid.name = "UnifiedPackRevealGrid"
+	grid.columns = 2 if is_portrait_layout() else 4
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid_center.add_child(grid)
+	for card_id in cards.slice(unified_reveal_page * per_page, mini(cards.size(), (unified_reveal_page + 1) * per_page)):
+		var id := str(card_id)
+		var view := UNIFIED_CARD_VIEW.new()
+		view.name = "UnifiedPackCardView%s" % id.capitalize()
+		var note := "Blueprint unlocked" if id in unlocks else "Awarded now"
+		view.configure(UNIFIED_RULES.card(id), int(GameManager.profile.get("owned_cards", {}).get(id, 0)), -1, note, true, false)
+		grid.add_child(view)
+	var pager := HBoxContainer.new()
+	pager.name = "UnifiedPackRevealPager"
+	pager.alignment = BoxContainer.ALIGNMENT_CENTER
+	pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	content.add_child(pager)
+	var previous := make_button("Previous", func(): unified_reveal_page = posmod(unified_reveal_page - 1, pages); render(), Color("536c8d"))
+	previous.custom_minimum_size = Vector2(48, 44)
+	previous.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	previous.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pager.add_child(previous)
+	pager.add_child(_compact_pager_label("%d / %d" % [unified_reveal_page + 1, pages]))
+	var next := make_button("Next", func(): unified_reveal_page = posmod(unified_reveal_page + 1, pages); render(), Color("536c8d"))
+	next.custom_minimum_size = Vector2(48, 44)
+	next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pager.add_child(next)
+	content.add_child(make_button("Keep cards", _keep_unified_pack_cards, Color("588d73")))
+
+func _keep_unified_pack_cards() -> void:
+	var kept := GameManager.claim_pending_pack_reveal()
+	if kept.is_empty(): _toast("There are no pack cards waiting to keep.")
+	else: _toast("Kept %d cards in your Library." % kept.size())
+	render()
 
 func _submit_unified_intent(intent: Dictionary) -> void:
 	if battle == null or battle.finished: return

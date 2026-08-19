@@ -46,6 +46,8 @@ static func card(id: String) -> Dictionary:
 static func ensure(source: Dictionary) -> Dictionary:
 	var p := source.duplicate(true)
 	if not p.has("owned_cards") or not p.get("owned_cards") is Dictionary: p["owned_cards"] = {}
+	if not p.has("blueprints") or not p.get("blueprints") is Array: p["blueprints"] = []
+	if not p.has("discovered") or not p.get("discovered") is Array: p["discovered"] = []
 	if not p.has("card_xp") or not p.get("card_xp") is Dictionary: p["card_xp"] = {}
 	if not p.has("card_builds") or not p.get("card_builds") is Dictionary: p["card_builds"] = {}
 	if not p.has("forge_xp"): p["forge_xp"] = int(p.get("xp", 0))
@@ -78,14 +80,47 @@ static func ensure(source: Dictionary) -> Dictionary:
 		while repaired.size() < 15: repaired.append(starter if starter in STARTER_IDS else "cinderpaw")
 		raw["cards"] = repaired.slice(0, 15)
 	if p.decks.is_empty() and starter in STARTER_IDS and str(p.onboarding.get("state", "")) == "complete": _make_starter_deck(p)
+	# Purchased creature cards are blueprints, even when they have not been
+	# physically printed yet. This repairs profiles created before the unified
+	# Market existed without touching print history, XP, or build nodes.
+	for owned_id in p.owned_cards:
+		if int(p.owned_cards.get(str(owned_id), 0)) > 0 and str(card(str(owned_id)).get("type", "")) == "creature":
+			_sync_creature_unlock(p, str(owned_id))
 	return p
+
+## The single authoritative card-acquisition seam. It deliberately changes
+## ownership plus legacy blueprint/discovery records only; a card grant never
+## creates a printed creature or mutates XP/build state.
+static func grant_card(p: Dictionary, card_id: String, count := 1) -> Dictionary:
+	var definition := card(card_id)
+	if definition.is_empty() or count <= 0: return {"card_id":card_id,"count":0,"blueprint_added":false}
+	if not p.has("owned_cards") or not p.get("owned_cards") is Dictionary: p["owned_cards"] = {}
+	p.owned_cards[card_id] = int(p.owned_cards.get(card_id, 0)) + count
+	var blueprint_added := false
+	if str(definition.get("type", "")) == "creature": blueprint_added = _sync_creature_unlock(p, card_id)
+	return {"card_id":card_id,"count":count,"blueprint_added":blueprint_added}
+
+static func _sync_creature_unlock(p: Dictionary, creature_id: String) -> bool:
+	if not p.has("blueprints") or not p.get("blueprints") is Array: p["blueprints"] = []
+	if not p.has("discovered") or not p.get("discovered") is Array: p["discovered"] = []
+	var added := false
+	if creature_id not in p.blueprints:
+		p.blueprints.append(creature_id)
+		added = true
+	if creature_id not in p.discovered:
+		p.discovered.append(creature_id)
+		added = true
+	return added
 
 static func choose_starter(source: Dictionary, id: String) -> Dictionary:
 	var p := ensure(source)
 	if str(p.onboarding.get("state", "choose_starter")) != "choose_starter": return fail(p, "Starter already selected.")
 	if id not in STARTER_IDS: return fail(p, "Choose a Forge Trio print.")
-	p.onboarding = {"state":"starter_selected","starter_id":id,"starter_instance_id":""}; p.owned_cards[id] = maxi(3, int(p.owned_cards.get(id, 0)))
-	return ok(p, {"card_id":id,"count":3})
+	p.onboarding = {"state":"starter_selected","starter_id":id,"starter_instance_id":""}
+	# Existing migrated ownership may already include a starter copy. The starter
+	# grant is exactly-at-least-three, never an accidental additional three.
+	var granted := grant_card(p, id, maxi(0, 3 - int(p.owned_cards.get(id, 0))) )
+	return ok(p, {"card_id":id,"count":3,"blueprint_unlocks":[id] if bool(granted.get("blueprint_added", false)) else []})
 
 static func print_starter(source: Dictionary) -> Dictionary:
 	var p := ensure(source); var id := str(p.onboarding.get("starter_id", ""))
@@ -123,6 +158,8 @@ static func deck_reason(p: Dictionary, cards: Array) -> String:
 static func buy_pack(source: Dictionary, pack_id: String, random_bytes: PackedByteArray = PackedByteArray()) -> Dictionary:
 	var p := ensure(source); var pack: Dictionary = PACKS.get(pack_id, {})
 	if pack.is_empty(): return fail(p, "Choose a 3, 5, or 10 card pack.")
+	var existing_reveal: Array = p.pending_pack_reveal.get("cards", []) if p.pending_pack_reveal is Dictionary else []
+	if not existing_reveal.is_empty(): return fail(p, "Keep the current pack cards before opening another pack.")
 	if int(p.get("coins", 0)) < int(pack.price): return fail(p, "Not enough Forge Coins.")
 	var entropy := random_bytes if random_bytes.size() >= 8 else Crypto.new().generate_random_bytes(32)
 	var seed := 0
@@ -132,13 +169,17 @@ static func buy_pack(source: Dictionary, pack_id: String, random_bytes: PackedBy
 		seed = _next(seed)
 		cards.append(_weighted_card(seed))
 	p.coins = int(p.coins) - int(pack.price)
-	for id in cards: p.owned_cards[id] = int(p.owned_cards.get(id, 0)) + 1
-	p.pending_pack_reveal = {"pack_id":pack_id,"cards":cards,"seed_commit":str(seed)}
-	return ok(p, {"pack_id":pack_id,"cards":cards,"price":int(pack.price),"pending_reveal":true})
+	var blueprint_unlocks: Array = []
+	for id in cards:
+		var granted := grant_card(p, str(id))
+		if bool(granted.get("blueprint_added", false)) and str(id) not in blueprint_unlocks: blueprint_unlocks.append(str(id))
+	p.pending_pack_reveal = {"pack_id":pack_id,"cards":cards,"seed_commit":str(seed),"blueprint_unlocks":blueprint_unlocks}
+	return ok(p, {"pack_id":pack_id,"cards":cards,"price":int(pack.price),"pending_reveal":true,"blueprint_unlocks":blueprint_unlocks})
 
 static func clear_pack_reveal(source: Dictionary) -> Dictionary:
 	var p := ensure(source); var cards: Array = p.pending_pack_reveal.get("cards", []) if p.pending_pack_reveal is Dictionary else []
-	p.pending_pack_reveal = {}; return ok(p, {"cards":cards})
+	var blueprint_unlocks: Array = p.pending_pack_reveal.get("blueprint_unlocks", []) if p.pending_pack_reveal is Dictionary else []
+	p.pending_pack_reveal = {}; return ok(p, {"cards":cards,"blueprint_unlocks":blueprint_unlocks})
 
 ## Market singles are a small deterministic shelf, not a browseable locked
 ## catalog. The day key is supplied by the facade so a server can reproduce the
@@ -165,9 +206,10 @@ static func buy_market_card(source: Dictionary, card_id: String, day_key: String
 	if offered.is_empty(): return fail(p, "That card is not offered in the current Market.")
 	if int(p.get("coins", 0)) < int(offered.price): return fail(p, "Not enough Forge Coins.")
 	p.coins = int(p.coins) - int(offered.price)
-	p.owned_cards[card_id] = int(p.owned_cards.get(card_id, 0)) + 1
-	# Ownership is the only single-purchase effect: build/XP state is untouched.
-	return ok(p, {"card_id":card_id,"price":int(offered.price),"day_key":day_key})
+	var granted := grant_card(p, card_id)
+	# Acquisition syncs creature blueprint/discovery records, but never prints a
+	# creature or changes its card XP/build state.
+	return ok(p, {"card_id":card_id,"price":int(offered.price),"day_key":day_key,"blueprint_unlocked":bool(granted.get("blueprint_added", false))})
 
 static func apply_printer_nodes(source: Dictionary, desired: Array) -> Dictionary:
 	var p := ensure(source); var wanted := desired.duplicate(); var cost := 0; var refund := 0

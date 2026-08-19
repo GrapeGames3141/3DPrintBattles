@@ -1,16 +1,18 @@
-# 0.7.5 UI Recovery Playtest
+# 0.7.6 Card Acquisition Playtest
 
-Prepared review metadata: `0.7.5-ui-recovery-playtest` (Windows file version
-`0.7.5.0`; Android version code `95`). This document describes the source
-playtest scope; no 0.7.5 artifact is implied until the export gate completes.
+Prepared review metadata: `0.7.6-card-acquisition-playtest` (Windows file
+version `0.7.6.0`; Android version code `96`). This document describes the
+source playtest scope; no 0.7.6 artifact is implied until the export gate
+completes.
 
 This work remains on `feature/unified-card-battle-redesign`; do not merge until a human playtest signs off.
 
 ## Start and collection
 
 - Begin on a new isolated profile. Choose one image-led starter, inspect its blue card, then complete the required free Workshop print.
-- Buy 3-, 5-, and 10-card packs. A pending reveal survives restart; every pack slot is independently weighted and duplicates are allowed.
-- The Library contains owned cards only. The market exposes only available packs. Card inspectors are viewport-sized Card / Stats / Build overlays.
+- Buy available singles as well as 3-, 5-, and 10-card packs. Creature-card acquisition immediately updates its blueprint and Forgedex discovery entry without printing it or changing its XP/build.
+- Pack purchases open a full-viewport card reveal immediately. A pending reveal survives restart, cannot be overwritten by another pack purchase, and clears only after `Keep cards`; every pack slot is independently weighted and duplicates are allowed.
+- The Library contains owned cards only. The market shows only current purchasable offers. The Forgedex is a responsive, paged no-scroll creature-card grid with known cards, card-shaped unknowns, and blueprint/printed/mastery status. Card inspectors are viewport-sized Card / Stats / Build overlays.
 - A battle deck is exactly 15 owned cards, with at least three creature cards and no more than three copies of any card.
 
 ## Battles

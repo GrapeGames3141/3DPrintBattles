@@ -44,15 +44,41 @@ func _ready() -> void:
 	var bought := RULES.buy_pack(printed.profile, "pack_3", PackedByteArray([1,2,3,4,5,6,7,8]))
 	print("UNIFIED_TEST phase=pack")
 	require(bool(bought.ok) and int(bought.profile.coins) == int(printed.profile.coins) - 60 and (bought.payload.cards as Array).size() == 3 and not bought.profile.pending_pack_reveal.is_empty(), "pack purchase is charged and persisted before reveal")
-	var market_day := "2026-08-18"
-	var offers := RULES.market_offers(market_day)
-	var market_card := str(offers[0].get("id", "")) if not offers.is_empty() else ""
+	var blocked_pack := RULES.buy_pack(bought.profile, "pack_3", PackedByteArray([8,7,6,5,4,3,2,1]))
+	require(not bool(blocked_pack.ok) and blocked_pack.profile == bought.profile, "pending pack reveal blocks a second pack without overwriting cards or charging coins")
+	var creature_pack: Dictionary = {}
+	for entropy_head in 256:
+		var candidate := RULES.buy_pack(printed.profile, "pack_3", PackedByteArray([entropy_head,1,2,3,4,5,6,7]))
+		if not bool(candidate.ok): continue
+		for candidate_id in candidate.payload.cards:
+			if str(RULES.card(str(candidate_id)).get("type", "")) == "creature": creature_pack = candidate; break
+		if not creature_pack.is_empty(): break
+	var packed_creature := ""
+	for candidate_id in creature_pack.get("payload", {}).get("cards", []):
+		if str(RULES.card(str(candidate_id)).get("type", "")) == "creature": packed_creature = str(candidate_id); break
+	require(not packed_creature.is_empty() and packed_creature in creature_pack.profile.blueprints and packed_creature in creature_pack.profile.discovered and creature_pack.profile.get("creatures", []).size() == printed.profile.get("creatures", []).size(), "deterministic creature pack unlocks blueprint and Forgedex without printing")
+	var migration_seed := ProfileRules.new_profile()
+	migration_seed.owned_cards = {"geargecko":1}
+	migration_seed.blueprints = []
+	migration_seed.discovered = []
+	var repaired_ownership := RULES.ensure(migration_seed)
+	require("geargecko" in repaired_ownership.blueprints and "geargecko" in repaired_ownership.discovered, "ensure repairs legacy blueprint and Forgedex records from owned creature cards")
+	var market_day := ""
+	var market_card := ""
+	var offers: Array = []
+	for day_number in range(1, 80):
+		var candidate_day := "2026-08-%02d" % day_number
+		var candidate_offers := RULES.market_offers(candidate_day)
+		for offer in candidate_offers:
+			if str(RULES.card(str(offer.get("id", ""))).get("type", "")) == "creature":
+				market_day = candidate_day; market_card = str(offer.get("id", "")); offers = candidate_offers; break
+		if not market_card.is_empty(): break
 	var market_before: Dictionary = printed.profile.duplicate(true)
 	market_before.coins = 500
 	market_before.card_xp[market_card] = 7
 	market_before.card_builds[market_card] = ["power_a"]
 	var single := RULES.buy_market_card(market_before, market_card, market_day)
-	require(bool(single.ok) and int(single.profile.owned_cards.get(market_card, 0)) == int(market_before.owned_cards.get(market_card, 0)) + 1 and int(single.profile.card_xp.get(market_card, 0)) == 7 and single.profile.card_builds.get(market_card, []) == ["power_a"], "market single validates the offered shelf and only grants ownership")
+	require(bool(single.ok) and int(single.profile.owned_cards.get(market_card, 0)) == int(market_before.owned_cards.get(market_card, 0)) + 1 and int(single.profile.card_xp.get(market_card, 0)) == 7 and single.profile.card_builds.get(market_card, []) == ["power_a"] and market_card in single.profile.blueprints and market_card in single.profile.discovered and single.profile.get("creatures", []).size() == market_before.get("creatures", []).size(), "market creature single grants ownership, blueprint, and Forgedex without XP/build or print side effects")
 	var unavailable := RULES.buy_market_card(market_before, "not_on_shelf", market_day)
 	require(not bool(unavailable.ok) and unavailable.profile == market_before, "market rejects a card outside the current purchasable offers atomically")
 	var cards: Array = printed.profile.decks[0].cards.duplicate()
