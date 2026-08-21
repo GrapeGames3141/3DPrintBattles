@@ -7,7 +7,14 @@ var _cached_profile_blueprints: Array = []
 var _cached_ids: Array[String] = []
 
 func blueprint_ids(profile: Dictionary) -> Array[String]:
-	var stored_blueprints: Array = profile.get("blueprints", [])
+	# The v3 Workshop owns blueprint records separately from battle cards and
+	# retired creature instances.  Restrict the one-time Forge animation to
+	# creature blueprints; equipment is collection/deck content, not a legacy
+	# suit print.
+	var stored_blueprints: Array = []
+	for stored_id in profile.get("owned_blueprints", {}).keys():
+		stored_blueprints.append(str(stored_id))
+	stored_blueprints.sort()
 	if stored_blueprints != _cached_profile_blueprints:
 		_cached_profile_blueprints = stored_blueprints.duplicate(true)
 		_cached_ids.clear()
@@ -20,8 +27,8 @@ func blueprint_ids(profile: Dictionary) -> Array[String]:
 
 func owned_count(profile: Dictionary, creature_id: String) -> int:
 	var count := 0
-	for instance in profile.get("creatures", []):
-		if str(instance.get("creature_id", "")) == creature_id:
+	for model in profile.get("printed_models", {}).values():
+		if model is Dictionary and str(model.get("blueprint_id", "")) == creature_id:
 			count += 1
 	return count
 
@@ -44,7 +51,7 @@ func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	var card := Control.new()
 	card.name = "PrinterBlueprintCard%s" % creature_id.capitalize()
 	card.set_meta("creature_id", creature_id)
-	card.set_meta("price", int(rarity.get("print", 0)))
+	card.set_meta("price", int(UnifiedRules.WORKSHOP_PRINT_COSTS.get(str(definition.get("rarity", "common")), 20)))
 	card.set_meta("owned_count", owned_count(context.profile, creature_id))
 	card.custom_minimum_size = Vector2(168 if portrait else 146, 210 if portrait else 174)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -83,7 +90,7 @@ func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	var facts: Label = context.label.call("%s / %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 12, Color("b8dcef"))
 	facts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(facts)
-	var ownership: Label = context.label.call("%d FC  |  owned %d" % [int(rarity.get("print", 0)), owned_count(context.profile, creature_id)], 12, Color("a8e3a5"))
+	var ownership: Label = context.label.call("%d FC  |  printed %d" % [int(UnifiedRules.WORKSHOP_PRINT_COSTS.get(str(definition.get("rarity", "common")), 20)), owned_count(context.profile, creature_id)], 12, Color("a8e3a5"))
 	ownership.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(ownership)
 	return card

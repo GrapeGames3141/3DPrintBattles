@@ -120,7 +120,7 @@ func render_settings(root: VBoxContainer) -> void:
 	root.add_child(button("Text scale: %d%%" % (int(values.get("text_scale_bps", 10000)) / 100), func(): GameManager.save_settings({"text_scale_bps": 12500 if int(values.get("text_scale_bps", 10000)) == 10000 else 10000}); render()))
 	root.add_child(button("High contrast: %s" % ("On" if bool(values.get("high_contrast", false)) else "Off"), func(): GameManager.save_settings({"high_contrast": not bool(values.get("high_contrast", false))}); render()))
 	root.add_child(button("Reduced motion: %s" % ("On" if bool(values.get("reduced_motion", false)) else "Off"), func(): GameManager.save_settings({"reduced_motion": not bool(values.get("reduced_motion", false))}); render()))
-	var status := panel(); root.add_child(status.get_parent()); status.add_child(label("Spool %d  •  Collector %d  •  Workshop filament %d" % [_spool_cap(), _collector_cap(), int(GameManager.profile.get("workshop_filament", 0))], true))
+	var status := panel(); root.add_child(status.get_parent()); status.add_child(label("Forge Coins %d  •  Sparks %d  •  Pre-Print slots %d" % [int(GameManager.profile.get("forge_coins", 0)), int(GameManager.profile.get("sparks", 0)), RULES.preprint_slots(GameManager.profile)], true))
 func render_market(root: VBoxContainer) -> void:
 	header(root, "Market", "workshop"); root.add_child(label("Packs only. Every slot rolls independently; duplicates are possible."))
 	var products := [{"id":"pack_3","name":"3-card pack","price":60},{"id":"pack_5","name":"5-card pack","price":90},{"id":"pack_10","name":"10-card pack","price":160}]
@@ -140,7 +140,7 @@ func render_deck(root: VBoxContainer) -> void:
 	header(root, "Deck builder", "workshop")
 	if deck_draft.is_empty():
 		for deck in GameManager.profile.get("decks", []): if str(deck.get("id", "")) == str(GameManager.profile.get("active_deck_id", "starter-deck")): deck_draft = deck.get("cards", []).duplicate()
-	root.add_child(label("%d / 15 cards • %d creatures • max three copies" % [deck_draft.size(), _creature_count(deck_draft)], true))
+	root.add_child(label("%d cards • minimum 40 • %d creatures • copies limited by ownership" % [deck_draft.size(), _creature_count(deck_draft)], true))
 	var owned: Array = []
 	for definition in RULES.all_cards():
 		if int(GameManager.profile.get("owned_cards", {}).get(str(definition.id), 0)) > 0: owned.append(definition)
@@ -148,7 +148,7 @@ func render_deck(root: VBoxContainer) -> void:
 	root.add_child(button("Save battle deck", func(): GameManager.save_unified_deck(deck_draft); toast = "Deck saved."; render(), Color("588d73")))
 func _toggle_deck(id: String) -> void:
 	if id in deck_draft: deck_draft.erase(id)
-	elif deck_draft.size() < 15 and deck_draft.count(id) < mini(3, int(GameManager.profile.owned_cards.get(id, 0))): deck_draft.append(id)
+	elif deck_draft.count(id) < int(GameManager.profile.owned_cards.get(id, 0)): deck_draft.append(id)
 	render()
 func _creature_count(cards: Array) -> int:
 	var total := 0
@@ -203,7 +203,7 @@ func render_battle(root: VBoxContainer) -> void:
 			for choice in [["Daily Training", "daily"], ["First Layers", "trial_first_layers"], ["Element Bench", "trial_element_bench"], ["Reinforced Run", "trial_reinforced_run"], ["Masterwork Circuit", "trial_masterwork_circuit"], ["Primordial Proof", "trial_primordial_proof"], ["Local Versus", "local"]]: modes.add_child(button(str(choice[0]), start_mode.bind(str(choice[1]))))
 			return
 		else:
-			root.add_child(label("Build a legal 15-card deck first."))
+			root.add_child(label("Build a legal 40-card deck first."))
 			return
 	var foe := battle.player(1)
 	var mine := battle.player(0)
@@ -234,8 +234,7 @@ func render_battle(root: VBoxContainer) -> void:
 		_render_attack_target_picker(root, active)
 		var controls := HBoxContainer.new()
 		root.add_child(controls)
-		controls.add_child(button("Collect", func(): _battle_intent({"type":"collect","pile":0}, battle.active_seat), Color("588d73")))
-		if battle.phase == "collect" and "clip_smelter" in active.nodes: controls.add_child(button("Smelt %d%s" % [int(active.collector), " to spool" if "spooler" in active.nodes else " reserve"], func(): _battle_intent({"type":"smelt"}, battle.active_seat), Color("a86b2e")))
+		if battle.phase == "collect": controls.add_child(label("Advance to collect scrap automatically.", true))
 		controls.add_child(button("Next phase", func(): _battle_intent({"type":"advance_phase"}, battle.active_seat), Color("536c8d")))
 	if battle.finished:
 		root.add_child(label("%s printer broke." % ("Rival" if battle.winner == 0 else "Your")))
@@ -247,14 +246,14 @@ func render_battle(root: VBoxContainer) -> void:
 			root.add_child(button("Return", func(): battle = null; battle_settlement_context = {}; screen = "workshop"; render()))
 func _battle_side(name: String, p: Dictionary, seat: int) -> Control:
 	var box := panel()
-	box.add_child(label("%s • P %d • F %d/%d • C %d/%d" % [name, int(p.printer.durability), int(p.filament), int(p.spool_cap), int(p.collector), int(p.collector_cap)], true))
+	box.add_child(label("%s • Printer %d/%d HP • Filament %d/%d" % [name, int(p.printer.hp), int(p.printer.max_hp), int(p.filament), int(p.filament_max)], true))
 	var field := HBoxContainer.new()
 	field.add_theme_constant_override("separation", 8)
 	box.add_child(field)
 	var printer := PanelContainer.new()
 	printer.custom_minimum_size = Vector2(112, 58 if portrait() else 70)
 	printer.add_theme_stylebox_override("panel", style(Color("23445a"), Color("8deaff")))
-	var printer_label := label("3D PRINTER\n%d / 100" % int(p.printer.durability), true)
+	var printer_label := label("3D PRINTER\n%d / %d" % [int(p.printer.hp), int(p.printer.max_hp)], true)
 	printer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	printer.add_child(printer_label)
 	field.add_child(printer)

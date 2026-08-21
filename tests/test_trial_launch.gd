@@ -55,7 +55,7 @@ func _ready() -> void:
 		main.start_mode("trial_first_layers")
 		await get_tree().process_frame
 		require(main.battle != null and str(main.battle_settlement_context.get("source_id", "")) == "first_layers_1", "unified Trial UI launches authored Warm Nozzle identity")
-		require(main.battle != null and int(main.battle.player(1).spool_cap) == 3, "unified Trial UI retains authored rival spool")
+		require(main.battle != null and int(main.battle.player(1).filament) == 200 and int(main.battle.player(1).filament_max) == 400, "unified Trial UI uses the v3 filament economy")
 		main.queue_free()
 		await get_tree().process_frame
 		if failures.is_empty(): print("PASS: unified Trial launch resolves authored encounter data")

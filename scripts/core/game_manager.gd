@@ -26,11 +26,12 @@ func _initialize_loaded_profile(loaded: Dictionary) -> void:
 		return
 	profile = loaded.duplicate(true)
 	if profile.is_empty():
-		profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
+		profile = UNIFIED_RULES.new_profile()
 		SaveService.commit_snapshot(profile)
 	else:
-		var migrated := ProfileRules.migrate(profile)
-		var unified := UNIFIED_RULES.ensure(migrated)
+		# This service reads only the clean v3 namespace, so legacy migration is
+		# intentionally never invoked here.
+		var unified := UNIFIED_RULES.ensure(profile)
 		if unified != profile:
 			profile = unified
 			SaveService.commit_snapshot(profile)
@@ -52,10 +53,10 @@ func apply_android_review_coin_floor(review_enabled: bool) -> bool:
 	return true
 
 func default_profile() -> Dictionary:
-	return ProfileRules.new_profile()
+	return UNIFIED_RULES.new_profile()
 
 func has_selected_starter() -> bool:
-	return ProfileRules.has_starter(profile)
+	return str(profile.get("onboarding", {}).get("state", "")) == "complete" and not str(profile.get("onboarding", {}).get("starter_id", "")).is_empty()
 
 func choose_starter(creature_id: String) -> bool:
 	if _reject_read_only(): return false
@@ -65,15 +66,19 @@ func choose_starter(creature_id: String) -> bool:
 		return false
 	profile = result.profile
 	mutated("choose_starter", result.get("payload", {"creature_id":creature_id}))
-	toast_requested.emit("Blueprint card added. Print it free in the Workshop.")
+	toast_requested.emit("Starter blueprint unlocked. Print your first Workshop model free.")
 	return true
 
 func print_selected_starter() -> bool:
 	return apply_transition(UNIFIED_RULES.print_starter(profile), "starter_free_print")
+func print_workshop_model_v3(blueprint_id: String, receipt_id := "") -> Dictionary:
+	var result := UNIFIED_RULES.print_workshop_model(profile, blueprint_id, receipt_id)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_workshop_print", result.payload)
+	return result
 
 func buy_card_pack(pack_id: String) -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
-	var result := UNIFIED_RULES.buy_pack(profile, pack_id)
+	var result := UNIFIED_RULES.buy_pack(profile, pack_id, PackedByteArray(), int(Time.get_unix_time_from_system()))
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Pack unavailable."))); return result
 	profile = result.profile
@@ -81,30 +86,102 @@ func buy_card_pack(pack_id: String) -> Dictionary:
 	mutated("buy_card_pack", result.payload)
 	return result
 
+## Local v3 commerce/reward facades. All use the same journaled mutation path;
+## a hosted authority may later replace their clock/entropy provider.
+func market_snapshot(unix_time := 0, local_date_key := "") -> Dictionary:
+	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
+	var begun := UNIFIED_RULES.begin_newcomer(profile, stamp)
+	if bool(begun.get("ok", false)) and begun.profile != profile:
+		profile = begun.profile
+		mutated("v3_newcomer_started", begun.payload)
+	var epochs := UNIFIED_RULES.advance_market_epochs(profile, stamp, local_date_key)
+	if bool(epochs.get("ok", false)) and epochs.profile != profile:
+		profile = epochs.profile
+		mutated("v3_market_epochs", epochs.payload)
+	return UNIFIED_RULES.market_snapshot(profile, stamp)
+func buy_blueprint_v3(id: String, unix_time := 0) -> Dictionary:
+	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
+	var result := UNIFIED_RULES.buy_blueprint(profile, id, stamp)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_blueprint", result.payload)
+	return result
+func buy_market_card_v3(id: String, unix_time := 0) -> Dictionary:
+	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
+	var result := UNIFIED_RULES.buy_market_card_at(profile, id, stamp)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_market_card", result.payload)
+	return result
+func buy_workshop_upgrade_v3(id: String) -> Dictionary:
+	var result := UNIFIED_RULES.buy_workshop_upgrade(profile, id, int(Time.get_unix_time_from_system()))
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_workshop_upgrade", result.payload)
+	return result
+func buy_upgrade_card_v3(id: String) -> Dictionary:
+	var result := UNIFIED_RULES.buy_upgrade_card(profile, id, 0, int(Time.get_unix_time_from_system()))
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_upgrade_card", result.payload)
+	return result
+func buy_cosmetic_v3(id: String, currency := "forge_coins") -> Dictionary:
+	var result := UNIFIED_RULES.buy_cosmetic(profile, id, currency, int(Time.get_unix_time_from_system()))
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_cosmetic", result.payload)
+	return result
+func fake_store_purchase_v3(purchase_id: String, product_id: String) -> Dictionary:
+	var result := UNIFIED_RULES.fake_store_purchase_at(profile, purchase_id, product_id, int(Time.get_unix_time_from_system()))
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_fake_store_purchase", result.payload)
+	return result
+func buy_paid_season_v3() -> Dictionary:
+	var result := UNIFIED_RULES.buy_paid_season(profile)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_paid_season", result.payload)
+	return result
+func set_wishlist_v3(id: String, wanted: bool) -> Dictionary:
+	var result := UNIFIED_RULES.set_wishlist(profile, id, wanted)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_wishlist", result.payload)
+	return result
+func daily_quests_v3(day_key := "") -> Dictionary:
+	var key := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
+	var result := UNIFIED_RULES.daily_quests(profile, key)
+	if bool(result.get("ok", false)) and result.profile != profile: profile = result.profile; mutated("v3_daily_quests", result.payload)
+	return result
+func reroll_daily_quest_v3(day_key: String, index: int) -> Dictionary:
+	var result := UNIFIED_RULES.reroll_daily_quest(profile, day_key, index)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_quest_reroll", result.payload)
+	return result
+func claim_daily_quest_v3(day_key: String, id: String) -> Dictionary:
+	var result := UNIFIED_RULES.claim_daily_quest(profile, day_key, id)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_quest_claim", result.payload)
+	return result
+func record_quest_progress_v3(day_key: String, event_name: String, amount := 1) -> Dictionary:
+	var result := UNIFIED_RULES.record_quest_progress(profile, day_key, event_name, amount)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_quest_progress", result.payload)
+	return result
+func academy_three_star_v3(receipt_id: String) -> Dictionary:
+	var result := UNIFIED_RULES.academy_three_star_reward(profile, receipt_id)
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_academy_reward", result.payload)
+	return result
+func claim_season_level_v3(level: int, paid := false) -> Dictionary:
+	var result := UNIFIED_RULES.claim_season_level(profile, level, paid, int(Time.get_unix_time_from_system()))
+	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_season_claim", result.payload)
+	return result
+
 func current_market_offers(day_key: String = "") -> Array:
 	var resolved := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
 	return UNIFIED_RULES.market_offers(resolved)
 
 func buy_market_card(card_id: String, day_key: String = "") -> Dictionary:
-	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
-	var resolved := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
-	var result := UNIFIED_RULES.buy_market_card(profile, card_id, resolved)
-	if not bool(result.get("ok", false)):
-		toast_requested.emit(str(result.get("error", "Market offer unavailable.")))
-		return result
-	profile = result.profile
-	mutated("buy_market_card", result.payload)
-	return result
+	# Compatibility route for old callers; use the canonical typed 48-hour shop.
+	return buy_market_card_v3(card_id, 0)
 
 func claim_pending_pack_reveal() -> Array:
 	if _reject_read_only(): return []
 	var cards: Array = profile.get("pending_pack_reveal", {}).get("cards", []) if profile.get("pending_pack_reveal", {}) is Dictionary else []
+	var bonus: Array = profile.get("pending_pack_reveal", {}).get("bonus_cards", []) if profile.get("pending_pack_reveal", {}) is Dictionary else []
+	cards.append_array(bonus)
 	if cards.is_empty(): return []
 	var result := UNIFIED_RULES.clear_pack_reveal(profile); profile = result.profile; mutated("pack_reveal_seen", result.payload)
 	return cards
 
 func save_unified_deck(cards: Array, deck_id := "starter-deck") -> bool:
 	return apply_transition(UNIFIED_RULES.save_deck(profile, cards, deck_id), "save_unified_deck")
+func select_unified_deck(deck_id: String) -> bool:
+	return apply_transition(UNIFIED_RULES.select_active_deck(profile, deck_id), "select_v3_deck")
+func save_preprints_v3(card_ids: Array) -> bool:
+	return apply_transition(UNIFIED_RULES.save_preprints(profile, card_ids), "save_v3_preprints")
 
 func apply_printer_upgrades(nodes: Array) -> bool:
 	return apply_transition(UNIFIED_RULES.apply_printer_nodes(profile, nodes), "apply_printer_upgrades")
@@ -140,11 +217,11 @@ func create_unified_battle(mode: String, opponent_setup: Dictionary = {}, seed: 
 	var setup: Dictionary = resolved.get("setup", {})
 	var rival_deck := _unified_rival_deck(setup, deck)
 	var match_seed := _stable_unified_seed([mode, str(resolved.get("source_id", "")), str(resolved.get("day_key", "")), str(seed)])
-	var state := UNIFIED_BATTLE_STATE.create(deck, rival_deck, match_seed, profile.get("printer_nodes", []), [], profile.get("card_builds", {}), {})
+	# Workshop upgrades and pre-prints are launch data; in-battle hardware starts
+	# uninstalled and must be played as Upgrade Cards.
+	var state := UNIFIED_BATTLE_STATE.create(deck, rival_deck, match_seed, [], [], profile.get("preprints", []), [], profile, {})
 	var rival := state.player(1)
-	var rival_spool := clampi(int(setup.get("rival_spool", setup.get("spool", 3))), 3, 10)
-	rival.spool_cap = rival_spool
-	rival.filament = clampi(int(setup.get("rival_starting_filament", 3)), 0, rival_spool)
+	rival.filament = clampi(int(setup.get("rival_starting_filament", 200)), 0, int(rival.filament_max))
 	var resolved_mode := str(resolved.get("mode", mode))
 	var result_id := str(opponent_setup.get("result_id", ""))
 	if result_id.is_empty() and resolved_mode in ["daily", "trial"]:
@@ -192,16 +269,16 @@ func _unified_rival_deck(setup: Dictionary, fallback: Array) -> Array:
 	for raw in setup.get("team", []):
 		var creature_id := str(raw.get("creature_id", raw.get("id", ""))) if raw is Dictionary else str(raw)
 		if not UNIFIED_RULES.card(creature_id).is_empty():
-			for _copy in 3: result.append(creature_id)
+			for _copy in 8: result.append(creature_id)
 	for raw in setup.get("deck", []):
 		var card_id := str(raw)
 		if not UNIFIED_RULES.card(card_id).is_empty(): result.append(card_id)
-	for card_id in ["raw_filament", "heated_spool", "pocket_coil", "fresh_roll", "printer_ward", "bed_jam", "swiftweave_suit"]:
-		if result.size() >= 15: break
+	for card_id in ["raw_filament", "heated_spool", "emergency_canister", "layer_melt", "print_jam", "helm", "iron_claw"]:
+		if result.size() >= 40: break
 		result.append(card_id)
 	if result.is_empty(): result = fallback.duplicate()
-	while result.size() < 15: result.append(result[result.size() % maxi(1, result.size())])
-	return result.slice(0, 15)
+	while result.size() < 40: result.append(result[result.size() % maxi(1, result.size())])
+	return result.slice(0, 40)
 
 func _stable_unified_seed(parts: Array) -> int:
 	var value := 17
@@ -226,14 +303,14 @@ func settle_unified_mode_battle(context: Dictionary, battle, victory: bool, coin
 	if working.get("unified_settlements", {}).has(result_id): return {"ok":true,"profile":working,"payload":{"id":result_id,"duplicate":true,"mode":mode}}
 	var reward_payload: Dictionary = {"first_clear":false,"reward":{"coins":0,"xp":0}}
 	if victory and mode == "daily":
-		var daily_rules = _opponent_rules()
-		if daily_rules == null: return {"ok":false,"error":"Daily Training reward could not load."}
-		var daily_result: Dictionary = daily_rules.claim_victory(working, str(context.get("source_id", "")), str(context.get("day_key", "")))
+		var daily_result := _claim_unified_daily_v3(working, str(context.get("source_id", "")), str(context.get("day_key", "")))
 		if not bool(daily_result.get("ok", false)): return daily_result
 		working = daily_result.get("profile", working)
 		reward_payload = daily_result.get("payload", reward_payload)
+		var quest_progress := UNIFIED_RULES.record_quest_progress(working, str(context.get("day_key", "")), "win")
+		if bool(quest_progress.get("ok", false)): working = quest_progress.profile
 	elif victory and mode == "trial":
-		var trial_result: Dictionary = CAMPAIGN_RULES.claim_victory(working, str(context.get("source_id", "")), int(battle.turn) if battle != null else 1)
+		var trial_result := _claim_unified_trial_v3(working, str(context.get("source_id", "")), int(battle.turn) if battle != null else 1)
 		if not bool(trial_result.get("ok", false)): return trial_result
 		working = trial_result.get("profile", working)
 		reward_payload = trial_result.get("payload", reward_payload)
@@ -247,6 +324,62 @@ func settle_unified_mode_battle(context: Dictionary, battle, victory: bool, coin
 	payload["reward_claim"] = reward_payload
 	mutated("unified_%s_settlement" % mode, payload)
 	return {"ok":true,"profile":profile,"payload":payload}
+
+## Unified modes retain the authored Trial and Training encounters, but their
+## rewards must never route through the retired instance/XP/coin progression.
+## These adapters deliberately record only campaign completion plus v3 Forge
+## Coins, Spool XP, and Season XP.
+func _claim_unified_daily_v3(source: Dictionary, contract_id: String, day_key: String) -> Dictionary:
+	var p := UNIFIED_RULES.ensure(source)
+	var daily: Dictionary = p.get("daily_training", {}) if p.get("daily_training", {}) is Dictionary else {}
+	if str(daily.get("day_key", "")) != day_key: return {"ok":false,"profile":p,"error":"That training contract is from another day."}
+	var contract: Dictionary = {}
+	for raw in daily.get("contracts", []):
+		if raw is Dictionary and str(raw.get("id", "")) == contract_id: contract = raw.duplicate(true); break
+	if contract.is_empty(): return {"ok":false,"profile":p,"error":"That training contract is unavailable."}
+	var claimed: Array = daily.get("claimed_ids", []).duplicate() if daily.get("claimed_ids", []) is Array else []
+	if contract_id in claimed: return {"ok":true,"profile":p,"payload":{"contract_id":contract_id,"reward":{"coins":0,"xp":0},"first_clear":false}}
+	var reward: Dictionary = contract.get("reward", {}) if contract.get("reward", {}) is Dictionary else {}
+	var xp := maxi(0, int(reward.get("xp", 0)))
+	p.forge_coins += maxi(0, int(reward.get("coins", 0)))
+	p.season.xp = int(p.season.get("xp", 0)) + xp
+	var spool := UNIFIED_RULES.grant_spool_xp(p, xp)
+	claimed.append(contract_id); daily["claimed_ids"] = claimed; p["daily_training"] = daily
+	return {"ok":true,"profile":p,"payload":{"contract_id":contract_id,"reward":reward,"first_clear":true,"spool_gained":int(spool.get("levels", 0))}}
+
+func _claim_unified_trial_v3(source: Dictionary, encounter_id: String, turns: int) -> Dictionary:
+	var p := UNIFIED_RULES.ensure(source)
+	var encounter := Catalog.workshop_trial_encounter(encounter_id)
+	if encounter.is_empty(): return {"ok":false,"profile":p,"error":"That Workshop Trial encounter is unavailable."}
+	var campaign: Dictionary = p.get("solo_campaign", {}) if p.get("solo_campaign", {}) is Dictionary else {}
+	var tier := clampi(int(encounter.get("tier", 1)), 1, Catalog.WORKSHOP_TRIAL_TIERS.size())
+	campaign["unlocked_tier"] = clampi(int(campaign.get("unlocked_tier", 1)), 1, Catalog.WORKSHOP_TRIAL_TIERS.size())
+	var completed: Array = campaign.get("completed_encounter_ids", []).duplicate() if campaign.get("completed_encounter_ids", []) is Array else []
+	var claimed: Array = campaign.get("claimed_reward_ids", []).duplicate() if campaign.get("claimed_reward_ids", []) is Array else []
+	var best: Dictionary = campaign.get("best_turn_counts", {}).duplicate() if campaign.get("best_turn_counts", {}) is Dictionary else {}
+	var encounters: Array = Catalog.workshop_trial_tier(tier).get("encounters", [])
+	var encounter_index := -1
+	for index in encounters.size():
+		if str(encounters[index].get("id", "")) == encounter_id: encounter_index = index; break
+	var unlocked := tier <= int(campaign.unlocked_tier)
+	if encounter_index > 0: unlocked = unlocked and str(encounters[encounter_index - 1].get("id", "")) in completed
+	if not unlocked: return {"ok":false,"profile":p,"error":"Clear the earlier Workshop Trial encounters first."}
+	var safe_turns := maxi(1, turns)
+	if encounter_id in claimed:
+		var old_best := int(best.get(encounter_id, 0))
+		var improved := old_best <= 0 or safe_turns < old_best
+		if improved: best[encounter_id] = safe_turns
+		campaign["best_turn_counts"] = best; p["solo_campaign"] = campaign
+		return {"ok":true,"profile":p,"payload":{"encounter_id":encounter_id,"reward":{"coins":0,"xp":0},"first_clear":false,"best_improved":improved,"turns":int(best.get(encounter_id, old_best))}}
+	var reward: Dictionary = CAMPAIGN_RULES.reward_for(encounter)
+	var xp := maxi(0, int(reward.get("xp", 0)))
+	p.forge_coins += maxi(0, int(reward.get("coins", 0)))
+	p.season.xp = int(p.season.get("xp", 0)) + xp
+	var spool := UNIFIED_RULES.grant_spool_xp(p, xp)
+	completed.append(encounter_id); claimed.append(encounter_id); best[encounter_id] = safe_turns
+	if bool(encounter.get("boss", false)): campaign["unlocked_tier"] = mini(Catalog.WORKSHOP_TRIAL_TIERS.size(), maxi(int(campaign.unlocked_tier), tier + 1))
+	campaign["completed_encounter_ids"] = completed; campaign["claimed_reward_ids"] = claimed; campaign["best_turn_counts"] = best; p["solo_campaign"] = campaign
+	return {"ok":true,"profile":p,"payload":{"encounter_id":encounter_id,"reward":reward,"first_clear":true,"best_improved":true,"turns":safe_turns,"spool_gained":int(spool.get("levels", 0))}}
 
 ## A launch-only repair never changes the saved team, inventory, or revision.
 func create_solo_battle(rival_team: Array, rival_spool: int, seed: int) -> Dictionary:

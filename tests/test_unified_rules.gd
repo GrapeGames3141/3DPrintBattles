@@ -1,176 +1,169 @@
 extends Node
+## Focused v3.1 authority regression suite. UI and legacy 0.7 tests deliberately
+## live elsewhere; this verifies the canonical v3 state without presentation.
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const STATE := preload("res://scripts/battle/unified_battle_state.gd")
 const BATTLE := preload("res://scripts/battle/unified_battle_rules.gd")
 const AI := preload("res://scripts/battle/unified_ai_opponent.gd")
-# Compile the interaction shell in this focused suite so target-picker syntax
-# cannot regress independently of the authoritative rules.
-const UNIFIED_MAIN := preload("res://scripts/ui/unified_main.gd")
+const REVIEW_RULES := preload("res://scripts/core/review_build_rules.gd")
 var failures: Array[String] = []
+
 func require(value: bool, message: String) -> void:
-	if not value: failures.append(message); push_error(message)
-func _tree_has_text(node: Node, needle: String) -> bool:
-	if node is Label and needle in (node as Label).text: return true
-	for child in node.get_children():
-		if _tree_has_text(child, needle): return true
-	return false
-func _has_scroll_container(node: Node) -> bool:
-	if node is ScrollContainer: return true
-	for child in node.get_children():
-		if _has_scroll_container(child): return true
-	return false
-func _content_fits_viewport(shell: Control) -> bool:
-	if shell.get_child_count() == 0: return false
-	# render() retires the preceding responsive page with queue_free(), so the
-	# newest root is the final child during this same-frame focused UI test.
-	var content := shell.get_child(shell.get_child_count() - 1) as Control
-	return content != null and content.get_combined_minimum_size().y <= shell.size.y
-func _layout_measurements(shell: Control) -> String:
-	if shell.get_child_count() == 0: return ""
-	var content := shell.get_child(shell.get_child_count() - 1) as Control
-	var parts: Array[String] = []
-	for child in content.get_children():
-		if child is Control: parts.append("%s=%s" % [child.get_class(), (child as Control).get_combined_minimum_size()])
-	return ", ".join(parts)
+	if not value:
+		failures.append(message)
+		push_error(message)
+
 func _ready() -> void:
-	print("UNIFIED_TEST phase=ready")
-	var fresh := RULES.ensure({"schema_version":Catalog.SCHEMA_VERSION,"catalog_version":Catalog.CATALOG_VERSION,"coins":180,"xp":0,"creatures":[],"support_cards":{},"decks":[],"onboarding":{"state":"choose_starter","starter_id":"","starter_instance_id":""}})
-	print("UNIFIED_TEST phase=ensure")
-	var selected := RULES.choose_starter(fresh, "cinderpaw")
-	print("UNIFIED_TEST phase=starter")
-	require(bool(selected.ok) and int(selected.profile.owned_cards.cinderpaw) == 3 and str(selected.profile.onboarding.state) == "starter_selected", "starter grants blue card x3 before printing")
+	var profile := RULES.ensure({"onboarding":{"state":"choose_starter","starter_id":""},"coins":10000})
+	var clean_profile := RULES.new_profile()
+	require(not clean_profile.has("coins") and not clean_profile.has("xp") and not clean_profile.has("daily_job_count"), "new v3 profiles contain no retired 0.7 economy or Workshop-job fields")
+	var review_floor := REVIEW_RULES.apply_coin_floor(clean_profile, true)
+	require(bool(review_floor.ok) and int(review_floor.profile.get("forge_coins", 0)) == REVIEW_RULES.REVIEW_COIN_FLOOR and not review_floor.profile.has("coins"), "review build floor applies to Forge Coins without restoring retired coins")
+	var selected := RULES.choose_starter(profile, "cinderpaw")
 	var printed := RULES.print_starter(selected.profile)
-	require(bool(printed.ok) and str(printed.profile.onboarding.state) == "complete" and int(printed.profile.coins) == int(selected.profile.coins), "starter print is free and gates completion")
-	var bought := RULES.buy_pack(printed.profile, "pack_3", PackedByteArray([1,2,3,4,5,6,7,8]))
-	print("UNIFIED_TEST phase=pack")
-	require(bool(bought.ok) and int(bought.profile.coins) == int(printed.profile.coins) - 60 and (bought.payload.cards as Array).size() == 3 and not bought.profile.pending_pack_reveal.is_empty(), "pack purchase is charged and persisted before reveal")
-	var blocked_pack := RULES.buy_pack(bought.profile, "pack_3", PackedByteArray([8,7,6,5,4,3,2,1]))
-	require(not bool(blocked_pack.ok) and blocked_pack.profile == bought.profile, "pending pack reveal blocks a second pack without overwriting cards or charging coins")
-	var creature_pack: Dictionary = {}
-	for entropy_head in 256:
-		var candidate := RULES.buy_pack(printed.profile, "pack_3", PackedByteArray([entropy_head,1,2,3,4,5,6,7]))
-		if not bool(candidate.ok): continue
-		for candidate_id in candidate.payload.cards:
-			if str(RULES.card(str(candidate_id)).get("type", "")) == "creature": creature_pack = candidate; break
-		if not creature_pack.is_empty(): break
-	var packed_creature := ""
-	for candidate_id in creature_pack.get("payload", {}).get("cards", []):
-		if str(RULES.card(str(candidate_id)).get("type", "")) == "creature": packed_creature = str(candidate_id); break
-	require(not packed_creature.is_empty() and packed_creature in creature_pack.profile.blueprints and packed_creature in creature_pack.profile.discovered and creature_pack.profile.get("creatures", []).size() == printed.profile.get("creatures", []).size(), "deterministic creature pack unlocks blueprint and Forgedex without printing")
-	var migration_seed := ProfileRules.new_profile()
-	migration_seed.owned_cards = {"geargecko":1}
-	migration_seed.blueprints = []
-	migration_seed.discovered = []
-	var repaired_ownership := RULES.ensure(migration_seed)
-	require("geargecko" in repaired_ownership.blueprints and "geargecko" in repaired_ownership.discovered, "ensure repairs legacy blueprint and Forgedex records from owned creature cards")
-	var market_day := ""
-	var market_card := ""
-	var offers: Array = []
-	for day_number in range(1, 80):
-		var candidate_day := "2026-08-%02d" % day_number
-		var candidate_offers := RULES.market_offers(candidate_day)
-		for offer in candidate_offers:
-			if str(RULES.card(str(offer.get("id", ""))).get("type", "")) == "creature":
-				market_day = candidate_day; market_card = str(offer.get("id", "")); offers = candidate_offers; break
-		if not market_card.is_empty(): break
-	var market_before: Dictionary = printed.profile.duplicate(true)
-	market_before.coins = 500
-	market_before.card_xp[market_card] = 7
-	market_before.card_builds[market_card] = ["power_a"]
-	var single := RULES.buy_market_card(market_before, market_card, market_day)
-	require(bool(single.ok) and int(single.profile.owned_cards.get(market_card, 0)) == int(market_before.owned_cards.get(market_card, 0)) + 1 and int(single.profile.card_xp.get(market_card, 0)) == 7 and single.profile.card_builds.get(market_card, []) == ["power_a"] and market_card in single.profile.blueprints and market_card in single.profile.discovered and single.profile.get("creatures", []).size() == market_before.get("creatures", []).size(), "market creature single grants ownership, blueprint, and Forgedex without XP/build or print side effects")
-	var unavailable := RULES.buy_market_card(market_before, "not_on_shelf", market_day)
-	require(not bool(unavailable.ok) and unavailable.profile == market_before, "market rejects a card outside the current purchasable offers atomically")
-	var cards: Array = printed.profile.decks[0].cards.duplicate()
-	require(RULES.deck_reason(printed.profile, cards).is_empty(), "starter deck is unified legal")
-	var printer_xp: Dictionary = printed.profile.duplicate(true); printer_xp.forge_xp = 500
-	var upgraded := RULES.apply_printer_nodes(printer_xp, ["spool_5", "spool_7"])
-	var reset := RULES.respec_printer(upgraded.profile)
-	require(bool(reset.ok) and int(reset.profile.forge_xp) == 500 and reset.profile.printer_nodes.is_empty(), "printer respec refunds every purchased node")
-	var card_xp: Dictionary = printed.profile.duplicate(true); card_xp.card_xp.cinderpaw = 20
-	var locked := RULES.build_card(card_xp, "cinderpaw", "power_b")
-	var tier_a := RULES.build_card(card_xp, "cinderpaw", "power_a")
-	var tier_b := RULES.build_card(tier_a.profile, "cinderpaw", "power_b")
-	var card_reset := RULES.respec_card(tier_b.profile, "cinderpaw")
-	require(not bool(locked.ok) and bool(tier_b.ok) and int(card_reset.profile.card_xp.cinderpaw) == 20, "tier-B needs tier-A and card respec refunds XP")
-	var state := STATE.create(cards, cards, 11)
-	print("UNIFIED_TEST phase=state")
-	require(state.phase == "play" and state.player(0).slots.size() == 3 and int(state.player(0).printer.durability) == 100, "battle initializes phase, three slots, and printer")
-	state.players[0].hand = ["swiftweave_suit"]; state.players[0].filament = 3
-	var before_invalid := state.serialize()
-	var invalid_equipment := BATTLE.apply_intent(state, 0, {"type":"play_card","card_id":"swiftweave_suit","target":-1})
-	require(not bool(invalid_equipment.ok) and state.serialize() == before_invalid, "invalid equipment target rejects atomically")
-	var target_state := STATE.create(cards, cards, 31)
-	target_state.phase = "attack"
-	target_state.players[0].slots[0] = {"card_id":"cinderpaw","name":"Cinderpaw","hp":4,"attack":3,"cost":1,"guard":0,"ready":true}
-	target_state.players[1].slots[0] = {"card_id":"cinderpaw","name":"Guard A","hp":4,"attack":1,"cost":1,"guard":0,"ready":true}
-	target_state.players[1].slots[1] = {"card_id":"cinderpaw","name":"Guard B","hp":5,"attack":1,"cost":1,"guard":0,"ready":true}
-	var before_missing_attack := target_state.serialize()
-	var missing_attack_target := BATTLE.apply_intent(target_state, 0, {"type":"attack","slot":0})
-	require(not bool(missing_attack_target.ok) and target_state.serialize() == before_missing_attack, "attack without an explicit target rejects without selecting first enemy")
-	var chosen_attack_target := BATTLE.apply_intent(target_state, 0, {"type":"attack","slot":0,"target":1})
-	require(bool(chosen_attack_target.ok) and int(target_state.player(1).slots[0].hp) == 4 and int(target_state.player(1).slots[1].hp) == 2, "attack damages only the explicitly selected enemy slot")
-	var spell_state := STATE.create(cards, cards, 37)
-	spell_state.players[0].hand = ["bed_jam"]
-	spell_state.players[0].filament = 3
-	var before_missing_spell := spell_state.serialize()
-	var missing_spell_target := BATTLE.apply_intent(spell_state, 0, {"type":"play_card","card_id":"bed_jam"})
-	require(not bool(missing_spell_target.ok) and spell_state.serialize() == before_missing_spell, "targeted spell requires an explicit printer target atomically")
-	var chosen_spell_target := BATTLE.apply_intent(spell_state, 0, {"type":"play_card","card_id":"bed_jam","target":-1})
-	require(bool(chosen_spell_target.ok) and int(spell_state.player(1).printer.slow) == 1, "targeted spell applies only after printer target is chosen")
-	require(bool(BATTLE.apply_intent(state, 0, {"type":"advance_phase"}).ok) and state.phase == "attack", "phase advance works")
-	# A rival turn must be fully authority-driven through play, attack, and collect.
-	var ai_state := STATE.create(cards, cards, 19)
-	require(bool(BATTLE.apply_intent(ai_state, 0, {"type":"advance_phase"}).ok), "player enters attack")
-	require(bool(BATTLE.apply_intent(ai_state, 0, {"type":"advance_phase"}).ok), "player enters collect")
-	require(bool(BATTLE.apply_intent(ai_state, 0, {"type":"advance_phase"}).ok) and ai_state.active_seat == 1, "player ends turn")
-	AI.take_turn(ai_state, 1)
-	require(ai_state.active_seat == 0 and ai_state.phase == "play", "AI completes Play, Attack, and Collect through unified intents")
-	require(RULES.all_cards().size() == 80, "catalog exposes eighty unified cards")
-	require(not ResourceLoader.exists("res://scripts/ui/unified_main.gd") == false, "unified no-scroll shell is present")
-	var settled := RULES.settle_unified_battle(printed.profile, "test-result", ["cinderpaw"], true, 3, 5)
-	var replay := RULES.settle_unified_battle(settled.profile, "test-result", ["cinderpaw"], true, 3, 5)
-	require(bool(settled.ok) and bool(replay.payload.duplicate) and int(replay.profile.workshop_filament) == int(settled.profile.workshop_filament), "unified settlement persists once and is idempotent")
-	var snapshot := STATE.create(cards, cards, 23, ["calibrated_rails","heated_bed"], [], {"cinderpaw":["power_a"]})
-	require(int(snapshot.player(0).printer.durability) == 110 and snapshot.player(0).card_builds.has("cinderpaw"), "battle captures printer and card builds at launch")
-	var adapter_profile := RULES.ensure(ProfileRules.new_profile())
-	adapter_profile.coins = 180
-	adapter_profile = RULES.choose_starter(adapter_profile, "cinderpaw").profile
-	adapter_profile = RULES.print_starter(adapter_profile).profile
-	GameManager.profile = adapter_profile.duplicate(true)
-	var daily_day := "2026-08-18"
-	var contracts := GameManager.prepare_daily_training(daily_day)
-	var daily_launch := GameManager.create_unified_daily_battle(str(contracts[0].get("id", "")), daily_day, 77) if not contracts.is_empty() else {"ok":false}
-	var daily_repeat := GameManager.create_unified_daily_battle(str(contracts[0].get("id", "")), daily_day, 77) if not contracts.is_empty() else {"ok":false}
-	require(bool(daily_launch.get("ok", false)) and str(daily_launch.get("settlement_context", {}).get("mode", "")) == "daily" and str(daily_launch.get("settlement_context", {}).get("day_key", "")) == daily_day and int(daily_launch.get("seed", 0)) == int(daily_repeat.get("seed", -1)), "daily launch consumes frozen contract data with deterministic seed and settlement identity")
-	var daily_settlement := GameManager.settle_unified_mode_battle(daily_launch.get("settlement_context", {}), daily_launch.get("battle", null), true) if bool(daily_launch.get("ok", false)) else {"ok":false}
-	var daily_duplicate := GameManager.settle_unified_mode_battle(daily_launch.get("settlement_context", {}), daily_launch.get("battle", null), true) if bool(daily_launch.get("ok", false)) else {"ok":false}
-	require(bool(daily_settlement.get("ok", false)) and bool(daily_settlement.get("payload", {}).get("reward_claim", {}).get("first_clear", false)) and bool(daily_duplicate.get("payload", {}).get("duplicate", false)), "daily reward claim and unified settlement are exactly once")
-	GameManager.profile = adapter_profile.duplicate(true)
-	GameManager.prepare_daily_training(daily_day)
-	var lost_launch := GameManager.create_unified_daily_battle(str(contracts[0].get("id", "")), daily_day, 77)
-	var lost_result := GameManager.settle_unified_mode_battle(lost_launch.get("settlement_context", {}), lost_launch.get("battle", null), false)
-	var win_launch := GameManager.create_unified_daily_battle(str(contracts[0].get("id", "")), daily_day, 77)
-	var win_result := GameManager.settle_unified_mode_battle(win_launch.get("settlement_context", {}), win_launch.get("battle", null), true)
-	require(bool(lost_result.get("ok", false)) and bool(win_result.get("payload", {}).get("reward_claim", {}).get("first_clear", false)) and str(lost_launch.get("settlement_context", {}).get("result_id", "")) != str(win_launch.get("settlement_context", {}).get("result_id", "")), "loss and later win have distinct result ids while the authored reward remains first-clear")
-	var built_snapshot := STATE.create(cards, cards, 29, [], [], {"cinderpaw":["power_a","power_b","tempo_a","tempo_b","utility_a","utility_b"]})
-	built_snapshot.players[0].hand = ["cinderpaw"]
-	built_snapshot.players[0].filament = 5
-	BATTLE.apply_intent(built_snapshot, 0, {"type":"play_card","card_id":"cinderpaw","slot":0})
-	BATTLE.apply_intent(built_snapshot, 0, {"type":"advance_phase"})
-	BATTLE.apply_intent(built_snapshot, 0, {"type":"advance_phase"})
-	BATTLE.apply_intent(built_snapshot, 0, {"type":"advance_phase"})
-	require(built_snapshot.player(0).slots[0] != null and int(built_snapshot.player(0).slots[0].attack) == int(RULES.card("cinderpaw").attack) + 5 and int(built_snapshot.player(0).slots[0].hp) == int(RULES.card("cinderpaw").hp) + 10 and int(built_snapshot.player(0).slots[0].guard) == 1, "all creature A/B build effects apply from immutable launch snapshot")
-	GameManager.profile = adapter_profile.duplicate(true)
-	var trial_launch := GameManager.create_unified_trial_battle("first_layers_1", 91)
-	require(bool(trial_launch.get("ok", false)) and str(trial_launch.get("settlement_context", {}).get("source_id", "")) == "first_layers_1" and int(trial_launch.get("battle", null).player(1).spool_cap) == 3, "trial launch consumes authored encounter identity, team, and spool setup")
-	var presented: Dictionary = {}
-	var arrival_key := UNIFIED_MAIN._arrival_key(23, 0, 1, "cinderpaw")
-	require(UNIFIED_MAIN.consume_arrival(presented, arrival_key) and not UNIFIED_MAIN.consume_arrival(presented, arrival_key), "arrival presentation consumes each printer-to-slot event once")
-	require(UNIFIED_MAIN.arrival_duration(false) > 0.0 and is_zero_approx(UNIFIED_MAIN.arrival_duration(true)), "reduced motion makes print arrival instant")
-	# The compact shell remains a component/presentation seam only. Shipped UI
-	# navigation, layout and Trial settlement are exercised through main.tscn in
-	# test_ui_trials and test_ui_workshop_nav; do not instantiate it as the game.
-	if failures.is_empty(): print("PASS: unified onboarding, packs, deck validation, and battle setup")
-	call_deferred("_finish")
-func _finish() -> void: get_tree().quit(0 if failures.is_empty() else 1)
+	require(bool(selected.ok) and int(selected.profile.owned_cards.get("cinderpaw", 0)) == 0, "starter choice grants no extra card copies before the authored deck")
+	require(bool(printed.ok) and printed.profile.decks[0].cards.size() == 40 and RULES.deck_reason(printed.profile, printed.profile.decks[0].cards).is_empty(), "starter is a legal 40-card owned deck")
+	require(str(printed.profile.onboarding.get("state", "")) == "complete" and printed.profile.printed_models.has("starter-cinderpaw"), "v3 onboarding completes without retired starter instances")
+	GameManager.profile = printed.profile.duplicate(true)
+	require(GameManager.has_selected_starter(), "GameManager uses v3 onboarding completion rather than retired starter_instance_id")
+	require(printed.profile.get("owned_blueprints", {}).has("cinderpaw") and printed.profile.get("printed_models", {}).has("starter-cinderpaw"), "blueprint and Workshop model ownership remain explicit")
+	var preprint := RULES.save_preprints(printed.profile, ["cinderpaw"])
+	require(bool(preprint.ok), "one base Pre-Print selection is legal")
+	var state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 11, [], [], ["cinderpaw"])
+	require(state.phase == "draw" and int(state.player(0).printer.hp) == 2000 and int(state.player(0).filament) == 200 and int(state.player(0).filament_max) == 400, "state begins with v3 printer, phase, and filament values")
+	require(state.player(0).slots[0] != null and str(state.player(0).slots[0].mode) == "defense" and not bool(state.player(0).slots[0].ready), "pre-print deploys as a first-turn defender")
+	var invalid_before := state.serialize()
+	var invalid := BATTLE.apply_intent(state, 1 - state.active_seat, {"type":"advance_phase"})
+	require(not bool(invalid.ok) and state.serialize() == invalid_before, "wrong-seat intents reject without mutating snapshots")
+	var active := state.active_seat
+	BATTLE.apply_intent(state, active, {"type":"advance_phase"})
+	require(state.phase == "main", "Draw advances into Main")
+	state.player(active).hand = ["cinderpaw", "speed_spool", "raw_filament"]
+	var queue := BATTLE.apply_intent(state, active, {"type":"play_card","card_id":"cinderpaw"})
+	require(bool(queue.ok) and state.player(active).queue.size() == 1 and int(state.player(active).filament) == 130, "creatures pay filament and enter the FIFO queue")
+	var cancelled := BATTLE.apply_intent(state, active, {"type":"cancel_queue","queue_index":0})
+	require(bool(cancelled.ok) and int(cancelled.refund) == 35 and int(state.player(active).filament) == 165, "queue cancellation refunds floor half the original cost")
+	state.player(active).hand.append("cinderpaw")
+	BATTLE.apply_intent(state, active, {"type":"play_card","card_id":"cinderpaw"})
+	BATTLE.apply_intent(state, active, {"type":"play_card","card_id":"speed_spool"})
+	BATTLE.apply_intent(state, active, {"type":"advance_phase"})
+	BATTLE.apply_intent(state, active, {"type":"advance_phase"})
+	if not state.pending.is_empty(): BATTLE.apply_intent(state, active, {"type":"place_completed","slot":1,"mode":"attack"})
+	require(state.player(active).slots[1] != null and str(state.player(active).slots[1].mode) == "attack", "completed prints request placement and become attack-ready")
+	state.phase = "attack"
+	state.turn = 2
+	state.player(active).slots[1].attacked = false
+	for slot in 3: state.player(1 - active).slots[slot] = null
+	var direct := BATTLE.apply_intent(state, active, {"type":"attack","slot":1,"target":-1})
+	require(bool(direct.ok) and int(state.player(1 - active).printer.hp) < 2000, "direct attacks only damage the exposed printer")
+	var gear_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 17)
+	gear_state.active_seat = 0
+	gear_state.phase = "main"
+	gear_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw"))
+	gear_state.player(0).hand = ["helm"]
+	BATTLE.apply_intent(gear_state, 0, {"type":"play_card","card_id":"helm","target":0})
+	BATTLE.apply_intent(gear_state, 0, {"type":"advance_phase"})
+	BATTLE.apply_intent(gear_state, 0, {"type":"advance_phase"})
+	require(int(gear_state.player(0).slots[0].armor_hp) == 10, "equipment tracks armor HP ahead of creature HP")
+	var public_view := gear_state.public_snapshot(1)
+	require(not public_view.players[0].has("hand") and int(public_view.players[0].hand_count) == gear_state.player(0).hand.size(), "opponent public snapshots redact hand details")
+	var ai_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 23)
+	AI.take_turn(ai_state, ai_state.active_seat)
+	require(ai_state.revision > 0, "AI issues canonical legal intents")
+	var pack := RULES.buy_pack(printed.profile, "forge", PackedByteArray([1,2,3]))
+	require(bool(pack.ok) and not pack.profile.pending_pack_reveal.is_empty() and (pack.payload.cards as Array).size() == 5, "pack grants are persisted before reveal")
+	var economy: Dictionary = printed.profile.duplicate(true)
+	economy.forge_coins = 50000
+	var market := RULES.market_snapshot(economy, 1724284800)
+	require((market.blueprints as Array).size() == 12 and (market.cards as Array).size() == 10 and not (market.daily_deal as Dictionary).is_empty(), "five-shop market snapshot has 12 blueprints, 10 typed cards, and a daily deal")
+	var blueprint_id := ""
+	for offer in market.blueprints:
+		if not economy.owned_blueprints.has(str(offer.get("id", ""))): blueprint_id = str(offer.get("id", "")); break
+	var blueprint := RULES.buy_blueprint(economy, blueprint_id, 1724284800)
+	require(bool(blueprint.ok) and bool(blueprint.profile.owned_blueprints.get(blueprint_id, false)), "Blueprint Stall grants blueprint ownership separately from cards")
+	var before_models: int = int((blueprint.profile.get("printed_models", {}) as Dictionary).size()); var workshop_print := RULES.print_workshop_model(blueprint.profile, blueprint_id, "workshop-model-receipt")
+	var workshop_repeat := RULES.print_workshop_model(workshop_print.profile, blueprint_id, "workshop-model-receipt")
+	require(bool(workshop_print.ok) and workshop_print.profile.printed_models.size() == before_models + 1 and int(workshop_print.payload.price) == int(RULES.WORKSHOP_PRINT_COSTS.get(str(RULES.card(blueprint_id).get("rarity", "common")), 20)) and bool(workshop_repeat.payload.duplicate) and int(workshop_print.profile.owned_cards.get(blueprint_id, 0)) == int(blueprint.profile.owned_cards.get(blueprint_id, 0)), "Workshop printing spends catalog cost, creates only a model record, and journals a receipt")
+	var listed_card := str((market.cards as Array)[0].get("id", ""))
+	var shop_card := RULES.buy_market_card_at(economy, listed_card, 1724284800)
+	require(bool(shop_card.ok) and int(shop_card.profile.owned_cards.get(listed_card, 0)) > int(economy.owned_cards.get(listed_card, 0)), "typed 48-hour Card Shop grants card copies")
+	var wished := RULES.set_wishlist(economy, listed_card, true)
+	require(bool(wished.ok) and (wished.profile.wishlist as Array).size() == 1, "wishlist accepts catalog items up to its cap")
+	var forward_epochs := RULES.advance_market_epochs(economy, 1724457600, "2026-08-23")
+	var rollback_epochs := RULES.advance_market_epochs(forward_epochs.profile, 1724284800, "2026-08-21")
+	require(int(rollback_epochs.profile.market_epochs.blueprint) == int(forward_epochs.profile.market_epochs.blueprint) and int(rollback_epochs.profile.market_epochs.card) == int(forward_epochs.profile.market_epochs.card), "persisted market epochs reject clock rollback")
+	var newcomer := RULES.market_snapshot(RULES.new_profile(), 1724284800)
+	require((newcomer.newcomer.get("blueprints", []) as Array).size() == 3, "Newcomer Shelf explicitly offers three Common blueprints")
+	var pity_profile: Dictionary = printed.profile.duplicate(true); pity_profile.forge_coins = 50000; pity_profile.pack_pity = {"basic":50}
+	var basic_pity := RULES.buy_pack(pity_profile, "basic", PackedByteArray([9,8,7]))
+	var basic_rare_count := 0
+	for id in (basic_pity.payload.bonus_cards as Array): if RULES._rarity_index(str(RULES.card(str(id)).get("rarity", "common"))) >= RULES._rarity_index("rare"): basic_rare_count += 1
+	require(bool(basic_pity.ok) and (basic_pity.payload.bonus_cards as Array).size() == 5 and basic_rare_count >= 1 and int(basic_pity.profile.pack_pity.basic) == 0, "Basic Pack 51 grants a separate five-card Rare Reward Pack with one Rare+")
+	var ordinary_basic := RULES.buy_pack(printed.profile, "basic", PackedByteArray([4,5,6]))
+	var basic_pool_ok := true
+	for id in (ordinary_basic.payload.cards as Array): basic_pool_ok = basic_pool_ok and RULES._rarity_index(str(RULES.card(str(id)).get("rarity", "common"))) <= RULES._rarity_index("uncommon")
+	require(basic_pool_ok, "ordinary Basic Packs use only the Common–Uncommon pool")
+	var pack_requirements := {"forge":[1,"rare",false],"arcane":[2,"rare",false],"primordial":[1,"epic",false],"champion":[3,"epic",true]}
+	for pack_id in pack_requirements:
+		var opened := RULES.buy_pack(printed.profile, str(pack_id), PackedByteArray([int(str(pack_id).length()), 17]))
+		var minimum_count := 0; var legendary_count := 0
+		for id in (opened.payload.cards as Array):
+			var rarity_index := RULES._rarity_index(str(RULES.card(str(id)).get("rarity", "common")))
+			if rarity_index >= RULES._rarity_index(str(pack_requirements[pack_id][1])): minimum_count += 1
+			if rarity_index >= RULES._rarity_index("legendary"): legendary_count += 1
+		require(bool(opened.ok) and minimum_count >= int(pack_requirements[pack_id][0]) and (not bool(pack_requirements[pack_id][2]) or legendary_count >= 1), "%s replaces lowest pulls to meet its guarantee" % str(pack_id).capitalize())
+	var emergency_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 99)
+	emergency_state.active_seat = 0; emergency_state.phase = "main"; emergency_state.player(0).filament = 200; emergency_state.player(0).hand = ["emergency_reprint_upgrade"]; emergency_state.player(0).graveyard = ["cinderpaw"]
+	var install := BATTLE.apply_intent(emergency_state, 0, {"type":"play_card","card_id":"emergency_reprint_upgrade"})
+	var reprint := BATTLE.apply_intent(emergency_state, 0, {"type":"upgrade_reprint","graveyard_index":0})
+	require(str(RULES.card("emergency_reprint_spell").get("type", "")) == "spell" and str(RULES.card("emergency_reprint_upgrade").get("type", "")) == "upgrade" and bool(install.ok) and bool(reprint.ok) and int(emergency_state.player(0).emergency_reprints) == 0 and bool(emergency_state.player(0).queue[0].get("reprint", false)), "Emergency Reprint spell and upgrade have distinct IDs and a deterministic installed charge intent")
+	var status_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 101)
+	status_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); status_state.player(1).slots[0] = STATE._unit(RULES.card("aquafin"))
+	BATTLE._apply_weapon_on_hit({"equipment":{"weapon":{"effect":"ember_fang"}}}, status_state.player(1).slots[0])
+	var hp_before_burn := int(status_state.player(1).slots[0].hp); BATTLE._draw_start(status_state, 1); BATTLE._draw_start(status_state, 1)
+	require(int(status_state.player(1).slots[0].hp) == hp_before_burn - 20, "Ember Fang deals ten damage on each of exactly two owner Draws")
+	BATTLE._apply_weapon_on_hit({"equipment":{"weapon":{"effect":"frost_shard"}}}, status_state.player(1).slots[0])
+	status_state.phase = "main"; status_state.active_seat = 1
+	require(not bool(BATTLE.apply_intent(status_state, 1, {"type":"switch_mode","slot":0,"mode":"defense"}).ok), "Frost Shard blocks the target’s next mode change before status expiry")
+	BATTLE._apply_weapon_on_hit({"equipment":{"weapon":{"effect":"thunder_coil","used":false}}}, status_state.player(1).slots[0])
+	status_state.phase = "attack"; status_state.player(1).slots[0].mode = "attack"; status_state.player(1).slots[0].ready = true; status_state.player(1).slots[0].attacked = false
+	require(not bool(BATTLE.apply_intent(status_state, 1, {"type":"attack","slot":0,"target":0}).ok), "Thunder Coil blocks the target’s next Attack Phase before status expiry")
+	var staging_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 111)
+	staging_state.active_seat = 0; staging_state.phase = "draw"
+	for slot in 3: staging_state.player(0).slots[slot] = STATE._unit(RULES.card("cinderpaw"))
+	staging_state.player(0).staging = [STATE._unit(RULES.card("aquafin"))]
+	BATTLE._destroy(staging_state, 0, 1)
+	require(staging_state.player(0).slots[1] == null, "staging never auto-enters without a legal mode decision")
+	BATTLE.apply_intent(staging_state, 0, {"type":"advance_phase"})
+	require(str(staging_state.pending.get("kind", "")) == "place" and bool(BATTLE.apply_intent(staging_state, 0, {"type":"place_completed","slot":1,"mode":"defense"}).ok), "the oldest staged creature pauses for placement and a chosen mode")
+	var holding_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 121)
+	holding_state.active_seat = 0; holding_state.phase = "draw"; holding_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); holding_state.player(0).holding = [{"card_id":"helm","target":-1}]
+	BATTLE.apply_intent(holding_state, 0, {"type":"advance_phase"})
+	require(str(holding_state.pending.get("kind", "")) == "attach" and bool(BATTLE.apply_intent(holding_state, 0, {"type":"attach_completed","slot":0}).ok) and int(holding_state.player(0).slots[0].armor_hp) == 10, "held equipment receives an attach path when a compatible slot exists")
+	var ability_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 131)
+	ability_state.player(0).slots[0] = STATE._unit(RULES.card("aquafin")); ability_state.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); ability_state.player(0).slots[0].hp -= 10
+	BATTLE._resolve_attack_ability(ability_state, 0, 0, 0)
+	require(int(ability_state.player(0).slots[0].hp) == int(ability_state.player(0).slots[0].base_hp) - 2 and int(ability_state.player(0).slots[0].ability_cooldown) == int(RULES.card("aquafin").get("ability_cooldown", 0)), "catalog-authored attack-trigger abilities resolve deterministic signature effects and cooldowns")
+	var quests := RULES.daily_quests(economy, "2026-08-21")
+	var rerolled := RULES.reroll_daily_quest(quests.profile, "2026-08-21", 0)
+	var progressed := RULES.record_quest_progress(rerolled.profile, "2026-08-21", str((rerolled.profile.quest_state.quests as Array)[0].get("objective", "")), 10)
+	var quest_claim := RULES.claim_daily_quest(progressed.profile, "2026-08-21", str((progressed.profile.quest_state.quests as Array)[0].get("id", "")))
+	require(bool(quests.ok) and (quests.payload.quests as Array).size() == 3 and bool(rerolled.ok) and bool(quest_claim.ok), "daily quests generate, reroll once, and issue chest rewards")
+	var academy := RULES.academy_three_star_reward(economy, "academy-receipt", PackedByteArray([1]))
+	var academy_again := RULES.academy_three_star_reward(academy.profile, "academy-receipt", PackedByteArray([1]))
+	require(bool(academy.ok) and bool(academy_again.payload.duplicate), "Academy three-star reward uses an exactly-once receipt")
+	var season_profile: Dictionary = economy.duplicate(true); season_profile.season.xp = 50000; season_profile.sparks = 1200
+	var paid := RULES.buy_paid_season(season_profile)
+	var season_free := RULES.claim_season_level(paid.profile, 5, false, 1724284800)
+	var season_paid := RULES.claim_season_level(season_free.profile, 5, true, 1724284800)
+	require(bool(paid.ok) and bool(season_free.ok) and bool(season_paid.ok), "50-level Season Track claims free and paid rewards without exclusive gameplay cards")
+	var expired := RULES.claim_season_level(season_paid.profile, 6, false, int(season_paid.profile.season.ends_at) + 1)
+	require(not bool(expired.ok), "expired Seasons reject reward claims")
+	var spool_profile := RULES.new_profile(); spool_profile.spool_level = 1; spool_profile.spool_xp = 0
+	var spool_first := RULES.grant_spool_xp(spool_profile, 100); var spool_many := RULES.grant_spool_xp(spool_profile, 500)
+	require(int(spool_first.level) == 2 and int(spool_many.level) >= 3 and int(spool_profile.spool_level) <= 100, "Spool XP uses the level-times-100 curve and supports multi-level grants")
+	var sparks := RULES.fake_store_purchase(economy, "fake-order", "forge_boost")
+	var cosmetic := RULES.buy_cosmetic(sparks.profile, "copper_classic", "sparks")
+	require(bool(sparks.ok) and bool(cosmetic.ok) and bool(cosmetic.profile.cosmetics.get("copper_classic", false)), "fake storefront grants Sparks and cosmetics remain non-gameplay inventory")
+	if failures.is_empty(): print("PASS: v3.1 battle, deck, market, rewards, currency, pack, and redaction rules")
+	get_tree().quit(0 if failures.is_empty() else 1)

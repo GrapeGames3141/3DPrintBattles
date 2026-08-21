@@ -14,13 +14,12 @@ var profile_backup_temp_path := PROFILE_BACKUP_TEMP_PATH
 var journal_path := JOURNAL_PATH
 
 func configure_unified_playtest_paths() -> void:
-	# This branch never opens a production profile, including on desktop where a
-	# package identity is not available to distinguish user:// folders.
-	profile_path = "user://printforge_unified_playtest_profile.json"
-	profile_temp_path = "user://printforge_unified_playtest_profile.tmp.json"
-	profile_backup_path = "user://printforge_unified_playtest_profile.backup.json"
-	profile_backup_temp_path = "user://printforge_unified_playtest_profile.backup.tmp.json"
-	journal_path = "user://printforge_unified_playtest_journal.jsonl"
+	# v3 is a clean namespace: it never opens or migrates the 0.7 playtest save.
+	profile_path = "user://printforge_v3_profile.json"
+	profile_temp_path = "user://printforge_v3_profile.tmp.json"
+	profile_backup_path = "user://printforge_v3_profile.backup.json"
+	profile_backup_temp_path = "user://printforge_v3_profile.backup.tmp.json"
+	journal_path = "user://printforge_v3_journal.jsonl"
 	recovery_status = "primary"
 
 func configure_test_paths(root: String) -> void:

@@ -5,6 +5,8 @@ assert.equal(validateIntent({ type:"play_card" }), false);
 assert.equal(validateIntent({ type:"play_card", cardId:42 }), false);
 assert.equal(validateIntent({ type:"attack", slot:0 }), false);
 assert.equal(validateIntent({ type:"attack", slot:0, target:1 }), true);
+assert.equal(validateIntent({ type:"upgrade_reprint", graveyardIndex:0 }), true);
+assert.equal(validateIntent({ type:"upgrade_reprint", graveyardIndex:-1 }), false);
 const authority = new InMemoryAuthority();
 assert.equal(authority.submit({ seat:1, expectedRevision:0, intent:{type:"advance_phase"} }).reason, "wrong_seat");
 assert.equal(authority.submit({ seat:0, expectedRevision:2, intent:{type:"advance_phase"} }).reason, "stale_revision");

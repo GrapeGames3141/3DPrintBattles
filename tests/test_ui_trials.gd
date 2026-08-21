@@ -25,15 +25,28 @@ func has_scroll_container(node: Node) -> bool:
 	return false
 
 func new_unified_profile() -> Dictionary:
-	var profile := UNIFIED_RULES.ensure(ProfileRules.new_profile())
+	var profile := UNIFIED_RULES.new_profile()
 	profile = UNIFIED_RULES.choose_starter(profile, "cinderpaw").profile
 	return UNIFIED_RULES.print_starter(profile).profile
 
 func _ready() -> void:
-	GameManager.profile = new_unified_profile()
-	var main := MAIN.instantiate()
-	add_child(main)
+	# Exercise the shipped onboarding/Forge path, rather than only constructing a
+	# completed profile. This catches fresh-profile reads from retired 0.7 keys.
+	GameManager.profile = UNIFIED_RULES.new_profile()
+	var onboarding_main := MAIN.instantiate()
+	add_child(onboarding_main)
 	await get_tree().process_frame
+	onboarding_main.pending_starter_id = "cinderpaw"
+	onboarding_main.confirm_starter()
+	await get_tree().process_frame
+	onboarding_main.begin_printer()
+	onboarding_main.advance_printer_for_test(ArcaneForgeSequence.PRINT_COMPLETE_BPS)
+	onboarding_main.skip_printer()
+	onboarding_main.return_to_printer_station()
+	await get_tree().process_frame
+	require(GameManager.has_selected_starter() and onboarding_main.screen == "workshop" and tree_has_text(onboarding_main, "Spool Level") and not GameManager.profile.has("xp") and not GameManager.profile.has("coins"), "fresh v3 onboarding chooses and prints a starter through the Forge before Workshop renders without retired state")
+	var main = onboarding_main
+	require(GameManager.has_selected_starter() and main.screen == "workshop" and tree_has_text(main, "Spool Level"), "a clean v3 profile can choose and print a starter before rendering Workshop without legacy fields")
 	require(main.get_script().resource_path == "res://scripts/ui/main.gd", "main.tscn ships the established Arcane Foundry controller")
 	for route in [["shop", "unified_market", "Foundry Market"], ["archive", "unified_library", "Card Library"], ["deck", "unified_deck", "Deck Blueprint Rack"], ["calibration", "unified_upgrades", "Printer Upgrade Grid"]]:
 		main.navigate_to(str(route[0]))
@@ -52,7 +65,7 @@ func _ready() -> void:
 	main.start_mode("trial_first_layers")
 	await get_tree().process_frame
 	require(main.battle != null and str(main.battle_settlement_context.get("source_id", "")) == "first_layers_1", "First Layers launches the authored first encounter through the unified UI")
-	require(main.battle != null and int(main.battle.player(1).spool_cap) == 3 and str(main.battle_mode) == "trial_first_layers", "Trial UI preserves authored rival spool and arena mode")
+	require(main.battle != null and int(main.battle.player(1).filament) == 200 and int(main.battle.player(1).filament_max) == 400 and str(main.battle_mode) == "trial_first_layers", "Trial UI launches the v3 rival filament economy and arena mode")
 	require(not has_scroll_container(main) and tree_has_text(main, "Foundry Battle") and tree_has_text(main, "Hand 1 / 1"), "shipped unified battle uses a no-scroll Foundry shell with a paged hand")
 	if main.battle != null:
 		main.battle.finished = true
