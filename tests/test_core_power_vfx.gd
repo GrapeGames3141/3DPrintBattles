@@ -7,8 +7,10 @@ const CORE_VFX := preload("res://scripts/ui/core_power_vfx.gd")
 const BATTLE_STAGE := preload("res://scripts/ui/battle_sprite_stage.gd")
 const VFX_SHADER_PATH := "res://assets/vfx/helmet_core_activation_additive.gdshader"
 const PALETTE_SHADER_PATH := "res://assets/armor/tiered/cinderpaw_tier_palette.gdshader"
-const MASTER_SOURCE_PATH := "res://docs/art/source/armor/core/cinderpaw_tiered_armor_signature_green_chroma_v3.png"
-const ATLAS_SOURCE_PATH := "res://docs/art/source/armor/core/helmet_core_activation_grayscale_source_v1.png"
+const MASTER_SOURCE_PATH := "res://art-source/source/armor/core/cinderpaw_tiered_armor_signature_green_chroma_v3.png"
+# This atlas was byte-identical to its runtime asset and is now retained once
+# under assets; the source provenance is recorded in art-source/README.md.
+const ATLAS_SOURCE_PATH := "res://assets/vfx/helmet_core_activation_grayscale_v1.png"
 var failures: Array[String] = []
 
 func require(value: bool, message: String) -> void:

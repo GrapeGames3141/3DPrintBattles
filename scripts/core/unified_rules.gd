@@ -4,12 +4,12 @@ extends RefCounted
 ## All costs, odds and timers live here rather than in presentation code.
 
 const VERSION := "3.1.1"
+const V3_CATALOG := preload("res://scripts/core/v3_catalog.gd")
+const V3_PROFILE_STATE := preload("res://scripts/core/v3_profile_state.gd")
+const V3_ECONOMY := preload("res://scripts/core/v3_economy_rules.gd")
 const STARTER_IDS: Array[String] = ["cinderpaw", "aquafin", "voltwig"]
 const DECK_SLOTS := [{"id":"starter-deck","name":"Forge Deck"},{"id":"deck-slot-2","name":"Queue Deck"},{"id":"deck-slot-3","name":"Arcane Deck"}]
 const RARITY_ORDER := ["common","uncommon","rare","epic","legendary","mythic","prismatic","primordial"]
-const CREATURE_COSTS := {"common":70,"uncommon":120,"rare":190,"epic":300,"legendary":440,"mythic":530,"prismatic":610,"primordial":680}
-const EQUIPMENT_COSTS := {"common":40,"uncommon":75,"rare":120,"epic":185,"legendary":300,"mythic":390,"prismatic":500,"primordial":620}
-const PRINT_TURNS := {"common":1,"uncommon":2,"rare":3,"epic":4,"legendary":5,"mythic":6,"prismatic":7,"primordial":8}
 const CARD_PRICES := {"common":80,"uncommon":200,"rare":480,"epic":1000,"legendary":2200,"mythic":5000,"prismatic":10000,"primordial":25000}
 const BLUEPRINT_PRICES := {"common":50,"uncommon":120,"rare":300,"epic":600,"legendary":1200,"mythic":2500,"prismatic":5000,"primordial":12000}
 const WORKSHOP_PRINT_COSTS := {"common":20,"uncommon":40,"rare":70,"epic":110,"legendary":160,"mythic":220,"prismatic":300,"primordial":500}
@@ -35,79 +35,13 @@ static func new_profile() -> Dictionary:
 	return ensure({"forge_coins":1000,"sparks":0,"onboarding":{"state":"choose_starter","starter_id":""},"decks":[],"active_deck_id":"starter-deck","spool_level":1,"spool_xp":0,"rng_nonce":1})
 
 static func all_cards() -> Array:
-	var cards: Array = []
-	for raw in Catalog.CREATURES:
-		var card: Dictionary = raw.duplicate(true); var rarity := str(card.get("rarity", "common")); card["type"] = "creature"; card["bend_score"] = int(card.get("bend", 0)); card["filament_cost"] = int(card.get("filament_cost", CREATURE_COSTS.get(rarity, 70))); card["cost"] = card.filament_cost; card["print_turns"] = int(card.get("print_turns", PRINT_TURNS.get(rarity, 1))); card["print_ticks"] = card.print_turns
-		# A creature may only expose an action if its authored catalog trigger says
-		# so; legacy signatures are presentation metadata, never implicit combat.
-		card["ability_trigger"] = str(card.get("ability_trigger", "attack"))
-		card["ability_effect"] = str(card.get("ability_effect", "")); card["ability_amount"] = int(card.get("ability_amount", 0)); card["ability_cooldown"] = int(card.get("ability_cooldown", card.get("cooldown", 0)))
-		var signature: Dictionary = card.get("signature", {}) if card.get("signature", {}) is Dictionary else {}
-		card["ability_damage_bonus"] = int(card.get("ability_damage_bonus", signature.get("damage_bonus", 0)))
-		card["ability_effects"] = card.get("ability_effects", signature.get("effects", [])).duplicate(true) if card.get("ability_effects", signature.get("effects", [])) is Array else []
-		cards.append(card)
-	for data in _equipment_definitions(): cards.append(data)
-	for data in _filament_definitions(): cards.append(data)
-	for data in _spell_definitions(): cards.append(data)
-	for data in _trap_definitions(): cards.append(data)
-	for id in UPGRADE_CARDS:
-		var u: Dictionary = UPGRADE_CARDS[id]; cards.append({"id":id,"name":str(u.name),"type":"upgrade","rarity":"rare" if id != "emergency_reprint_upgrade" else "legendary","filament_cost":0,"cost":0,"print_turns":0,"unique_key":str(u.get("unique_key", "")),"market_cost":int(u.cost)})
-	return cards
+	# Every live v3 card is loaded from the shared JSON document. Legacy Catalog
+	# remains only for Workshop art/provenance callers outside this rules layer.
+	return V3_CATALOG.cards()
 static func card(id: String) -> Dictionary:
-	for definition in all_cards(): if str(definition.get("id", "")) == id: return definition
-	return {}
-static func _equipment_definitions() -> Array:
-	return [
-		# Suits are deliberately whole creature overlays: the existing tiered-armor
-		# master/mask renderer recolors one complete suit rather than modular parts.
-		_eq("standard_full_suit","Standard Full Suit","armor","common",{"armor_hp":8,"presentation":{"kind":"full_suit","tier":"standard","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
-		_eq("reinforced_full_suit","Reinforced Full Suit","armor","uncommon",{"armor_hp":14,"presentation":{"kind":"full_suit","tier":"reinforced","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
-		_eq("arcane_full_suit","Arcane Full Suit","armor","rare",{"armor_hp":20,"super_effective_bps":12000,"presentation":{"kind":"full_suit","tier":"arcane","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
-		_eq("masterwork_full_suit","Masterwork Full Suit","armor","epic",{"armor_hp":28,"presentation":{"kind":"full_suit","tier":"masterwork","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
-		_eq("legendary_full_suit","Legendary Full Suit","armor","legendary",{"armor_hp":36,"presentation":{"kind":"full_suit","tier":"legendary","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
-		# Gems use the same shared, socket-local recolor model as the established
-		# armor palette. Their deterministic combat effects replace old weapons.
-		_eq("iron_gem","Iron Gem","gem","common",{"attack_bonus":5,"presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"b8c3cf"}}),
-		_eq("ember_gem","Ember Gem","gem","uncommon",{"attack_bonus":4,"effect":"ember_gem_burn","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"ff6338"}}),
-		_eq("frost_gem","Frost Gem","gem","uncommon",{"attack_bonus":4,"effect":"frost_gem_lock","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"71dcff"}}),
-		_eq("storm_gem","Storm Gem","gem","rare",{"attack_bonus":3,"effect":"storm_gem_lock","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"ffe15a"}}),
-		_eq("arcane_gem","Arcane Gem","gem","epic",{"attack_bonus":5,"effect":"arcane_gem_drill","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"f44cff"}}),
-		_eq("filament_ring","Filament Ring","battle_effect","uncommon",{"effect":"filament_ring","print_turns":0,"print_ticks":0,"presentation":{"kind":"player_battle_effect","wearer":"player","recolor":"shared_gem","color":"ffd36c"}})]
-static func _eq(id: String, name: String, slot: String, rarity: String, extra: Dictionary) -> Dictionary:
-	var value := {"id":id,"name":name,"type":"equipment","rarity":rarity,"equipment_slot":slot,"filament_cost":int(EQUIPMENT_COSTS.get(rarity,40)),"cost":int(EQUIPMENT_COSTS.get(rarity,40)),"print_turns":int(PRINT_TURNS.get(rarity,1)),"print_ticks":int(PRINT_TURNS.get(rarity,1))}; value.merge(extra, true); return value
-static func _filament_definitions() -> Array:
-	return [{"id":"raw_filament","name":"Raw Filament","type":"filament","rarity":"common","filament_cost":0,"cost":0,"filament_gain":80},{"id":"heated_spool","name":"Heated Spool","type":"filament","rarity":"uncommon","filament_cost":0,"cost":0,"filament_gain":120},{"id":"emergency_canister","name":"Emergency Canister","type":"filament","rarity":"rare","filament_cost":0,"cost":0,"filament_gain":200},{"id":"recycled_scrap","name":"Recycled Scrap","type":"filament","rarity":"uncommon","filament_cost":0,"cost":0,"filament_gain":0}]
-static func _spell_definitions() -> Array:
-	return [_spell("layer_melt","Layer Melt",150,"rare"),_spell("print_jam","Print Jam",100,"uncommon"),_spell("spool_drain","Spool Drain",120,"rare"),_spell("forge_surge","Forge Surge",80,"uncommon"),_spell("emergency_reprint_spell","Emergency Reprint",150,"epic"),_spell("blueprint_thief","Blueprint Thief",180,"epic")]
-static func _spell(id: String, name: String, cost_value: int, rarity: String) -> Dictionary: return {"id":id,"name":name,"type":"spell","rarity":rarity,"filament_cost":cost_value,"cost":cost_value}
-static func _trap_definitions() -> Array:
-	return [{"id":"print_interrupt","name":"Print Interrupt","type":"trap","rarity":"rare","filament_cost":0,"cost":0,"trigger":"print_complete"},{"id":"filament_siphon","name":"Filament Siphon","type":"trap","rarity":"uncommon","filament_cost":0,"cost":0,"trigger":"filament"},{"id":"counter_strike","name":"Counter Strike","type":"trap","rarity":"uncommon","filament_cost":0,"cost":0,"trigger":"attack"},{"id":"scrap_grab","name":"Scrap Grab","type":"trap","rarity":"rare","filament_cost":0,"cost":0,"trigger":"destroy"}]
-
+	return V3_CATALOG.card(id)
 static func ensure(source: Dictionary) -> Dictionary:
-	var p := source.duplicate(true)
-	p["schema_version"] = 31; p["catalog_version"] = VERSION
-	for key in ["owned_cards","owned_blueprints","printed_models","gear_loadouts","market_epochs","quest_state","pack_pity","drop_receipts","claim_receipts","cosmetics","entitlements","notifications","season_receipts","newcomer_claims","unified_settlements"]:
-		if not p.has(key) or not p.get(key) is Dictionary: p[key] = {}
-	for key in ["workshop_upgrades","preprints","decks","wishlist"]:
-		if not p.has(key) or not p.get(key) is Array: p[key] = []
-	if not p.has("forge_coins"): p["forge_coins"] = int(p.get("coins", 1000))
-	if not p.has("sparks"): p["sparks"] = 0
-	if not p.has("revision"): p["revision"] = 0
-	if not p.has("unified_launch_sequence"): p["unified_launch_sequence"] = 0
-	if not p.has("rng_nonce"): p["rng_nonce"] = 1
-	if not p.has("spool_level"): p["spool_level"] = 1
-	p.spool_level = clampi(int(p.spool_level), 1, 100)
-	if not p.has("spool_xp"): p["spool_xp"] = 0
-	if not p.has("wins"): p["wins"] = {"streak":0,"lifetime":0,"since_drop":0}
-	if not p.has("season"): p["season"] = {"id":"season-v3-1","xp":0,"paid":false,"claimed":[],"started_at":0,"ends_at":0}
-	if not p.season.has("started_at"): p.season.started_at = 0
-	if not p.season.has("ends_at"): p.season.ends_at = 0
-	if not p.has("newcomer_started_at"): p["newcomer_started_at"] = 0
-	if not p.has("academy_rewards"): p["academy_rewards"] = {}
-	if not p.has("fake_store_receipts"): p["fake_store_receipts"] = {}
-	if not p.has("pending_pack_reveal"): p["pending_pack_reveal"] = {}
-	if not p.has("active_deck_id"): p["active_deck_id"] = "starter-deck"
-	if not p.has("onboarding") or not p.onboarding is Dictionary: p["onboarding"] = {"state":"choose_starter","starter_id":""}
+	var p := V3_PROFILE_STATE.ensure_base(source, VERSION)
 	_migrate_equipment_ids(p)
 	if p.decks.is_empty() and str(p.onboarding.get("state", "")) == "complete": _make_starter_deck(p)
 	if not p.decks.is_empty(): _ensure_deck_slots(p)
@@ -362,8 +296,8 @@ static func buy_blueprint(source: Dictionary, id: String, unix_time: int) -> Dic
 	var newcomer_blueprints := int(p.newcomer_claims.get("blueprint_discount", 0))
 	if bool(snapshot.newcomer.get("active", false)) and rarity == "common" and newcomer_blueprints < 3 and not bool(offer.get("newcomer", false)): price = price * 5000 / 10000
 	price = _daily_price(snapshot, "blueprint", id, price)
-	if int(p.forge_coins) < price: return fail(p, "Not enough Forge Coins.")
-	p.forge_coins -= price; p.owned_blueprints[id] = true
+	if not V3_ECONOMY.spend(p, "forge_coins", price): return fail(p, "Not enough Forge Coins.")
+	p.owned_blueprints[id] = true
 	if bool(snapshot.newcomer.get("active", false)) and rarity == "common" and newcomer_blueprints < 3: p.newcomer_claims["blueprint_discount"] = newcomer_blueprints + 1
 	return ok(p, {"id":id,"price":price,"shop":"blueprint"})
 
@@ -378,8 +312,8 @@ static func buy_upgrade_card(source: Dictionary, id: String, discount_bps := 0, 
 		price = _daily_price(snapshot, "upgrade", id, price)
 		if id == "speed_spool" and bool(snapshot.newcomer.get("active", false)) and not p.newcomer_claims.has("speed_spool"):
 			price = price * 6000 / 10000
-	if int(p.forge_coins) < price: return fail(p, "Not enough Forge Coins.")
-	p.forge_coins -= price; grant_card(p, id)
+	if not V3_ECONOMY.spend(p, "forge_coins", price): return fail(p, "Not enough Forge Coins.")
+	grant_card(p, id)
 	if unix_time > 0 and id == "speed_spool" and bool(market_snapshot(p, unix_time).newcomer.get("active", false)): p.newcomer_claims["speed_spool"] = true
 	return ok(p, {"id":id,"price":price,"shop":"upgrade_card"})
 static func buy_market_card(source: Dictionary, card_id: String, day_key: String) -> Dictionary:
@@ -392,8 +326,8 @@ static func buy_market_card_at(source: Dictionary, card_id: String, unix_time: i
 		if str(candidate.get("id", "")) == card_id: offer = candidate; break
 	if offer.is_empty(): return fail(p, "Card is unavailable.")
 	var price := _daily_price(snapshot, "card", card_id, int(offer.price))
-	if int(p.forge_coins) < price: return fail(p, "Not enough Forge Coins.")
-	p.forge_coins -= price; grant_card(p, card_id)
+	if not V3_ECONOMY.spend(p, "forge_coins", price): return fail(p, "Not enough Forge Coins.")
+	grant_card(p, card_id)
 	return ok(p, {"id":card_id,"price":price,"shop":"card"})
 
 static func set_wishlist(source: Dictionary, id: String, wanted: bool) -> Dictionary:
@@ -419,8 +353,8 @@ static func buy_workshop_upgrade(source: Dictionary, id: String, unix_time := 0)
 	if unix_time > 0 and int(p.get("newcomer_started_at", 0)) <= 0: p.newcomer_started_at = unix_time
 	var price := int(upgrade.cost)
 	if unix_time > 0: price = _daily_price(market_snapshot(p, unix_time), "upgrade", id, price)
-	if int(p.forge_coins) < price: return fail(p,"Not enough Forge Coins.")
-	p.forge_coins -= price; p.workshop_upgrades.append(id); return ok(p,{"upgrade":id,"price":price})
+	if not V3_ECONOMY.spend(p, "forge_coins", price): return fail(p,"Not enough Forge Coins.")
+	p.workshop_upgrades.append(id); return ok(p,{"upgrade":id,"price":price})
 static func buy_cosmetic(source: Dictionary, id: String, currency := "forge_coins", unix_time := 0) -> Dictionary:
 	var p := ensure(source); var data: Dictionary = COSMETICS.get(id, {})
 	if data.is_empty() or p.cosmetics.has(id): return fail(p, "Cosmetic is unavailable.")
@@ -428,8 +362,8 @@ static func buy_cosmetic(source: Dictionary, id: String, currency := "forge_coin
 	if unix_time > 0 and int(p.get("newcomer_started_at", 0)) <= 0: p.newcomer_started_at = unix_time
 	var price := int(data.get("coins", 0))
 	if unix_time > 0: price = _daily_price(market_snapshot(p, unix_time), "cosmetic", id, price)
-	if int(p.get(currency, 0)) < price: return fail(p, "Not enough %s." % ("Sparks" if currency == "sparks" else "Forge Coins"))
-	p[currency] -= price; p.cosmetics[id] = true
+	if not V3_ECONOMY.spend(p, currency, price): return fail(p, "Not enough %s." % ("Sparks" if currency == "sparks" else "Forge Coins"))
+	p.cosmetics[id] = true
 	return ok(p, {"id":id,"currency":currency,"price":price})
 static func fake_store_purchase(source: Dictionary, purchase_id: String, product_id: String) -> Dictionary:
 	var p := ensure(source)
@@ -455,9 +389,7 @@ static func fake_store_purchase_at(source: Dictionary, purchase_id: String, prod
 	return ok(p, {"purchase_id":purchase_id,"sparks":sparks,"price_cents":price_cents,"provider":"fake_local"})
 
 static func _daily_price(snapshot: Dictionary, shop: String, id: String, price: int) -> int:
-	var deal: Dictionary = snapshot.get("daily_deal", {})
-	if str(deal.get("shop", "")) == shop and str(deal.get("id", "")) == id: return price * (10000 - int(deal.get("discount_bps", 2000))) / 10000
-	return price
+	return V3_ECONOMY.daily_price(snapshot, shop, id, price)
 static func buy_paid_season(source: Dictionary) -> Dictionary:
 	var p := ensure(source)
 	if bool(p.season.get("paid", false)): return ok(p, {"already_owned":true})

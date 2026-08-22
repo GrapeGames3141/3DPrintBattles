@@ -1,9 +1,9 @@
 extends SceneTree
 
 ## Deterministic post-processing for the Arcane Foundry generated UI kit.
-## Sources retain ImageGen provenance under docs/art/source/ui/arcane-foundry-v2.
+## Sources retain ImageGen provenance under art-source/source/ui/arcane-foundry-v2.
 
-const SOURCE_DIR := "res://docs/art/source/ui/arcane-foundry-v2/"
+const SOURCE_DIR := "res://art-source/source/ui/arcane-foundry-v2/"
 const OUTPUT_DIR := "res://assets/ui/arcane_foundry/"
 const KEY := Color8(255, 0, 255, 255)
 

@@ -1,0 +1,2 @@
+# Source masters are read directly by offline art tools.  They are not runtime
+# Godot resources and must not generate imported sidecars in the working tree.

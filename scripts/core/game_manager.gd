@@ -205,7 +205,9 @@ func active_deck_cards() -> Array:
 	for deck in profile.get("decks", []):
 		if str(deck.get("id", "")) == str(profile.get("active_deck_id", "starter-deck")):
 			return deck.get("cards", []).duplicate() if deck.get("cards", []) is Array else []
-	return ProgressionRules.active_deck(profile)
+	# v3 launches never fall back to a legacy 0.7 deck. Callers must surface the
+	# explicit deck validation failure from create_unified_battle instead.
+	return []
 
 func create_unified_battle(mode: String, opponent_setup: Dictionary = {}, seed: int = 42):
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
@@ -219,7 +221,8 @@ func create_unified_battle(mode: String, opponent_setup: Dictionary = {}, seed: 
 	var match_seed := _stable_unified_seed([mode, str(resolved.get("source_id", "")), str(resolved.get("day_key", "")), str(seed)])
 	# Workshop upgrades and pre-prints are launch data; in-battle hardware starts
 	# uninstalled and must be played as Upgrade Cards.
-	var state := UNIFIED_BATTLE_STATE.create(deck, rival_deck, match_seed, [], [], profile.get("preprints", []), [], profile, {})
+	var rival_preprints := _unified_rival_preprints(setup, rival_deck)
+	var state := UNIFIED_BATTLE_STATE.create(deck, rival_deck, match_seed, [], [], profile.get("preprints", []), rival_preprints, profile, {})
 	var rival := state.player(1)
 	rival.filament = clampi(int(setup.get("rival_starting_filament", 200)), 0, int(rival.filament_max))
 	var resolved_mode := str(resolved.get("mode", mode))
@@ -273,12 +276,35 @@ func _unified_rival_deck(setup: Dictionary, fallback: Array) -> Array:
 	for raw in setup.get("deck", []):
 		var card_id := str(raw)
 		if not UNIFIED_RULES.card(card_id).is_empty(): result.append(card_id)
-	for card_id in ["raw_filament", "heated_spool", "emergency_canister", "layer_melt", "print_jam", "helm", "iron_claw"]:
+	# Every generated rival deck must be legal under the current catalog.  Do not
+	# retain old Helm/Iron Claw IDs here: they were retired in favor of full suits
+	# and socket gems and used to be silently discarded by UnifiedBattleState.
+	var fillers := ["raw_filament", "heated_spool", "emergency_canister", "layer_melt", "print_jam", "standard_full_suit", "iron_gem", "filament_ring", "counter_strike", "speed_spool"]
+	for card_id in fillers:
 		if result.size() >= 40: break
-		result.append(card_id)
-	if result.is_empty(): result = fallback.duplicate()
-	while result.size() < 40: result.append(result[result.size() % maxi(1, result.size())])
+		if not UNIFIED_RULES.card(card_id).is_empty(): result.append(card_id)
+	if result.is_empty():
+		for card_id in fallback:
+			if not UNIFIED_RULES.card(str(card_id)).is_empty(): result.append(str(card_id))
+	# A malformed encounter cannot manufacture an empty/illegal deck.  The
+	# canonical starter composition is the deterministic final fallback.
+	if result.is_empty():
+		for card_id in UNIFIED_RULES.all_cards():
+			if str(card_id.get("type", "")) == "creature": result.append(str(card_id.get("id", "")))
+	while result.size() < 40:
+		result.append(str(result[result.size() % maxi(1, result.size())]))
 	return result.slice(0, 40)
+
+func _unified_rival_preprints(setup: Dictionary, rival_deck: Array) -> Array:
+	var result: Array = []
+	var requested: Array = setup.get("preprints", []) if setup.get("preprints", []) is Array else []
+	if requested.is_empty(): requested = setup.get("team", []) if setup.get("team", []) is Array else []
+	for raw in requested:
+		if result.size() >= 3: break
+		var id := str(raw.get("creature_id", raw.get("id", ""))) if raw is Dictionary else str(raw)
+		var card := UNIFIED_RULES.card(id)
+		if str(card.get("type", "")) == "creature" and result.count(id) < rival_deck.count(id): result.append(id)
+	return result
 
 func _stable_unified_seed(parts: Array) -> int:
 	var value := 17

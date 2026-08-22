@@ -16,17 +16,16 @@ const EQUIPMENT_WORKBENCH_VIEW_PATH := "res://scripts/ui/equipment_workbench_vie
 # Workbench path, so the workshop's first frame never parses its preview graph.
 const TIERED_ARMOR_ROSTER_PATH := "res://scripts/ui/tiered_armor_roster.gd"
 const TIERED_ARMOR_PREVIEW_PATH := "res://scripts/ui/tiered_armor_palette_preview.gd"
-const BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/battle_screen_component.gd"
-const BATTLE_VIEW_COMPONENT_PATH := "res://scripts/ui/battle_view_component.gd"
 const BLUEPRINT_TRAY_VIEW := preload("res://scripts/ui/blueprint_tray_view.gd")
 const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_component.gd"
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
+const UNIFIED_BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/unified_battle_screen_component.gd"
 const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
 const UNIFIED_BATTLE_RULES := preload("res://scripts/battle/unified_battle_rules.gd")
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_AI := preload("res://scripts/battle/unified_ai_opponent.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
-const REVIEW_BUILD_LABEL := "0.7.6-card-acquisition-playtest"
+const REVIEW_BUILD_LABEL := "0.8.0-v3-canonical-refactor"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -55,11 +54,11 @@ var deck_selected_card_id := ""
 var deck_slot_id := ProgressionRules.STARTER_DECK_ID
 var card_archive_owned_only := false
 var card_archive_detail_id := ""
-# `battle` is deliberately untyped.  The established Arcane Foundry presentation
-# still owns BattleState matches, while the unified launch bridge stores its
-# deterministic UnifiedBattleState here behind the dedicated `unified_battle`
-# screen.  Keeping one public match handle makes the UI launch seam testable
-# without routing the shipped entry scene back through the compact prototype.
+# `battle` is deliberately untyped so the shell can recover an interrupted
+# session, but every shipped launch now stores a canonical v3 snapshot here.
+# The older active-unit renderer remains isolated for historical test fixtures
+# and is no longer an entry point from Workshop, Daily Training, Trials, or
+# local hot-seat play.
 var battle
 var battle_settlement_context: Dictionary = {}
 var battle_settlement_finished := false
@@ -85,22 +84,9 @@ var unified_reveal_page := 0
 var unified_market_tab := "blueprints"
 var body: VBoxContainer
 var status: Label
-var battle_last_event := ""
-var battle_last_actor := 0
-var battle_presentation_serial := 0
-var ai_pending := false
-var battle_session_generation := 0
-var battle_concede_armed := false
-var battle_secondary_open := false
-var battle_secondary_tab := "bench"
 var battle_mode := "training"
 var training_contract_id := ""
 var trial_encounter_id := ""
-var battle_ai_difficulty := "Craftsman"
-var battle_launch_notice := ""
-var local_concede_armed := false
-var local_authority: LocalBattleAuthority
-var local_ready_seat := -1
 var local_trade: LocalTradeAuthority
 var trade_creator_choice := ""
 var trade_partner_choice := ""
@@ -131,8 +117,7 @@ var _workshop_screen_component := WorkshopScreenComponent.new()
 var _blueprint_tray_view := BLUEPRINT_TRAY_VIEW.new()
 # Battle, Forge, cards, and equipment are intentionally absent from the first
 # workshop frame. Their resources now load only when their screen is requested.
-var _battle_screen_component = null
-var _battle_view_component = null
+var _unified_battle_screen_component = null
 var _forge_screen_component = null
 var _audio_director := AudioDirector.new()
 
@@ -153,19 +138,12 @@ func _optional_script(path: String, feature_name: String):
 		_toast("%s could not load. The Workshop remains available." % feature_name)
 	return script
 
-func _battle_component():
-	if _battle_screen_component == null:
-		var script = _optional_script(BATTLE_SCREEN_COMPONENT_PATH, "Battle presentation")
+func _unified_battle_component():
+	if _unified_battle_screen_component == null:
+		var script = _optional_script(UNIFIED_BATTLE_SCREEN_COMPONENT_PATH, "Foundry battle screen")
 		if script == null: return null
-		_battle_screen_component = script.new()
-	return _battle_screen_component
-
-func _battle_view():
-	if _battle_view_component == null:
-		var script = _optional_script(BATTLE_VIEW_COMPONENT_PATH, "Battle layout")
-		if script == null: return null
-		_battle_view_component = script.new()
-	return _battle_view_component
+		_unified_battle_screen_component = script.new()
+	return _unified_battle_screen_component
 
 func _forge_component():
 	if _forge_screen_component == null:
@@ -231,7 +209,7 @@ func _process(delta: float) -> void:
 func navigate_to(target: String) -> void:
 	# Foundry hotspots now resolve to the unified card surfaces. Legacy routes
 	# remain available to retained screens under their explicit legacy ids.
-	var unified_targets := {"shop":"unified_market", "archive":"unified_library", "deck":"unified_deck", "calibration":"unified_upgrades", "codex":"unified_forgedex", "collection":"unified_forgedex", "yard":"unified_market"}
+	var unified_targets := {"shop":"unified_market", "archive":"unified_library", "armor":"unified_library", "deck":"unified_deck", "team":"unified_deck", "calibration":"unified_upgrades", "codex":"unified_forgedex", "collection":"unified_forgedex", "yard":"unified_market"}
 	if unified_targets.has(target): target = str(unified_targets[target])
 	if screen == "workshop" and target != "workshop":
 		workshop_return_view = workshop_view
@@ -265,7 +243,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		screen = "workshop"
 		workshop_view = workshop_return_view
 		workshop_drawer_object = ""
-		local_ready_seat = -1
 		render()
 		get_viewport().set_input_as_handled()
 
@@ -373,7 +350,7 @@ func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 
 func render() -> void:
 	_audio_director.configure(settings(), printer_capture_freeze or workshop_ambient_capture_freeze)
-	_audio_director.route("battle" if screen in ["battle", "local_vs"] else ("forge" if screen == "printer" else "workshop"))
+	_audio_director.route("battle" if screen == "unified_battle" else ("forge" if screen == "printer" else "workshop"))
 	_detach_persistent_screen_components()
 	clear_children(self)
 	var backdrop := TextureRect.new()
@@ -420,15 +397,6 @@ func render() -> void:
 	if screen != "unified_battle": render_header(root)
 	if GameManager.is_save_read_only():
 		render_save_recovery(root)
-		return
-	# Battle is a first-fold activity, not a list below a generic scrolling shell.
-	# Give it the remaining safe content area directly so mobile layout cannot
-	# collapse action rows to zero height before the scroll container settles.
-	if screen == "battle":
-		render_battle_fullscreen(root)
-		if _focus_after_render:
-			_focus_after_render = false
-			call_deferred("focus_first_button")
 		return
 	# Unified matches are presented by the shipped Foundry shell, not by the
 	# retired compact test harness. They are a first-fold, no-scroll surface.
@@ -482,7 +450,6 @@ func render() -> void:
 		"settings": render_settings()
 		"proving": render_proving_door()
 		"trials": render_trials()
-		"local_vs": render_local_vs()
 		"trade": render_local_trade()
 		_: render_workshop()
 	if _focus_after_render:
@@ -493,7 +460,6 @@ func _detach_persistent_screen_components() -> void:
 	# Main's shell is intentionally rebuilt for responsive text/contrast. Detach
 	# expensive presentation nodes first so their imported textures and animation
 	# state survive the ancestor queue_free operation.
-	if _battle_screen_component != null: _battle_screen_component.detach()
 	if _forge_screen_component != null: _forge_screen_component.detach()
 	_workshop_screen_component.detach()
 
@@ -692,7 +658,7 @@ func render_workshop() -> void:
 func _workshop_views() -> Array:
 	return [
 		{"id":"printer", "name":"Printer Bench", "callout":"Workshop Models and Collection", "description":"Review learned blueprints and print display models with Forge Coins.", "rect":Rect2(0.08, 0.32, 0.28, 0.44), "objects":[{"id":"forge_machine", "name":"Workshop Model Forge", "description":"Choose an owned blueprint and print a collection model.", "target":"unified_forgedex", "rect":Rect2(0.34, 0.27, 0.36, 0.56)}, {"id":"collection_case", "name":"Collection Case", "description":"Review owned blueprints and printed models.", "target":"unified_forgedex", "rect":Rect2(0.08, 0.06, 0.25, 0.66)}]},
-		{"id":"maker", "name":"Maker Bench", "callout":"Pre-prints, decks, equipment cards", "description":"Set your active deck, Pre-Print loadout, and battle equipment cards.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Pre-Print Board", "description":"Choose creature copies from the active deck to start in Defense Mode.", "target":"unified_deck", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Edit one of three fixed legal 40-card deck slots.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"card_archive", "name":"Card Archive", "description":"Browse battle cards, rules, and owned copies.", "target":"archive", "rect":Rect2(0.26, 0.52, 0.28, 0.18)}, {"id":"armor_tools", "name":"Equipment Cards", "description":"Browse armor, weapon, and accessory cards for battle decks.", "target":"unified_library", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Upgrade Forge", "description":"Open Workshop upgrades and in-battle Upgrade Cards.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
+		{"id":"maker", "name":"Maker Bench", "callout":"Pre-prints, decks, equipment cards", "description":"Set your active deck, Pre-Print loadout, and battle equipment cards.", "rect":Rect2(0.03, 0.68, 0.31, 0.26), "objects":[{"id":"team_board", "name":"Pre-Print Board", "description":"Choose creature copies from the active deck to start in Defense Mode.", "target":"unified_deck", "rect":Rect2(0.02, 0.47, 0.27, 0.28)}, {"id":"deck_blueprints", "name":"Deck Blueprint Rack", "description":"Edit one of three fixed legal 40-card deck slots.", "target":"deck", "rect":Rect2(0.38, 0.26, 0.24, 0.40)}, {"id":"card_archive", "name":"Card Archive", "description":"Browse battle cards, rules, and owned copies.", "target":"archive", "rect":Rect2(0.26, 0.52, 0.28, 0.18)}, {"id":"armor_tools", "name":"Equipment Cards", "description":"Browse full suits, combat gems, and the Filament Ring for battle decks.", "target":"unified_library", "rect":Rect2(0.58, 0.15, 0.24, 0.55)}, {"id":"calibration_dial", "name":"Upgrade Forge", "description":"Open Workshop upgrades and in-battle Upgrade Cards.", "target":"calibration", "rect":Rect2(0.80, 0.40, 0.16, 0.32)}]},
 		{"id":"terminal", "name":"Forge Terminal", "callout":"Offers, Forgedex, Guild Trade", "description":"Browse fixed daily offers, records, and a local kid-safe trade demo.", "rect":Rect2(0.65, 0.30, 0.23, 0.34), "objects":[{"id":"offer_screen", "name":"Forge Offers", "description":"Review today's deterministic blueprint, card, and armor offers.", "target":"shop", "rect":Rect2(0.57, 0.35, 0.10, 0.29)}, {"id":"forgedex_screen", "name":"Forgedex Terminal", "description":"Track every discovered creature blueprint.", "target":"codex", "rect":Rect2(0.67, 0.35, 0.11, 0.29)}, {"id":"trade_terminal", "name":"Guild Trade Table", "description":"Open a credential-free two-profile escrow demonstration.", "target":"trade", "rect":Rect2(0.78, 0.35, 0.12, 0.29)}]},
 		{"id":"proving", "name":"Battle Arena", "callout":"Daily Training, Trials, Local Versus", "description":"Enter the Battle Arena for daily training, ordered Workshop Trials, or a private hot-seat match.", "rect":Rect2(0.45, 0.18, 0.20, 0.50), "objects":[{"id":"training_door", "name":"Battle Arena", "description":"Choose a repeatable daily rival or an ordered Workshop Trial with fixed first-clear rewards.", "target":"proving", "rect":Rect2(0.42, 0.39, 0.23, 0.27)}, {"id":"versus_marker", "name":"Local Versus", "description":"Pass the device between two private players. No rewards are granted.", "target":"local_vs", "rect":Rect2(0.48, 0.64, 0.16, 0.17)}]},
 		{"id":"yard", "name":"Print Yard", "callout":"Daily filament lesson", "description":"Visit printed companions for one calm, limited XP lesson each day.", "rect":Rect2(0.37, 0.63, 0.27, 0.29), "objects":[{"id":"yard_companions", "name":"Daily Print Yard", "description":"Share today's local filament lesson with your current collection.", "target":"yard", "rect":Rect2(0.31, 0.44, 0.34, 0.28)}]}
@@ -714,7 +680,7 @@ func _workshop_overview_hotspots() -> Array:
 			{"id":"printer", "name":"Workshop Model Forge", "description":"Review owned blueprints and print collection models.", "target":"unified_forgedex", "rect":Rect2(0.03, 0.45, 0.30, 0.15)},
 			{"id":"collection", "name":"Printer Drawers", "description":"Review owned blueprints and printed models.", "target":"unified_forgedex", "rect":Rect2(0.06, 0.60, 0.28, 0.18)},
 			{"id":"team", "name":"Pre-Print Board", "description":"Set a v3 deck and creature Pre-Print loadout.", "target":"unified_deck", "rect":Rect2(0.18, 0.10, 0.43, 0.13)},
-			{"id":"armor", "name":"Equipment Cards", "description":"Browse battle armor, weapon, and accessory cards.", "target":"unified_library", "rect":Rect2(0.62, 0.10, 0.16, 0.20)},
+			{"id":"armor", "name":"Equipment Cards", "description":"Browse battle full suits, combat gems, and the Filament Ring.", "target":"unified_library", "rect":Rect2(0.62, 0.10, 0.16, 0.20)},
 			{"id":"battle_arena", "name":"Battle Arena", "description":"Choose daily training, Workshop Trials, or Local Versus.", "target":"proving", "rect":Rect2(0.24, 0.39, 0.54, 0.14)},
 			{"id":"card_archive", "name":"Support Card Deck", "description":"Browse the Support Card Archive.", "target":"archive", "rect":Rect2(0.72, 0.69, 0.17, 0.13)},
 			{"id":"shop", "name":"Forge Offers Panel", "description":"Review today's deterministic Forge Offers.", "target":"shop", "rect":Rect2(0.68, 0.50, 0.09, 0.13)},
@@ -726,7 +692,7 @@ func _workshop_overview_hotspots() -> Array:
 			{"id":"printer", "name":"Workshop Model Forge", "description":"Review owned blueprints and print collection models.", "target":"unified_forgedex", "rect":Rect2(0.07, 0.43, 0.20, 0.27)},
 			{"id":"collection", "name":"Printer Drawers", "description":"Review owned blueprints and printed models.", "target":"unified_forgedex", "rect":Rect2(0.22, 0.66, 0.12, 0.24)},
 			{"id":"team", "name":"Pre-Print Board", "description":"Set a v3 deck and creature Pre-Print loadout.", "target":"unified_deck", "rect":Rect2(0.32, 0.08, 0.25, 0.16)},
-			{"id":"armor", "name":"Equipment Cards", "description":"Browse battle armor, weapon, and accessory cards.", "target":"unified_library", "rect":Rect2(0.58, 0.08, 0.13, 0.20)},
+			{"id":"armor", "name":"Equipment Cards", "description":"Browse battle full suits, combat gems, and the Filament Ring.", "target":"unified_library", "rect":Rect2(0.58, 0.08, 0.13, 0.20)},
 		{"id":"battle_arena", "name":"Battle Arena", "description":"Choose daily training, Workshop Trials, or Local Versus.", "target":"proving", "rect":Rect2(0.31, 0.47, 0.40, 0.22)},
 		{"id":"card_archive", "name":"Support Card Deck", "description":"Browse the Support Card Archive.", "target":"archive", "rect":Rect2(0.78, 0.76, 0.11, 0.13)},
 		{"id":"shop", "name":"Forge Offers Panel", "description":"Review today's deterministic Forge Offers.", "target":"shop", "rect":Rect2(0.73, 0.47, 0.07, 0.16)},
@@ -1393,110 +1359,10 @@ func _run_workshop_station(id: String) -> void:
 		"yard", "calibration": navigate_to(id)
 
 func start_local_vs() -> void:
-	var team := GameManager.current_team_loadout()
-	if team.is_empty(): _toast("Choose a starter before starting local versus."); return
-	local_authority = LocalBattleAuthority.create(team, ["mossmunk", "voltwig"], GameManager.active_deck_cards(), 20260814)
-	var setup_error := local_authority.state.validation_error(true)
-	if not setup_error.is_empty():
-		local_authority = null
-		_toast(setup_error)
-		return
-	local_ready_seat = -1
-	local_concede_armed = false
-	if screen == "workshop": workshop_return_view = workshop_view
-	screen = "local_vs"
-	render()
-
-func render_local_vs() -> void:
-	var panel := make_panel(Color("19334de8"), Color("f1be69")); body.add_child(panel.get_parent())
-	panel.add_child(label("Local Versus - Proving Grounds", 25, Color("ffd36c")))
-	if local_authority == null:
-		panel.add_child(label("Start a private hot-seat match from the Workshop.", 16, Color("dce8f4")))
-		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	var state := local_authority.state
-	var setup_error := state.validation_error(false)
-	if not setup_error.is_empty():
-		panel.add_child(label("This local match cannot continue: " + setup_error, 16, Color("ffaaa1")))
-		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	panel.add_child(label("Authority revision %d  |  Match seed %d  |  No rewards in local versus" % [local_authority.revision, state.seed], 15, Color("9beaff")))
-	var seat := state.active_player
-	if not state.finished and local_ready_seat != seat:
-		local_concede_armed = false
-		panel.add_child(label("Private handoff", 20, Color("fff0a1")))
-		panel.add_child(label("Pass the device. The next hand remains hidden until the ready button is pressed.", 16, Color("dce8f4")))
-		var hidden = _new_support_card_view()
-		if hidden != null:
-			hidden.configure({}, 0, "", true, false, false); hidden.name = "LocalHiddenCardBack"; panel.add_child(hidden)
-		panel.add_child(make_button("Ready Player %d" % (seat + 1), func(): local_ready_seat = seat; render(), Color("a86b2e")))
-		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	var stage = _new_local_battle_stage()
-	if stage == null:
-		panel.add_child(label("Local battle presentation could not load. Return to the Workshop and try again.", 16, Color("ffcfbf")))
-		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
-		return
-	stage.configure(state.active_unit(0), state.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false))); panel.add_child(stage); stage.custom_minimum_size = Vector2(0, 110 if is_portrait_layout() else 120)
-	for player in [0, 1]:
-		var unit := state.active_unit(player)
-		panel.add_child(label("Player %d: %s  %d/%d HP - %s" % [player + 1, str(unit.get("name", "Unknown")), int(unit.get("hp", 0)), int(unit.get("max_hp", 1)), str(unit.get("element", "Unknown"))], 17, Color("a9ecff") if player == 0 else Color("ffaaa1")))
-	if state.finished:
-		panel.add_child(label("Local match complete. No Forge Coins or rewards are granted.", 18, Color("fff0a1")))
-		panel.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))); return
-	panel.add_child(label("Player %d hand — Deck %d | Discard %d" % [seat + 1, state.players[seat].deck.size(), state.players[seat].get("discard", []).size()], 15, Color("dce8f4")))
-	var actions := GridContainer.new(); actions.name = "LocalBattleActionGrid"; actions.columns = 2 if is_portrait_layout() else 4; actions.add_theme_constant_override("h_separation", 8); actions.add_theme_constant_override("v_separation", 8); panel.add_child(actions)
-	for action in [{"type":"attack","name":"Basic Attack"},{"type":"ability","name":"Signature Ability"},{"type":"defend","name":"Defend"},{"type":"end_turn","name":"End Turn"}]:
-		actions.add_child(make_button(str(action.name), func(): submit_local_intent({"type":action.type}), Color("2f93a8")))
-	var card_counts := {}
-	for card_id in state.players[seat].hand: card_counts[str(card_id)] = int(card_counts.get(str(card_id), 0)) + 1
-	var local_carousel := ScrollContainer.new()
-	local_carousel.name = "LocalRevealedCardCarousel"
-	local_carousel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	local_carousel.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	local_carousel.custom_minimum_size = Vector2(0, 274)
-	local_carousel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(local_carousel)
-	var local_cards := GridContainer.new(); local_cards.name = "LocalRevealedCardGrid"; local_cards.columns = 4
-	local_cards.add_theme_constant_override("h_separation", 8)
-	local_carousel.add_child(local_cards)
-	for card_id in card_counts:
-		var definition := Catalog.support_card(str(card_id)); var reason := SupportCardRules.legality_reason(state, seat, definition)
-		var view = _new_support_card_view()
-		if view != null:
-			view.configure(definition, int(card_counts[card_id]), reason); view.name = "LocalCard%s" % str(card_id).capitalize(); view.pressed.connect(func(): submit_local_intent({"type":"card","card_id":card_id})); local_cards.add_child(view)
-	local_cards.custom_minimum_size = Vector2(maxi(1, card_counts.size()) * 182, 261)
-	var navigation := GridContainer.new(); navigation.name = "LocalBattleNavigationGrid"; navigation.columns = 2 if is_portrait_layout() else 3; navigation.add_theme_constant_override("h_separation", 8); navigation.add_theme_constant_override("v_separation", 8); body.add_child(navigation)
-	for index in state.players[seat].team.size():
-		if index != int(state.players[seat].active) and int(state.players[seat].team[index].hp) > 0:
-			navigation.add_child(make_button("Switch to %s" % str(state.players[seat].team[index].name), func(): submit_local_intent({"type":"switch","index":index}), Color("4d7898")))
-	if local_concede_armed:
-		navigation.add_child(make_button("Confirm Concede", toggle_local_concede, Color("9a5b6f")))
-		navigation.add_child(make_button("Cancel Concede", cancel_local_concede, Color("536c8d")))
-	else:
-		navigation.add_child(make_button("Concede", toggle_local_concede, Color("9a5b6f")))
-	navigation.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
-
-func submit_local_intent(intent: Dictionary) -> void:
-	if local_authority == null: return
-	if str(intent.get("type", "")) != "concede": local_concede_armed = false
-	var seat := local_authority.state.active_player
-	var result := local_authority.submit({"seat":seat,"expected_revision":local_authority.revision,"intent":intent})
-	if not bool(result.ok): _toast(str(result.error)); return
-	battle_last_event = str(intent.type); battle_last_actor = seat; local_ready_seat = -1; render()
-
-func toggle_local_concede() -> void:
-	if local_authority == null or local_authority.state.finished: return
-	if not local_concede_armed:
-		local_concede_armed = true
-		_toast("Press Confirm Concede to end this local match.")
-		render()
-		return
-	local_concede_armed = false
-	submit_local_intent({"type":"concede"})
-
-func cancel_local_concede() -> void:
-	if not local_concede_armed: return
-	local_concede_armed = false
-	_toast("Concede cancelled.")
-	render()
+	# Hot-seat uses the same public v3 snapshot and seat-redacted hands as solo.
+	# The rival deck defaults to the active legal deck, making both seats play the
+	# same owned-card composition until second-deck selection is authored.
+	_launch_unified_mode("local", {}, 20260814)
 
 func _guildmate_profile() -> Dictionary:
 	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "aquafin").profile
@@ -2315,71 +2181,10 @@ func _contract_portrait_strip(lineup: Array) -> Control:
 	return strip
 
 func start_trial(encounter_id: String) -> void:
-	var state := GameManager.campaign_encounter_state(encounter_id)
-	if not bool(state.get("ok", false)) or not bool(state.get("unlocked", false)):
-		_toast(str(state.get("error", "Clear the earlier Workshop Trial encounters first.")))
-		return
-	var encounter: Dictionary = state["encounter"]
-	battle_session_generation += 1
-	ai_pending = false
-	var setup := GameManager.create_solo_battle_from_setup(encounter, _trial_seed(encounter_id))
-	if not bool(setup.get("ok", false)):
-		battle = null
-		_toast(str(setup.get("error", "The Workshop Trial team is not ready.")))
-		return
-	battle = setup.get("battle", null) as BattleState
-	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("equipment_free_retry", false)) else ""
-	var warmup := GameManager.consume_solo_spool_warmup()
-	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
-	battle_mode = "trial"
-	trial_encounter_id = encounter_id
-	battle_ai_difficulty = str(encounter.get("ai", "Apprentice"))
-	battle_last_event = ""; battle_last_actor = 0; battle_presentation_serial = 0; battle_concede_armed = false; battle_secondary_open = false; battle_secondary_tab = "bench"
-	if screen == "workshop": workshop_return_view = workshop_view
-	screen = "battle"
-	render()
+	_launch_unified_mode("trial", {"encounter_id":encounter_id}, _trial_seed(encounter_id))
 
 func start_battle(contract_id := "") -> void:
-	var contract: Dictionary = {}
-	var available := GameManager.daily_training_contracts()
-	# Retained direct callers may skip the Proving Door. Prepare the same frozen
-	# daily snapshot here so the first-contract compatibility path is playable.
-	if available.is_empty():
-		GameManager.prepare_daily_training(shop_day_key)
-		available = GameManager.daily_training_contracts()
-	# Retained tool/tests once called start_battle() without an ID. Preserve that
-	# launch path as an explicit Apprentice Spar/first daily-contract compatibility default.
-	if contract_id.is_empty() and not available.is_empty(): contract_id = str(available[0].get("id", ""))
-	for raw in available:
-		if str(raw.get("id", "")) == contract_id: contract = raw; break
-	if contract.is_empty():
-		_toast("Open the Battle Arena to prepare and choose today's daily contract.")
-		return
-	# A new match invalidates every deferred AI callback tied to an older stage.
-	battle_session_generation += 1
-	ai_pending = false
-	var setup := GameManager.create_solo_battle_from_setup(contract, _training_seed(shop_day_key + contract_id))
-	if not bool(setup.get("ok", false)):
-		battle = null
-		_toast(str(setup.get("error", "The training team is not ready.")))
-		return
-	battle = setup.get("battle", null) as BattleState
-	battle_launch_notice = str(setup.get("repair_message", "")) if bool(setup.get("temporary_repair", false)) or bool(setup.get("equipment_free_retry", false)) else ""
-	var warmup := GameManager.consume_solo_spool_warmup()
-	if warmup > 0: battle.players[0].filament = mini(int(battle.players[0].spool_cap), 3 + warmup)
-	battle_last_event = ""
-	battle_presentation_serial = 0
-	battle_last_actor = 0
-	battle_mode = "training"
-	training_contract_id = contract_id
-	trial_encounter_id = ""
-	battle_ai_difficulty = str(contract.get("difficulty", "Craftsman"))
-	battle_concede_armed = false
-	battle_secondary_open = false
-	battle_secondary_tab = "bench"
-	if screen == "workshop": workshop_return_view = workshop_view
-	screen = "battle"
-	render()
+	_launch_unified_mode("daily", {"contract_id":contract_id,"day_key":shop_day_key}, _training_seed(shop_day_key + contract_id))
 
 func _training_seed(day_key: String) -> int:
 	var seed := 0
@@ -2394,12 +2199,15 @@ func _trial_seed(encounter_id: String) -> int:
 ## Public launch bridge for the deterministic card-battle modes.  This is kept
 ## beside the existing Trial/Daily entry points so workshop buttons, tests, and
 ## future Foundry-styled cards all share GameManager's launch snapshot rather
-## than instantiating the retired unified_main prototype.
+## than instantiating the retired prototype screen.
 func start_mode(mode: String) -> void:
+	_launch_unified_mode(mode, {}, 43 + mode.length())
+
+func _launch_unified_mode(mode: String, opponent_setup: Dictionary, seed: int) -> void:
 	battle = null
 	battle_settlement_context.clear()
 	battle_settlement_finished = false
-	var setup: Dictionary = GameManager.create_unified_battle(mode, {}, 43 + mode.length())
+	var setup: Dictionary = GameManager.create_unified_battle(mode, opponent_setup, seed)
 	if not bool(setup.get("ok", false)):
 		_toast(str(setup.get("error", "Unable to launch this battle.")))
 		return
@@ -2407,7 +2215,7 @@ func start_mode(mode: String) -> void:
 	if battle == null:
 		_toast("The battle snapshot could not be created.")
 		return
-	battle_mode = mode
+	battle_mode = str(setup.get("mode", mode))
 	battle_settlement_context = setup.get("settlement_context", {}).duplicate(true) if setup.get("settlement_context", {}) is Dictionary else {}
 	unified_hand_page = 0
 	unified_selected_card_id = ""
@@ -2416,7 +2224,7 @@ func start_mode(mode: String) -> void:
 	unified_attack_slot = -1
 	unified_attack_target = -2
 	unified_ai_pending = false
-	unified_local_handoff = mode == "local"
+	unified_local_handoff = battle_mode == "local"
 	unified_arrival_presented.clear()
 	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "unified_battle"
@@ -2439,7 +2247,13 @@ func _unified_side_panel(title: String, state: Dictionary, color: Color) -> Cont
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", inset_style(Color("102735"), color))
 		var text := "Slot %d\nOpen" % (slot + 1)
-		if unit != null: text = "%s · %s\n%d HP%s" % [str(unit.get("name", "Print")), str(unit.get("mode", "defense")).capitalize(), int(unit.get("hp", 0)), " · ready" if bool(unit.get("ready", false)) else ""]
+		if unit != null:
+			var equipment: Dictionary = unit.get("equipment", {}) if unit.get("equipment", {}) is Dictionary else {}
+			var gear: Array[String] = []
+			for key in ["armor", "gem"]:
+				var attached: Dictionary = equipment.get(key, {}) if equipment.get(key, {}) is Dictionary else {}
+				if not attached.is_empty(): gear.append(str(attached.get("name", key.capitalize())))
+			text = "%s · %s\n%d HP%s%s" % [str(unit.get("name", "Print")), str(unit.get("mode", "defense")).capitalize(), int(unit.get("hp", 0)), " · ready" if bool(unit.get("ready", false)) else "", (" · " + "/".join(gear)) if not gear.is_empty() else ""]
 		var caption := label(text, 11 if compact else 13, Color("e6dfd0"))
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -2452,6 +2266,10 @@ func _unified_side_panel(title: String, state: Dictionary, color: Color) -> Cont
 	var queue_parts: Array[String] = []
 	for job in queue: queue_parts.append("%s · %d turns" % [str(job.get("card_id", "print")), int(job.get("remaining", 0))])
 	panel.add_child(label("Queue: " + ("empty" if queue_parts.is_empty() else " | ".join(queue_parts)), 13, Color("fff0a1")))
+	if bool(state.get("filament_ring_active", false)):
+		panel.add_child(label("Filament Ring active · +20 filament during Collect", 12, Color("ffd36c")))
+	var trap: Dictionary = state.get("trap", {}) if state.get("trap", {}) is Dictionary else {}
+	panel.add_child(label("Trap zone: " + ("set" if not trap.is_empty() else "empty"), 12, Color("e6dfd0")))
 	if not state.get("staging", []).is_empty() or not state.get("holding", []).is_empty(): panel.add_child(label("Staging %d · Holding %d · Graveyard %d" % [(state.get("staging", []) as Array).size(), (state.get("holding", []) as Array).size(), (state.get("graveyard", []) as Array).size()], 12, Color("e6dfd0")))
 	return panel.get_parent()
 
@@ -2872,10 +2690,14 @@ func _render_unified_play_picker(host: Container, active: Dictionary) -> void:
 		panel.add_child(label("Creatures enter the public FIFO queue now; choose a slot and mode when printing completes.", 13, Color("e6dfd0")))
 		panel.add_child(make_button("Queue creature", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id}), Color("a86b2e")))
 	elif kind == "equipment":
-		for slot in 3:
-			if active.slots[slot] != null:
-				picks.add_child(make_button(("✓ " if unified_selected_target == slot else "") + "Your slot %d" % (slot + 1), func(): unified_selected_target = slot; render(), Color("588d73") if unified_selected_target == slot else Color("526e93")))
-		if unified_selected_target >= 0: panel.add_child(make_button("Equip card", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"slot":-1,"target":unified_selected_target}), Color("a86b2e")))
+		if str(card.get("equipment_slot", "")) == "battle_effect":
+			panel.add_child(label("This is worn by the player for this battle. It does not print or use a creature gear slot.", 13, Color("e6dfd0")))
+			panel.add_child(make_button("Activate player effect", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id}), Color("a86b2e")))
+		else:
+			for slot in 3:
+				if active.slots[slot] != null:
+					picks.add_child(make_button(("✓ " if unified_selected_target == slot else "") + "Your slot %d" % (slot + 1), func(): unified_selected_target = slot; render(), Color("588d73") if unified_selected_target == slot else Color("526e93")))
+			if unified_selected_target >= 0: panel.add_child(make_button("Queue equipment", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"slot":-1,"target":unified_selected_target}), Color("a86b2e")))
 	elif kind == "spell":
 		# Targeted spells use slots; queue and filament spells resolve without one.
 		for slot in 3:
@@ -2906,6 +2728,12 @@ func _render_unified_attack_picker(host: Container, active: Dictionary) -> void:
 	if unified_attack_target >= -1: panel.add_child(make_button("Confirm attack", _submit_unified_intent.bind({"type":"attack","slot":unified_attack_slot,"target":unified_attack_target}), Color("a86b2e")))
 
 func render_unified_battle_fullscreen(host: Container) -> void:
+	var component = _unified_battle_component()
+	if component != null:
+		component.render(host, self)
+		return
+	# Fallback keeps a damaged optional component from blanking the Workshop
+	# shell. Normal shipped presentation is owned by UnifiedBattleScreenComponent.
 	if battle == null:
 		host.add_child(label("No unified battle is active.", 20, Color("fff0a1")))
 		host.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
@@ -2970,210 +2798,6 @@ func render_unified_battle_fullscreen(host: Container) -> void:
 	if str(battle.phase) == "collect":
 		actions.add_child(label("Scrap collection is automatic when you advance this phase.", 13, Color("e6dfd0")))
 	host.add_child(make_button("Return to Workshop", func(): battle = null; battle_settlement_context.clear(); screen = "workshop"; render(), Color("536c8d")))
-
-func render_battle_fullscreen(host: Container) -> void:
-	if battle == null or not battle.validation_error().is_empty():
-		var unavailable_view = _battle_view()
-		if unavailable_view != null: unavailable_view.render_unavailable(host, _battle_view_context())
-		return
-	var battle_view = _battle_view()
-	if battle_view == null: return
-	var battle_title := "Proving Grounds"
-	if battle_mode == "trial" and not trial_encounter_id.is_empty():
-		battle_title += " - Trial: %s" % str(Catalog.workshop_trial_encounter(trial_encounter_id).get("name", "Workshop Trial"))
-	elif battle_mode == "training" and not training_contract_id.is_empty():
-		for raw in GameManager.daily_training_contracts():
-			if str(raw.get("id", "")) == training_contract_id:
-				battle_title += " - " + str(raw.get("name", "Daily Contract"))
-				break
-	var turn_caption := "Your turn" if battle.active_player == 0 else "Rival is thinking"
-	if battle.finished:
-		turn_caption = "Training result" if battle_mode == "training" else "Match result"
-	var compact_secondary := battle_secondary_open
-	var battle_component = _battle_component()
-	if battle_component == null:
-		battle_view.render_unavailable(host, _battle_view_context())
-		return
-	var stage = battle_component.refresh(battle.active_unit(0), battle.active_unit(1), battle_last_event, battle_last_actor, bool(settings().get("reduced_motion", false)), 160 if is_portrait_layout() and compact_secondary else (160 if is_portrait_layout() else (64 if compact_secondary else 172)), bool(settings().get("high_contrast", false)), battle_presentation_serial)
-	var context := _battle_view_context()
-	context.merge({"title": battle_title, "turn_caption": turn_caption, "stage": stage}, true)
-	var shell: Dictionary = battle_view.build_shell(host, context)
-	status = shell.get("status", null) as Label
-	var intro := shell.get("content", null) as VBoxContainer
-	battle_view.render_active_content(intro, context)
-	if battle.finished:
-		_render_battle_finished_result(intro)
-		return
-	if battle.active_player == 1 and not battle.finished and not ai_pending:
-		ai_pending = true
-		var scheduled_state: BattleState = battle as BattleState
-		var scheduled_generation := battle_session_generation
-		if bool(settings().get("reduced_motion", false)):
-			call_deferred("run_ai", scheduled_state, scheduled_generation)
-		else:
-			call_deferred("run_ai_after_presentation", scheduled_state, scheduled_generation)
-
-func _battle_view_context() -> Dictionary:
-	return {
-		"battle": battle,
-		"portrait": is_portrait_layout(),
-		"secondary_open": battle_secondary_open,
-		"secondary_tab": battle_secondary_tab,
-		"active_player": battle.active_player if battle != null else -1,
-		"finished": battle.finished if battle != null else false,
-		"launch_notice": battle_launch_notice,
-		"high_contrast": bool(settings().get("high_contrast", false)),
-		"feedback": battle_feedback_text() if battle != null else "",
-		"concede_armed": battle_concede_armed,
-		"label": label,
-		"make_button": make_button,
-		"make_panel": make_panel,
-		"panel_style": panel_style,
-		"inset_style": inset_style,
-		"new_scroll": func() -> ScrollContainer: return TOUCH_SCROLL_CONTAINER.new(),
-		"new_card_view": _new_support_card_view,
-		"return_workshop": navigate_to.bind("workshop"),
-		"submit_action": submit_battle_action,
-		"submit_switch": submit_battle_switch,
-		"submit_card": submit_battle_card,
-		"toggle_secondary": toggle_battle_secondary,
-		"select_tab": set_battle_secondary_tab,
-		"toggle_concede": toggle_battle_concede,
-		"cancel_concede": cancel_battle_concede
-	}
-
-func _render_battle_finished_result(intro: Container) -> void:
-	var outcome := "Victory!" if battle.winner == 0 else "Defeat."
-	intro.add_child(label("%s - Core Printer status resolved." % outcome, 22, Color("ffd36c")))
-	if battle_mode == "trial" and not trial_encounter_id.is_empty():
-		var trial_state := GameManager.campaign_encounter_state(trial_encounter_id)
-		var reward: Dictionary = trial_state.get("reward", {})
-		intro.add_child(label("Workshop Trial: %s\n%s" % [str(trial_state.get("encounter", {}).get("name", "Encounter")), "Victory claims %d Forge Coins, %d XP, and +%d mastery for each saved team print." % [int(reward.get("coins", 0)), int(reward.get("xp", 0)), int(reward.get("mastery", 0))] if battle.winner == 0 else "Defeats do not grant a Workshop Trial first-clear reward."], 15, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
-	elif battle_mode == "training":
-		var finished_contract: Dictionary = _daily_contract(training_contract_id)
-		var claimed: bool = training_contract_id in GameManager.profile.get("daily_training", {}).get("claimed_ids", [])
-		var reward: Dictionary = finished_contract.get("reward", {})
-		var contract_result := make_panel(Color("17394ee8"), Color("70dcea") if battle.winner == 0 else Color("d27e70"))
-		contract_result.name = "DailyContractResult"
-		intro.add_child(contract_result.get_parent())
-		contract_result.add_child(label("%s - %s" % [str(finished_contract.get("name", "Daily Contract")), "Cleared" if battle.winner == 0 else "Held"], 17, Color("a8e3a5") if battle.winner == 0 else Color("ffaaa1")))
-		contract_result.add_child(label("Practice complete. Today's first-clear reward was already claimed." if claimed else "Return to claim +%d Forge Coins and +%d XP." % [int(reward.get("coins", 0)), int(reward.get("xp", 0))] if battle.winner == 0 else "No daily reward was claimed. The frozen contract remains available for another attempt.", 14, Color("fff0a1") if battle.winner == 0 else Color("ffaaa1")))
-	intro.add_child(make_button("Return to Workshop Trials" if battle_mode == "trial" else "Return to Battle Arena", finish_battle, Color("536c8d")))
-
-func submit_battle_card(card_id: String) -> void:
-	_audio_director.cue("card")
-	intent({"type":"card","card_id":card_id})
-
-func battle_feedback_text() -> String:
-	var presenter = _optional_script(BATTLE_FEEDBACK_PRESENTER_PATH, "Battle feedback")
-	return str(presenter.format(battle, battle_last_event, _audio_director.last_caption)) if presenter != null else _audio_director.last_caption
-
-func toggle_battle_secondary() -> void:
-	battle_secondary_open = not battle_secondary_open
-	if battle_secondary_open:
-		battle_secondary_tab = "bench"
-	render()
-
-func set_battle_secondary_tab(tab_id: String) -> void:
-	battle_secondary_open = true
-	battle_secondary_tab = tab_id
-	render()
-
-func submit_battle_action(action_type: String) -> void:
-	intent({"type":action_type})
-
-func submit_battle_switch(bench_index: int) -> void:
-	intent({"type":"switch", "index":bench_index})
-
-func finish_battle() -> void:
-	if battle == null or not battle.finished: return
-	var finished_state: BattleState = battle
-	var finished_mode := battle_mode
-	var finished_trial := trial_encounter_id
-	var finished_contract := training_contract_id
-	var won: bool = battle.winner == 0
-	var turns: int = battle.turn
-	battle_session_generation += 1
-	ai_pending = false
-	battle = null
-	battle_mode = "training"
-	trial_encounter_id = ""
-	training_contract_id = ""
-	battle_ai_difficulty = "Craftsman"
-	screen = "trials" if finished_mode == "trial" else "proving"
-	if finished_mode == "trial" and won and not finished_trial.is_empty():
-		if not GameManager.claim_campaign_victory(finished_trial, turns): render()
-	elif finished_mode == "training":
-		if won and not finished_contract.is_empty():
-			var reward_result := GameManager.claim_training_victory(finished_contract, shop_day_key)
-			var payload: Dictionary = reward_result.get("payload", {})
-			if bool(payload.get("first_clear", false)):
-				_toast("Contract clear! +%d Forge Coins, +%d XP." % [int(payload.get("reward", {}).get("coins", 0)), int(payload.get("reward", {}).get("xp", 0))])
-			else: _toast("Practice victory recorded. Daily reward already claimed.")
-		else:
-			_toast("Contract lost. Daily rewards are granted only on victory.")
-		render()
-	else:
-		render()
-
-func intent(action: Dictionary) -> void:
-	if str(action.get("type", "")) != "concede": battle_concede_armed = false
-	var result := BattleRules.apply_intent(battle, 0, action)
-	if not result.ok: _toast(str(result.error))
-	else:
-		if str(action.get("type", "")) == "card":
-			var card_definition := Catalog.support_card(str(result.get("card_id", "")))
-			var card_presenter = _optional_script(SUPPORT_CARD_PRESENTER_PATH, "Support card details")
-			_audio_director.cue_card(str(card_definition.get("name", "Support Card")), str(card_presenter.effect_text(card_definition)) if card_presenter != null else "Card played")
-			battle_last_event = "card:" + str(result.get("card_id", ""))
-		else: _audio_director.cue("impact")
-		battle_concede_armed = false
-		if str(action.get("type", "")) != "card": battle_last_event = str(action.get("type", ""))
-		battle_last_actor = 0
-		battle_presentation_serial += 1
-		render()
-
-func toggle_battle_concede() -> void:
-	if battle == null or battle.finished: return
-	if not battle_concede_armed:
-		battle_concede_armed = true
-		_toast("Press Confirm Concede to end this training match.")
-		render()
-		return
-	intent({"type":"concede"})
-
-func cancel_battle_concede() -> void:
-	if not battle_concede_armed: return
-	battle_concede_armed = false
-	_toast("Concede cancelled.")
-	render()
-
-func run_ai_after_presentation(expected_state: BattleState, expected_generation: int) -> void:
-	await get_tree().create_timer(0.5).timeout
-	if expected_state != battle or expected_generation != battle_session_generation or screen != "battle":
-		return
-	ai_pending = false
-	if battle.active_player == 1 and not battle.finished:
-		run_ai(expected_state, expected_generation)
-
-func run_ai(expected_state: BattleState = null, expected_generation := -1) -> void:
-	if expected_state != null and (expected_state != battle or expected_generation != battle_session_generation or screen != "battle"):
-		return
-	ai_pending = false
-	if battle == null or screen != "battle" or battle.active_player != 1 or battle.finished: return
-	var applied := AIOpponent.choose_intent(battle, battle_ai_difficulty)
-	var result := BattleRules.apply_intent(battle, 1, applied)
-	if not result.ok and battle.active_player == 1 and not battle.finished:
-		applied = {"type":"defend"}
-		result = BattleRules.apply_intent(battle, 1, applied)
-	if not result.ok and battle.active_player == 1 and not battle.finished:
-		applied = {"type":"end_turn"}
-		result = BattleRules.apply_intent(battle, 1, applied)
-	if result.ok:
-		battle_last_event = str(applied.type)
-		battle_last_actor = 1
-		battle_presentation_serial += 1
-	render()
 
 func _toast(message: String) -> void:
 	toast = message

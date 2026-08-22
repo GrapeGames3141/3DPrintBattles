@@ -16,16 +16,33 @@ env:
   GODOT_VERSION: "4.7.1"
 
 jobs:
+  backend:
+    name: TypeScript authority parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Verify TypeScript authority and shared v3 catalog parity
+        working-directory: backend
+        run: npm test
+
   desktop:
+    needs: backend
     name: Build ${{ matrix.target }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         include:
           - target: Windows
-            preset: Windows Steam
+            preset: Windows Unified Playtest
             output: build/windows/PrintForgeLegends.exe
             artifact_path: build/windows/
             artifact: PrintForgeLegends-Windows
@@ -49,6 +66,19 @@ jobs:
       - name: Import project
         run: godot --headless --path . --import
 
+      - name: Run canonical v3 Godot rules suite
+        run: |
+          godot --headless --path . res://tests/test_unified_rules.tscn
+          godot --headless --path . res://tests/test_v3_catalog_contract.tscn
+          godot --headless --path . res://tests/test_v3_smoke.tscn
+
+      - name: Verify v3 battle accessibility layout
+        run: godot --headless --path . res://tests/test_unified_ui_layout.tscn
+
+      - name: Validate runtime asset manifest
+        run: godot --headless --path . res://tests/test_runtime_asset_manifest.tscn
+
+
       - name: Create output directory
         run: mkdir -p "$(dirname '${{ matrix.output }}')"
 
@@ -67,6 +97,7 @@ jobs:
           retention-days: 14
 
   mobile:
+    needs: backend
     name: Build mobile (${{ matrix.target }})
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -132,6 +163,19 @@ jobs:
 
       - name: Import project
         run: godot --headless --path . --import
+
+      - name: Run canonical v3 Godot rules suite
+        run: |
+          godot --headless --path . res://tests/test_unified_rules.tscn
+          godot --headless --path . res://tests/test_v3_catalog_contract.tscn
+          godot --headless --path . res://tests/test_v3_smoke.tscn
+
+      - name: Verify v3 battle accessibility layout
+        run: godot --headless --path . res://tests/test_unified_ui_layout.tscn
+
+      - name: Validate runtime asset manifest
+        run: godot --headless --path . res://tests/test_runtime_asset_manifest.tscn
+
 
       - name: Create output directory
         run: mkdir -p "$(dirname '${{ matrix.output }}')"

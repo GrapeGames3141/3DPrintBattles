@@ -1,0 +1,46 @@
+class_name RuntimeAssetManifest
+extends RefCounted
+## Explicit allow-list for resources loaded from constructed paths.  Static
+## analysis can use this instead of mistaking dynamic v3 artwork for dead art.
+
+const PATH := "res://assets/runtime_asset_manifest.json"
+const V3_CATALOG := preload("res://scripts/core/v3_catalog.gd")
+
+static func load_manifest() -> Dictionary:
+	var text := FileAccess.get_file_as_string(PATH)
+	var parsed = JSON.parse_string(text)
+	return parsed if parsed is Dictionary else {}
+
+static func validation_errors() -> Array[String]:
+	var failures: Array[String] = []
+	var manifest := load_manifest()
+	if int(manifest.get("version", 0)) != 1:
+		failures.append("Runtime asset manifest is missing version 1.")
+		return failures
+	var groups: Dictionary = manifest.get("groups", {}) if manifest.get("groups", {}) is Dictionary else {}
+	for key in ["battle_backgrounds", "printer_frames", "card_atlases"]:
+		var paths: Array = groups.get(key, []) if groups.get(key, []) is Array else []
+		if paths.is_empty(): failures.append("Manifest group %s is empty." % key)
+		for path in paths:
+			if not ResourceLoader.exists(str(path)): failures.append("Missing runtime asset: %s" % str(path))
+	var armor: Dictionary = groups.get("tiered_armor", {}) if groups.get("tiered_armor", {}) is Dictionary else {}
+	for creature_id in armor.get("required_creatures", []):
+		var id := str(creature_id)
+		var master := str(armor.get("directory", "")).path_join("%s_tiered_armor_signature_green_alpha_v1.png" % id)
+		if id == "cinderpaw": master = str(armor.get("directory", "")).path_join("cinderpaw_tiered_armor_signature_green_alpha_v3.png")
+		var mask := str(armor.get("mask_directory", "")).path_join("%s_armor_plate_mask_v1.png" % id)
+		if not ResourceLoader.exists(master): failures.append("Missing tiered armor master: %s" % master)
+		if not ResourceLoader.exists(mask): failures.append("Missing tiered armor mask: %s" % mask)
+	for card in V3_CATALOG.cards():
+		if str(card.get("type", "")) != "creature": continue
+		var presentation: Dictionary = card.get("presentation", {})
+		for key in ["sprite_sheet", "raw_print"]:
+			var path := str(presentation.get(key, ""))
+			if path.is_empty() or not ResourceLoader.exists(path): failures.append("Missing catalog creature %s: %s" % [key, path])
+	for suit in Catalog.SUITS:
+		var suit_raw := str((suit as Dictionary).get("raw_print", ""))
+		if suit_raw.is_empty() or not ResourceLoader.exists(suit_raw): failures.append("Missing retained Workshop full-suit raw: %s" % suit_raw)
+	for core in Catalog.CORE_BLUEPRINTS:
+		var core_raw := str((core as Dictionary).get("raw_print", ""))
+		if core_raw.is_empty() or not ResourceLoader.exists(core_raw): failures.append("Missing retained Workshop Core raw: %s" % core_raw)
+	return failures

@@ -290,7 +290,12 @@ static func _present_waiting(state: UnifiedBattleState, seat: int) -> void:
 				state.pending = {"kind":"attach","seat":seat,"card_id":str(card.get("id", "")),"holding_index":index}
 				return
 static func _attach_card(unit: Dictionary, card: Dictionary) -> void:
-	var slot := str(card.get("equipment_slot", "")); unit.equipment[slot] = {"card_id":str(card.get("id", "")),"effect":str(card.get("effect", "")),"attack_bonus":int(card.get("attack_bonus", 0)),"super_effective_bps":int(card.get("super_effective_bps", 15000)),"used":false}; unit.equipment_cost += int(card.get("filament_cost", 0)); unit.armor_hp += int(card.get("armor_hp", 0))
+	var slot := str(card.get("equipment_slot", ""))
+	# Attachment records retain presentation labels as well as deterministic values.
+	# This keeps the public snapshot self-describing without a UI catalog lookup.
+	unit.equipment[slot] = {"card_id":str(card.get("id", "")),"name":str(card.get("name", slot.capitalize())),"effect":str(card.get("effect", "")),"attack_bonus":int(card.get("attack_bonus", 0)),"super_effective_bps":int(card.get("super_effective_bps", 15000)),"used":false}
+	unit.equipment_cost += int(card.get("filament_cost", 0))
+	unit.armor_hp += int(card.get("armor_hp", 0))
 static func _apply_gem_on_hit(attacker: Dictionary, defender: Dictionary) -> void:
 	var gem: Dictionary = attacker.equipment.get("gem", {})
 	match str(gem.get("effect", "")):

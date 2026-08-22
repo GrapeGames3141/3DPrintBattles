@@ -1,21 +1,63 @@
-# PrintForge Legends architecture
+# PrintForge Legends v3 architecture
 
-The Godot client is a self-contained offline vertical slice. Immutable catalog data lives in `scripts/core/catalog.gd`; player state contains only stable IDs, integers, schema/catalog versions, and revisions. `BattleRules` uses integer fixed-point element math and accepts intent dictionaries, making it suitable for both local simulation and a TypeScript authority.
+## Authority boundaries
 
-Profile schema 5 keeps starter selection in pure `ProfileRules` transitions and moves collection/economy actions to `ProgressionRules`. Fresh profiles intentionally contain no starter inventory and route through `OnboardingState`; a completed selection grants one bound/nontradable creature instance, a legal 15-card starter deck, and the initial training team. Migration preserves legacy inventory and idempotently adds armor blueprints, counted support cards, saved decks/active deck ID, cached daily-shop data, validated accessibility settings, `solo_campaign`, and per-owned-instance `creature_mastery`. `AccessibilityRules` is a pure profile seam; `GameManager.save_settings` is its only persistence facade.
+- `data/v3/catalog.json` is the shared 57-card v3 catalog contract;
+  `scripts/core/v3_catalog.gd` validates and loads it for Godot while backend
+  parity reads the same document.
+- `scripts/core/unified_rules.gd` owns the catalog-facing profile transitions:
+  deck/pre-print validation, collection ownership, market, packs, quests,
+  drops, season rewards, and deterministic local commerce.
+- `scripts/battle/unified_battle_state.gd` is the plain-data v3 match snapshot.
+  It contains revisions, seed, turn/phase, public board data, hidden hands and
+  decks, queues, staging, holding, scrap, traps, equipment, and installed
+  upgrades.
+- `scripts/battle/unified_battle_rules.gd` applies explicit intents and is the
+  only layer that resolves match rules. Rejected intents leave state unchanged.
+- `scripts/battle/unified_ai_opponent.gd` produces only legal deterministic
+  intents from public information plus the AI owner’s hand.
+- `scripts/core/game_manager.gd` is the Godot façade: load the clean v3
+  namespace, journal accepted profile transitions, construct match launch
+  contexts, and settle mode rewards. It does not render UI.
 
-`ProgressionRules` is deliberately file-free: it validates catalog IDs, integer coin balances, atomic blueprint/printing/equip/team/deck transitions, and a deterministic explicit-`YYYY-MM-DD` shop rotation. `GameManager` is the only facade that persists an accepted result, increments revision, and appends the operation journal. Thus a rejected action cannot deduct coins or create a journal record. Battle state accepts an optional supplied deck while retaining default starter-deck callers, and validates `{ creature_id, armor_id }` loadouts with bounded integer HP/speed/guard modifiers. A resolved `BattleState` has a `reward_claimed` latch, so `GameManager.claim_battle_reward` can create only one atomic reward revision.
+## Presentation boundaries
 
-`Catalog.WORKSHOP_TRIAL_TIERS` is authored immutable campaign data: five ordered tiers, four fixed encounters per tier, catalog creature IDs only, fixed rival spool, and fixed AI difficulty. `CampaignRules` owns pure lock state, reward math, current-team instance mastery, best turns, and no-duplicate first-clear claims. `GameManager.claim_campaign_victory` makes an accepted first clear or improved best turn one journaled profile mutation; equal/worse replays emit only a UI refresh and do not change revision, rewards, unlocks, or mastery. Trial battles use this catalog encounter data while date-keyed Daily Training remains a separate repeatable path.
+`scenes/main.tscn` attaches `scripts/ui/main.gd`, a responsive shell that
+routes every shipped battle entrypoint to `unified_battle`. The legacy active-
+unit renderer is retained only for historical fixtures and has no Workshop
+launch route. Battle snapshots contain no UI nodes; player hand/deck and trap
+identity are redacted from an opponent view.
 
-`BattleSpriteStage` is a CanvasItem-only 2D presentation layer. It resolves optional `sprite_sheet` catalog paths, prefers a raw transparent 1536x1024 PNG when available for fresh-capture alpha fidelity, and falls back to the imported `Texture2D` when running from an exported PCK. It aspect-fits 384x512 cells and flips the opponent. Its public frame-selection seam is deterministic and never changes `BattleRules`; reduced motion selects static idle frame zero. `AIOpponent` chooses deterministic legal intents by difficulty and uses the same shield-aware damage estimate as combat.
+`scripts/ui/unified_battle_screen_component.gd` owns the shipped battle screen
+composition. The shell remains responsible for navigation, accessibility, and
+shared visual helpers. The remaining historical renderer boundary is described
+in [LEGACY_RUNTIME_BOUNDARY.md](LEGACY_RUNTIME_BOUNDARY.md).
 
-Each catalog creature owns a `signature` record with an integer `damage_bonus` and an ordered list of fixed effects. The bonus is added to base Attack before fixed-point element scaling and post-scale armor/shield resolution. `BattleRules` resolves this record after signature damage using the same integer primitives as support cards (heal, shield, filament, attack buff/debuff, cleanse, switch discount, and ability lock); `Catalog.signature_description()` derives player-facing wording from that exact record. This avoids a separate generic signature-damage rule or UI-only effect text. AI difficulty remains deterministic and legal-first: Apprentice is conservative, Craftsman scores survival/damage/cards/defense/switches, and Master additionally values lethal and elemental/cooldown plans.
+The primary player-facing surfaces are Workshop, Foundry Battle, deck and
+pre-print editor, collection, five-shop market, quest/season, and local
+hot-seat handoff. Accessibility settings remain presentation-only.
 
-`ArcaneForgeSequence` is a pure refcounted visual state machine with integer progress and explicit idle, printing, raw-complete, awakening, awakened, failed, and cancelled phases. Only its one-time `request_commit()` seam permits `Main` to call `GameManager.print_creature`; `resolve_commit` then controls visual completion. `ArcaneForgeStage` is a CanvasItem-only compositor: catalog `raw_print` paths fall back safely, a plate-clipped raw source reveals from the bottom upward, and it crossfades into the catalog living idle cell. It consumes reduced-motion/high-contrast settings but never profile or combat mutations.
+## Data and assets
 
-Online release contract: Steam tickets authenticate through Nakama; the client submits an intent with match ID and expected revision; an authoritative TypeScript match handler validates it, updates canonical state, and broadcasts a snapshot/event. Clients never award online rewards or settle trades.
+Catalog IDs are stable and the v3 runtime derives card fields from the shared
+Godot catalog while TypeScript parity remains scaffolded under `backend/`.
+Ownership is permanently separate: `owned_cards`, `owned_blueprints`,
+`printed_models`, and `gear_loadouts` do not imply one another.
 
-Offline mode stores a profile snapshot and append-only operation journal in Godot `user://`. On reconnect, the server merges valid unseen operation IDs idempotently against server revision. A client-controlled offline mode cannot be cheat-proof; suspicious journals can remain solo-only and trading must stay locked until reconciliation.
+`assets/` is exportable runtime content. `art-source/source`,
+`art-source/review`, and `art-source/demo` are editor-ignored provenance/capture content. The runtime
+asset manifest names resources loaded through constructed paths, allowing a
+test to distinguish supported dynamic art from unused files.
 
-Trades require Steam-friend or one-time-code pairing, escrow, revision lock, two confirmations, inventory revalidation, and a single PostgreSQL transaction. There is no chat or editable profile text.
+## Validation
+
+`tests/test_unified_rules.tscn`, `tests/test_v3_catalog_contract.tscn`, and
+`tests/test_v3_smoke.tscn` form the deterministic CI authority gate. They check
+the legal starter deck, Filament Ring’s slotless battle effect, hidden-info
+redaction, JSON catalog parity, and the runtime asset manifest.
+`tests/test_unified_ui_layout.tscn` exercises responsive hot-seat privacy and
+accessible phase controls at portrait and landscape sizes. CI additionally
+runs the backend catalog parity test before exporting.
+
+Historical architecture and playtest records are retained in
+`docs/archive/0.5-0.7/` and are not implementation authority.

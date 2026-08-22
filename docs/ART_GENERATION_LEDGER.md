@@ -3,7 +3,7 @@
 ## Support-card landscape atlas (0.5.25-alpha)
 
 Eight approved `1536x1024` 2x2 source sheets live in
-`docs/art/source/cards/landscape_v2/`: resources, defense, offense, and utility A/B.
+`art-source/source/cards/landscape_v2/`: resources, defense, offense, and utility A/B.
 Every source quadrant is `768x512` (3:2). `tmp/build_support_card_landscape_atlases.ps1`
 deterministically places A in runtime cells 0-3 and B in cells 4-7, downsampling each
 quadrant once to a `384x256` native-aspect cell in a versioned `1536x512` 4x2 runtime
@@ -41,15 +41,15 @@ Future approved prompt direction: create a separate dormant, fresh-off-the-build
 ## Forge portrait and launcher follow-up (0.5.1-alpha)
 
 The approved source copies are retained outside the runtime pack at
-`docs/art/source/arcane_forge/`. Runtime uses only the alpha-keyed frames below;
+`art-source/source/arcane_forge/`. Runtime uses only the alpha-keyed frames below;
 the magenta-key sources are deliberately excluded by the export preset.
 
 | Purpose | Source / runtime file | SHA-256 |
 | --- | --- | --- |
-| Printer source 01 | `docs/art/source/arcane_forge/printer_frame_01_chroma.png` | `C78BE74EF2C5B5336B35A0530943BA83DA36234A09A65830524D31928A875219` |
-| Printer source 02 | `docs/art/source/arcane_forge/printer_frame_02_chroma.png` | `F1F58CA61B6BA450A038415CEF33809DE478DA97D91EAE898FDC8103665CEDB9` |
-| Printer source 03 | `docs/art/source/arcane_forge/printer_frame_03_chroma.png` | `02F117F69369969AA8CE6AF85805F9A2D0C8B6F486217A8AEC26FCD5B55B6678` |
-| Printer source 04 | `docs/art/source/arcane_forge/printer_frame_04_chroma.png` | `A3D34CE6D6EFE812B6664BD8BD124783031C4667B8BE1B7962DE0D894DC2CEDD` |
+| Printer source 01 | `art-source/source/arcane_forge/printer_frame_01_chroma.png` | `C78BE74EF2C5B5336B35A0530943BA83DA36234A09A65830524D31928A875219` |
+| Printer source 02 | `art-source/source/arcane_forge/printer_frame_02_chroma.png` | `F1F58CA61B6BA450A038415CEF33809DE478DA97D91EAE898FDC8103665CEDB9` |
+| Printer source 03 | `art-source/source/arcane_forge/printer_frame_03_chroma.png` | `02F117F69369969AA8CE6AF85805F9A2D0C8B6F486217A8AEC26FCD5B55B6678` |
+| Printer source 04 | `art-source/source/arcane_forge/printer_frame_04_chroma.png` | `A3D34CE6D6EFE812B6664BD8BD124783031C4667B8BE1B7962DE0D894DC2CEDD` |
 | Runtime printer 01 | `assets/ui/arcane_forge_printer_frame_01.png` | `EA082E231922F13910AF66045958053E072763972DE7BF48F3A3556EC99EE50E` |
 | Runtime printer 02 | `assets/ui/arcane_forge_printer_frame_02.png` | `9A8666E85E07AC17D960D58C02B17A2DA1F57A3AD615807A51C992898CDFC875` |
 | Runtime printer 03 | `assets/ui/arcane_forge_printer_frame_03.png` | `9E8737BB8BF6EB091CFAAD949D35EF595F6B67D2A7792D631BD37B34CCB395FE` |

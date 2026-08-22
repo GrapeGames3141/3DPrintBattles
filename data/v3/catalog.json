@@ -1,0 +1,982 @@
+{
+  "schema": "printforge.v3.catalog",
+  "version": 1,
+  "defaults": {
+    "print_turns": {
+      "common": 1,
+      "uncommon": 2,
+      "rare": 3,
+      "epic": 4,
+      "legendary": 5,
+      "mythic": 6,
+      "prismatic": 7,
+      "primordial": 8
+    },
+    "creature_filament_cost": {
+      "common": 70,
+      "uncommon": 120,
+      "rare": 190,
+      "epic": 300,
+      "legendary": 440,
+      "mythic": 530,
+      "prismatic": 610,
+      "primordial": 680
+    },
+    "equipment_filament_cost": {
+      "common": 40,
+      "uncommon": 75,
+      "rare": 120,
+      "epic": 185,
+      "legendary": 300,
+      "mythic": 390,
+      "prismatic": 500,
+      "primordial": 620
+    }
+  },
+  "cards": [
+    {
+      "id": "cinderpaw",
+      "name": "Cinderpaw",
+      "type": "creature",
+      "rarity": "common",
+      "filament_cost": 70,
+      "print_turns": 1,
+      "bend_score": 18,
+      "hp": 34,
+      "element": "Fire",
+      "ability_trigger": "attack",
+      "ability_cooldown": 2,
+      "effects": [
+        {
+          "effect": "debuff",
+          "target": "foe",
+          "amount": 1
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/cinderpaw_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/cinderpaw_raw_print.png"
+      },
+      "ability_damage_bonus": 5
+    },
+    {
+      "id": "aquafin",
+      "name": "Aquafin",
+      "type": "creature",
+      "rarity": "common",
+      "filament_cost": 70,
+      "print_turns": 1,
+      "bend_score": 17,
+      "hp": 36,
+      "element": "Water",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "heal",
+          "target": "self",
+          "amount": 8
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/aquafin_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/aquafin_raw_print.png"
+      },
+      "ability_damage_bonus": 1
+    },
+    {
+      "id": "voltwig",
+      "name": "Voltwig",
+      "type": "creature",
+      "rarity": "common",
+      "filament_cost": 70,
+      "print_turns": 1,
+      "bend_score": 16,
+      "hp": 30,
+      "element": "Lightning",
+      "ability_trigger": "attack",
+      "ability_cooldown": 2,
+      "effects": [
+        {
+          "effect": "filament",
+          "target": "self",
+          "amount": 1
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/voltwig_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/voltwig_raw_print.png"
+      },
+      "ability_damage_bonus": 3
+    },
+    {
+      "id": "mossmunk",
+      "name": "Mossmunk",
+      "type": "creature",
+      "rarity": "common",
+      "filament_cost": 70,
+      "print_turns": 1,
+      "bend_score": 13,
+      "hp": 31,
+      "element": "Nature",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 6
+        },
+        {
+          "effect": "heal",
+          "target": "self",
+          "amount": 3
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/mossmunk_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/mossmunk_raw_print.png"
+      },
+      "ability_damage_bonus": 0
+    },
+    {
+      "id": "frostling",
+      "name": "Frostling",
+      "type": "creature",
+      "rarity": "uncommon",
+      "filament_cost": 120,
+      "print_turns": 2,
+      "bend_score": 26,
+      "hp": 42,
+      "element": "Ice",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "ability_lock",
+          "target": "foe",
+          "amount": 1
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/frostling_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/frostling_raw_print.png"
+      },
+      "ability_damage_bonus": 4
+    },
+    {
+      "id": "stoneback",
+      "name": "Stoneback",
+      "type": "creature",
+      "rarity": "uncommon",
+      "filament_cost": 120,
+      "print_turns": 2,
+      "bend_score": 29,
+      "hp": 49,
+      "element": "Stone",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 9
+        },
+        {
+          "effect": "cleanse",
+          "target": "self",
+          "amount": 0
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/stoneback_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/stoneback_raw_print.png"
+      },
+      "ability_damage_bonus": 1
+    },
+    {
+      "id": "galehopper",
+      "name": "Galehopper",
+      "type": "creature",
+      "rarity": "uncommon",
+      "filament_cost": 120,
+      "print_turns": 2,
+      "bend_score": 24,
+      "hp": 35,
+      "element": "Wind",
+      "ability_trigger": "attack",
+      "ability_cooldown": 2,
+      "effects": [
+        {
+          "effect": "switch_discount",
+          "target": "self",
+          "amount": 3
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/galehopper_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/galehopper_raw_print.png"
+      },
+      "ability_damage_bonus": 3
+    },
+    {
+      "id": "sparkotter",
+      "name": "Sparkotter",
+      "type": "creature",
+      "rarity": "uncommon",
+      "filament_cost": 120,
+      "print_turns": 2,
+      "bend_score": 27,
+      "hp": 39,
+      "element": "Lightning",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "filament",
+          "target": "self",
+          "amount": 2
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/sparkotter_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/sparkotter_raw_print.png"
+      },
+      "ability_damage_bonus": 5
+    },
+    {
+      "id": "glassdrake",
+      "name": "Glassdrake",
+      "type": "creature",
+      "rarity": "rare",
+      "filament_cost": 190,
+      "print_turns": 3,
+      "bend_score": 42,
+      "hp": 56,
+      "element": "Fire",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "attack_buff",
+          "target": "self",
+          "amount": 3
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/glassdrake_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/glassdrake_raw_print.png"
+      },
+      "ability_damage_bonus": 8
+    },
+    {
+      "id": "coralisk",
+      "name": "Coralisk",
+      "type": "creature",
+      "rarity": "rare",
+      "filament_cost": 190,
+      "print_turns": 3,
+      "bend_score": 41,
+      "hp": 61,
+      "element": "Water",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "heal",
+          "target": "self",
+          "amount": 12
+        },
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 4
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/coralisk_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/coralisk_raw_print.png"
+      },
+      "ability_damage_bonus": 2
+    },
+    {
+      "id": "runestag",
+      "name": "Runestag",
+      "type": "creature",
+      "rarity": "rare",
+      "filament_cost": 190,
+      "print_turns": 3,
+      "bend_score": 46,
+      "hp": 53,
+      "element": "Arcane",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "debuff",
+          "target": "foe",
+          "amount": 3
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/runestag_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/runestag_raw_print.png"
+      },
+      "ability_damage_bonus": 6
+    },
+    {
+      "id": "brambleowl",
+      "name": "Brambleowl",
+      "type": "creature",
+      "rarity": "rare",
+      "filament_cost": 190,
+      "print_turns": 3,
+      "bend_score": 43,
+      "hp": 55,
+      "element": "Nature",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "heal",
+          "target": "self",
+          "amount": 5
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/brambleowl_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/brambleowl_raw_print.png"
+      },
+      "ability_damage_bonus": 4
+    },
+    {
+      "id": "ironmaw",
+      "name": "Ironmaw",
+      "type": "creature",
+      "rarity": "epic",
+      "filament_cost": 300,
+      "print_turns": 4,
+      "bend_score": 61,
+      "hp": 75,
+      "element": "Stone",
+      "ability_trigger": "attack",
+      "ability_cooldown": 4,
+      "effects": [
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 12
+        },
+        {
+          "effect": "attack_buff",
+          "target": "self",
+          "amount": 2
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/ironmaw_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/ironmaw_raw_print.png"
+      },
+      "ability_damage_bonus": 2
+    },
+    {
+      "id": "aurorawing",
+      "name": "Aurorawing",
+      "type": "creature",
+      "rarity": "epic",
+      "filament_cost": 300,
+      "print_turns": 4,
+      "bend_score": 58,
+      "hp": 64,
+      "element": "Ice",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "ability_lock",
+          "target": "foe",
+          "amount": 2
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/aurorawing_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/aurorawing_raw_print.png"
+      },
+      "ability_damage_bonus": 7
+    },
+    {
+      "id": "thunderelk",
+      "name": "Thunderelk",
+      "type": "creature",
+      "rarity": "epic",
+      "filament_cost": 300,
+      "print_turns": 4,
+      "bend_score": 63,
+      "hp": 67,
+      "element": "Lightning",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "switch_discount",
+          "target": "self",
+          "amount": 4
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/thunderelk_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/thunderelk_raw_print.png"
+      },
+      "ability_damage_bonus": 8
+    },
+    {
+      "id": "coalgriffin",
+      "name": "Coalgriffin",
+      "type": "creature",
+      "rarity": "legendary",
+      "filament_cost": 440,
+      "print_turns": 5,
+      "bend_score": 82,
+      "hp": 88,
+      "element": "Fire",
+      "ability_trigger": "attack",
+      "ability_cooldown": 4,
+      "effects": [
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 6
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/coalgriffin_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/coalgriffin_raw_print.png"
+      },
+      "ability_damage_bonus": 10
+    },
+    {
+      "id": "tidewhale",
+      "name": "Tidewhale",
+      "type": "creature",
+      "rarity": "legendary",
+      "filament_cost": 440,
+      "print_turns": 5,
+      "bend_score": 86,
+      "hp": 100,
+      "element": "Water",
+      "ability_trigger": "attack",
+      "ability_cooldown": 4,
+      "effects": [
+        {
+          "effect": "heal",
+          "target": "self",
+          "amount": 16
+        },
+        {
+          "effect": "cleanse",
+          "target": "self",
+          "amount": 0
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/tidewhale_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/tidewhale_raw_print.png"
+      },
+      "ability_damage_bonus": 2
+    },
+    {
+      "id": "skyforge",
+      "name": "Skyforge",
+      "type": "creature",
+      "rarity": "legendary",
+      "filament_cost": 440,
+      "print_turns": 5,
+      "bend_score": 80,
+      "hp": 80,
+      "element": "Wind",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "filament",
+          "target": "self",
+          "amount": 4
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/skyforge_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/skyforge_raw_print.png"
+      },
+      "ability_damage_bonus": 8
+    },
+    {
+      "id": "pyraxis",
+      "name": "Pyraxis",
+      "type": "creature",
+      "rarity": "mythic",
+      "filament_cost": 530,
+      "print_turns": 6,
+      "bend_score": 105,
+      "hp": 115,
+      "element": "Arcane",
+      "ability_trigger": "attack",
+      "ability_cooldown": 4,
+      "effects": [
+        {
+          "effect": "debuff",
+          "target": "foe",
+          "amount": 4
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/pyraxis_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/pyraxis_raw_print.png"
+      },
+      "ability_damage_bonus": 12
+    },
+    {
+      "id": "verdantitan",
+      "name": "Verdantitan",
+      "type": "creature",
+      "rarity": "mythic",
+      "filament_cost": 530,
+      "print_turns": 6,
+      "bend_score": 108,
+      "hp": 128,
+      "element": "Nature",
+      "ability_trigger": "attack",
+      "ability_cooldown": 4,
+      "effects": [
+        {
+          "effect": "heal",
+          "target": "self",
+          "amount": 18
+        },
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 8
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/verdantitan_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/verdantitan_raw_print.png"
+      },
+      "ability_damage_bonus": 3
+    },
+    {
+      "id": "miragefox",
+      "name": "Miragefox",
+      "type": "creature",
+      "rarity": "prismatic",
+      "filament_cost": 610,
+      "print_turns": 7,
+      "bend_score": 126,
+      "hp": 118,
+      "element": "Ice",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "cleanse",
+          "target": "self",
+          "amount": 0
+        },
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 5
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/miragefox_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/miragefox_raw_print.png"
+      },
+      "ability_damage_bonus": 9
+    },
+    {
+      "id": "voidmanta",
+      "name": "Voidmanta",
+      "type": "creature",
+      "rarity": "prismatic",
+      "filament_cost": 610,
+      "print_turns": 7,
+      "bend_score": 130,
+      "hp": 122,
+      "element": "Arcane",
+      "ability_trigger": "attack",
+      "ability_cooldown": 3,
+      "effects": [
+        {
+          "effect": "ability_lock",
+          "target": "foe",
+          "amount": 2
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/voidmanta_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/voidmanta_raw_print.png"
+      },
+      "ability_damage_bonus": 11
+    },
+    {
+      "id": "worldcoil",
+      "name": "Worldcoil",
+      "type": "creature",
+      "rarity": "primordial",
+      "filament_cost": 680,
+      "print_turns": 8,
+      "bend_score": 160,
+      "hp": 160,
+      "element": "Stone",
+      "ability_trigger": "attack",
+      "ability_cooldown": 5,
+      "effects": [
+        {
+          "effect": "shield",
+          "target": "self",
+          "amount": 10
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/worldcoil_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/worldcoil_raw_print.png"
+      },
+      "ability_damage_bonus": 14
+    },
+    {
+      "id": "starloom",
+      "name": "Starloom",
+      "type": "creature",
+      "rarity": "primordial",
+      "filament_cost": 680,
+      "print_turns": 8,
+      "bend_score": 165,
+      "hp": 145,
+      "element": "Arcane",
+      "ability_trigger": "attack",
+      "ability_cooldown": 5,
+      "effects": [
+        {
+          "effect": "filament",
+          "target": "self",
+          "amount": 5
+        }
+      ],
+      "presentation": {
+        "sprite_sheet": "res://assets/creatures/2d/starloom_sprite_sheet.png",
+        "raw_print": "res://assets/creatures/2d/raw/starloom_raw_print.png"
+      },
+      "ability_damage_bonus": 15
+    },
+    {
+      "id": "standard_full_suit",
+      "name": "Standard Full Suit",
+      "type": "equipment",
+      "rarity": "common",
+      "filament_cost": 40,
+      "print_turns": 1,
+      "equipment_slot": "armor",
+      "armor_hp": 8
+    },
+    {
+      "id": "reinforced_full_suit",
+      "name": "Reinforced Full Suit",
+      "type": "equipment",
+      "rarity": "uncommon",
+      "filament_cost": 75,
+      "print_turns": 2,
+      "equipment_slot": "armor",
+      "armor_hp": 14
+    },
+    {
+      "id": "arcane_full_suit",
+      "name": "Arcane Full Suit",
+      "type": "equipment",
+      "rarity": "rare",
+      "filament_cost": 120,
+      "print_turns": 3,
+      "equipment_slot": "armor",
+      "armor_hp": 20,
+      "super_effective_bps": 12000
+    },
+    {
+      "id": "masterwork_full_suit",
+      "name": "Masterwork Full Suit",
+      "type": "equipment",
+      "rarity": "epic",
+      "filament_cost": 185,
+      "print_turns": 4,
+      "equipment_slot": "armor",
+      "armor_hp": 28
+    },
+    {
+      "id": "legendary_full_suit",
+      "name": "Legendary Full Suit",
+      "type": "equipment",
+      "rarity": "legendary",
+      "filament_cost": 300,
+      "print_turns": 5,
+      "equipment_slot": "armor",
+      "armor_hp": 36
+    },
+    {
+      "id": "iron_gem",
+      "name": "Iron Gem",
+      "type": "equipment",
+      "rarity": "common",
+      "filament_cost": 40,
+      "print_turns": 1,
+      "equipment_slot": "gem",
+      "attack_bonus": 5
+    },
+    {
+      "id": "ember_gem",
+      "name": "Ember Gem",
+      "type": "equipment",
+      "rarity": "uncommon",
+      "filament_cost": 75,
+      "print_turns": 2,
+      "equipment_slot": "gem",
+      "attack_bonus": 4,
+      "effect": "ember_gem_burn"
+    },
+    {
+      "id": "frost_gem",
+      "name": "Frost Gem",
+      "type": "equipment",
+      "rarity": "uncommon",
+      "filament_cost": 75,
+      "print_turns": 2,
+      "equipment_slot": "gem",
+      "attack_bonus": 4,
+      "effect": "frost_gem_lock"
+    },
+    {
+      "id": "storm_gem",
+      "name": "Storm Gem",
+      "type": "equipment",
+      "rarity": "rare",
+      "filament_cost": 120,
+      "print_turns": 3,
+      "equipment_slot": "gem",
+      "attack_bonus": 3,
+      "effect": "storm_gem_lock"
+    },
+    {
+      "id": "arcane_gem",
+      "name": "Arcane Gem",
+      "type": "equipment",
+      "rarity": "epic",
+      "filament_cost": 185,
+      "print_turns": 4,
+      "equipment_slot": "gem",
+      "attack_bonus": 5,
+      "effect": "arcane_gem_drill"
+    },
+    {
+      "id": "filament_ring",
+      "name": "Filament Ring",
+      "type": "equipment",
+      "rarity": "uncommon",
+      "filament_cost": 75,
+      "print_turns": 0,
+      "equipment_slot": "battle_effect",
+      "effect": "filament_ring"
+    },
+    {
+      "id": "raw_filament",
+      "name": "Raw Filament",
+      "type": "filament",
+      "rarity": "common",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "filament_gain": 80
+    },
+    {
+      "id": "heated_spool",
+      "name": "Heated Spool",
+      "type": "filament",
+      "rarity": "uncommon",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "filament_gain": 120
+    },
+    {
+      "id": "emergency_canister",
+      "name": "Emergency Canister",
+      "type": "filament",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "filament_gain": 200
+    },
+    {
+      "id": "recycled_scrap",
+      "name": "Recycled Scrap",
+      "type": "filament",
+      "rarity": "uncommon",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "filament_gain": 0
+    },
+    {
+      "id": "layer_melt",
+      "name": "Layer Melt",
+      "type": "spell",
+      "rarity": "rare",
+      "filament_cost": 150,
+      "print_turns": 0
+    },
+    {
+      "id": "print_jam",
+      "name": "Print Jam",
+      "type": "spell",
+      "rarity": "uncommon",
+      "filament_cost": 100,
+      "print_turns": 0
+    },
+    {
+      "id": "spool_drain",
+      "name": "Spool Drain",
+      "type": "spell",
+      "rarity": "rare",
+      "filament_cost": 120,
+      "print_turns": 0
+    },
+    {
+      "id": "forge_surge",
+      "name": "Forge Surge",
+      "type": "spell",
+      "rarity": "uncommon",
+      "filament_cost": 80,
+      "print_turns": 0
+    },
+    {
+      "id": "emergency_reprint_spell",
+      "name": "Emergency Reprint",
+      "type": "spell",
+      "rarity": "epic",
+      "filament_cost": 150,
+      "print_turns": 0
+    },
+    {
+      "id": "blueprint_thief",
+      "name": "Blueprint Thief",
+      "type": "spell",
+      "rarity": "epic",
+      "filament_cost": 180,
+      "print_turns": 0
+    },
+    {
+      "id": "print_interrupt",
+      "name": "Print Interrupt",
+      "type": "trap",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "trigger": "print_complete"
+    },
+    {
+      "id": "filament_siphon",
+      "name": "Filament Siphon",
+      "type": "trap",
+      "rarity": "uncommon",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "trigger": "filament"
+    },
+    {
+      "id": "counter_strike",
+      "name": "Counter Strike",
+      "type": "trap",
+      "rarity": "uncommon",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "trigger": "attack"
+    },
+    {
+      "id": "scrap_grab",
+      "name": "Scrap Grab",
+      "type": "trap",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "trigger": "destroy"
+    },
+    {
+      "id": "speed_spool",
+      "name": "Speed Spool",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 600
+    },
+    {
+      "id": "turbo_spool",
+      "name": "Turbo Spool",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 1400
+    },
+    {
+      "id": "smelter",
+      "name": "Smelter",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 500,
+      "unique_key": "smelter"
+    },
+    {
+      "id": "battlefield_collector",
+      "name": "Battlefield Collector",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 700,
+      "unique_key": "battlefield_collector"
+    },
+    {
+      "id": "spooler",
+      "name": "Spooler",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 500
+    },
+    {
+      "id": "reinforced_chassis",
+      "name": "Reinforced Chassis",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 800
+    },
+    {
+      "id": "dual_queue",
+      "name": "Dual Queue",
+      "type": "upgrade",
+      "rarity": "rare",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 1600
+    },
+    {
+      "id": "emergency_reprint_upgrade",
+      "name": "Emergency Reprint",
+      "type": "upgrade",
+      "rarity": "legendary",
+      "filament_cost": 0,
+      "print_turns": 0,
+      "market_cost": 3500
+    }
+  ]
+}

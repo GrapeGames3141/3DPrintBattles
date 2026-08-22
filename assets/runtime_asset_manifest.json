@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "purpose": "Runtime-only assets referenced dynamically by PrintForge Legends v3.",
+  "groups": {
+    "battle_backgrounds": [
+      "res://assets/ui/battle_backgrounds/daily_arena_landscape_v1.png",
+      "res://assets/ui/battle_backgrounds/daily_arena_portrait_v1.png",
+      "res://assets/ui/battle_backgrounds/first_layers_landscape_v1.png",
+      "res://assets/ui/battle_backgrounds/first_layers_portrait_v1.png",
+      "res://assets/ui/battle_backgrounds/element_bench_landscape_v1.png",
+      "res://assets/ui/battle_backgrounds/element_bench_portrait_v1.png",
+      "res://assets/ui/battle_backgrounds/reinforced_run_landscape_v1.png",
+      "res://assets/ui/battle_backgrounds/reinforced_run_portrait_v1.png",
+      "res://assets/ui/battle_backgrounds/masterwork_circuit_landscape_v1.png",
+      "res://assets/ui/battle_backgrounds/masterwork_circuit_portrait_v1.png",
+      "res://assets/ui/battle_backgrounds/primordial_proof_landscape_v1.png",
+      "res://assets/ui/battle_backgrounds/primordial_proof_portrait_v1.png"
+    ],
+    "printer_frames": [
+      "res://assets/ui/arcane_forge_printer_frame_01.png",
+      "res://assets/ui/arcane_forge_printer_frame_02.png",
+      "res://assets/ui/arcane_forge_printer_frame_03.png",
+      "res://assets/ui/arcane_forge_printer_frame_04.png"
+    ],
+    "tiered_armor": {
+      "directory": "res://assets/armor/tiered/",
+      "mask_directory": "res://assets/armor/tiered/masks/",
+      "required_creatures": ["cinderpaw", "aquafin", "voltwig", "mossmunk", "frostling", "galehopper", "stoneback", "sparkotter", "glassdrake", "coralisk", "runestag", "brambleowl", "ironmaw", "aurorawing", "thunderelk", "coalgriffin", "tidewhale", "skyforge", "pyraxis", "verdantitan", "miragefox", "voidmanta", "worldcoil", "starloom"]
+    },
+    "card_atlases": [
+      "res://assets/cards/support_card_back_source_v1.png",
+      "res://assets/cards/support_cards_defense_landscape_v2.png",
+      "res://assets/cards/support_cards_offense_landscape_v2.png",
+      "res://assets/cards/support_cards_resources_landscape_v2.png",
+      "res://assets/cards/support_cards_utility_landscape_v2.png"
+    ]
+  }
+}

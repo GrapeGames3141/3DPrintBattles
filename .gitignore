@@ -1,5 +1,7 @@
 .godot/
 .import/
+Godot/
+.codex-remote-attachments/
 *.tmp
 tmp/
 *.log
@@ -9,3 +11,6 @@ build/
 backend/node_modules/
 backend/dist/
 user-data/
+runtime-*/
+validation-*/
+art-source/**/*.import
