@@ -38,8 +38,11 @@ static func _play(state: UnifiedBattleState, seat: int, card_id: String, target:
 	var kind := str(card.get("type", ""))
 	var cost := int(card.get("filament_cost", 0))
 	if kind != "trap" and kind != "upgrade" and int(p.filament) < cost: return _no("Need more filament.")
-	if kind in ["creature", "equipment"] and p.queue.size() >= _queue_capacity(p): return _no("Print queue is full.")
-	if kind == "equipment" and (target < 0 or target > 2): return _no("Choose an equipment target.")
+	var equipment_slot := str(card.get("equipment_slot", ""))
+	if kind in ["creature", "equipment"] and equipment_slot != "battle_effect" and p.queue.size() >= _queue_capacity(p): return _no("Print queue is full.")
+	if kind == "equipment":
+		if equipment_slot not in ["battle_effect"] and (target < 0 or target > 2): return _no("Choose an equipment target.")
+		if equipment_slot == "battle_effect" and bool(p.get(battle_effect_key(card), false)): return _no("That player battle effect is already active this battle.")
 	if kind == "upgrade":
 		if int(p.upgrade_plays) >= 1 or p.installed_upgrades.size() >= 5: return _no("Only one upgrade per turn and five per match.")
 		var unique_key := str(card.get("unique_key", ""))
@@ -48,7 +51,10 @@ static func _play(state: UnifiedBattleState, seat: int, card_id: String, target:
 	p.played.append(card_id)
 	if kind != "trap" and kind != "upgrade": p.filament -= cost
 	match kind:
-		"creature", "equipment": p.queue.append({"card_id":card_id,"remaining":int(card.get("print_turns", 1)),"target":target,"cost":cost})
+		"creature": p.queue.append({"card_id":card_id,"remaining":int(card.get("print_turns", 1)),"target":target,"cost":cost})
+		"equipment":
+			if equipment_slot == "battle_effect": p[battle_effect_key(card)] = true; p.graveyard.append(card_id)
+			else: p.queue.append({"card_id":card_id,"remaining":int(card.get("print_turns", 1)),"target":target,"cost":cost})
 		"filament":
 			_gain(p, int(card.get("filament_gain", 0)))
 			p.graveyard.append(card_id)
@@ -71,6 +77,9 @@ static func _filament_effect(state: UnifiedBattleState, seat: int, card: Diction
 		var scraps: Array = state.player(seat).scrap
 		_gain(state.player(seat), scraps.size() * 60)
 		scraps.clear()
+
+static func battle_effect_key(card: Dictionary) -> String:
+	return "%s_active" % str(card.get("effect", card.get("id", "battle_effect")))
 
 static func _spell(state: UnifiedBattleState, seat: int, card: Dictionary, target: int) -> void:
 	var p := state.player(seat)
@@ -176,13 +185,13 @@ static func _attack(state: UnifiedBattleState, seat: int, slot: int, target: int
 	if target < 0 or target > 2 or foe.slots[target] == null: return _no("Choose a defending creature or printer.")
 	var defender: Dictionary = foe.slots[target]
 	var damage := _damage(attacker, defender) * _trigger_trap(state, 1 - seat, "attack", {"attacker":slot,"target":target}) / 10000
-	var drill := str((attacker.equipment.get("weapon", {}) as Dictionary).get("effect", "")) == "arcane_drill"
-	_damage_unit(state, 1 - seat, target, damage, drill); attacker.attacked = true; _apply_weapon_on_hit(attacker, defender); _resolve_attack_ability(state, seat, slot, target)
+	var drill := str((attacker.equipment.get("gem", {}) as Dictionary).get("effect", "")) == "arcane_gem_drill"
+	_damage_unit(state, 1 - seat, target, damage, drill); attacker.attacked = true; _apply_gem_on_hit(attacker, defender); _resolve_attack_ability(state, seat, slot, target)
 	return {"ok":true,"damage":damage}
 
 static func _damage(attacker: Dictionary, defender: Dictionary) -> int:
-	var weapon: Dictionary = attacker.get("equipment", {}).get("weapon", {}) if attacker.get("equipment", {}) is Dictionary else {}
-	var base := (int(attacker.get("bend", 0)) + int(attacker.get("ability_bend_bonus", 0)) + 3) / 4 + int(weapon.get("attack_bonus", 0))
+	var gem: Dictionary = attacker.get("equipment", {}).get("gem", {}) if attacker.get("equipment", {}) is Dictionary else {}
+	var base := (int(attacker.get("bend", 0)) + int(attacker.get("ability_bend_bonus", 0)) + 3) / 4 + int(gem.get("attack_bonus", 0))
 	var multiplier := 100
 	if not defender.is_empty():
 		multiplier = _element_multiplier(str(attacker.get("element", "Arcane")), str(defender.get("element", "Arcane")))
@@ -234,9 +243,7 @@ static func _draw_start(state: UnifiedBattleState, seat: int) -> void:
 		if unit == null: continue
 		unit.attacked = false; unit.mode_changed = false; unit.ready = not (bool(unit.preprinted) and state.turn == 1)
 		if bool(unit.preprinted) and state.turn > 1: unit.preprinted = false
-		var accessory: Dictionary = unit.equipment.get("accessory", {})
-		unit.ability_cooldown = maxi(0, int(unit.ability_cooldown) - (2 if str(accessory.get("effect", "")) == "arcane_sigil" else 1))
-		if str(accessory.get("effect", "")) == "tidal_core": unit.hp = mini(int(unit.base_hp), int(unit.hp) + 10)
+		unit.ability_cooldown = maxi(0, int(unit.ability_cooldown) - 1)
 		if int(unit.statuses.get("burn", 0)) > 0: _damage_unit(state, seat, slot, 10, false)
 		for status in unit.statuses.keys(): unit.statuses[status] = maxi(0, int(unit.statuses[status]) - 1)
 	_present_waiting(state, seat)
@@ -284,12 +291,12 @@ static func _present_waiting(state: UnifiedBattleState, seat: int) -> void:
 				return
 static func _attach_card(unit: Dictionary, card: Dictionary) -> void:
 	var slot := str(card.get("equipment_slot", "")); unit.equipment[slot] = {"card_id":str(card.get("id", "")),"effect":str(card.get("effect", "")),"attack_bonus":int(card.get("attack_bonus", 0)),"super_effective_bps":int(card.get("super_effective_bps", 15000)),"used":false}; unit.equipment_cost += int(card.get("filament_cost", 0)); unit.armor_hp += int(card.get("armor_hp", 0))
-static func _apply_weapon_on_hit(attacker: Dictionary, defender: Dictionary) -> void:
-	var weapon: Dictionary = attacker.equipment.get("weapon", {})
-	match str(weapon.get("effect", "")):
-		"ember_fang": defender.statuses["burn"] = 3 # Draw resolves, then decrements: exactly two owner Draws.
-		"frost_shard": defender.statuses["frost_lock"] = 2
-		"thunder_coil": if not bool(weapon.get("used", false)): defender.statuses["attack_lock"] = 2; weapon.used = true
+static func _apply_gem_on_hit(attacker: Dictionary, defender: Dictionary) -> void:
+	var gem: Dictionary = attacker.equipment.get("gem", {})
+	match str(gem.get("effect", "")):
+		"ember_gem_burn": defender.statuses["burn"] = 3 # Draw resolves, then decrements: exactly two owner Draws.
+		"frost_gem_lock": defender.statuses["frost_lock"] = 2
+		"storm_gem_lock": if not bool(gem.get("used", false)): defender.statuses["attack_lock"] = 2; gem.used = true
 
 static func _resolve_attack_ability(state: UnifiedBattleState, seat: int, slot: int, target: int) -> void:
 	var attacker: Variant = state.player(seat).slots[slot]
@@ -315,8 +322,7 @@ static func _resolve_attack_ability(state: UnifiedBattleState, seat: int, slot: 
 	attacker.ability_cooldown = int(definition.get("ability_cooldown", 0))
 static func _collect(state: UnifiedBattleState, seat: int) -> void:
 	_consume_scrap(state, seat, true)
-	for unit in state.player(seat).slots:
-		if unit != null and str((unit.equipment.get("accessory", {}) as Dictionary).get("effect", "")) == "filament_ring": _gain(state.player(seat), 20)
+	if bool(state.player(seat).get(battle_effect_key(RULES.card("filament_ring")), false)): _gain(state.player(seat), 20)
 static func _consume_scrap(state: UnifiedBattleState, seat: int, include_foe: bool) -> void:
 	var p := state.player(seat); var sources: Array = [p.scrap]
 	if include_foe and p.installed_upgrades.has("battlefield_collector"): sources.append(state.player(1 - seat).scrap)

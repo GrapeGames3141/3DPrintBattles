@@ -141,7 +141,12 @@ static func _detail_text(definition: Dictionary) -> String:
 	match str(definition.get("type", "")):
 		"creature": return "HP %d · ATK %d\nPrint %dt" % [int(definition.get("hp", 0)), int(definition.get("attack", 0)), int(definition.get("print_ticks", 1))]
 		"refill": return "+%d filament\nUp to spool cap" % int(definition.get("amount", definition.get("refill", 0)))
-		"equipment": return "Attach · %s" % str(definition.get("effect", "field upgrade")).replace("_", " ").capitalize()
+		"equipment":
+			var slot := str(definition.get("equipment_slot", ""))
+			if slot == "battle_effect": return "Player battle effect · +20 filament\nEach Collect for this match"
+			if slot == "armor": return "Full suit · +%d armor HP%s" % [int(definition.get("armor_hp", 0)), " · Arcane ward" if int(definition.get("super_effective_bps", 15000)) == 12000 else ""]
+			if slot == "gem": return "Socket Gem · +%d damage\n%s" % [int(definition.get("attack_bonus", 0)), str(definition.get("effect", "steady damage")).replace("_", " ").capitalize()]
+			return "Equipment · %s" % str(definition.get("effect", "field upgrade")).replace("_", " ").capitalize()
 		_: return str(definition.get("effect", definition.get("rules", "Tactical printer effect"))).replace("_", " ").capitalize()
 
 static func _footer_text(copies: int, market_price: int, status_text: String) -> String:

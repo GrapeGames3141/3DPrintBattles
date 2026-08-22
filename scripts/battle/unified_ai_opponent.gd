@@ -34,7 +34,9 @@ static func _main_intent(state: UnifiedBattleState, seat: int) -> Dictionary:
 		if kind == "filament": return {"type":"play_card","card_id":str(id)}
 		var queue_cap: int = 3 + p.installed_upgrades.count("dual_queue") * 2
 		if kind == "creature" and p.queue.size() < queue_cap and int(def.filament_cost) <= int(p.filament): return {"type":"play_card","card_id":str(id)}
-		if kind == "equipment" and _best_friend(p) >= 0 and int(def.filament_cost) <= int(p.filament): return {"type":"play_card","card_id":str(id),"target":_best_friend(p)}
+		var equipment_slot := str(def.get("equipment_slot", ""))
+		if kind == "equipment" and equipment_slot == "battle_effect" and not bool(p.get(BATTLE.battle_effect_key(def), false)) and int(def.filament_cost) <= int(p.filament): return {"type":"play_card","card_id":str(id)}
+		if kind == "equipment" and equipment_slot != "battle_effect" and _best_friend(p) >= 0 and int(def.filament_cost) <= int(p.filament): return {"type":"play_card","card_id":str(id),"target":_best_friend(p)}
 		if kind == "trap": return {"type":"play_card","card_id":str(id)}
 	return {}
 static func _attack_intent(state: UnifiedBattleState, seat: int) -> Dictionary:

@@ -247,6 +247,7 @@ func render_battle(root: VBoxContainer) -> void:
 func _battle_side(name: String, p: Dictionary, seat: int) -> Control:
 	var box := panel()
 	box.add_child(label("%s • Printer %d/%d HP • Filament %d/%d" % [name, int(p.printer.hp), int(p.printer.max_hp), int(p.filament), int(p.filament_max)], true))
+	box.add_child(label("Filament Ring: %s" % ("ACTIVE · +20 each Collect" if bool(p.get("filament_ring_active", false)) else "inactive"), true))
 	var field := HBoxContainer.new()
 	field.add_theme_constant_override("separation", 8)
 	box.add_child(field)
@@ -265,7 +266,14 @@ func _battle_side(name: String, p: Dictionary, seat: int) -> Control:
 		var unit = p.slots[slot]
 		var occupied := unit != null
 		slot_panel.add_theme_stylebox_override("panel", style(Color("244451") if occupied else Color("142b42"), Color("72d2e9") if occupied else Color("4d7898")))
-		var slot_text := "SLOT %d\n-" % (slot + 1) if not occupied else "%s\n%d HP" % [str(unit.name), int(unit.hp)]
+		var slot_text := "SLOT %d\n-" % (slot + 1)
+		if occupied:
+			var armor_id := str((unit.get("equipment", {}).get("armor", {}) as Dictionary).get("card_id", ""))
+			var gem_id := str((unit.get("equipment", {}).get("gem", {}) as Dictionary).get("card_id", ""))
+			var gear_line := ""
+			if not armor_id.is_empty(): gear_line += "\n" + armor_id.replace("_", " ").capitalize()
+			if not gem_id.is_empty(): gear_line += "\n" + gem_id.replace("_", " ").capitalize()
+			slot_text = "%s\n%d HP%s" % [str(unit.name), int(unit.hp), gear_line]
 		var slot_label := label(slot_text, true)
 		slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		slot_panel.add_child(slot_label)
@@ -448,12 +456,16 @@ func _render_play_target_picker(root: VBoxContainer, active: Dictionary) -> void
 		if selected_play_slot >= 0:
 			picker.add_child(button("Play %s" % str(card.name), func(): _battle_intent({"type":"play_card","card_id":selected_hand_card,"slot":selected_play_slot}, battle.active_seat), Color("3c76bf")))
 	elif kind == "equipment":
-		picker.add_child(label("Friendly completed print", true))
-		for slot in 3:
-			if active.slots[slot] != null:
-				picker.add_child(button(("✓ " if selected_play_target == slot else "") + "Target %s (slot %d)" % [str(active.slots[slot].name), slot + 1], func(): selected_play_target = slot; render(), Color("588d73") if selected_play_target == slot else Color("526e93")))
-		if selected_play_target >= 0:
-			picker.add_child(button("Equip %s" % str(card.name), func(): _battle_intent({"type":"play_card","card_id":selected_hand_card,"target":selected_play_target}, battle.active_seat), Color("3c76bf")))
+		if str(card.get("equipment_slot", "")) == "battle_effect":
+			picker.add_child(label("Activate this player battle effect now; it never prints or occupies a gear slot.", true))
+			picker.add_child(button("Activate %s" % str(card.name), func(): _battle_intent({"type":"play_card","card_id":selected_hand_card}, battle.active_seat), Color("3c76bf")))
+		else:
+			picker.add_child(label("Friendly completed print", true))
+			for slot in 3:
+				if active.slots[slot] != null:
+					picker.add_child(button(("✓ " if selected_play_target == slot else "") + "Target %s (slot %d)" % [str(active.slots[slot].name), slot + 1], func(): selected_play_target = slot; render(), Color("588d73") if selected_play_target == slot else Color("526e93")))
+			if selected_play_target >= 0:
+				picker.add_child(button("Equip %s" % str(card.name), func(): _battle_intent({"type":"play_card","card_id":selected_hand_card,"target":selected_play_target}, battle.active_seat), Color("3c76bf")))
 	elif kind == "spell":
 		var rival := str(card.get("effect", "")) in ["slow_printer", "steal_filament"]
 		var printer_name := "Rival printer" if rival else "Your printer"

@@ -3,7 +3,7 @@ extends RefCounted
 ## Canonical PrintForge Legends v3.1 catalog and profile transitions.
 ## All costs, odds and timers live here rather than in presentation code.
 
-const VERSION := "3.1.0"
+const VERSION := "3.1.1"
 const STARTER_IDS: Array[String] = ["cinderpaw", "aquafin", "voltwig"]
 const DECK_SLOTS := [{"id":"starter-deck","name":"Forge Deck"},{"id":"deck-slot-2","name":"Queue Deck"},{"id":"deck-slot-3","name":"Arcane Deck"}]
 const RARITY_ORDER := ["common","uncommon","rare","epic","legendary","mythic","prismatic","primordial"]
@@ -58,11 +58,23 @@ static func card(id: String) -> Dictionary:
 	return {}
 static func _equipment_definitions() -> Array:
 	return [
-		_eq("helm","Helm","armor","common",{"armor_hp":10}),_eq("chest_plate","Chest Plate","armor","uncommon",{"armor_hp":18}),_eq("leg_guards","Leg Guards","armor","uncommon",{"armor_hp":14}),_eq("full_suit","Full Suit","armor","rare",{"armor_hp":30}),_eq("arcane_plate","Arcane Plate","armor","epic",{"armor_hp":20,"super_effective_bps":12000}),
-		_eq("iron_claw","Iron Claw","weapon","common",{"attack_bonus":5}),_eq("ember_fang","Ember Fang","weapon","uncommon",{"attack_bonus":4,"effect":"ember_fang"}),_eq("frost_shard","Frost Shard","weapon","uncommon",{"attack_bonus":4,"effect":"frost_shard"}),_eq("thunder_coil","Thunder Coil","weapon","rare",{"attack_bonus":3,"effect":"thunder_coil"}),_eq("arcane_drill","Arcane Drill","weapon","epic",{"attack_bonus":5,"effect":"arcane_drill"}),
-		_eq("filament_ring","Filament Ring","accessory","uncommon",{"effect":"filament_ring"}),_eq("tidal_core","Tidal Core","accessory","rare",{"effect":"tidal_core"}),_eq("arcane_sigil","Arcane Sigil","accessory","rare",{"effect":"arcane_sigil"})]
+		# Suits are deliberately whole creature overlays: the existing tiered-armor
+		# master/mask renderer recolors one complete suit rather than modular parts.
+		_eq("standard_full_suit","Standard Full Suit","armor","common",{"armor_hp":8,"presentation":{"kind":"full_suit","tier":"standard","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
+		_eq("reinforced_full_suit","Reinforced Full Suit","armor","uncommon",{"armor_hp":14,"presentation":{"kind":"full_suit","tier":"reinforced","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
+		_eq("arcane_full_suit","Arcane Full Suit","armor","rare",{"armor_hp":20,"super_effective_bps":12000,"presentation":{"kind":"full_suit","tier":"arcane","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
+		_eq("masterwork_full_suit","Masterwork Full Suit","armor","epic",{"armor_hp":28,"presentation":{"kind":"full_suit","tier":"masterwork","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
+		_eq("legendary_full_suit","Legendary Full Suit","armor","legendary",{"armor_hp":36,"presentation":{"kind":"full_suit","tier":"legendary","renderer":"tiered_armor_palette","master_system":"res://scripts/ui/tiered_armor_palette_preview.gd"}}),
+		# Gems use the same shared, socket-local recolor model as the established
+		# armor palette. Their deterministic combat effects replace old weapons.
+		_eq("iron_gem","Iron Gem","gem","common",{"attack_bonus":5,"presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"b8c3cf"}}),
+		_eq("ember_gem","Ember Gem","gem","uncommon",{"attack_bonus":4,"effect":"ember_gem_burn","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"ff6338"}}),
+		_eq("frost_gem","Frost Gem","gem","uncommon",{"attack_bonus":4,"effect":"frost_gem_lock","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"71dcff"}}),
+		_eq("storm_gem","Storm Gem","gem","rare",{"attack_bonus":3,"effect":"storm_gem_lock","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"ffe15a"}}),
+		_eq("arcane_gem","Arcane Gem","gem","epic",{"attack_bonus":5,"effect":"arcane_gem_drill","presentation":{"kind":"socket_gem","recolor":"shared_gem","color":"f44cff"}}),
+		_eq("filament_ring","Filament Ring","battle_effect","uncommon",{"effect":"filament_ring","print_turns":0,"print_ticks":0,"presentation":{"kind":"player_battle_effect","wearer":"player","recolor":"shared_gem","color":"ffd36c"}})]
 static func _eq(id: String, name: String, slot: String, rarity: String, extra: Dictionary) -> Dictionary:
-	var value := {"id":id,"name":name,"type":"equipment","rarity":rarity,"equipment_slot":slot,"filament_cost":int(EQUIPMENT_COSTS.get(rarity,40)),"cost":int(EQUIPMENT_COSTS.get(rarity,40)),"print_turns":int(PRINT_TURNS.get(rarity,1)),"print_ticks":int(PRINT_TURNS.get(rarity,1))}; value.merge(extra); return value
+	var value := {"id":id,"name":name,"type":"equipment","rarity":rarity,"equipment_slot":slot,"filament_cost":int(EQUIPMENT_COSTS.get(rarity,40)),"cost":int(EQUIPMENT_COSTS.get(rarity,40)),"print_turns":int(PRINT_TURNS.get(rarity,1)),"print_ticks":int(PRINT_TURNS.get(rarity,1))}; value.merge(extra, true); return value
 static func _filament_definitions() -> Array:
 	return [{"id":"raw_filament","name":"Raw Filament","type":"filament","rarity":"common","filament_cost":0,"cost":0,"filament_gain":80},{"id":"heated_spool","name":"Heated Spool","type":"filament","rarity":"uncommon","filament_cost":0,"cost":0,"filament_gain":120},{"id":"emergency_canister","name":"Emergency Canister","type":"filament","rarity":"rare","filament_cost":0,"cost":0,"filament_gain":200},{"id":"recycled_scrap","name":"Recycled Scrap","type":"filament","rarity":"uncommon","filament_cost":0,"cost":0,"filament_gain":0}]
 static func _spell_definitions() -> Array:
@@ -96,6 +108,7 @@ static func ensure(source: Dictionary) -> Dictionary:
 	if not p.has("pending_pack_reveal"): p["pending_pack_reveal"] = {}
 	if not p.has("active_deck_id"): p["active_deck_id"] = "starter-deck"
 	if not p.has("onboarding") or not p.onboarding is Dictionary: p["onboarding"] = {"state":"choose_starter","starter_id":""}
+	_migrate_equipment_ids(p)
 	if p.decks.is_empty() and str(p.onboarding.get("state", "")) == "complete": _make_starter_deck(p)
 	if not p.decks.is_empty(): _ensure_deck_slots(p)
 	return p
@@ -122,13 +135,58 @@ static func print_workshop_model(source: Dictionary, blueprint_id: String, recei
 static func grant_card(p: Dictionary, card_id: String, count := 1) -> Dictionary:
 	if card(card_id).is_empty() or count <= 0: return {"card_id":card_id,"count":0}
 	p.owned_cards[card_id] = int(p.owned_cards.get(card_id,0)) + count; return {"card_id":card_id,"count":count}
+
+static func _migrate_equipment_ids(p: Dictionary) -> void:
+	# This is an idempotent catalog alias pass for the initial v3 save namespace,
+	# not a migration from the retired 0.7 profile. Merge duplicate ownership
+	# deterministically before replacing deck, pre-print, and wishlist references.
+	var aliases := {
+		"helm":"standard_full_suit", "chest_plate":"reinforced_full_suit", "leg_guards":"reinforced_full_suit",
+		"full_suit":"arcane_full_suit", "arcane_plate":"masterwork_full_suit",
+		"iron_claw":"iron_gem", "ember_fang":"ember_gem", "frost_shard":"frost_gem",
+		"thunder_coil":"storm_gem", "arcane_drill":"arcane_gem",
+		"tidal_core":"frost_gem", "arcane_sigil":"arcane_gem"
+	}
+	for source_id in aliases:
+		var target_id := str(aliases[source_id])
+		if p.owned_cards.has(source_id):
+			p.owned_cards[target_id] = int(p.owned_cards.get(target_id, 0)) + int(p.owned_cards.get(source_id, 0))
+			p.owned_cards.erase(source_id)
+		if p.owned_blueprints.has(source_id):
+			p.owned_blueprints[target_id] = bool(p.owned_blueprints.get(target_id, false)) or bool(p.owned_blueprints.get(source_id, false))
+			p.owned_blueprints.erase(source_id)
+	for deck in p.decks:
+		if not deck is Dictionary or not deck.get("cards", []) is Array: continue
+		var normalized: Array = []
+		for card_id in deck.cards: normalized.append(str(aliases.get(str(card_id), str(card_id))))
+		deck["cards"] = normalized
+	var normalized_preprints: Array = []
+	for card_id in p.preprints: normalized_preprints.append(str(aliases.get(str(card_id), str(card_id))))
+	p.preprints = normalized_preprints
+	var normalized_wishlist: Array = []
+	for item_id in p.wishlist:
+		var normalized_id := str(aliases.get(str(item_id), str(item_id)))
+		if normalized_id not in normalized_wishlist: normalized_wishlist.append(normalized_id)
+	p.wishlist = normalized_wishlist
+	for model_id in p.printed_models:
+		var model: Variant = p.printed_models[model_id]
+		if model is Dictionary and model.has("blueprint_id"):
+			model["blueprint_id"] = str(aliases.get(str(model.get("blueprint_id", "")), str(model.get("blueprint_id", ""))))
+	if p.pending_pack_reveal is Dictionary:
+		for key in ["cards", "bonus_cards"]:
+			if not p.pending_pack_reveal.has(key): continue
+			var raw_cards: Variant = p.pending_pack_reveal.get(key, [])
+			if not raw_cards is Array: continue
+			var normalized_cards: Array = []
+			for card_id in raw_cards: normalized_cards.append(str(aliases.get(str(card_id), str(card_id))))
+			p.pending_pack_reveal[key] = normalized_cards
 static func _make_starter_deck(p: Dictionary) -> void:
 	var creatures := ["cinderpaw","aquafin","voltwig","mossmunk","frostling","galehopper","stoneback","sparkotter","glassdrake","coralisk"]
 	var cards: Array = []
 	for id in creatures:
 		for _copy in 2: cards.append(id)
 	# 20 creatures / 6 filament / 6 spells / 4 equipment / 2 traps / 2 upgrades.
-	for id in ["raw_filament","raw_filament","raw_filament","raw_filament","heated_spool","heated_spool","layer_melt","print_jam","spool_drain","forge_surge","emergency_reprint_spell","blueprint_thief","helm","chest_plate","iron_claw","filament_ring","counter_strike","print_interrupt","speed_spool","reinforced_chassis"]: cards.append(id)
+	for id in ["raw_filament","raw_filament","raw_filament","raw_filament","heated_spool","heated_spool","layer_melt","print_jam","spool_drain","forge_surge","emergency_reprint_spell","blueprint_thief","standard_full_suit","reinforced_full_suit","iron_gem","filament_ring","counter_strike","print_interrupt","speed_spool","reinforced_chassis"]: cards.append(id)
 	for id in cards: grant_card(p,id,maxi(0,cards.count(id)-int(p.owned_cards.get(id,0))))
 	p.decks = [{"id":"starter-deck","name":"Forge Deck","cards":cards}]; _ensure_deck_slots(p); p.active_deck_id = "starter-deck"
 static func _ensure_deck_slots(p: Dictionary) -> void:

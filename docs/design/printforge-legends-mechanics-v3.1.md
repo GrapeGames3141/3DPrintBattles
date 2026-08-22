@@ -17,11 +17,12 @@ The earlier 0.7 three-phase/15-card rules are retired for the unified modes.
   is one; Speed Spool adds one and Turbo Spool adds two. Unused speed carries to
   the next item. Dual Queue adds two capacity per installation.
 - Finished creatures ask for an open field slot and attack/defense mode; a full
-  field sends them to staging. Equipment holds until it can use an open armor,
-  weapon, or accessory slot. A creature has one of each slot.
+  field sends them to staging. Creature equipment holds until it can use an
+  open armor or gem slot. A creature has one of each slot. Filament Ring is a
+  separate public player battle effect, never an equipment slot.
 - Pre-prints consume matching active-deck copies, deploy in Defense Mode, and
   cannot act or switch mode on their owner's first turn.
-- Attack damage is `max(1, floor((ceil(Bend/4)+weapon bonus) × element ×
+- Attack damage is `max(1, floor((ceil(Bend/4)+gem bonus) × element ×
   modifiers))`. Arcane is neutral. Armor HP absorbs damage before base HP.
 - Scrap is based on combined creature/equipment cost. Base recovery is
   25/30/35/40/50 percent for Common through Legendary+; Spooler is +10 points
@@ -52,6 +53,27 @@ The fake local Spark storefront is an offline seam only. Steam purchase
 validation, hosted authority, cloud time/entropy, matchmaking, telemetry, and
 server-side economy remain external deployment dependencies; they must not
 silently fall back to the retired 0.7 economy.
+
+## Equipment normalization
+
+- Armor is exactly five complete, recolorable suit cards in the single armor
+  slot: Standard (+8 armor HP, Common), Reinforced (+14, Uncommon), Arcane
+  (+20, Rare), Masterwork (+28, Epic), and Legendary Full Suit (+36,
+  Legendary). They use the existing full-suit tier palette/master and measured
+  socket renderer; modular Helm, Chest Plate, and Leg Guards are retired.
+- Arcane Full Suit keeps the authored deterministic ward: super-effective
+  incoming damage uses 120% rather than 150%. No suit grants legacy speed,
+  guard, or Core battle behavior.
+- Gems replace weapons in the one gem slot and use the same shared socket
+  recolor presentation: Iron Gem (+5); Ember Gem (+4 and two owner-Draw burn);
+  Frost Gem (+4 and next mode-change lock); Storm Gem (+3 and first damaging
+  hit locks the next Attack Phase); Arcane Gem (+5 and bypasses armor HP).
+- Filament Ring is the only remaining non-creature equipment. It resolves
+  immediately when played, costs its listed filament, goes to the graveyard,
+  and sets a public, non-stacking player battle effect for the remainder of the
+  match. It grants 20 filament each Collect subject to capacity, never prints,
+  holds, attaches, or is destroyed with a creature. A second Ring is rejected
+  while active. Tidal Core and Arcane Sigil are retired active v3 cards.
 
 ## Economy and lifecycle details
 

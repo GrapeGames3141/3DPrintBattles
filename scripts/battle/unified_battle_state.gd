@@ -53,14 +53,14 @@ static func _player(deck_source: Array, seed_value: int, installed: Array, prepr
 	if "spool_capacity_i" in workshop_upgrades: capacity = 500
 	if "spool_capacity_ii" in workshop_upgrades: capacity = 700
 	return {
-		"printer":{"hp":2000,"max_hp":2000}, "slots":field, "queue":[], "staging":[], "holding":[],
+		"printer":{"hp":2000,"max_hp":2000}, "slots":field, "queue":[], "staging":[], "holding":[], "filament_ring_active":false,
 		"filament":200, "filament_max":capacity, "trap":{}, "deck":deck, "hand":hand,
 		"graveyard":[], "scrap":[], "installed_upgrades":installed.duplicate(), "upgrade_plays":0,
 		"emergency_reprints":installed.count("emergency_reprint_upgrade"), "preprints":preprints.duplicate(), "draw_count":0, "played":[]
 	}
 
 static func _unit(card: Dictionary, preprinted := false) -> Dictionary:
-	return {"card_id":str(card.get("id", "")), "name":str(card.get("name", "Print")), "rarity":str(card.get("rarity", "common")), "element":str(card.get("element", "Arcane")), "bend":int(card.get("bend_score", card.get("bend", 0))), "base_hp":int(card.get("hp", 1)), "hp":int(card.get("hp", 1)), "armor_hp":0, "mode":"defense" if preprinted else "attack", "ready":not preprinted, "preprinted":preprinted, "mode_changed":false, "attacked":false, "equipment":{"armor":{},"weapon":{},"accessory":{}}, "statuses":{}, "ability_cooldown":0, "equipment_cost":0}
+	return {"card_id":str(card.get("id", "")), "name":str(card.get("name", "Print")), "rarity":str(card.get("rarity", "common")), "element":str(card.get("element", "Arcane")), "bend":int(card.get("bend_score", card.get("bend", 0))), "base_hp":int(card.get("hp", 1)), "hp":int(card.get("hp", 1)), "armor_hp":0, "mode":"defense" if preprinted else "attack", "ready":not preprinted, "preprinted":preprinted, "mode_changed":false, "attacked":false, "equipment":{"armor":{},"gem":{}}, "statuses":{}, "ability_cooldown":0, "equipment_cost":0}
 
 static func _next(value: int) -> int:
 	return int((value * 1103515245 + 12345) & 0x7fffffff)

@@ -24,6 +24,22 @@ func _ready() -> void:
 	require(bool(selected.ok) and int(selected.profile.owned_cards.get("cinderpaw", 0)) == 0, "starter choice grants no extra card copies before the authored deck")
 	require(bool(printed.ok) and printed.profile.decks[0].cards.size() == 40 and RULES.deck_reason(printed.profile, printed.profile.decks[0].cards).is_empty(), "starter is a legal 40-card owned deck")
 	require(str(printed.profile.onboarding.get("state", "")) == "complete" and printed.profile.printed_models.has("starter-cinderpaw"), "v3 onboarding completes without retired starter instances")
+	var starter_equipment: Array = []
+	for card_id in printed.profile.decks[0].cards:
+		if str(RULES.card(str(card_id)).get("type", "")) == "equipment": starter_equipment.append(card_id)
+	require(printed.profile.decks[0].cards.size() == 40 and starter_equipment == ["standard_full_suit","reinforced_full_suit","iron_gem","filament_ring"], "starter deck keeps the authored 20/6/6/4/2/2 composition with normalized equipment")
+	var equipment_ids: Array = []; var equipment_slots: Array = []; var armor_values: Array = []
+	for definition in RULES.all_cards():
+		if str(definition.get("type", "")) == "equipment":
+			equipment_ids.append(str(definition.id))
+			equipment_slots.append(str(definition.get("equipment_slot", "")))
+			if str(definition.get("equipment_slot", "")) == "armor": armor_values.append(int(definition.get("armor_hp", 0)))
+	var normalized_equipment := true
+	for equipment_id in ["standard_full_suit","reinforced_full_suit","arcane_full_suit","masterwork_full_suit","legendary_full_suit","iron_gem","ember_gem","frost_gem","storm_gem","arcane_gem","filament_ring"]: normalized_equipment = normalized_equipment and equipment_ids.has(equipment_id)
+	var ring_definition := RULES.card("filament_ring")
+	require(normalized_equipment and equipment_ids.size() == 11 and equipment_slots.count("armor") == 5 and equipment_slots.count("gem") == 5 and equipment_slots.count("battle_effect") == 1 and armor_values == [8,14,20,28,36] and int(ring_definition.print_turns) == 0 and int(ring_definition.print_ticks) == 0 and not equipment_ids.has("helm") and not equipment_ids.has("chest_plate") and not equipment_ids.has("leg_guards") and not equipment_ids.has("full_suit") and not equipment_ids.has("arcane_plate") and not equipment_ids.has("iron_claw"), "catalog has exactly five full suit tiers, five gems, and a zero-timer Ring battle effect")
+	var migrated := RULES.ensure({"onboarding":{"state":"complete"},"owned_cards":{"helm":1,"chest_plate":2,"leg_guards":3,"iron_claw":1,"tidal_core":1,"arcane_sigil":1},"owned_blueprints":{"helm":true},"printed_models":{"old-model":{"blueprint_id":"helm"}},"pending_pack_reveal":{"cards":["helm","iron_claw"],"bonus_cards":["arcane_sigil"],"receipt":"immutable-receipt"},"decks":[{"id":"starter-deck","name":"Forge Deck","cards":["helm","chest_plate","leg_guards","iron_claw"]}],"preprints":["helm"],"wishlist":["helm","iron_claw"]})
+	require(int(migrated.owned_cards.get("standard_full_suit", 0)) == 1 and int(migrated.owned_cards.get("reinforced_full_suit", 0)) == 5 and int(migrated.owned_cards.get("iron_gem", 0)) == 1 and int(migrated.owned_cards.get("frost_gem", 0)) == 1 and int(migrated.owned_cards.get("arcane_gem", 0)) == 1 and not migrated.owned_cards.has("helm") and str(migrated.decks[0].cards[0]) == "standard_full_suit" and str(migrated.preprints[0]) == "standard_full_suit" and str(migrated.wishlist[1]) == "iron_gem" and str(migrated.printed_models["old-model"].blueprint_id) == "standard_full_suit" and migrated.pending_pack_reveal.cards == ["standard_full_suit","iron_gem"] and migrated.pending_pack_reveal.bonus_cards == ["arcane_gem"] and str(migrated.pending_pack_reveal.receipt) == "immutable-receipt", "v3 equipment aliases normalize live catalog references without changing receipt identities")
 	GameManager.profile = printed.profile.duplicate(true)
 	require(GameManager.has_selected_starter(), "GameManager uses v3 onboarding completion rather than retired starter_instance_id")
 	require(printed.profile.get("owned_blueprints", {}).has("cinderpaw") and printed.profile.get("printed_models", {}).has("starter-cinderpaw"), "blueprint and Workshop model ownership remain explicit")
@@ -60,11 +76,11 @@ func _ready() -> void:
 	gear_state.active_seat = 0
 	gear_state.phase = "main"
 	gear_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw"))
-	gear_state.player(0).hand = ["helm"]
-	BATTLE.apply_intent(gear_state, 0, {"type":"play_card","card_id":"helm","target":0})
+	gear_state.player(0).hand = ["standard_full_suit"]
+	BATTLE.apply_intent(gear_state, 0, {"type":"play_card","card_id":"standard_full_suit","target":0})
 	BATTLE.apply_intent(gear_state, 0, {"type":"advance_phase"})
 	BATTLE.apply_intent(gear_state, 0, {"type":"advance_phase"})
-	require(int(gear_state.player(0).slots[0].armor_hp) == 10, "equipment tracks armor HP ahead of creature HP")
+	require(int(gear_state.player(0).slots[0].armor_hp) == 8 and str(gear_state.player(0).slots[0].equipment.armor.card_id) == "standard_full_suit", "full-suit equipment tracks armor HP ahead of creature HP")
 	var public_view := gear_state.public_snapshot(1)
 	require(not public_view.players[0].has("hand") and int(public_view.players[0].hand_count) == gear_state.player(0).hand.size(), "opponent public snapshots redact hand details")
 	var ai_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 23)
@@ -119,15 +135,21 @@ func _ready() -> void:
 	require(str(RULES.card("emergency_reprint_spell").get("type", "")) == "spell" and str(RULES.card("emergency_reprint_upgrade").get("type", "")) == "upgrade" and bool(install.ok) and bool(reprint.ok) and int(emergency_state.player(0).emergency_reprints) == 0 and bool(emergency_state.player(0).queue[0].get("reprint", false)), "Emergency Reprint spell and upgrade have distinct IDs and a deterministic installed charge intent")
 	var status_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 101)
 	status_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); status_state.player(1).slots[0] = STATE._unit(RULES.card("aquafin"))
-	BATTLE._apply_weapon_on_hit({"equipment":{"weapon":{"effect":"ember_fang"}}}, status_state.player(1).slots[0])
+	BATTLE._apply_gem_on_hit({"equipment":{"gem":{"effect":"ember_gem_burn"}}}, status_state.player(1).slots[0])
 	var hp_before_burn := int(status_state.player(1).slots[0].hp); BATTLE._draw_start(status_state, 1); BATTLE._draw_start(status_state, 1)
-	require(int(status_state.player(1).slots[0].hp) == hp_before_burn - 20, "Ember Fang deals ten damage on each of exactly two owner Draws")
-	BATTLE._apply_weapon_on_hit({"equipment":{"weapon":{"effect":"frost_shard"}}}, status_state.player(1).slots[0])
+	require(int(status_state.player(1).slots[0].hp) == hp_before_burn - 20, "Ember Gem deals ten damage on each of exactly two owner Draws")
+	BATTLE._apply_gem_on_hit({"equipment":{"gem":{"effect":"frost_gem_lock"}}}, status_state.player(1).slots[0])
 	status_state.phase = "main"; status_state.active_seat = 1
-	require(not bool(BATTLE.apply_intent(status_state, 1, {"type":"switch_mode","slot":0,"mode":"defense"}).ok), "Frost Shard blocks the target’s next mode change before status expiry")
-	BATTLE._apply_weapon_on_hit({"equipment":{"weapon":{"effect":"thunder_coil","used":false}}}, status_state.player(1).slots[0])
+	require(not bool(BATTLE.apply_intent(status_state, 1, {"type":"switch_mode","slot":0,"mode":"defense"}).ok), "Frost Gem blocks the target’s next mode change before status expiry")
+	BATTLE._apply_gem_on_hit({"equipment":{"gem":{"effect":"storm_gem_lock","used":false}}}, status_state.player(1).slots[0])
 	status_state.phase = "attack"; status_state.player(1).slots[0].mode = "attack"; status_state.player(1).slots[0].ready = true; status_state.player(1).slots[0].attacked = false
-	require(not bool(BATTLE.apply_intent(status_state, 1, {"type":"attack","slot":0,"target":0}).ok), "Thunder Coil blocks the target’s next Attack Phase before status expiry")
+	require(not bool(BATTLE.apply_intent(status_state, 1, {"type":"attack","slot":0,"target":0}).ok), "Storm Gem blocks the target’s next Attack Phase before status expiry")
+	var gem_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 107)
+	gem_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); gem_state.player(1).slots[0] = STATE._unit(RULES.card("aquafin"))
+	BATTLE._attach_card(gem_state.player(0).slots[0], RULES.card("arcane_gem")); gem_state.player(1).slots[0].armor_hp = 50
+	var base_hp_before_gem_hit := int(gem_state.player(1).slots[0].hp); var gem_damage := BATTLE._damage(gem_state.player(0).slots[0], gem_state.player(1).slots[0])
+	BATTLE._damage_unit(gem_state, 1, 0, gem_damage, str(gem_state.player(0).slots[0].equipment.gem.effect) == "arcane_gem_drill")
+	require(str(gem_state.player(0).slots[0].equipment.gem.card_id) == "arcane_gem" and int(gem_state.player(1).slots[0].armor_hp) == 50 and int(gem_state.player(1).slots[0].hp) < base_hp_before_gem_hit, "Arcane Gem occupies the gem slot and deterministically bypasses armor HP")
 	var staging_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 111)
 	staging_state.active_seat = 0; staging_state.phase = "draw"
 	for slot in 3: staging_state.player(0).slots[slot] = STATE._unit(RULES.card("cinderpaw"))
@@ -137,9 +159,22 @@ func _ready() -> void:
 	BATTLE.apply_intent(staging_state, 0, {"type":"advance_phase"})
 	require(str(staging_state.pending.get("kind", "")) == "place" and bool(BATTLE.apply_intent(staging_state, 0, {"type":"place_completed","slot":1,"mode":"defense"}).ok), "the oldest staged creature pauses for placement and a chosen mode")
 	var holding_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 121)
-	holding_state.active_seat = 0; holding_state.phase = "draw"; holding_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); holding_state.player(0).holding = [{"card_id":"helm","target":-1}]
+	holding_state.active_seat = 0; holding_state.phase = "draw"; holding_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); holding_state.player(0).holding = [{"card_id":"standard_full_suit","target":-1}]
 	BATTLE.apply_intent(holding_state, 0, {"type":"advance_phase"})
-	require(str(holding_state.pending.get("kind", "")) == "attach" and bool(BATTLE.apply_intent(holding_state, 0, {"type":"attach_completed","slot":0}).ok) and int(holding_state.player(0).slots[0].armor_hp) == 10, "held equipment receives an attach path when a compatible slot exists")
+	require(str(holding_state.pending.get("kind", "")) == "attach" and bool(BATTLE.apply_intent(holding_state, 0, {"type":"attach_completed","slot":0}).ok) and int(holding_state.player(0).slots[0].armor_hp) == 8, "held full suits receive an attach path when a compatible slot exists")
+	var ring_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 125)
+	ring_state.active_seat = 0; ring_state.phase = "main"; ring_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); ring_state.player(0).hand = ["filament_ring"]
+	var ring_play := BATTLE.apply_intent(ring_state, 0, {"type":"play_card","card_id":"filament_ring"})
+	BATTLE._destroy(ring_state, 0, 0); ring_state.player(0).scrap.clear(); var filament_before_ring_collect := int(ring_state.player(0).filament); BATTLE._collect(ring_state, 0)
+	var ring_public := ring_state.public_snapshot(1)
+	require(bool(ring_play.ok) and bool(ring_state.player(0).filament_ring_active) and bool(ring_public.players[0].filament_ring_active) and ring_state.player(0).queue.is_empty() and ring_state.player(0).graveyard.has("filament_ring") and int(ring_state.player(0).filament) == filament_before_ring_collect + 20, "Filament Ring resolves immediately, remains public after creature destruction, and grants twenty filament during Collect")
+	ring_state.player(0).hand = ["filament_ring"]; ring_state.phase = "main"
+	var ring_reject_before := ring_state.serialize(); var ring_reject := BATTLE.apply_intent(ring_state, 0, {"type":"play_card","card_id":"filament_ring"})
+	require(not bool(ring_reject.ok) and ring_state.serialize() == ring_reject_before, "a second active Filament Ring rejects without mutating the battle snapshot")
+	var active_ring_ai_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 127)
+	active_ring_ai_state.active_seat = 1; active_ring_ai_state.phase = "main"; active_ring_ai_state.player(1).filament_ring_active = true; active_ring_ai_state.player(1).hand = ["filament_ring"]
+	AI.take_turn(active_ring_ai_state, 1)
+	require(active_ring_ai_state.active_seat == 0 and active_ring_ai_state.player(1).hand == ["filament_ring"], "AI ignores an already active battle effect and advances instead of retrying it")
 	var ability_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 131)
 	ability_state.player(0).slots[0] = STATE._unit(RULES.card("aquafin")); ability_state.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); ability_state.player(0).slots[0].hp -= 10
 	BATTLE._resolve_attack_ability(ability_state, 0, 0, 0)
