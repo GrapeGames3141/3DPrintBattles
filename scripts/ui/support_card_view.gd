@@ -270,6 +270,18 @@ static func card_back_for_test() -> Texture2D:
 
 static func atlas_region(definition: Dictionary) -> Texture2D:
 	var art = definition.get("art", {})
+	if art is Dictionary:
+		var direct_path := str(art.get("path", ""))
+		if direct_path.begins_with("res://"):
+			var direct_key := "path:%s" % direct_path
+			if not _textures.has(direct_key):
+				var loaded: Texture2D = ResourceLoader.load(direct_path) as Texture2D if ResourceLoader.exists(direct_path) else null
+				if loaded == null:
+					var image := Image.load_from_file(direct_path)
+					if image != null and not image.is_empty(): loaded = ImageTexture.create_from_image(image)
+				_textures[direct_key] = loaded
+			var direct := _textures.get(direct_key) as Texture2D
+			if direct != null: return direct
 	var atlas_id := str(art.get("atlas", "")) if art is Dictionary else ""
 	var cell := int(art.get("cell", -1)) if art is Dictionary else -1
 	var key := "%s:%d" % [atlas_id, cell]

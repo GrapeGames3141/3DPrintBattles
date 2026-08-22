@@ -1,4 +1,4 @@
-# PrintForge Legends — 0.8.0 v3 Canonical Refactor
+# PrintForge Legends — 0.8.1 v3 Card Art
 
 PrintForge Legends is a Godot 4.7.1 card battler built around live 3D-print
 queues. The active implementation is the v3.1 ruleset: 2,000 HP printers,

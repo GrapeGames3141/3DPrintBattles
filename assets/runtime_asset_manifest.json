@@ -33,6 +33,9 @@
       "res://assets/cards/support_cards_offense_landscape_v2.png",
       "res://assets/cards/support_cards_resources_landscape_v2.png",
       "res://assets/cards/support_cards_utility_landscape_v2.png"
+    ],
+    "card_fronts": [
+      "res://assets/cards/v3/filament_ring_art_v1.png"
     ]
   }
 }

@@ -18,11 +18,12 @@ static func validation_errors() -> Array[String]:
 		failures.append("Runtime asset manifest is missing version 1.")
 		return failures
 	var groups: Dictionary = manifest.get("groups", {}) if manifest.get("groups", {}) is Dictionary else {}
-	for key in ["battle_backgrounds", "printer_frames", "card_atlases"]:
+	for key in ["battle_backgrounds", "printer_frames", "card_atlases", "card_fronts"]:
 		var paths: Array = groups.get(key, []) if groups.get(key, []) is Array else []
 		if paths.is_empty(): failures.append("Manifest group %s is empty." % key)
 		for path in paths:
-			if not ResourceLoader.exists(str(path)): failures.append("Missing runtime asset: %s" % str(path))
+			var asset_path := str(path)
+			if (key == "card_fronts" and not FileAccess.file_exists(asset_path)) or (key != "card_fronts" and not ResourceLoader.exists(asset_path)): failures.append("Missing runtime asset: %s" % asset_path)
 	var armor: Dictionary = groups.get("tiered_armor", {}) if groups.get("tiered_armor", {}) is Dictionary else {}
 	for creature_id in armor.get("required_creatures", []):
 		var id := str(creature_id)

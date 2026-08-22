@@ -7,6 +7,7 @@ const PATH := "res://data/v3/catalog.json"
 const TYPES := ["creature", "equipment", "filament", "spell", "trap", "upgrade"]
 const ELEMENTS := ["Fire", "Water", "Lightning", "Nature", "Ice", "Stone", "Wind", "Arcane"]
 const EFFECT_TARGETS := ["self", "foe", "field", "printer", "forge", "team", "any"]
+const SUPPORT_ART_ATLASES := ["resources", "defense", "offense", "utility"]
 static var _document_cache: Dictionary = {}
 static var _cards_cache: Array = []
 static var _index_cache: Dictionary = {}
@@ -26,6 +27,7 @@ static func validation_errors() -> Array[String]:
 	for key in ["print_turns", "creature_filament_cost", "equipment_filament_cost"]:
 		if not defaults.get(key, {}) is Dictionary or (defaults.get(key, {}) as Dictionary).size() != 8: failures.append("v3 catalog defaults are invalid: %s" % key)
 	var ids := {}
+	var visible_art := {}
 	var cards: Array = source.get("cards", []) if source.get("cards", []) is Array else []
 	if cards.is_empty(): failures.append("v3 catalog has no cards.")
 	for raw in cards:
@@ -47,6 +49,27 @@ static func validation_errors() -> Array[String]:
 			if not card.get("presentation", {}) is Dictionary: failures.append("v3 creature presentation is missing: %s" % id)
 		if kind == "equipment" and str(card.get("equipment_slot", "")) not in ["armor", "gem", "battle_effect"]:
 			failures.append("v3 equipment slot is invalid: %s" % id)
+		if kind != "creature":
+			var art: Dictionary = card.get("art", {}) if card.get("art", {}) is Dictionary else {}
+			var atlas_id := str(art.get("atlas", ""))
+			var direct_path := str(art.get("path", ""))
+			var has_atlas := not atlas_id.is_empty() or art.has("cell")
+			var has_path := not direct_path.is_empty()
+			var art_identity := ""
+			if has_atlas == has_path:
+				failures.append("v3 non-creature art must use exactly one source: %s" % id)
+			elif has_atlas:
+				var cell := int(art.get("cell", -1))
+				if atlas_id not in SUPPORT_ART_ATLASES or cell < 0 or cell > 7:
+					failures.append("v3 non-creature atlas art is invalid: %s" % id)
+				art_identity = "atlas:%s:%d" % [atlas_id, cell]
+			else:
+				if not direct_path.begins_with("res://") or not FileAccess.file_exists(direct_path):
+					failures.append("v3 non-creature direct art path is invalid: %s" % id)
+				art_identity = "path:%s" % direct_path
+			if not art_identity.is_empty():
+				if visible_art.has(art_identity): failures.append("v3 non-creature art is duplicated: %s" % art_identity)
+				visible_art[art_identity] = true
 		var effects: Variant = card.get("effects", [])
 		if effects is Array:
 			for effect in effects:

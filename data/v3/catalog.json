@@ -676,6 +676,7 @@
       "rarity": "common",
       "filament_cost": 40,
       "print_turns": 1,
+      "art": {"atlas": "resources", "cell": 3},
       "equipment_slot": "armor",
       "armor_hp": 8
     },
@@ -686,6 +687,7 @@
       "rarity": "uncommon",
       "filament_cost": 75,
       "print_turns": 2,
+      "art": {"atlas": "resources", "cell": 2},
       "equipment_slot": "armor",
       "armor_hp": 14
     },
@@ -696,6 +698,7 @@
       "rarity": "rare",
       "filament_cost": 120,
       "print_turns": 3,
+      "art": {"atlas": "defense", "cell": 2},
       "equipment_slot": "armor",
       "armor_hp": 20,
       "super_effective_bps": 12000
@@ -707,6 +710,7 @@
       "rarity": "epic",
       "filament_cost": 185,
       "print_turns": 4,
+      "art": {"atlas": "offense", "cell": 5},
       "equipment_slot": "armor",
       "armor_hp": 28
     },
@@ -717,6 +721,7 @@
       "rarity": "legendary",
       "filament_cost": 300,
       "print_turns": 5,
+      "art": {"atlas": "utility", "cell": 7},
       "equipment_slot": "armor",
       "armor_hp": 36
     },
@@ -727,6 +732,7 @@
       "rarity": "common",
       "filament_cost": 40,
       "print_turns": 1,
+      "art": {"atlas": "offense", "cell": 6},
       "equipment_slot": "gem",
       "attack_bonus": 5
     },
@@ -737,6 +743,7 @@
       "rarity": "uncommon",
       "filament_cost": 75,
       "print_turns": 2,
+      "art": {"atlas": "offense", "cell": 2},
       "equipment_slot": "gem",
       "attack_bonus": 4,
       "effect": "ember_gem_burn"
@@ -748,6 +755,7 @@
       "rarity": "uncommon",
       "filament_cost": 75,
       "print_turns": 2,
+      "art": {"atlas": "defense", "cell": 5},
       "equipment_slot": "gem",
       "attack_bonus": 4,
       "effect": "frost_gem_lock"
@@ -759,6 +767,7 @@
       "rarity": "rare",
       "filament_cost": 120,
       "print_turns": 3,
+      "art": {"atlas": "offense", "cell": 0},
       "equipment_slot": "gem",
       "attack_bonus": 3,
       "effect": "storm_gem_lock"
@@ -770,6 +779,7 @@
       "rarity": "epic",
       "filament_cost": 185,
       "print_turns": 4,
+      "art": {"atlas": "utility", "cell": 2},
       "equipment_slot": "gem",
       "attack_bonus": 5,
       "effect": "arcane_gem_drill"
@@ -781,6 +791,7 @@
       "rarity": "uncommon",
       "filament_cost": 75,
       "print_turns": 0,
+      "art": {"path": "res://assets/cards/v3/filament_ring_art_v1.png"},
       "equipment_slot": "battle_effect",
       "effect": "filament_ring"
     },
@@ -791,6 +802,7 @@
       "rarity": "common",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "resources", "cell": 0},
       "filament_gain": 80
     },
     {
@@ -800,6 +812,7 @@
       "rarity": "uncommon",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "resources", "cell": 1},
       "filament_gain": 120
     },
     {
@@ -809,6 +822,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "resources", "cell": 4},
       "filament_gain": 200
     },
     {
@@ -818,6 +832,7 @@
       "rarity": "uncommon",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "resources", "cell": 7},
       "filament_gain": 0
     },
     {
@@ -826,7 +841,8 @@
       "type": "spell",
       "rarity": "rare",
       "filament_cost": 150,
-      "print_turns": 0
+      "print_turns": 0,
+      "art": {"atlas": "offense", "cell": 7}
     },
     {
       "id": "print_jam",
@@ -834,7 +850,8 @@
       "type": "spell",
       "rarity": "uncommon",
       "filament_cost": 100,
-      "print_turns": 0
+      "print_turns": 0,
+      "art": {"atlas": "defense", "cell": 0}
     },
     {
       "id": "spool_drain",
@@ -842,7 +859,8 @@
       "type": "spell",
       "rarity": "rare",
       "filament_cost": 120,
-      "print_turns": 0
+      "print_turns": 0,
+      "art": {"atlas": "resources", "cell": 6}
     },
     {
       "id": "forge_surge",
@@ -850,7 +868,8 @@
       "type": "spell",
       "rarity": "uncommon",
       "filament_cost": 80,
-      "print_turns": 0
+      "print_turns": 0,
+      "art": {"atlas": "offense", "cell": 1}
     },
     {
       "id": "emergency_reprint_spell",
@@ -858,7 +877,8 @@
       "type": "spell",
       "rarity": "epic",
       "filament_cost": 150,
-      "print_turns": 0
+      "print_turns": 0,
+      "art": {"atlas": "defense", "cell": 4}
     },
     {
       "id": "blueprint_thief",
@@ -866,7 +886,8 @@
       "type": "spell",
       "rarity": "epic",
       "filament_cost": 180,
-      "print_turns": 0
+      "print_turns": 0,
+      "art": {"atlas": "defense", "cell": 1}
     },
     {
       "id": "print_interrupt",
@@ -875,6 +896,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "offense", "cell": 4},
       "trigger": "print_complete"
     },
     {
@@ -884,6 +906,7 @@
       "rarity": "uncommon",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "offense", "cell": 3},
       "trigger": "filament"
     },
     {
@@ -893,6 +916,7 @@
       "rarity": "uncommon",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "defense", "cell": 7},
       "trigger": "attack"
     },
     {
@@ -902,6 +926,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "utility", "cell": 4},
       "trigger": "destroy"
     },
     {
@@ -911,6 +936,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "resources", "cell": 5},
       "market_cost": 600
     },
     {
@@ -920,6 +946,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "utility", "cell": 5},
       "market_cost": 1400
     },
     {
@@ -929,6 +956,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "utility", "cell": 6},
       "market_cost": 500,
       "unique_key": "smelter"
     },
@@ -939,6 +967,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "utility", "cell": 1},
       "market_cost": 700,
       "unique_key": "battlefield_collector"
     },
@@ -949,6 +978,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "utility", "cell": 3},
       "market_cost": 500
     },
     {
@@ -958,6 +988,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "defense", "cell": 3},
       "market_cost": 800
     },
     {
@@ -967,6 +998,7 @@
       "rarity": "rare",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "utility", "cell": 0},
       "market_cost": 1600
     },
     {
@@ -976,6 +1008,7 @@
       "rarity": "legendary",
       "filament_cost": 0,
       "print_turns": 0,
+      "art": {"atlas": "defense", "cell": 6},
       "market_cost": 3500
     }
   ]

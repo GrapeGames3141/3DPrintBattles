@@ -27,6 +27,7 @@ const CATALOG_PATH = path.resolve(__dirname, "../../data/v3/catalog.json");
 const TYPES = new Set(["creature", "equipment", "filament", "spell", "trap", "upgrade"]);
 const ELEMENTS = new Set(["Fire", "Water", "Lightning", "Nature", "Ice", "Stone", "Wind", "Arcane"]);
 const TARGETS = new Set(["self", "foe", "field", "printer", "forge", "team", "any"]);
+const SUPPORT_ART_ATLASES = new Set(["resources", "defense", "offense", "utility"]);
 
 /** The server seam reads the exact source file that Godot loads at runtime. */
 export function sharedCatalogDocument(): SharedCatalogDocument {
@@ -43,6 +44,7 @@ export function validateSharedCatalog(document = sharedCatalogDocument()): strin
     return failures;
   }
   const ids = new Set<string>();
+  const visibleArt = new Set<string>();
   for (const card of document.cards) {
     if (!card || typeof card !== "object") { failures.push("catalog card is not an object"); continue; }
     if (typeof card.id !== "string" || card.id.length === 0 || ids.has(card.id)) failures.push(`invalid card id ${String(card.id)}`);
@@ -59,6 +61,28 @@ export function validateSharedCatalog(document = sharedCatalogDocument()): strin
         failures.push(`invalid creature fields ${card.id}`);
       }
       if (!card.presentation || typeof card.presentation !== "object") failures.push(`missing creature presentation ${card.id}`);
+    } else {
+      const art = card.art;
+      const isArtObject = !!art && typeof art === "object" && !Array.isArray(art);
+      const atlas = isArtObject && typeof (art as { atlas?: unknown }).atlas === "string" ? (art as { atlas: string }).atlas : "";
+      const cell = isArtObject ? (art as { cell?: unknown }).cell : undefined;
+      const directPath = isArtObject && typeof (art as { path?: unknown }).path === "string" ? (art as { path: string }).path : "";
+      const hasAtlas = atlas.length > 0 || cell !== undefined;
+      const hasPath = directPath.length > 0;
+      let artIdentity = "";
+      if (hasAtlas === hasPath) {
+        failures.push(`non-creature art must use exactly one source ${card.id}`);
+      } else if (hasAtlas) {
+        if (!SUPPORT_ART_ATLASES.has(atlas) || !Number.isInteger(cell) || Number(cell) < 0 || Number(cell) > 7) failures.push(`invalid non-creature atlas art ${card.id}`);
+        artIdentity = `atlas:${atlas}:${String(cell)}`;
+      } else {
+        if (!directPath.startsWith("res://")) failures.push(`invalid non-creature direct art ${card.id}`);
+        artIdentity = `path:${directPath}`;
+      }
+      if (artIdentity.length > 0) {
+        if (visibleArt.has(artIdentity)) failures.push(`duplicate non-creature art ${artIdentity}`);
+        visibleArt.add(artIdentity);
+      }
     }
     if (Array.isArray(card.effects) && card.effects.some((effect) => !effect || typeof effect !== "object" || !TARGETS.has(String(effect.target)))) failures.push(`invalid effect target ${card.id}`);
   }

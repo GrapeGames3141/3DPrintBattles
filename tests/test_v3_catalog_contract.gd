@@ -3,6 +3,8 @@ extends Node
 const CATALOG := preload("res://scripts/core/v3_catalog.gd")
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const LEGACY_CATALOG := preload("res://scripts/core/catalog.gd")
+const CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
+const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 var failures: Array[String] = []
 
 func require(value: bool, message: String) -> void:
@@ -25,6 +27,21 @@ func _ready() -> void:
 		require(str(runtime.get("rarity", "")) == str(source.rarity), "%s rarity matches JSON." % source.id)
 		require(int(runtime.get("filament_cost", -1)) == int(source.filament_cost), "%s filament cost matches JSON." % source.id)
 		require(int(runtime.get("print_turns", -1)) == int(source.print_turns), "%s print turns match JSON." % source.id)
+	var visible_art := {}
+	var card_back := SUPPORT_CARD_VIEW.card_back_for_test()
+	for raw in source_cards:
+		var source: Dictionary = raw
+		if str(source.get("type", "")) == "creature": continue
+		var art: Dictionary = source.get("art", {}) if source.get("art", {}) is Dictionary else {}
+		var atlas_id := str(art.get("atlas", ""))
+		var direct_path := str(art.get("path", ""))
+		var identity := "path:%s" % direct_path if not direct_path.is_empty() else "atlas:%s:%d" % [atlas_id, int(art.get("cell", -1))]
+		require(not identity.is_empty() and not visible_art.has(identity), "%s has unique visible front art." % source.id)
+		visible_art[identity] = true
+		if not direct_path.is_empty(): require(direct_path == "res://assets/cards/v3/filament_ring_art_v1.png" and FileAccess.file_exists(direct_path), "Filament Ring direct front path exists.")
+		var resolved := CARD_VIEW.art_for_definition(RULES.card(str(source.get("id", ""))))
+		require(resolved != null and resolved != card_back, "%s resolves front art instead of the cardback." % source.id)
+	require(visible_art.size() == 33, "Every 33 non-creature cards has distinct visible front art.")
 	var ring := RULES.card("filament_ring")
 	require(str(ring.get("equipment_slot", "")) == "battle_effect" and int(ring.get("print_turns", -1)) == 0, "Ring remains a slotless immediate battle effect.")
 	var cinderpaw := RULES.card("cinderpaw")
