@@ -30,10 +30,13 @@ func _ready() -> void:
 	for path in ArcaneForgeStage.PRINTER_FRAME_PATHS:
 		var source := Image.load_from_file(ProjectSettings.globalize_path(path))
 		require(source != null and not source.is_empty() and source.get_pixel(0, 0).a == 0.0 and source.get_pixel(source.get_width() - 1, source.get_height() - 1).a == 0.0, "%s has transparent keyed corners" % path)
-	for path in ["res://assets/ui/printforge_launcher_icon.png", "res://assets/ui/workshop_boot_splash.png"]:
+	const WORKSHOP_BOOT_SPLASH_PATH := "res://assets/ui/workshop/workshop_overview_landscape_v4.png"
+	for path in ["res://assets/ui/printforge_launcher_icon.png", WORKSHOP_BOOT_SPLASH_PATH]:
 		require(ResourceLoader.exists(path) and ResourceLoader.load(path) != null, "%s runtime icon/splash path loads" % path)
+	var workshop_boot_splash := Image.load_from_file(ProjectSettings.globalize_path(WORKSHOP_BOOT_SPLASH_PATH))
+	require(workshop_boot_splash != null and not workshop_boot_splash.is_empty() and workshop_boot_splash.get_width() == 1672 and workshop_boot_splash.get_height() == 941, "boot splash uses the canonical 1672x941 Workshop overview plate")
 	require(int(ProjectSettings.get_setting("display/window/handheld/orientation", -1)) == 6, "sensor orientation is configured")
-	require(str(ProjectSettings.get_setting("application/boot_splash/image", "")) == "res://assets/ui/workshop_boot_splash.png", "boot splash setting is runtime PNG")
+	require(str(ProjectSettings.get_setting("application/boot_splash/image", "")) == WORKSHOP_BOOT_SPLASH_PATH, "boot splash setting uses the canonical Workshop overview plate")
 	var fallback := Catalog.creature("future_unmapped_creature")
 	require(fallback.is_empty() and BattleSpriteStage.sprite_path_for("future_unmapped_creature").ends_with("mossmunk_sprite_sheet.png"), "unknown future IDs retain the safe mascot visual fallback")
 	for definition in Catalog.CREATURES:

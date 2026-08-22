@@ -55,7 +55,8 @@ the magenta-key sources are deliberately excluded by the export preset.
 | Runtime printer 03 | `assets/ui/arcane_forge_printer_frame_03.png` | `9E8737BB8BF6EB091CFAAD949D35EF595F6B67D2A7792D631BD37B34CCB395FE` |
 | Runtime printer 04 | `assets/ui/arcane_forge_printer_frame_04.png` | `8D2B1B88E2EE910C8AEC65D32083DB029A06342E09932E3108A59E3C20C217F8` |
 | Launcher master/runtime | `assets/ui/printforge_launcher_icon.png` | `211AA133CECC0D89630A7B37F5000DAAEDAD665EA1D7CA3E8B04576547C4D2CE` |
-| Runtime workshop boot splash | `assets/ui/workshop_boot_splash.png` | `1C31231063DD81A1D98FD896F56EEE6DD457E96A6B0708033A5412D92A0D5CC9` |
+| Runtime workshop boot splash | `assets/ui/workshop/workshop_overview_landscape_v4.png` | `5D4C411B3AC8F79209851CDC5E63919E49E4C29B07E58B52CABC09C31773B0D1` |
+| Retired legacy boot splash (preserved) | `art-source/retired-runtime/workshop/workshop_boot_splash_legacy.png` | `1C31231063DD81A1D98FD896F56EEE6DD457E96A6B0708033A5412D92A0D5CC9` |
 
 The local deterministic matte pass keys the magenta family by chroma strength,
 softens the edge alpha, and decontaminates transparent/semitransparent RGB from
