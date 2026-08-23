@@ -2415,63 +2415,73 @@ func render_unified_foundry_surface(host: Container) -> void:
 	host.add_child(label(str(title_map.get(screen, "Foundry")), 25, Color("ffd36c")))
 	var coins := int(GameManager.profile.get("forge_coins", GameManager.profile.get("coins", 0)))
 	host.add_child(label("Forge Coins %d · Sparks %d" % [coins, int(GameManager.profile.get("sparks", 0))], 14, Color("9beaff")))
+	# Every Foundry surface is intentionally bounded. Keep this shared return action
+	# above all screen-specific content instead of relying on a clipped footer.
+	var workshop_return := make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))
+	workshop_return.name = "UnifiedFoundryWorkshopReturn"
+	workshop_return.tooltip_text = "Return to the Workshop"
+	workshop_return.accessibility_name = "Back to Workshop"
+	workshop_return.focus_mode = Control.FOCUS_ALL
+	host.add_child(workshop_return)
 	if not toast.is_empty(): host.add_child(label(toast, 14, Color("fff0a1")))
 	if screen == "unified_market":
-		var tabs := HBoxContainer.new(); tabs.name = "V3MarketTabs"; host.add_child(tabs)
+		var tabs := GridContainer.new(); tabs.name = "V3MarketTabs"; tabs.columns = 2 if is_portrait_layout() else 5; tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL; tabs.add_theme_constant_override("h_separation", 8); tabs.add_theme_constant_override("v_separation", 8); host.add_child(tabs)
 		for tab in [["blueprints","Blueprint Stall"],["cards","Card Shop"],["packs","Pack Emporium"],["upgrades","Upgrade Forge"],["cosmetics","Cosmetic Atelier"]]: tabs.add_child(make_button(str(tab[1]), func(): unified_market_tab = str(tab[0]); unified_page = 0; render(), Color("588d73") if unified_market_tab == str(tab[0]) else Color("526e93")))
+		var market_scroll := TOUCH_SCROLL_CONTAINER.new(); market_scroll.name = "UnifiedMarketScroll"; market_scroll.custom_minimum_size = Vector2(0, 0); market_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL; market_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; host.add_child(market_scroll)
+		var market_body := VBoxContainer.new(); market_body.name = "UnifiedMarketScrollBody"; market_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL; market_body.add_theme_constant_override("separation", 8); market_scroll.add_child(market_body)
 		var market := GameManager.market_snapshot()
 		var daily: Dictionary = market.get("daily_deal", {})
-		host.add_child(label("Daily Deal: %s · 20%% off" % str(daily.get("id", "loading")), 14, Color("fff0a1")))
-		var rewards := HBoxContainer.new(); rewards.name = "V3Rewards"; host.add_child(rewards)
+		market_body.add_child(label("Daily Deal: %s · 20%% off" % str(daily.get("id", "loading")), 14, Color("fff0a1")))
+		var rewards := HBoxContainer.new(); rewards.name = "V3Rewards"; market_body.add_child(rewards)
 		rewards.add_child(make_button("Daily quests", func(): var r = GameManager.daily_quests_v3(); _toast("Quests ready." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("526e93")))
 		rewards.add_child(make_button("Season %d / 50" % UNIFIED_RULES.season_level(GameManager.profile), func(): var r = GameManager.claim_season_level_v3(UNIFIED_RULES.season_level(GameManager.profile), false); _toast("Season reward claimed." if bool(r.get("ok", false)) else str(r.get("error", "No reward ready."))); render(), Color("588d73")))
 		var quest_day := Time.get_date_string_from_system(); var quest_result := GameManager.daily_quests_v3(quest_day)
 		if bool(quest_result.get("ok", false)):
 			var quest_state: Dictionary = GameManager.profile.get("quest_state", {})
-			host.add_child(label("Daily Quests · %d free reroll" % int(quest_state.get("rerolls", 0)), 14, Color("9beaff")))
+			market_body.add_child(label("Daily Quests · %d free reroll" % int(quest_state.get("rerolls", 0)), 14, Color("9beaff")))
 			for index in (quest_state.get("quests", []) as Array).size():
 				var quest: Dictionary = quest_state.quests[index]; var quest_id := str(quest.get("id", ""))
-				host.add_child(make_button("%s · %d/%d%s" % [str(quest.get("objective", "")).replace("_", " ").capitalize(), int(quest.get("progress", 0)), int(quest.get("target", 1)), " · claim" if bool(quest.get("completed", false)) else ""], func():
+				market_body.add_child(make_button("%s · %d/%d%s" % [str(quest.get("objective", "")).replace("_", " ").capitalize(), int(quest.get("progress", 0)), int(quest.get("target", 1)), " · claim" if bool(quest.get("completed", false)) else ""], func():
 					var r = GameManager.claim_daily_quest_v3(quest_day, quest_id) if bool(quest.get("completed", false)) else GameManager.reroll_daily_quest_v3(quest_day, index)
 					_toast("Quest reward claimed." if bool(r.get("ok", false)) else str(r.get("error", "Quest unavailable."))); render(), Color("588d73") if bool(quest.get("completed", false)) else Color("526e93")))
 		var season: Dictionary = GameManager.profile.get("season", {})
-		host.add_child(label("Season track · %d XP · level %d / 50%s" % [int(season.get("xp", 0)), UNIFIED_RULES.season_level(GameManager.profile), " · paid" if bool(season.get("paid", false)) else " · free"], 14, Color("fff0a1")))
+		market_body.add_child(label("Season track · %d XP · level %d / 50%s" % [int(season.get("xp", 0)), UNIFIED_RULES.season_level(GameManager.profile), " · paid" if bool(season.get("paid", false)) else " · free"], 14, Color("fff0a1")))
 		var level := UNIFIED_RULES.season_level(GameManager.profile)
 		if level > 0:
-			host.add_child(make_button("Claim free level %d" % level, func(): var r = GameManager.claim_season_level_v3(level, false); _toast("Free Season reward claimed." if bool(r.get("ok", false)) else str(r.get("error", "No reward ready."))); render(), Color("588d73")))
-			if bool(season.get("paid", false)): host.add_child(make_button("Claim paid level %d" % level, func(): var r = GameManager.claim_season_level_v3(level, true); _toast("Paid Season reward claimed." if bool(r.get("ok", false)) else str(r.get("error", "No reward ready."))); render(), Color("7b5a9b")))
+			market_body.add_child(make_button("Claim free level %d" % level, func(): var r = GameManager.claim_season_level_v3(level, false); _toast("Free Season reward claimed." if bool(r.get("ok", false)) else str(r.get("error", "No reward ready."))); render(), Color("588d73")))
+			if bool(season.get("paid", false)): market_body.add_child(make_button("Claim paid level %d" % level, func(): var r = GameManager.claim_season_level_v3(level, true); _toast("Paid Season reward claimed." if bool(r.get("ok", false)) else str(r.get("error", "No reward ready."))); render(), Color("7b5a9b")))
 		if unified_market_tab == "blueprints":
-			host.add_child(label("Blueprint Stall · 12 daily slots · rarity unlocked by Spool Level", 15, Color("e6dfd0")))
+			market_body.add_child(label("Blueprint Stall · 12 daily slots · rarity unlocked by Spool Level", 15, Color("e6dfd0")))
 			var newcomer_items: Array = market.get("newcomer", {}).get("blueprints", []) if market.get("newcomer", {}) is Dictionary else []
 			if not newcomer_items.is_empty():
-				host.add_child(label("Newcomer Shelf · three half-price Common blueprints", 14, Color("fff0a1")))
+				market_body.add_child(label("Newcomer Shelf · three half-price Common blueprints", 14, Color("fff0a1")))
 				for offer in newcomer_items:
-					var newcomer_id := str(offer.get("id", "")); host.add_child(make_button("Newcomer: %s · %d FC" % [newcomer_id, int(offer.get("price", 0))], func(): var r = GameManager.buy_blueprint_v3(newcomer_id); _toast("Blueprint purchased." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("a86b2e")))
+					var newcomer_id := str(offer.get("id", "")); market_body.add_child(make_button("Newcomer: %s · %d FC" % [newcomer_id, int(offer.get("price", 0))], func(): var r = GameManager.buy_blueprint_v3(newcomer_id); _toast("Blueprint purchased." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("a86b2e")))
 			for offer in (market.get("blueprints", []) as Array):
 				var blueprint_id := str(offer.get("id", ""))
-				host.add_child(make_button("%s · %d FC" % [blueprint_id, int(offer.get("price", 0))], func(): var r = GameManager.buy_blueprint_v3(blueprint_id); _toast("Blueprint purchased." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("a86b2e")))
-				host.add_child(make_button(("Remove wishlist: " if blueprint_id in GameManager.profile.get("wishlist", []) else "Wishlist: ") + blueprint_id, func(): var r = GameManager.set_wishlist_v3(blueprint_id, blueprint_id not in GameManager.profile.get("wishlist", [])); _toast("Wishlist updated." if bool(r.get("ok", false)) else str(r.get("error", "Wishlist full."))); render(), Color("526e93")))
+				market_body.add_child(make_button("%s · %d FC" % [blueprint_id, int(offer.get("price", 0))], func(): var r = GameManager.buy_blueprint_v3(blueprint_id); _toast("Blueprint purchased." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("a86b2e")))
+				market_body.add_child(make_button(("Remove wishlist: " if blueprint_id in GameManager.profile.get("wishlist", []) else "Wishlist: ") + blueprint_id, func(): var r = GameManager.set_wishlist_v3(blueprint_id, blueprint_id not in GameManager.profile.get("wishlist", [])); _toast("Wishlist updated." if bool(r.get("ok", false)) else str(r.get("error", "Wishlist full."))); render(), Color("526e93")))
 		elif unified_market_tab == "cards":
-			host.add_child(label("Card Shop · typed stock refreshes every 48 hours", 15, Color("e6dfd0")))
+			market_body.add_child(label("Card Shop · typed stock refreshes every 48 hours", 15, Color("e6dfd0")))
 			for offer in (market.get("cards", []) as Array):
 				var market_card_id := str(offer.get("id", ""))
-				host.add_child(make_button("%s · %d FC" % [market_card_id, int(offer.get("price", 0))], func(): var r = GameManager.buy_market_card_v3(market_card_id); _toast("Card purchased." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("2f93a8")))
-				host.add_child(make_button(("Remove wishlist: " if market_card_id in GameManager.profile.get("wishlist", []) else "Wishlist: ") + market_card_id, func(): var r = GameManager.set_wishlist_v3(market_card_id, market_card_id not in GameManager.profile.get("wishlist", [])); _toast("Wishlist updated." if bool(r.get("ok", false)) else str(r.get("error", "Wishlist full."))); render(), Color("526e93")))
+				market_body.add_child(make_button("%s · %d FC" % [market_card_id, int(offer.get("price", 0))], func(): var r = GameManager.buy_market_card_v3(market_card_id); _toast("Card purchased." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("2f93a8")))
+				market_body.add_child(make_button(("Remove wishlist: " if market_card_id in GameManager.profile.get("wishlist", []) else "Wishlist: ") + market_card_id, func(): var r = GameManager.set_wishlist_v3(market_card_id, market_card_id not in GameManager.profile.get("wishlist", [])); _toast("Wishlist updated." if bool(r.get("ok", false)) else str(r.get("error", "Wishlist full."))); render(), Color("526e93")))
 		elif unified_market_tab == "packs":
-			host.add_child(label("Pack Emporium · pity progress persists per pack type", 15, Color("e6dfd0")))
-			for pack_id in UNIFIED_RULES.PACKS: host.add_child(make_button("%s · %d FC · pity %d/50" % [str(pack_id).capitalize(), int(UNIFIED_RULES.PACKS[pack_id].get("price", 0)), int(GameManager.profile.get("pack_pity", {}).get(pack_id, 0))], _buy_unified_pack.bind(str(pack_id)), Color("a86b2e")))
+			market_body.add_child(label("Pack Emporium · pity progress persists per pack type", 15, Color("e6dfd0")))
+			for pack_id in UNIFIED_RULES.PACKS: market_body.add_child(make_button("%s · %d FC · pity %d/50" % [str(pack_id).capitalize(), int(UNIFIED_RULES.PACKS[pack_id].get("price", 0)), int(GameManager.profile.get("pack_pity", {}).get(pack_id, 0))], _buy_unified_pack.bind(str(pack_id)), Color("a86b2e")))
 		elif unified_market_tab == "upgrades":
-			host.add_child(label("Upgrade Forge · permanent Workshop upgrades and battle cards", 15, Color("e6dfd0")))
-			for upgrade_id in UNIFIED_RULES.WORKSHOP_UPGRADES: host.add_child(make_button("Workshop: %s · %d FC" % [str(upgrade_id).replace("_", " "), int(UNIFIED_RULES.WORKSHOP_UPGRADES[upgrade_id].get("cost", 0))], func(): var r = GameManager.buy_workshop_upgrade_v3(str(upgrade_id)); _toast("Upgrade installed." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("588d73")))
-			for upgrade_id in UNIFIED_RULES.UPGRADE_CARDS: host.add_child(make_button("Card: %s · %d FC" % [str(upgrade_id).replace("_", " "), int(UNIFIED_RULES.UPGRADE_CARDS[upgrade_id].get("cost", 0))], func(): var r = GameManager.buy_upgrade_card_v3(str(upgrade_id)); _toast("Upgrade Card added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("526e93")))
+			market_body.add_child(label("Upgrade Forge · permanent Workshop upgrades and battle cards", 15, Color("e6dfd0")))
+			for upgrade_id in UNIFIED_RULES.WORKSHOP_UPGRADES: market_body.add_child(make_button("Workshop: %s · %d FC" % [str(upgrade_id).replace("_", " "), int(UNIFIED_RULES.WORKSHOP_UPGRADES[upgrade_id].get("cost", 0))], func(): var r = GameManager.buy_workshop_upgrade_v3(str(upgrade_id)); _toast("Upgrade installed." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("588d73")))
+			for upgrade_id in UNIFIED_RULES.UPGRADE_CARDS: market_body.add_child(make_button("Card: %s · %d FC" % [str(upgrade_id).replace("_", " "), int(UNIFIED_RULES.UPGRADE_CARDS[upgrade_id].get("cost", 0))], func(): var r = GameManager.buy_upgrade_card_v3(str(upgrade_id)); _toast("Upgrade Card added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("526e93")))
 		else:
-			host.add_child(label("Cosmetic Atelier · visual items never change battle rules", 15, Color("e6dfd0")))
+			market_body.add_child(label("Cosmetic Atelier · visual items never change battle rules", 15, Color("e6dfd0")))
 			for cosmetic_id in UNIFIED_RULES.COSMETICS:
 				var cosmetic_name := str(UNIFIED_RULES.COSMETICS[cosmetic_id].get("name", cosmetic_id)); var cosmetic_price := int(UNIFIED_RULES.COSMETICS[cosmetic_id].get("coins", 0))
-				host.add_child(make_button("%s · %d Forge Coins" % [cosmetic_name, cosmetic_price], func(): var r = GameManager.buy_cosmetic_v3(str(cosmetic_id), "forge_coins"); _toast("Cosmetic added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("7b5a9b")))
-				host.add_child(make_button("%s · %d Sparks" % [cosmetic_name, cosmetic_price], func(): var r = GameManager.buy_cosmetic_v3(str(cosmetic_id), "sparks"); _toast("Cosmetic added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("526e93")))
-			host.add_child(make_button("Local test purchase: Forge Boost (1,200 Sparks)", func(): var r = GameManager.fake_store_purchase_v3("ui-%d" % Time.get_ticks_msec(), "forge_boost"); _toast("Sparks added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("a86b2e")))
-			host.add_child(make_button("Unlock paid Season Track · 1,200 Sparks", func(): var r = GameManager.buy_paid_season_v3(); _toast("Season Track unlocked." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("588d73")))
+				market_body.add_child(make_button("%s · %d Forge Coins" % [cosmetic_name, cosmetic_price], func(): var r = GameManager.buy_cosmetic_v3(str(cosmetic_id), "forge_coins"); _toast("Cosmetic added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("7b5a9b")))
+				market_body.add_child(make_button("%s · %d Sparks" % [cosmetic_name, cosmetic_price], func(): var r = GameManager.buy_cosmetic_v3(str(cosmetic_id), "sparks"); _toast("Cosmetic added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("526e93")))
+			market_body.add_child(make_button("Local test purchase: Forge Boost (1,200 Sparks)", func(): var r = GameManager.fake_store_purchase_v3("ui-%d" % Time.get_ticks_msec(), "forge_boost"); _toast("Sparks added." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("a86b2e")))
+			market_body.add_child(make_button("Unlock paid Season Track · 1,200 Sparks", func(): var r = GameManager.buy_paid_season_v3(); _toast("Season Track unlocked." if bool(r.get("ok", false)) else str(r.get("error", "Unavailable."))); render(), Color("588d73")))
 	elif screen == "unified_library":
 		var owned: Array = []
 		for definition in UNIFIED_RULES.all_cards():
@@ -2482,15 +2492,6 @@ func render_unified_foundry_surface(host: Container) -> void:
 		library_deck.name = "UnifiedLibraryDeck"
 		host.add_child(library_deck)
 	elif screen == "unified_deck":
-		# This no-scroll surface can grow past the first fold. Keep its Workshop
-		# return action before the deck and Pre-Print forms so it remains reachable
-		# at every supported responsive size.
-		var deck_workshop_return := make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))
-		deck_workshop_return.name = "UnifiedDeckWorkshopReturn"
-		deck_workshop_return.tooltip_text = "Return to the Workshop"
-		deck_workshop_return.accessibility_name = "Back to Workshop"
-		deck_workshop_return.focus_mode = Control.FOCUS_ALL
-		host.add_child(deck_workshop_return)
 		if unified_deck_draft.is_empty(): unified_deck_draft = GameManager.active_deck_cards()
 		var deck_slots := HBoxContainer.new(); deck_slots.name = "V3DeckSlots"; host.add_child(deck_slots)
 		for slot in UNIFIED_RULES.DECK_SLOTS:
@@ -2536,7 +2537,6 @@ func render_unified_foundry_surface(host: Container) -> void:
 	else:
 		host.add_child(label("Printer skill nodes were retired. Workshop Upgrades and Upgrade Cards are available in the Filament Market.", 15, Color("fff0a1")))
 		host.add_child(make_button("Open Upgrade Forge", func(): screen = "unified_market"; unified_market_tab = "upgrades"; render(), Color("588d73")))
-	host.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 	_render_unified_inspector()
 	if screen == "unified_market": _render_unified_pack_reveal()
 
@@ -2563,7 +2563,9 @@ func _buy_unified_market_card(card_id: String) -> void:
 
 func _render_unified_pack_reveal() -> void:
 	var pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {})
-	var cards: Array = pending.get("cards", []) if pending is Dictionary else []
+	# Render from a copy: bonus-card presentation must never append into the
+	# persisted exactly-once pending receipt when this surface redraws.
+	var cards: Array = (pending.get("cards", []) as Array).duplicate() if pending is Dictionary else []
 	var bonus_cards: Array = pending.get("bonus_cards", []) if pending is Dictionary else []
 	if not bonus_cards.is_empty(): cards.append_array(bonus_cards)
 	if cards.is_empty(): return
@@ -2577,7 +2579,8 @@ func _render_unified_pack_reveal() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal.add_child(center)
 	var shell := PanelContainer.new()
-	var reveal_height := 470.0 if is_portrait_layout() else 460.0
+	var five_card_reveal := cards.size() == 5
+	var reveal_height := 620.0 if five_card_reveal and is_portrait_layout() else (420.0 if five_card_reveal else (470.0 if is_portrait_layout() else 460.0))
 	shell.custom_minimum_size = Vector2(minf(1040, size.x - 24), minf(reveal_height, size.y - 24))
 	shell.add_theme_stylebox_override("panel", panel_style(Color("102940fa"), Color("f1be69")))
 	center.add_child(shell)
@@ -2588,7 +2591,7 @@ func _render_unified_pack_reveal() -> void:
 	content.add_child(label("Foundry pack reveal", 24, Color("ffd36c")))
 	var unlocks: Array = pending.get("blueprint_unlocks", []) if pending is Dictionary else []
 	content.add_child(label("%d cards%s · duplicates are kept%s" % [cards.size(), " including %d Rare Reward bonus cards" % bonus_cards.size() if not bonus_cards.is_empty() else "", " · blueprint unlocked" if not unlocks.is_empty() else ""], 14, Color("dce8f4")))
-	var per_page := 2 if is_portrait_layout() else 4
+	var per_page := 5 if five_card_reveal else (2 if is_portrait_layout() else 4)
 	var pages := maxi(1, int(ceil(float(cards.size()) / float(per_page))))
 	unified_reveal_page = clampi(unified_reveal_page, 0, pages - 1)
 	# Keep a short reveal centered in its ceremonial panel instead of leaving a
@@ -2599,7 +2602,7 @@ func _render_unified_pack_reveal() -> void:
 	content.add_child(grid_center)
 	var grid := GridContainer.new()
 	grid.name = "UnifiedPackRevealGrid"
-	grid.columns = 2 if is_portrait_layout() else 4
+	grid.columns = 3 if five_card_reveal and is_portrait_layout() else (5 if five_card_reveal else (2 if is_portrait_layout() else 4))
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	grid_center.add_child(grid)
@@ -2610,23 +2613,26 @@ func _render_unified_pack_reveal() -> void:
 		var note := "Blueprint unlocked" if id in unlocks else "Awarded now"
 		view.configure(UNIFIED_RULES.card(id), int(GameManager.profile.get("owned_cards", {}).get(id, 0)), -1, note, true, false)
 		grid.add_child(view)
-	var pager := HBoxContainer.new()
-	pager.name = "UnifiedPackRevealPager"
-	pager.alignment = BoxContainer.ALIGNMENT_CENTER
-	pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	content.add_child(pager)
-	var previous := make_button("Previous", func(): unified_reveal_page = posmod(unified_reveal_page - 1, pages); render(), Color("536c8d"))
-	previous.custom_minimum_size = Vector2(48, 44)
-	previous.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	previous.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pager.add_child(previous)
-	pager.add_child(_compact_pager_label("%d / %d" % [unified_reveal_page + 1, pages]))
-	var next := make_button("Next", func(): unified_reveal_page = posmod(unified_reveal_page + 1, pages); render(), Color("536c8d"))
-	next.custom_minimum_size = Vector2(48, 44)
-	next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pager.add_child(next)
-	content.add_child(make_button("Keep cards", _keep_unified_pack_cards, Color("588d73")))
+	if pages > 1:
+		var pager := HBoxContainer.new()
+		pager.name = "UnifiedPackRevealPager"
+		pager.alignment = BoxContainer.ALIGNMENT_CENTER
+		pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		content.add_child(pager)
+		var previous := make_button("Previous", func(): unified_reveal_page = posmod(unified_reveal_page - 1, pages); render(), Color("536c8d"))
+		previous.custom_minimum_size = Vector2(48, 44)
+		previous.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		previous.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		pager.add_child(previous)
+		pager.add_child(_compact_pager_label("%d / %d" % [unified_reveal_page + 1, pages]))
+		var next := make_button("Next", func(): unified_reveal_page = posmod(unified_reveal_page + 1, pages); render(), Color("536c8d"))
+		next.custom_minimum_size = Vector2(48, 44)
+		next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		pager.add_child(next)
+	var keep_cards := make_button("Keep cards", _keep_unified_pack_cards, Color("588d73"))
+	keep_cards.name = "UnifiedPackRevealKeepCards"
+	content.add_child(keep_cards)
 
 func _keep_unified_pack_cards() -> void:
 	var kept := GameManager.claim_pending_pack_reveal()

@@ -3,7 +3,6 @@ extends Node
 const OUTPUT_DIR := "E:/CodexCache/printforge-validation"
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 const ART_GALLERY := preload("res://scripts/ui/creature_art_gallery.gd")
-const CAPTURE_FEATURE_SETUP := preload("res://tests/capture_feature_setup.gd")
 const CAPTURE_OFFLINE_QA_SETUP := preload("res://tests/capture_offline_qa_setup.gd")
 const VFX_CONTACT_SHEET := preload("res://tests/vfx_contact_sheet.gd")
 const TIERED_ARMOR_PALETTE_SHOWCASE := preload("res://tests/tiered_armor_palette_showcase.gd")
@@ -15,8 +14,12 @@ var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
 var capture_tag := ""
+var capture_feature_setup
 
 func _ready() -> void:
+	# Legacy feature captures are optional after the unified cleanup removed their
+	# helper. Load it lazily so current unified visual-QA modes remain runnable.
+	capture_feature_setup = load("res://tests/capture_feature_setup.gd") if ResourceLoader.exists("res://tests/capture_feature_setup.gd") else null
 	DirAccess.make_dir_recursive_absolute(OUTPUT_DIR)
 	var forced_viewport := requested_capture_viewport()
 	# The project uses Godot's square-base + canvas_items/expand pattern. The
@@ -42,7 +45,7 @@ func _prepare_capture() -> void:
 		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
 		GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
 		if capture_mode == "unified_pack_reveal":
-			GameManager.profile = UNIFIED_RULES.buy_pack(GameManager.profile, "pack_5", PackedByteArray([1,2,3,4,5,6,7,8])).profile
+			GameManager.profile = UNIFIED_RULES.buy_pack(GameManager.profile, "forge", PackedByteArray([1,2,3,4,5,6,7,8])).profile
 		if capture_mode == "unified_forgedex":
 			UNIFIED_RULES.grant_card(GameManager.profile, "mossmunk")
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
@@ -97,11 +100,11 @@ func _prepare_capture() -> void:
 	workshop.shop_day_key = "2026-08-14"
 	if CAPTURE_OFFLINE_QA_SETUP.configure(workshop, capture_mode):
 		pass
-	elif CAPTURE_FEATURE_SETUP.configure_battle(workshop, capture_mode):
+	elif capture_feature_setup != null and capture_feature_setup.configure_battle(workshop, capture_mode):
 		pass
-	elif CAPTURE_FEATURE_SETUP.configure_forge(workshop, capture_mode):
+	elif capture_feature_setup != null and capture_feature_setup.configure_forge(workshop, capture_mode):
 		pass
-	elif CAPTURE_FEATURE_SETUP.configure_workshop(workshop, capture_mode):
+	elif capture_feature_setup != null and capture_feature_setup.configure_workshop(workshop, capture_mode):
 		pass
 	elif capture_mode in ["trade", "trade_draft", "trade_settled"]:
 		workshop.screen = "trade"
