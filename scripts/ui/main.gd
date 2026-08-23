@@ -2482,6 +2482,15 @@ func render_unified_foundry_surface(host: Container) -> void:
 		library_deck.name = "UnifiedLibraryDeck"
 		host.add_child(library_deck)
 	elif screen == "unified_deck":
+		# This no-scroll surface can grow past the first fold. Keep its Workshop
+		# return action before the deck and Pre-Print forms so it remains reachable
+		# at every supported responsive size.
+		var deck_workshop_return := make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))
+		deck_workshop_return.name = "UnifiedDeckWorkshopReturn"
+		deck_workshop_return.tooltip_text = "Return to the Workshop"
+		deck_workshop_return.accessibility_name = "Back to Workshop"
+		deck_workshop_return.focus_mode = Control.FOCUS_ALL
+		host.add_child(deck_workshop_return)
 		if unified_deck_draft.is_empty(): unified_deck_draft = GameManager.active_deck_cards()
 		var deck_slots := HBoxContainer.new(); deck_slots.name = "V3DeckSlots"; host.add_child(deck_slots)
 		for slot in UNIFIED_RULES.DECK_SLOTS:

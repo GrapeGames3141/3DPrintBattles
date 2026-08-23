@@ -61,6 +61,21 @@ func _exercise(viewport: Vector2) -> void:
 	require(main.find_child("UnifiedBattlePhaseActions", true, false) != null, "Explicit phase controls render at %s." % viewport)
 	require(_button_named(main, "Advance phase") != null, "Phase advance is keyboard-focusable button at %s." % viewport)
 	require(main.is_portrait_layout() == (viewport.y > viewport.x), "Battle component detects orientation at %s." % viewport)
+	main.screen = "unified_deck"
+	main.render()
+	await get_tree().process_frame
+	var deck_return := main.find_child("UnifiedDeckWorkshopReturn", true, false) as Button
+	require(deck_return != null and deck_return.is_visible_in_tree(), "Deck Builder exposes a visible first-fold Workshop return at %s." % viewport)
+	if deck_return != null:
+		var return_rect := deck_return.get_global_rect()
+		require(return_rect.position.x >= 0.0 and return_rect.position.y >= 0.0 and return_rect.end.x <= viewport.x and return_rect.end.y <= viewport.y, "Deck Builder Workshop return stays within the viewport at %s." % viewport)
+		require(deck_return.focus_mode != Control.FOCUS_NONE and not deck_return.disabled, "Deck Builder Workshop return is keyboard-focusable at %s." % viewport)
+		deck_return.grab_focus()
+		await get_tree().process_frame
+		require(deck_return.has_focus(), "Deck Builder Workshop return receives keyboard focus at %s." % viewport)
+		deck_return.emit_signal("pressed")
+		await get_tree().process_frame
+		require(main.screen == "workshop", "Deck Builder Workshop return navigates to Workshop at %s." % viewport)
 	main.queue_free()
 	await get_tree().process_frame
 	subviewport.queue_free()
