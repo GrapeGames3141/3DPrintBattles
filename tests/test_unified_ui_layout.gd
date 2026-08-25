@@ -58,14 +58,68 @@ func _exercise(viewport: Vector2) -> void:
 	require(main.find_child("UnifiedBattleHeading", true, false) != null, "Battle heading renders at %s." % viewport)
 	require(main.find_child("UnifiedLocalHandoff", true, false) != null, "Hot-seat privacy handoff renders at %s." % viewport)
 	require(main.find_child("UnifiedBattleHandGrid", true, false) == null, "Hidden hand is omitted during hot-seat handoff at %s." % viewport)
+	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null, "Hot-seat handoff exposes no phase-advance control at %s." % viewport)
 	require(_button_named(main, "Ready Player") != null, "Handoff has an explicit ready action at %s." % viewport)
 	main.unified_local_handoff = false
 	main.render()
 	await get_tree().process_frame
 	require(main.find_child("UnifiedBattleHandGrid", true, false) != null, "Owner hand renders after handoff at %s." % viewport)
-	require(main.find_child("UnifiedBattlePhaseActions", true, false) != null, "Explicit phase controls render at %s." % viewport)
-	require(_button_named(main, "Advance phase") != null, "Phase advance is keyboard-focusable button at %s." % viewport)
+	var local_primary := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
+	require(local_primary != null and _within_viewport(local_primary, viewport), "Phase-specific action is visible in the battle first fold at %s." % viewport)
+	if local_primary != null:
+		require(local_primary.focus_mode != Control.FOCUS_NONE and not local_primary.disabled, "Phase-specific action is keyboard-focusable at %s." % viewport)
 	require(main.is_portrait_layout() == (viewport.y > viewport.x), "Battle component detects orientation at %s." % viewport)
+	# Exercise the human Main Phase path directly. The controlled opening hand makes
+	# the card selection and FIFO queue assertion deterministic at both layouts.
+	main.battle = STATE.create(deck, deck, 81)
+	main.battle.starting_seat = 0
+	main.battle.active_seat = 0
+	main.battle.turn = 1
+	main.battle.phase = "draw"
+	main.battle.player(0).hand = ["cinderpaw"]
+	main.battle.player(0).deck = []
+	main.battle.player(0).filament = 200
+	main.battle_mode = "daily_training"
+	main.unified_ai_pending = false
+	main.unified_local_handoff = false
+	main.unified_selected_card_id = ""
+	main.screen = "unified_battle"
+	main.render()
+	await get_tree().process_frame
+	var begin_main := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
+	var opening_card := main.find_child("UnifiedHandCinderpaw", true, false) as Button
+	require(begin_main != null and begin_main.text == "Begin Main" and _within_viewport(begin_main, viewport), "Draw phase exposes an in-bounds Begin Main action at %s." % viewport)
+	require(opening_card != null and opening_card.disabled and "Main Phase" in opening_card.tooltip_text and "70F" in opening_card.text, "Draw phase shows the actual filament cost and explains disabled hand cards at %s." % viewport)
+	if begin_main != null:
+		begin_main.emit_signal("pressed")
+		await get_tree().process_frame
+	require(str(main.battle.phase) == "main", "Begin Main advances the deterministic battle to Main at %s." % viewport)
+	opening_card = main.find_child("UnifiedHandCinderpaw", true, false) as Button
+	require(opening_card != null and not opening_card.disabled and _within_viewport(opening_card, viewport), "Main Phase exposes an in-bounds playable hand card at %s." % viewport)
+	if opening_card != null:
+		opening_card.emit_signal("pressed")
+		await get_tree().process_frame
+	var picker := main.find_child("UnifiedPlayTargetPicker", true, false) as Control
+	var selected_card := main.find_child("UnifiedSelectedHandCard", true, false) as Control
+	var queue_creature := main.find_child("UnifiedPlayQueueCreature", true, false) as Button
+	require(picker != null and _within_viewport(picker, viewport), "Selected card target/action picker remains in the viewport at %s." % viewport)
+	require(selected_card != null and _within_viewport(selected_card, viewport), "Selected hand card is visibly named at %s." % viewport)
+	require(queue_creature != null and _within_viewport(queue_creature, viewport) and queue_creature.focus_mode != Control.FOCUS_NONE, "Queue action is visible and keyboard/touch reachable at %s." % viewport)
+	if queue_creature != null:
+		queue_creature.emit_signal("pressed")
+		await get_tree().process_frame
+	require(not main.battle.player(0).hand.has("cinderpaw") and main.battle.player(0).queue.size() == 1 and int(main.battle.player(0).filament) == 130, "Queueing a selected creature consumes the hand card and its actual filament cost at %s." % viewport)
+	# Rival turns are public-board-only until the deferred AI finishes. The player
+	# must never receive a phase button or a view of the rival's private hand.
+	main.battle = STATE.create(deck, deck, 81)
+	main.battle.active_seat = 1
+	main.battle.phase = "draw"
+	main.battle_mode = "daily_training"
+	main.unified_ai_pending = true
+	main.unified_selected_card_id = ""
+	main.render()
+	await get_tree().process_frame
+	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null and main.find_child("UnifiedBattleHandGrid", true, false) == null, "Pending non-local rival turn exposes neither controls nor the rival hand at %s." % viewport)
 	main.screen = "unified_market"
 	main.unified_market_tab = "blueprints"
 	main.render()

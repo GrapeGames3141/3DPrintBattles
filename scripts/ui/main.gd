@@ -2228,22 +2228,32 @@ func _launch_unified_mode(mode: String, opponent_setup: Dictionary, seed: int) -
 	unified_arrival_presented.clear()
 	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "unified_battle"
+	# A seeded non-local battle can legitimately give the rival the first turn.
+	# Compose the public board first, then let the AI resolve so its private hand is
+	# never exposed or left waiting for player input.
+	if battle_mode != "local" and int(battle.active_seat) == 1 and not battle.finished:
+		unified_ai_pending = true
 	render()
+	if unified_ai_pending: call_deferred("_run_unified_ai")
 
 func _unified_side_panel(title: String, state: Dictionary, color: Color) -> Control:
 	var panel := make_panel(Color("132b3be8"), color)
 	panel.name = "Unified%sField" % title.capitalize()
-	var compact := not is_portrait_layout()
+	# The battle surface has no global scroll. Keep the public board legible but
+	# compact in both orientations so the hand's selected-card action stays in the
+	# first interaction region on narrow screens.
+	var compact := true
 	panel.add_child(label(title + (" printer" if compact else ""), 14 if compact else 18, color))
 	var printer: Dictionary = state.get("printer", {})
 	panel.add_child(label(("%d/%d HP · %d/%d filament" if compact else "3D PRINTER  ·  %d / %d HP  ·  filament %d/%d") % [int(printer.get("hp", 0)), int(printer.get("max_hp", 2000)), int(state.get("filament", 0)), int(state.get("filament_max", 400))], 12 if compact else 14, Color("e6dfd0")))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	panel.add_child(row)
+	var narrow := is_portrait_layout()
 	for slot in 3:
 		var unit = state.get("slots", [])[slot]
 		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(112, 50 if compact else 68)
+		card.custom_minimum_size = Vector2(72 if narrow else 112, 42 if narrow else 50)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", inset_style(Color("102735"), color))
 		var text := "Slot %d\nOpen" % (slot + 1)
@@ -2254,7 +2264,7 @@ func _unified_side_panel(title: String, state: Dictionary, color: Color) -> Cont
 				var attached: Dictionary = equipment.get(key, {}) if equipment.get(key, {}) is Dictionary else {}
 				if not attached.is_empty(): gear.append(str(attached.get("name", key.capitalize())))
 			text = "%s · %s\n%d HP%s%s" % [str(unit.get("name", "Print")), str(unit.get("mode", "defense")).capitalize(), int(unit.get("hp", 0)), " · ready" if bool(unit.get("ready", false)) else "", (" · " + "/".join(gear)) if not gear.is_empty() else ""]
-		var caption := label(text, 11 if compact else 13, Color("e6dfd0"))
+		var caption := label(text, 10 if narrow else (11 if compact else 13), Color("e6dfd0"))
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		card.add_child(caption)
@@ -2680,9 +2690,20 @@ func _settle_finished_unified_battle() -> void:
 
 func _unified_card_button(card_id: String) -> Button:
 	var card := UNIFIED_RULES.card(card_id)
-	var button := make_button(("✓ " if card_id == unified_selected_card_id else "") + str(card.get("name", card_id)) + " · %dF" % int(card.get("cost", 0)), func(): unified_selected_card_id = card_id; unified_selected_slot = -2; unified_selected_target = -2; render(), Color("588d73") if card_id == unified_selected_card_id else Color("2f93a8"))
+	var filament_cost := int(card.get("filament_cost", card.get("cost", 0)))
+	var button := make_button(("✓ " if card_id == unified_selected_card_id else "") + str(card.get("name", card_id)) + " · %dF" % filament_cost, func(): unified_selected_card_id = card_id; unified_selected_slot = -2; unified_selected_target = -2; render(), Color("588d73") if card_id == unified_selected_card_id else Color("2f93a8"))
 	button.custom_minimum_size = Vector2(0, 58)
 	button.name = "UnifiedHand%s" % card_id.capitalize()
+	var can_play := battle != null and str(battle.phase) == "main" and (battle_mode == "local" or int(battle.active_seat) == 0) and not unified_ai_pending
+	if not can_play:
+		button.disabled = true
+		var disabled_reason := "Cards can be played only during your Main Phase." if battle == null or str(battle.phase) != "main" else "Rival cards are hidden while the rival resolves its turn."
+		button.tooltip_text = disabled_reason
+		button.accessibility_name = "%s. %s" % [str(card.get("name", card_id)), disabled_reason]
+	else:
+		button.tooltip_text = "Select %s for a legal Main Phase action" % str(card.get("name", card_id))
+		button.accessibility_name = "Select %s, %d filament" % [str(card.get("name", card_id)), filament_cost]
+	button.focus_mode = Control.FOCUS_ALL
 	var art := _unified_card_thumbnail(card)
 	if art != null:
 		button.icon = art
@@ -2691,36 +2712,54 @@ func _unified_card_button(card_id: String) -> Button:
 	return button
 
 func _render_unified_play_picker(host: Container, active: Dictionary) -> void:
-	if unified_selected_card_id.is_empty() or unified_selected_card_id not in active.get("hand", []): return
+	if battle == null or str(battle.phase) != "main" or unified_selected_card_id.is_empty() or unified_selected_card_id not in active.get("hand", []): return
 	var card := UNIFIED_RULES.card(unified_selected_card_id)
 	var panel := make_panel(Color("17394ee8"), Color("8deaff"))
 	panel.name = "UnifiedPlayTargetPicker"
 	host.add_child(panel.get_parent())
-	panel.add_child(label("%s · choose its legal target" % str(card.get("name", unified_selected_card_id)), 15, Color("fff0a1")))
+	var selected_label := label("%s · choose its legal target" % str(card.get("name", unified_selected_card_id)), 15, Color("fff0a1"))
+	selected_label.name = "UnifiedSelectedHandCard"
+	panel.add_child(selected_label)
 	var kind := str(card.get("type", ""))
 	var picks := HBoxContainer.new()
 	picks.add_theme_constant_override("separation", 7)
 	panel.add_child(picks)
 	if kind == "creature":
 		panel.add_child(label("Creatures enter the public FIFO queue now; choose a slot and mode when printing completes.", 13, Color("e6dfd0")))
-		panel.add_child(make_button("Queue creature", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id}), Color("a86b2e")))
+		var queue_creature := make_button("Queue creature", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id}), Color("a86b2e"))
+		queue_creature.name = "UnifiedPlayQueueCreature"
+		queue_creature.accessibility_name = "Queue selected creature"
+		panel.add_child(queue_creature)
 	elif kind == "equipment":
 		if str(card.get("equipment_slot", "")) == "battle_effect":
 			panel.add_child(label("This is worn by the player for this battle. It does not print or use a creature gear slot.", 13, Color("e6dfd0")))
-			panel.add_child(make_button("Activate player effect", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id}), Color("a86b2e")))
+			var activate_effect := make_button("Activate player effect", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id}), Color("a86b2e"))
+			activate_effect.name = "UnifiedPlayActivateEffect"
+			activate_effect.accessibility_name = "Activate selected player battle effect"
+			panel.add_child(activate_effect)
 		else:
 			for slot in 3:
 				if active.slots[slot] != null:
 					picks.add_child(make_button(("✓ " if unified_selected_target == slot else "") + "Your slot %d" % (slot + 1), func(): unified_selected_target = slot; render(), Color("588d73") if unified_selected_target == slot else Color("526e93")))
-			if unified_selected_target >= 0: panel.add_child(make_button("Queue equipment", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"slot":-1,"target":unified_selected_target}), Color("a86b2e")))
+			if unified_selected_target >= 0:
+				var queue_equipment := make_button("Queue equipment", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"slot":-1,"target":unified_selected_target}), Color("a86b2e"))
+				queue_equipment.name = "UnifiedPlayQueueEquipment"
+				queue_equipment.accessibility_name = "Queue selected equipment"
+				panel.add_child(queue_equipment)
 	elif kind == "spell":
 		# Targeted spells use slots; queue and filament spells resolve without one.
 		for slot in 3:
 			if battle.player(1 - int(battle.active_seat)).slots[slot] != null:
 				picks.add_child(make_button(("✓ " if unified_selected_target == slot else "") + "Enemy %d" % (slot + 1), func(): unified_selected_target = slot; render(), Color("588d73") if unified_selected_target == slot else Color("526e93")))
-		panel.add_child(make_button("Cast card", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"target":unified_selected_target}), Color("a86b2e")))
+		var cast_card := make_button("Cast card", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"target":unified_selected_target}), Color("a86b2e"))
+		cast_card.name = "UnifiedPlayCastCard"
+		cast_card.accessibility_name = "Cast selected card"
+		panel.add_child(cast_card)
 	else:
-		panel.add_child(make_button("Use refill", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"slot":-1,"target":-2}), Color("a86b2e")))
+		var use_refill := make_button("Use refill", _submit_unified_intent.bind({"type":"play_card","card_id":unified_selected_card_id,"slot":-1,"target":-2}), Color("a86b2e"))
+		use_refill.name = "UnifiedPlayUseRefill"
+		use_refill.accessibility_name = "Use selected filament card"
+		panel.add_child(use_refill)
 
 func _render_unified_attack_picker(host: Container, active: Dictionary) -> void:
 	if str(battle.phase) != "attack": return
