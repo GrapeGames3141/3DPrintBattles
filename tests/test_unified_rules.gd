@@ -13,6 +13,18 @@ func require(value: bool, message: String) -> void:
 		failures.append(message)
 		push_error(message)
 
+func deck_cards(profile: Dictionary, deck_id: String) -> Array:
+	for deck in profile.get("decks", []):
+		if deck is Dictionary and str(deck.get("id", "")) == deck_id:
+			return (deck.get("cards", []) as Array).duplicate()
+	return []
+
+func deck_count(profile: Dictionary, deck_id: String) -> int:
+	var count := 0
+	for deck in profile.get("decks", []):
+		if deck is Dictionary and str(deck.get("id", "")) == deck_id: count += 1
+	return count
+
 func _ready() -> void:
 	var profile := RULES.ensure({"onboarding":{"state":"choose_starter","starter_id":""},"coins":10000})
 	var clean_profile := RULES.new_profile()
@@ -23,6 +35,31 @@ func _ready() -> void:
 	var printed := RULES.print_starter(selected.profile)
 	require(bool(selected.ok) and int(selected.profile.owned_cards.get("cinderpaw", 0)) == 0, "starter choice grants no extra card copies before the authored deck")
 	require(bool(printed.ok) and printed.profile.decks[0].cards.size() == 40 and RULES.deck_reason(printed.profile, printed.profile.decks[0].cards).is_empty(), "starter is a legal 40-card owned deck")
+	var authored_starter := deck_cards(printed.profile, "starter-deck")
+	var stale_starter: Dictionary = RULES.new_profile()
+	stale_starter.onboarding = {"state":"complete", "starter_id":"cinderpaw"}
+	stale_starter.owned_cards = {"cinderpaw":7, "raw_filament":1}
+	stale_starter.decks = [{"id":"starter-deck", "name":"Forge Deck", "cards":authored_starter.slice(0, 15)}, {"id":"deck-slot-2", "name":"Queue Deck", "cards":[]}, {"id":"deck-slot-3", "name":"Arcane Deck", "cards":[]}]
+	stale_starter.active_deck_id = "starter-deck"
+	var repaired_starter := RULES.ensure(stale_starter)
+	var repaired_cards := deck_cards(repaired_starter, "starter-deck")
+	var ownership_exact := int(repaired_starter.owned_cards.get("cinderpaw", 0)) == 7 and int(repaired_starter.owned_cards.get("raw_filament", 0)) == 4
+	for card_id in authored_starter:
+		if str(card_id) == "cinderpaw" or str(card_id) == "raw_filament": continue
+		ownership_exact = ownership_exact and int(repaired_starter.owned_cards.get(str(card_id), 0)) == authored_starter.count(card_id)
+	require(repaired_cards.size() == 40 and RULES.deck_reason(repaired_starter, repaired_cards).is_empty() and deck_count(repaired_starter, "starter-deck") == 1 and repaired_starter.decks.size() == 3 and ownership_exact, "a completed stale 15-card starter with pre-created empty slots repairs to the authored owned 40-card Forge Deck without deleting extras")
+	var repaired_again := RULES.ensure(repaired_starter)
+	require(repaired_again == repaired_starter and int(repaired_again.get("revision", -1)) == int(repaired_starter.get("revision", -2)), "starter repair is idempotent and does not change revisions or add duplicate ownership")
+	var custom_active: Dictionary = printed.profile.duplicate(true)
+	var custom_cards := authored_starter.duplicate()
+	custom_active.decks = [{"id":"deck-slot-2", "name":"Queue Deck", "cards":custom_cards}]
+	custom_active.active_deck_id = "deck-slot-2"
+	var custom_preserved := RULES.ensure(custom_active)
+	require(deck_cards(custom_preserved, "deck-slot-2") == custom_cards and str(custom_preserved.active_deck_id) == "deck-slot-2" and RULES.deck_reason(custom_preserved, deck_cards(custom_preserved, "starter-deck")).is_empty(), "missing starter repair preserves a different legal active deck while restoring Forge Deck")
+	var invalid_active: Dictionary = printed.profile.duplicate(true)
+	invalid_active.active_deck_id = "deck-slot-2"
+	var active_repaired := RULES.ensure(invalid_active)
+	require(str(active_repaired.active_deck_id) == "starter-deck", "an absent or illegal active deck falls back to the repaired Forge Deck")
 	require(str(printed.profile.onboarding.get("state", "")) == "complete" and printed.profile.printed_models.has("starter-cinderpaw"), "v3 onboarding completes without retired starter instances")
 	var starter_equipment: Array = []
 	for card_id in printed.profile.decks[0].cards:
@@ -39,7 +76,7 @@ func _ready() -> void:
 	var ring_definition := RULES.card("filament_ring")
 	require(normalized_equipment and equipment_ids.size() == 11 and equipment_slots.count("armor") == 5 and equipment_slots.count("gem") == 5 and equipment_slots.count("battle_effect") == 1 and armor_values == [8,14,20,28,36] and int(ring_definition.print_turns) == 0 and int(ring_definition.print_ticks) == 0 and not equipment_ids.has("helm") and not equipment_ids.has("chest_plate") and not equipment_ids.has("leg_guards") and not equipment_ids.has("full_suit") and not equipment_ids.has("arcane_plate") and not equipment_ids.has("iron_claw"), "catalog has exactly five full suit tiers, five gems, and a zero-timer Ring battle effect")
 	var migrated := RULES.ensure({"onboarding":{"state":"complete"},"owned_cards":{"helm":1,"chest_plate":2,"leg_guards":3,"iron_claw":1,"tidal_core":1,"arcane_sigil":1},"owned_blueprints":{"helm":true},"printed_models":{"old-model":{"blueprint_id":"helm"}},"pending_pack_reveal":{"cards":["helm","iron_claw"],"bonus_cards":["arcane_sigil"],"receipt":"immutable-receipt"},"decks":[{"id":"starter-deck","name":"Forge Deck","cards":["helm","chest_plate","leg_guards","iron_claw"]}],"preprints":["helm"],"wishlist":["helm","iron_claw"]})
-	require(int(migrated.owned_cards.get("standard_full_suit", 0)) == 1 and int(migrated.owned_cards.get("reinforced_full_suit", 0)) == 5 and int(migrated.owned_cards.get("iron_gem", 0)) == 1 and int(migrated.owned_cards.get("frost_gem", 0)) == 1 and int(migrated.owned_cards.get("arcane_gem", 0)) == 1 and not migrated.owned_cards.has("helm") and str(migrated.decks[0].cards[0]) == "standard_full_suit" and str(migrated.preprints[0]) == "standard_full_suit" and str(migrated.wishlist[1]) == "iron_gem" and str(migrated.printed_models["old-model"].blueprint_id) == "standard_full_suit" and migrated.pending_pack_reveal.cards == ["standard_full_suit","iron_gem"] and migrated.pending_pack_reveal.bonus_cards == ["arcane_gem"] and str(migrated.pending_pack_reveal.receipt) == "immutable-receipt", "v3 equipment aliases normalize live catalog references without changing receipt identities")
+	require(int(migrated.owned_cards.get("standard_full_suit", 0)) == 1 and int(migrated.owned_cards.get("reinforced_full_suit", 0)) == 5 and int(migrated.owned_cards.get("iron_gem", 0)) == 1 and int(migrated.owned_cards.get("frost_gem", 0)) == 1 and int(migrated.owned_cards.get("arcane_gem", 0)) == 1 and not migrated.owned_cards.has("helm") and RULES.deck_reason(migrated, deck_cards(migrated, "starter-deck")).is_empty() and str(migrated.preprints[0]) == "standard_full_suit" and str(migrated.wishlist[1]) == "iron_gem" and str(migrated.printed_models["old-model"].blueprint_id) == "standard_full_suit" and migrated.pending_pack_reveal.cards == ["standard_full_suit","iron_gem"] and migrated.pending_pack_reveal.bonus_cards == ["arcane_gem"] and str(migrated.pending_pack_reveal.receipt) == "immutable-receipt", "v3 equipment aliases normalize live references while invalid completed starter decks repair to the authored deck without changing receipt identities")
 	GameManager.profile = printed.profile.duplicate(true)
 	require(GameManager.has_selected_starter(), "GameManager uses v3 onboarding completion rather than retired starter_instance_id")
 	require(printed.profile.get("owned_blueprints", {}).has("cinderpaw") and printed.profile.get("printed_models", {}).has("starter-cinderpaw"), "blueprint and Workshop model ownership remain explicit")

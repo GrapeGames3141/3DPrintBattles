@@ -43,7 +43,10 @@ static func card(id: String) -> Dictionary:
 static func ensure(source: Dictionary) -> Dictionary:
 	var p := V3_PROFILE_STATE.ensure_base(source, VERSION)
 	_migrate_equipment_ids(p)
-	if p.decks.is_empty() and str(p.onboarding.get("state", "")) == "complete": _make_starter_deck(p)
+	if str(p.onboarding.get("state", "")) == "complete":
+		var active_deck_is_legal := _active_deck_is_legal(p)
+		if _starter_deck_needs_repair(p): _make_starter_deck(p, not active_deck_is_legal)
+		elif not active_deck_is_legal: p.active_deck_id = "starter-deck"
 	if not p.decks.is_empty(): _ensure_deck_slots(p)
 	return p
 static func choose_starter(source: Dictionary, id: String) -> Dictionary:
@@ -114,15 +117,44 @@ static func _migrate_equipment_ids(p: Dictionary) -> void:
 			var normalized_cards: Array = []
 			for card_id in raw_cards: normalized_cards.append(str(aliases.get(str(card_id), str(card_id))))
 			p.pending_pack_reveal[key] = normalized_cards
-static func _make_starter_deck(p: Dictionary) -> void:
+static func _starter_cards() -> Array:
 	var creatures := ["cinderpaw","aquafin","voltwig","mossmunk","frostling","galehopper","stoneback","sparkotter","glassdrake","coralisk"]
 	var cards: Array = []
 	for id in creatures:
 		for _copy in 2: cards.append(id)
 	# 20 creatures / 6 filament / 6 spells / 4 equipment / 2 traps / 2 upgrades.
 	for id in ["raw_filament","raw_filament","raw_filament","raw_filament","heated_spool","heated_spool","layer_melt","print_jam","spool_drain","forge_surge","emergency_reprint_spell","blueprint_thief","standard_full_suit","reinforced_full_suit","iron_gem","filament_ring","counter_strike","print_interrupt","speed_spool","reinforced_chassis"]: cards.append(id)
+	return cards
+static func _starter_deck_needs_repair(p: Dictionary) -> bool:
+	var starter_count := 0
+	var starter_cards: Array = []
+	for deck in p.decks:
+		if deck is Dictionary and str(deck.get("id", "")) == "starter-deck":
+			starter_count += 1
+			if starter_count == 1: starter_cards = deck.get("cards", []) if deck.get("cards", []) is Array else []
+	return starter_count != 1 or not deck_reason(p, starter_cards).is_empty()
+static func _active_deck_is_legal(p: Dictionary) -> bool:
+	for deck in p.decks:
+		if deck is Dictionary and str(deck.get("id", "")) == str(p.get("active_deck_id", "starter-deck")):
+			var cards: Array = deck.get("cards", []) if deck.get("cards", []) is Array else []
+			return deck_reason(p, cards).is_empty()
+	return false
+static func _make_starter_deck(p: Dictionary, activate_starter := true) -> void:
+	var cards := _starter_cards()
 	for id in cards: grant_card(p,id,maxi(0,cards.count(id)-int(p.owned_cards.get(id,0))))
-	p.decks = [{"id":"starter-deck","name":"Forge Deck","cards":cards}]; _ensure_deck_slots(p); p.active_deck_id = "starter-deck"
+	var normalized_decks: Array = []
+	var starter_added := false
+	for deck in p.decks:
+		if deck is Dictionary and str(deck.get("id", "")) == "starter-deck":
+			if not starter_added:
+				normalized_decks.append({"id":"starter-deck","name":"Forge Deck","cards":cards.duplicate()})
+				starter_added = true
+			continue
+		normalized_decks.append(deck)
+	if not starter_added: normalized_decks.push_front({"id":"starter-deck","name":"Forge Deck","cards":cards.duplicate()})
+	p.decks = normalized_decks
+	_ensure_deck_slots(p)
+	if activate_starter: p.active_deck_id = "starter-deck"
 static func _ensure_deck_slots(p: Dictionary) -> void:
 	for slot in DECK_SLOTS:
 		var found := false
