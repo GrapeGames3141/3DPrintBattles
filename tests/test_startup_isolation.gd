@@ -32,7 +32,7 @@ func _ready() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	require(main.screen in ["workshop", "onboarding"], "startup renders a player-facing workshop/onboarding screen")
-	require(main._battle_screen_component == null and main._forge_screen_component == null, "first frame does not instantiate Battle or Forge screen components")
+	require(main._unified_battle_screen_component == null and main._forge_screen_component == null, "first frame does not instantiate Battle or Forge screen components")
 	for path in OPTIONAL_PATHS:
 		require(not ResourceLoader.has_cached(path), "optional startup resource is not cached by the first workshop frame: " + path)
 	# Opening the Proving Door is the intended lazy boundary for daily opponents.
@@ -41,7 +41,9 @@ func _ready() -> void:
 	require(ResourceLoader.has_cached("res://scripts/core/opponent_rules.gd"), "Proving Door lazily loads the daily-opponent module")
 	main.navigate_to("armor")
 	await get_tree().process_frame
-	require(ResourceLoader.has_cached("res://scripts/ui/equipment_workbench_view.gd"), "Equipment Workbench lazily loads on its own screen")
+	# The public Armor route now resolves to the unified Library rather than the
+	# retired Equipment Workbench; it must therefore remain absent from this cache.
+	require(not ResourceLoader.has_cached("res://scripts/ui/equipment_workbench_view.gd"), "Unified Armor Library does not load the retired Equipment Workbench")
 	main.queue_free()
 	await get_tree().process_frame
 	if failures.is_empty(): print("PASS: workshop first frame isolates optional Android-risk modules until their screens are requested")

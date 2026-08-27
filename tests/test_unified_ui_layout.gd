@@ -68,6 +68,8 @@ func _exercise(viewport: Vector2) -> void:
 	await get_tree().process_frame
 	require(main.get_script().resource_path == "res://scripts/ui/main.gd", "Shipped battle shell is main.gd at %s." % viewport)
 	require(main.find_child("UnifiedBattleHeading", true, false) != null, "Battle heading renders at %s." % viewport)
+	var initial_stage := main.find_child("UnifiedBattleSpriteStage", true, false) as Control
+	require(initial_stage != null and _within_viewport(initial_stage, viewport), "Unified arena mounts an in-bounds persistent sprite stage at %s." % viewport)
 	require(main.find_child("UnifiedLocalHandoff", true, false) != null, "Hot-seat privacy handoff renders at %s." % viewport)
 	require(main.find_child("UnifiedBattleHandGrid", true, false) == null, "Hidden hand is omitted during hot-seat handoff at %s." % viewport)
 	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null, "Hot-seat handoff exposes no phase-advance control at %s." % viewport)
@@ -139,7 +141,9 @@ func _exercise(viewport: Vector2) -> void:
 	require(resolve_printing != null and resolve_printing.text == "Resolve Printing", "Print phase exposes Resolve Printing before a completed print decision at %s." % viewport)
 	if resolve_printing != null:
 		resolve_printing.emit_signal("pressed")
-		await get_tree().process_frame
+	var print_stage := main.find_child("UnifiedBattleSpriteStage", true, false)
+	require(int(main.unified_battle_presentation.get("token", 0)) > 0 and str(main.unified_battle_presentation.get("kind", "")) == "print" and print_stage == initial_stage, "Accepted Print resolution advances the persistent stage through a print receipt at %s." % viewport)
+	await get_tree().process_frame
 	var pending_panel := main.find_child("UnifiedPendingPrintDecision", true, false) as Control
 	var pending_choices := main.find_child("UnifiedPendingPlaceChoices", true, false) as GridContainer
 	require(str(main.battle.pending.get("kind", "")) == "place", "Resolve Printing creates the pending placement state at %s." % viewport)
@@ -173,6 +177,26 @@ func _exercise(viewport: Vector2) -> void:
 		attach_slot_one.emit_signal("pressed")
 		await get_tree().process_frame
 	require(main.battle.pending.is_empty() and main.battle.player(0).holding.is_empty() and not (main.battle.player(0).slots[0].get("equipment", {}).get("armor", {}) as Dictionary).is_empty(), "Selecting a pending attachment clears it and equips the compatible creature at %s." % viewport)
+	# Battle authority may remove the defender immediately; the stage receipt must
+	# still retain the accepted pre-action attacker and defender snapshots.
+	main.battle = STATE.create(deck, deck, 82)
+	main.battle.starting_seat = 1
+	main.battle.active_seat = 0
+	main.battle.turn = 2
+	main.battle.phase = "attack"
+	main.battle.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw"))
+	main.battle.player(0).slots[0].ready = true
+	main.battle.player(1).slots[0] = STATE._unit(RULES.card("aquafin"))
+	main.battle.player(1).slots[0].hp = 1
+	var attack_token_before := int(main.unified_battle_presentation.get("token", 0))
+	main._submit_unified_intent({"type":"attack", "slot":0, "target":0})
+	require(int(main.unified_battle_presentation.get("token", 0)) == attack_token_before + 1 and str(main.unified_battle_presentation.get("kind", "")) == "attack" and str((main.unified_battle_presentation.get("left", {}) as Dictionary).get("id", "")) == "cinderpaw" and str((main.unified_battle_presentation.get("right", {}) as Dictionary).get("id", "")) == "aquafin", "Accepted player attacks create a pre-resolution stage receipt at %s." % viewport)
+	var attack_token := int(main.unified_battle_presentation.get("token", 0))
+	main._settle_unified_battle_presentation(attack_token)
+	await get_tree().process_frame
+	require(str(main.unified_battle_presentation.get("kind", "")) == "" and (main.unified_battle_presentation.get("right", {}) as Dictionary).is_empty(), "Settled attack presentation returns to the live board after a defeated defender at %s." % viewport)
+	main._settle_unified_battle_presentation(attack_token - 1)
+	require(str(main.unified_battle_presentation.get("kind", "")) == "", "Stale presentation timers cannot alter the newer settled token at %s." % viewport)
 	# Rival turns are public-board-only until the deferred AI finishes. The player
 	# must never receive a phase button or a view of the rival's private hand.
 	main.battle = STATE.create(deck, deck, 81)

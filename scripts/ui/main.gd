@@ -72,6 +72,9 @@ var unified_attack_target := -2
 var unified_ai_pending := false
 var unified_local_handoff := false
 var unified_arrival_presented: Dictionary = {}
+# Visual receipts are deliberately separate from UnifiedBattleState.  They only
+# exist after an accepted intent and contain stage-safe public creature IDs.
+var unified_battle_presentation: Dictionary = {"kind":"", "actor":0, "left":{}, "right":{}, "token":0}
 var unified_page := 0
 var unified_deck_draft: Array = []
 var unified_preprint_draft: Array = []
@@ -159,6 +162,112 @@ func _new_support_card_view():
 func _new_local_battle_stage():
 	var script = _optional_script(BATTLE_SPRITE_STAGE_PATH, "Local battle presentation")
 	return null if script == null else script.new()
+
+func _unified_stage_unit(unit) -> Dictionary:
+	if not (unit is Dictionary): return {}
+	var card_id := str((unit as Dictionary).get("card_id", (unit as Dictionary).get("id", "")))
+	return {"id":card_id} if not card_id.is_empty() else {}
+
+func _unified_first_stage_unit(seat: int) -> Dictionary:
+	if battle == null: return {}
+	for unit in battle.player(seat).get("slots", []):
+		if unit != null: return _unified_stage_unit(unit)
+	return {}
+
+func _unified_presentation_pair(actor: int, source = null, target = null) -> Dictionary:
+	var left := _unified_first_stage_unit(0)
+	var right := _unified_first_stage_unit(1)
+	if actor == 0:
+		if source != null: left = _unified_stage_unit(source)
+		if target != null: right = _unified_stage_unit(target)
+	else:
+		if source != null: right = _unified_stage_unit(source)
+		if target != null: left = _unified_stage_unit(target)
+	return {"left":left, "right":right}
+
+func _unified_presentation_before_intent(intent: Dictionary, seat: int) -> Dictionary:
+	if battle == null: return {}
+	var kind := ""
+	var source = null
+	var target = null
+	match str(intent.get("type", "")):
+		"attack":
+			kind = "attack"
+			var source_slot := int(intent.get("slot", -1))
+			var target_slot := int(intent.get("target", -2))
+			if source_slot >= 0 and source_slot < 3: source = battle.player(seat).slots[source_slot]
+			if target_slot >= 0 and target_slot < 3: target = battle.player(1 - seat).slots[target_slot]
+		"advance_phase":
+			if str(battle.phase) != "print": return {}
+			kind = "print"
+			var queue: Array = battle.player(seat).get("queue", [])
+			if not queue.is_empty():
+				var card_id := str((queue[0] as Dictionary).get("card_id", ""))
+				if str(UNIFIED_RULES.card(card_id).get("type", "")) == "creature": source = {"card_id":card_id}
+	if kind.is_empty(): return {}
+	var pair := _unified_presentation_pair(seat, source, target)
+	pair["kind"] = kind
+	pair["actor"] = seat
+	return pair
+
+func _present_unified_battle_event(event: Dictionary) -> void:
+	if event.is_empty(): return
+	var token := int(unified_battle_presentation.get("token", 0)) + 1
+	unified_battle_presentation = {
+		"kind":str(event.get("kind", "")), "actor":int(event.get("actor", 0)),
+		"left":event.get("left", {}).duplicate(true) if event.get("left", {}) is Dictionary else {},
+		"right":event.get("right", {}).duplicate(true) if event.get("right", {}) is Dictionary else {}, "token":token
+	}
+	_schedule_unified_presentation_settlement(token, str(event.get("kind", "")))
+
+func _reset_unified_battle_presentation() -> void:
+	# Advance the serial on reset as well: a timer from a prior battle can never
+	# settle a newly launched battle that happens to have the same event count.
+	unified_battle_presentation = {"kind":"", "actor":0, "left":{}, "right":{}, "token":int(unified_battle_presentation.get("token", 0)) + 1}
+
+func _leave_unified_battle() -> void:
+	battle = null
+	battle_settlement_context.clear()
+	unified_ai_pending = false
+	_reset_unified_battle_presentation()
+	screen = "workshop"
+	render()
+
+func _unified_presentation_wait_seconds(kind: String) -> float:
+	if bool(settings().get("reduced_motion", false)): return 0.0
+	return _unified_presentation_duration(kind) + 0.10
+
+func _unified_presentation_duration(kind: String) -> float:
+	match kind:
+		"print": return 0.78
+		"attack", "ability": return 0.62
+		"defend": return 0.42
+		"card": return 0.52
+		"switch": return 0.48
+	return 0.0
+
+func _schedule_unified_presentation_settlement(token: int, kind: String) -> void:
+	if kind.is_empty() or not is_inside_tree(): return
+	var delay := _unified_presentation_duration(kind) + 0.02
+	if bool(settings().get("reduced_motion", false)): delay = 0.0
+	var timer := get_tree().create_timer(delay)
+	timer.timeout.connect(_settle_unified_battle_presentation.bind(token))
+
+func _settle_unified_battle_presentation(token: int) -> void:
+	# Token matching prevents a delayed timer from clearing a newer player action,
+	# a subsequent AI receipt, or a completely new battle after leaving the arena.
+	if battle == null or token != int(unified_battle_presentation.get("token", -1)) or str(unified_battle_presentation.get("kind", "")).is_empty(): return
+	unified_battle_presentation = {"kind":"", "actor":0, "left":_unified_first_stage_unit(0), "right":_unified_first_stage_unit(1), "token":token}
+	if screen == "unified_battle": render()
+
+func _replay_unified_ai_presentations(trace: Array) -> void:
+	for event_value in trace:
+		if not (event_value is Dictionary) or battle == null: continue
+		_present_unified_battle_event(event_value as Dictionary)
+		render()
+		var wait_seconds := _unified_presentation_wait_seconds(str((event_value as Dictionary).get("kind", "")))
+		if wait_seconds > 0.0: await get_tree().create_timer(wait_seconds).timeout
+		else: await get_tree().process_frame
 
 func _ready() -> void:
 	print("PRINTFORGE_STARTUP marker=ui_ready renderer=%s platform=%s" % [RenderingServer.get_current_rendering_method(), OS.get_name()])
@@ -461,6 +570,7 @@ func _detach_persistent_screen_components() -> void:
 	# expensive presentation nodes first so their imported textures and animation
 	# state survive the ancestor queue_free operation.
 	if _forge_screen_component != null: _forge_screen_component.detach()
+	if _unified_battle_screen_component != null: _unified_battle_screen_component.detach()
 	_workshop_screen_component.detach()
 
 func focus_first_button() -> void:
@@ -2226,6 +2336,7 @@ func _launch_unified_mode(mode: String, opponent_setup: Dictionary, seed: int) -
 	unified_ai_pending = false
 	unified_local_handoff = battle_mode == "local"
 	unified_arrival_presented.clear()
+	_reset_unified_battle_presentation()
 	if screen == "workshop": workshop_return_view = workshop_view
 	screen = "unified_battle"
 	# A seeded non-local battle can legitimately give the rival the first turn.
@@ -2653,10 +2764,14 @@ func _keep_unified_pack_cards() -> void:
 func _submit_unified_intent(intent: Dictionary) -> void:
 	if battle == null or battle.finished: return
 	var previous_seat := int(battle.active_seat)
+	# Capture actor/defender before rules mutate them.  The snapshot is visual
+	# only, so a lethal hit still gets a coherent finite animation.
+	var presentation := _unified_presentation_before_intent(intent, previous_seat)
 	var result: Dictionary = UNIFIED_BATTLE_RULES.apply_intent(battle, int(battle.active_seat), intent)
 	if not bool(result.get("ok", false)):
 		_toast(str(result.get("error", "That action is not legal.")))
 		return
+	_present_unified_battle_event(presentation)
 	unified_selected_card_id = ""
 	unified_selected_slot = -2
 	unified_selected_target = -2
@@ -2678,6 +2793,10 @@ func _run_unified_ai() -> void:
 	else: await get_tree().process_frame
 	if battle != null and not battle.finished and int(battle.active_seat) == 1:
 		var outcome: Dictionary = UNIFIED_AI.take_turn(battle, 1)
+		var trace: Array = outcome.get("presentation_trace", []) if outcome.get("presentation_trace", []) is Array else []
+		# Authority has completed its deterministic chunk already. Replay only the
+		# public visual receipts while controls stay locked for the rival.
+		if not trace.is_empty(): await _replay_unified_ai_presentations(trace)
 		if battle.finished or int(battle.active_seat) != 1:
 			unified_ai_pending = false
 		elif str(outcome.get("status", "")) == "exhausted" and bool(outcome.get("progressed", false)):

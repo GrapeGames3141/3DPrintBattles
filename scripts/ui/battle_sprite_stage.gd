@@ -49,9 +49,9 @@ func _ready() -> void:
 func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, reduce: bool, contrast := false, token := 0) -> void:
 	var resolved_kind := kind.split(":")[0]
 	var resolved_card := kind.substr(5) if kind.begins_with("card:") else ""
-	var changed := left_id != str(player.get("id", "cinderpaw")) or right_id != str(rival.get("id", "mossmunk")) or left_suit_id != str(player.get("suit_id", "")) or right_suit_id != str(rival.get("suit_id", "")) or left_core_id != str(player.get("core_id", "")) or right_core_id != str(rival.get("core_id", "")) or event_kind != resolved_kind or event_card_id != resolved_card or event_actor != actor or reduced_motion != reduce or high_contrast != contrast or event_token != token
-	left_id = str(player.get("id", "cinderpaw"))
-	right_id = str(rival.get("id", "mossmunk"))
+	var changed := left_id != str(player.get("id", "")) or right_id != str(rival.get("id", "")) or left_suit_id != str(player.get("suit_id", "")) or right_suit_id != str(rival.get("suit_id", "")) or left_core_id != str(player.get("core_id", "")) or right_core_id != str(rival.get("core_id", "")) or event_kind != resolved_kind or event_card_id != resolved_card or event_actor != actor or reduced_motion != reduce or high_contrast != contrast or event_token != token
+	left_id = str(player.get("id", ""))
+	right_id = str(rival.get("id", ""))
 	left_suit_id = str(player.get("suit_id", ""))
 	right_suit_id = str(rival.get("suit_id", ""))
 	left_core_id = str(player.get("core_id", ""))
@@ -80,8 +80,8 @@ func configure(player: Dictionary, rival: Dictionary, kind: String, actor: int, 
 		left_core_vfx.configure_creature(left_id)
 	if right_core_vfx != null:
 		right_core_vfx.configure_creature(right_id)
-	CREATURE_SPRITE_CACHE.texture_for_creature(left_id)
-	CREATURE_SPRITE_CACHE.texture_for_creature(right_id)
+	if not left_id.is_empty(): CREATURE_SPRITE_CACHE.texture_for_creature(left_id)
+	if not right_id.is_empty(): CREATURE_SPRITE_CACHE.texture_for_creature(right_id)
 	_update_processing()
 	queue_redraw()
 
@@ -145,11 +145,26 @@ static func sprite_path_for(creature_id: String) -> String:
 static func safe_source_region(_creature_id: String, frame: int) -> Rect2:
 	return CREATURE_SPRITE_CACHE.safe_source_region(frame)
 
+## Geometry seam for compact hosts. The normal 250px stage keeps its established
+## 26px floor, while the unified arena still gives sprites nearly its full short
+## height instead of spending most of a 44px plate on fixed padding.
+static func stage_geometry(stage_size: Vector2) -> Dictionary:
+	var floor_height := clampf(stage_size.y * 0.104, 4.0, 26.0)
+	var top_padding := clampf(stage_size.y * 0.032, 2.0, 8.0)
+	var side_padding := clampf(stage_size.x * 0.022, 4.0, 18.0)
+	var creature_height := maxf(1.0, stage_size.y - floor_height - top_padding)
+	return {"floor_height":floor_height, "top_padding":top_padding, "side_padding":side_padding, "creature_height":creature_height}
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("0b1728cc"), true)
-	draw_line(Vector2(0, size.y - 26), Vector2(size.x, size.y - 26), Color("f1be69"), 2.0)
-	var left_target := Rect2(18, 8, size.x * 0.43, size.y - 30)
-	var right_target := Rect2(size.x * 0.55, 8, size.x * 0.43, size.y - 30)
+	var geometry := stage_geometry(size)
+	var floor_y := size.y - float(geometry.floor_height)
+	var side_padding := float(geometry.side_padding)
+	var top_padding := float(geometry.top_padding)
+	draw_line(Vector2(0, floor_y), Vector2(size.x, floor_y), Color("f1be69"), 2.0)
+	var creature_width := size.x * 0.43
+	var left_target := Rect2(side_padding, top_padding, creature_width, float(geometry.creature_height))
+	var right_target := Rect2(size.x - side_padding - creature_width, top_padding, creature_width, float(geometry.creature_height))
 	var offset := _lunge_offset()
 	var left_offset := offset if event_actor == 0 else Vector2.ZERO
 	var right_offset := offset if event_actor == 1 else Vector2.ZERO
@@ -158,6 +173,7 @@ func _draw() -> void:
 	_sync_core_activation(left_core_vfx, left_destination, not left_suit_id.is_empty() and TIERED_ARMOR_ROSTER.has_master(left_id), 0)
 	_sync_core_activation(right_core_vfx, right_destination, not right_suit_id.is_empty() and TIERED_ARMOR_ROSTER.has_master(right_id), 1)
 	_draw_move_vfx(left_destination, right_destination)
+	_draw_print_materialization(left_destination if event_actor == 0 else right_destination)
 	_draw_core_activation_halo(left_destination, left_id, left_core_id, 0)
 	_draw_core_activation_halo(right_destination, right_id, right_core_id, 1)
 
@@ -167,6 +183,9 @@ func _lunge_offset() -> Vector2:
 	return Vector2(travel if event_actor == 0 else -travel, 0)
 
 func _draw_creature(id: String, suit_id: String, core_id: String, target: Rect2, frame: int, flip: bool, armor_preview: Control) -> Rect2:
+	if id.is_empty():
+		if armor_preview != null: armor_preview.visible = false
+		return Rect2()
 	var is_armored: bool = not suit_id.is_empty() and TIERED_ARMOR_ROSTER.has_master(id)
 	var texture := CREATURE_SPRITE_CACHE.texture_for_path(TIERED_ARMOR_ROSTER.master_path_for(id)) if is_armored else CREATURE_SPRITE_CACHE.texture_for_creature(id)
 	if texture == null: return Rect2()
@@ -259,6 +278,30 @@ func _draw_move_vfx(left: Rect2, right: Rect2) -> void:
 		_draw_effect_accents(actor_rect, foe_rect, accents, color, progress, status_atlas)
 	elif event_kind == "switch":
 		draw_line(origin + Vector2(-20, 0), origin + Vector2(20, 0), color, 3.0, true)
+
+func _draw_print_materialization(destination: Rect2) -> void:
+	if event_kind != "print" or not is_presentation_window_active() or destination.size.x <= 0.0:
+		return
+	# A deliberately code-native, finite printer cue: a hot nozzle line sweeps
+	# downward while filament scan lines reveal the actor-side print.  It is
+	# presentation-only and remains readable without optional texture atlases.
+	var progress := presentation_progress()
+	var color := Color.WHITE if high_contrast else Color("f1be69")
+	var nozzle_y := lerpf(destination.position.y + 6.0, destination.end.y - 6.0, progress)
+	draw_line(Vector2(destination.position.x - 8.0, nozzle_y), Vector2(destination.end.x + 8.0, nozzle_y), color, 3.0, true)
+	var reveal_height := destination.size.y * progress
+	var reveal := Rect2(destination.position, Vector2(destination.size.x, reveal_height))
+	draw_rect(reveal, Color(color.r, color.g, color.b, 0.12), true)
+	var spacing := 9.0 if high_contrast else 6.0
+	var line_y := destination.position.y + 4.0
+	while line_y < destination.position.y + reveal_height:
+		draw_line(Vector2(destination.position.x, line_y), Vector2(destination.end.x, line_y), Color(color.r, color.g, color.b, 0.65), 1.0, true)
+		line_y += spacing
+	for index in 4:
+		var angle := TAU * float(index) / 4.0 + progress * TAU
+		var radius := 9.0 + progress * 18.0
+		var center := destination.get_center() + Vector2(cos(angle), sin(angle)) * radius
+		draw_circle(center, 2.0 if high_contrast else 3.0, color)
 
 func _draw_core_activation_halo(destination: Rect2, creature_id: String, core_id: String, side: int) -> void:
 	if not _is_core_activation_visible(side, core_id) or destination.size.x <= 0.0: return

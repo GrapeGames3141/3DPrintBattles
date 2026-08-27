@@ -38,6 +38,7 @@ const ELEMENT_VISUALS := {
 static func event_duration(kind: String) -> float:
 	match kind:
 		"attack", "ability": return 0.62
+		"print": return 0.78
 		"defend": return 0.42
 		"card": return 0.52
 		"switch": return 0.48

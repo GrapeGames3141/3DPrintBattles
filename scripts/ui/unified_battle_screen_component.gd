@@ -5,6 +5,38 @@ extends RefCounted
 
 const RULES := preload("res://scripts/core/unified_rules.gd")
 
+# Kept by the RefCounted presenter rather than the rebuilt shell.  Main detaches
+# it before every responsive rebuild and this component mounts it again, so an
+# accepted action can finish its finite visual window without touching battle
+# authority or being cancelled by a layout refresh.
+var _sprite_stage: Control
+
+func detach() -> void:
+	if _sprite_stage != null and is_instance_valid(_sprite_stage) and _sprite_stage.get_parent() != null:
+		_sprite_stage.get_parent().remove_child(_sprite_stage)
+
+func _mount_sprite_stage(host: Control, shell: Control) -> void:
+	if _sprite_stage == null or not is_instance_valid(_sprite_stage):
+		_sprite_stage = shell._new_local_battle_stage()
+	if _sprite_stage == null:
+		return
+	if _sprite_stage.get_parent() != null:
+		_sprite_stage.get_parent().remove_child(_sprite_stage)
+	_sprite_stage.name = "UnifiedBattleSpriteStage"
+	# The stage overlays the existing short arena plate rather than adding a new
+	# vertical row. This keeps phase/card controls in the tested first fold.
+	_sprite_stage.custom_minimum_size = Vector2.ZERO
+	_sprite_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_sprite_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var presentation: Dictionary = shell.unified_battle_presentation
+	var kind := str(presentation.get("kind", ""))
+	# Idle boards follow live public slots. Pre-action snapshots are reserved for
+	# the finite window only, so a defeated defender does not linger forever.
+	var left_unit: Dictionary = shell._unified_first_stage_unit(0) if kind.is_empty() else (presentation.get("left", {}) if presentation.get("left", {}) is Dictionary else {})
+	var right_unit: Dictionary = shell._unified_first_stage_unit(1) if kind.is_empty() else (presentation.get("right", {}) if presentation.get("right", {}) is Dictionary else {})
+	_sprite_stage.configure(left_unit, right_unit, kind, int(presentation.get("actor", 0)), bool(shell.settings().get("reduced_motion", false)), bool(shell.settings().get("high_contrast", false)), int(presentation.get("token", 0)))
+	host.add_child(_sprite_stage)
+
 func _phase_action_label(phase: String) -> String:
 	match phase:
 		"draw": return "Begin Main"
@@ -23,13 +55,20 @@ func render(host: Container, shell: Control) -> void:
 	var heading: Label = shell.label("Foundry Battle · %s" % str(shell.battle_mode).capitalize().replace("_", " "), 25, Color("ffd36c"))
 	heading.name = "UnifiedBattleHeading"
 	host.add_child(heading)
+	var arena_shell := Control.new()
+	arena_shell.name = "UnifiedBattleArena"
+	arena_shell.custom_minimum_size = Vector2(0, 48 if shell.is_portrait_layout() else 44)
+	arena_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(arena_shell)
 	var arena := TextureRect.new()
 	arena.texture = load(shell._unified_battle_background_path())
 	arena.custom_minimum_size = Vector2(0, 48 if shell.is_portrait_layout() else 44)
 	arena.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	arena.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	arena.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	host.add_child(arena)
+	arena.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	arena_shell.add_child(arena)
+	_mount_sprite_stage(arena_shell, shell)
 	if not str(shell.toast).is_empty(): host.add_child(shell.label(str(shell.toast), 14, Color("fff0a1")))
 	var fields: HBoxContainer = HBoxContainer.new()
 	fields.name = "UnifiedBattleFields"
@@ -55,7 +94,7 @@ func render(host: Container, shell: Control) -> void:
 			host.add_child(shell.label("Saving the battle result…", 14, Color("fff0a1")))
 			shell.call_deferred("_settle_finished_unified_battle")
 		else:
-			host.add_child(shell.make_button("Return to Workshop", func(): shell.battle = null; shell.battle_settlement_context.clear(); shell.screen = "workshop"; shell.render(), Color("536c8d")))
+			host.add_child(shell.make_button("Return to Workshop", shell._leave_unified_battle, Color("536c8d")))
 		return
 	if bool(shell.unified_ai_pending) or (str(shell.battle_mode) != "local" and int(battle.active_seat) == 1):
 		host.add_child(shell.label("Rival printer is calculating its turn…", 15, Color("fff0a1")))
@@ -72,7 +111,7 @@ func render(host: Container, shell: Control) -> void:
 	var pending_for_active_human := not pending.is_empty() and int(pending.get("seat", -1)) == int(battle.active_seat)
 	if pending_for_active_human:
 		_render_pending_print_decision(host, shell, active, pending)
-		var pending_return: Button = shell.make_button("Return to Workshop", func(): shell.battle = null; shell.battle_settlement_context.clear(); shell.screen = "workshop"; shell.render(), Color("536c8d"))
+		var pending_return: Button = shell.make_button("Return to Workshop", shell._leave_unified_battle, Color("536c8d"))
 		pending_return.name = "UnifiedBattleWorkshopReturn"
 		pending_return.tooltip_text = "Leave this battle and return to the Workshop"
 		pending_return.accessibility_name = "Return to Workshop"
@@ -122,7 +161,7 @@ func render(host: Container, shell: Control) -> void:
 	pager.add_child(hand_next)
 	if int(battle.active_seat) == 0 or str(shell.battle_mode) == "local":
 		shell._render_unified_attack_picker(host, active)
-	host.add_child(shell.make_button("Return to Workshop", func(): shell.battle = null; shell.battle_settlement_context.clear(); shell.screen = "workshop"; shell.render(), Color("536c8d")))
+	host.add_child(shell.make_button("Return to Workshop", shell._leave_unified_battle, Color("536c8d")))
 
 func _render_pending_print_decision(host: Container, shell: Control, active: Dictionary, pending: Dictionary) -> void:
 	var panel: VBoxContainer = shell.make_panel(Color("3a241ee8"), Color("f1be69"))

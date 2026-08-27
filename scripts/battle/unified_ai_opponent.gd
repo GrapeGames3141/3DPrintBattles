@@ -7,6 +7,10 @@ const BATTLE := preload("res://scripts/battle/unified_battle_rules.gd")
 static func take_turn(state: UnifiedBattleState, seat: int) -> Dictionary:
 	var safety := 0
 	var progressed := false
+	# Public-only visual receipts. They are captured before authority mutates an
+	# accepted intent, so a destroyed defender can still be shown in the replay.
+	# No hand, deck, trap identity, or private choice is included.
+	var presentation_trace: Array = []
 	while not state.finished and state.active_seat == seat and safety < 32:
 		safety += 1
 		var intent: Dictionary = {}
@@ -16,7 +20,7 @@ static func take_turn(state: UnifiedBattleState, seat: int) -> Dictionary:
 			elif str(state.pending.get("kind", "")) == "attach":
 				var held_card := RULES.card(str(state.pending.get("card_id", "")))
 				intent = {"type":"attach_completed","slot":_best_friend(state.player(seat), str(held_card.get("equipment_slot", "")))}
-			else: return _result("stalled", safety, progressed, "Unknown pending print decision.")
+			else: return _result("stalled", safety, progressed, "Unknown pending print decision.", presentation_trace)
 		else:
 			match state.phase:
 				"draw": intent = {"type":"advance_phase"}
@@ -32,26 +36,71 @@ static func take_turn(state: UnifiedBattleState, seat: int) -> Dictionary:
 				"collect":
 					if state.player(seat).hand.size() > 8: intent = {"type":"discard_overflow","card_ids":state.player(seat).hand.slice(0,state.player(seat).hand.size()-8)}
 					else: intent = {"type":"advance_phase"}
-				_: return _result("stalled", safety, progressed, "Unknown battle phase.")
+				_: return _result("stalled", safety, progressed, "Unknown battle phase.", presentation_trace)
+		var presentation := _presentation_before_intent(state, seat, intent)
 		var result: Dictionary = BATTLE.apply_intent(state, seat, intent)
 		if bool(result.get("ok", false)):
 			progressed = true
+			if not presentation.is_empty(): presentation_trace.append(presentation)
 			continue
 		# Playing a card and attacking are optional. A stale or otherwise rejected
 		# choice must not consume the entire safety budget; deterministically end the
 		# phase instead. Pending decisions and required overflow discards remain a
 		# real stall so the caller can surface a recoverable result.
 		if optional_action:
+			var advance_presentation := _presentation_before_intent(state, seat, {"type":"advance_phase"})
 			var advance: Dictionary = BATTLE.apply_intent(state, seat, {"type":"advance_phase"})
 			if bool(advance.get("ok", false)):
 				progressed = true
+				if not advance_presentation.is_empty(): presentation_trace.append(advance_presentation)
 				continue
-		return _result("stalled", safety, progressed, str(result.get("error", "AI intent was rejected.")))
-	if state.finished or state.active_seat != seat: return _result("complete", safety, progressed)
-	return _result("exhausted" if progressed else "stalled", safety, progressed, "AI turn safety budget exhausted." if progressed else "AI made no legal progress.")
+		return _result("stalled", safety, progressed, str(result.get("error", "AI intent was rejected.")), presentation_trace)
+	if state.finished or state.active_seat != seat: return _result("complete", safety, progressed, "", presentation_trace)
+	return _result("exhausted" if progressed else "stalled", safety, progressed, "AI turn safety budget exhausted." if progressed else "AI made no legal progress.", presentation_trace)
 
-static func _result(status: String, steps: int, progressed: bool, error: String = "") -> Dictionary:
-	return {"status":status,"steps":steps,"progressed":progressed,"error":error}
+static func _result(status: String, steps: int, progressed: bool, error: String = "", presentation_trace: Array = []) -> Dictionary:
+	return {"status":status,"steps":steps,"progressed":progressed,"error":error,"presentation_trace":presentation_trace}
+
+static func _presentation_before_intent(state: UnifiedBattleState, seat: int, intent: Dictionary) -> Dictionary:
+	var kind := ""
+	var source = null
+	var target = null
+	match str(intent.get("type", "")):
+		"attack":
+			kind = "attack"
+			var source_slot := int(intent.get("slot", -1))
+			var target_slot := int(intent.get("target", -2))
+			if source_slot >= 0 and source_slot < 3: source = state.player(seat).slots[source_slot]
+			if target_slot >= 0 and target_slot < 3: target = state.player(1 - seat).slots[target_slot]
+		"advance_phase":
+			if str(state.phase) != "print": return {}
+			kind = "print"
+			var queue: Array = state.player(seat).get("queue", [])
+			if not queue.is_empty():
+				var card_id := str((queue[0] as Dictionary).get("card_id", ""))
+				if str(RULES.card(card_id).get("type", "")) == "creature": source = {"card_id":card_id}
+	if kind.is_empty(): return {}
+	return _presentation_pair(state, seat, kind, source, target)
+
+static func _presentation_pair(state: UnifiedBattleState, actor: int, kind: String, source, target) -> Dictionary:
+	var left = _first_unit(state.player(0))
+	var right = _first_unit(state.player(1))
+	if actor == 0:
+		if source != null: left = source
+		if target != null: right = target
+	else:
+		if source != null: right = source
+		if target != null: left = target
+	return {"kind":kind,"actor":actor,"left":_public_stage_unit(left),"right":_public_stage_unit(right)}
+
+static func _first_unit(player: Dictionary):
+	for unit in player.get("slots", []):
+		if unit != null: return unit
+	return null
+
+static func _public_stage_unit(unit) -> Dictionary:
+	if not (unit is Dictionary): return {}
+	return {"id":str((unit as Dictionary).get("card_id", ""))}
 static func _main_intent(state: UnifiedBattleState, seat: int) -> Dictionary:
 	var p := state.player(seat)
 	for id in p.hand:

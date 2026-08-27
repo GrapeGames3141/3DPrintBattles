@@ -217,7 +217,15 @@ func _ready() -> void:
 	rival_opening_attack.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); rival_opening_attack.player(1).slots[0].ready = true
 	var player_hp_before_opening := int(rival_opening_attack.player(0).printer.hp)
 	var opening_outcome := AI.take_turn(rival_opening_attack, 1)
-	require(str(opening_outcome.get("status", "")) == "complete" and rival_opening_attack.active_seat == 0 and int(rival_opening_attack.player(0).printer.hp) == player_hp_before_opening, "rival starting turn one skips its forbidden attack and legally returns control")
+	require(str(opening_outcome.get("status", "")) == "complete" and rival_opening_attack.active_seat == 0 and int(rival_opening_attack.player(0).printer.hp) == player_hp_before_opening and (opening_outcome.get("presentation_trace", []) as Array).is_empty(), "rival starting turn one skips its forbidden attack and legally returns control without emitting a false combat receipt")
+	var rival_trace_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 132)
+	rival_trace_state.starting_seat = 0; rival_trace_state.active_seat = 1; rival_trace_state.turn = 2; rival_trace_state.phase = "attack"
+	rival_trace_state.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); rival_trace_state.player(1).slots[0].ready = true
+	rival_trace_state.player(0).slots[0] = STATE._unit(RULES.card("aquafin"))
+	var traced_outcome := AI.take_turn(rival_trace_state, 1)
+	var trace: Array = traced_outcome.get("presentation_trace", []) as Array
+	var attack_receipt: Dictionary = trace[0] if not trace.is_empty() else {}
+	require(not trace.is_empty() and str(attack_receipt.get("kind", "")) == "attack" and int(attack_receipt.get("actor", -1)) == 1 and attack_receipt.has("left") and attack_receipt.has("right") and not attack_receipt.has("hand"), "AI returns replayable public attack receipts without private hand data")
 	var rival_pending_attach := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 130)
 	rival_pending_attach.starting_seat = 1; rival_pending_attach.active_seat = 1; rival_pending_attach.turn = 1; rival_pending_attach.phase = "print"
 	rival_pending_attach.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); rival_pending_attach.player(1).slots[0].hp = 99; rival_pending_attach.player(1).slots[0].equipment.armor = {"card_id":"standard_full_suit"}
