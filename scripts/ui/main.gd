@@ -2677,8 +2677,25 @@ func _run_unified_ai() -> void:
 	if wait_seconds > 0.0: await get_tree().create_timer(wait_seconds).timeout
 	else: await get_tree().process_frame
 	if battle != null and not battle.finished and int(battle.active_seat) == 1:
-		UNIFIED_AI.take_turn(battle, 1)
-	unified_ai_pending = false
+		var outcome: Dictionary = UNIFIED_AI.take_turn(battle, 1)
+		if battle.finished or int(battle.active_seat) != 1:
+			unified_ai_pending = false
+		elif str(outcome.get("status", "")) == "exhausted" and bool(outcome.get("progressed", false)):
+			# A productive chunk may legitimately contain more than 32 legal actions.
+			# Keep the rival ownership marker alive and continue on a later frame.
+			unified_ai_pending = true
+			render()
+			call_deferred("_run_unified_ai")
+			return
+		else:
+			# The AI has no legal continuation. Conceding through battle authority
+			# leaves a finished, escapable battle instead of an endless calculation UI.
+			var stalled_reason := str(outcome.get("error", "Rival AI could not make a legal move."))
+			var conceded: Dictionary = UNIFIED_BATTLE_RULES.apply_intent(battle, 1, {"type":"concede"})
+			unified_ai_pending = false
+			_toast("Rival turn could not continue (%s). The rival conceded." % stalled_reason if bool(conceded.get("ok", false)) else "Rival turn could not continue: %s" % stalled_reason)
+	else:
+		unified_ai_pending = false
 	render()
 
 func _settle_finished_unified_battle() -> void:

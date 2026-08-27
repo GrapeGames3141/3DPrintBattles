@@ -176,14 +176,21 @@ func _exercise(viewport: Vector2) -> void:
 	# Rival turns are public-board-only until the deferred AI finishes. The player
 	# must never receive a phase button or a view of the rival's private hand.
 	main.battle = STATE.create(deck, deck, 81)
+	main.battle.starting_seat = 1
 	main.battle.active_seat = 1
-	main.battle.phase = "draw"
+	main.battle.turn = 1
+	main.battle.phase = "attack"
+	main.battle.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw"))
+	main.battle.player(1).slots[0].ready = true
 	main.battle_mode = "daily_training"
 	main.unified_ai_pending = true
 	main.unified_selected_card_id = ""
 	main.render()
 	await get_tree().process_frame
 	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null and main.find_child("UnifiedBattleHandGrid", true, false) == null, "Pending non-local rival turn exposes neither controls nor the rival hand at %s." % viewport)
+	await main._run_unified_ai()
+	await get_tree().process_frame
+	require(int(main.battle.active_seat) == 0 and not main.unified_ai_pending and main.find_child("UnifiedBattlePrimaryAction", true, false) != null and main.find_child("UnifiedBattleHandGrid", true, false) != null, "A rival-first turn skips its forbidden opening attack and returns interactive control instead of leaving calculating-only UI at %s." % viewport)
 	main.screen = "unified_market"
 	main.unified_market_tab = "blueprints"
 	main.render()

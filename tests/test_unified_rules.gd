@@ -212,6 +212,19 @@ func _ready() -> void:
 	active_ring_ai_state.active_seat = 1; active_ring_ai_state.phase = "main"; active_ring_ai_state.player(1).filament_ring_active = true; active_ring_ai_state.player(1).hand = ["filament_ring"]
 	AI.take_turn(active_ring_ai_state, 1)
 	require(active_ring_ai_state.active_seat == 0 and active_ring_ai_state.player(1).hand == ["filament_ring"], "AI ignores an already active battle effect and advances instead of retrying it")
+	var rival_opening_attack := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 129)
+	rival_opening_attack.starting_seat = 1; rival_opening_attack.active_seat = 1; rival_opening_attack.turn = 1; rival_opening_attack.phase = "attack"
+	rival_opening_attack.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); rival_opening_attack.player(1).slots[0].ready = true
+	var player_hp_before_opening := int(rival_opening_attack.player(0).printer.hp)
+	var opening_outcome := AI.take_turn(rival_opening_attack, 1)
+	require(str(opening_outcome.get("status", "")) == "complete" and rival_opening_attack.active_seat == 0 and int(rival_opening_attack.player(0).printer.hp) == player_hp_before_opening, "rival starting turn one skips its forbidden attack and legally returns control")
+	var rival_pending_attach := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 130)
+	rival_pending_attach.starting_seat = 1; rival_pending_attach.active_seat = 1; rival_pending_attach.turn = 1; rival_pending_attach.phase = "print"
+	rival_pending_attach.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); rival_pending_attach.player(1).slots[0].hp = 99; rival_pending_attach.player(1).slots[0].equipment.armor = {"card_id":"standard_full_suit"}
+	rival_pending_attach.player(1).slots[1] = STATE._unit(RULES.card("aquafin")); rival_pending_attach.player(1).holding = [{"card_id":"standard_full_suit","target":0}]
+	rival_pending_attach.pending = {"kind":"attach","seat":1,"card_id":"standard_full_suit","holding_index":0}
+	var attach_outcome := AI.take_turn(rival_pending_attach, 1)
+	require(str(attach_outcome.get("status", "")) == "complete" and rival_pending_attach.active_seat == 0 and rival_pending_attach.player(1).holding.is_empty() and str((rival_pending_attach.player(1).slots[1].equipment.armor as Dictionary).get("card_id", "")) == "standard_full_suit", "AI resolves a held full suit onto the deterministic compatible creature instead of retrying an occupied slot")
 	var ability_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 131)
 	ability_state.player(0).slots[0] = STATE._unit(RULES.card("aquafin")); ability_state.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw")); ability_state.player(0).slots[0].hp -= 10
 	BATTLE._resolve_attack_ability(ability_state, 0, 0, 0)
