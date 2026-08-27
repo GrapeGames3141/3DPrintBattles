@@ -32,6 +32,18 @@ func _within_viewport(control: Control, viewport: Vector2) -> bool:
 	var rect := control.get_global_rect()
 	return rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= viewport.x and rect.end.y <= viewport.y
 
+func _configure_isolated_save_paths() -> void:
+	var root := "user://printforge-validation/unified-ui-layout"
+	if OS.get_name() == "Windows" and DirAccess.dir_exists_absolute("E:/"):
+		root = "E:/CodexCache/printforge-validation/unified-ui-layout"
+		var create_error := DirAccess.make_dir_recursive_absolute(root)
+		require(create_error == OK or DirAccess.dir_exists_absolute(root), "Creates the isolated Windows UI-layout save directory.")
+	else:
+		var absolute_root := ProjectSettings.globalize_path(root)
+		var create_error := DirAccess.make_dir_recursive_absolute(absolute_root)
+		require(create_error == OK or DirAccess.dir_exists_absolute(absolute_root), "Creates the isolated cross-platform UI-layout save directory.")
+	SaveService.configure_test_paths(root)
+
 func _exercise(viewport: Vector2) -> void:
 	GameManager.profile = _legal_profile()
 	var subviewport := SubViewport.new()
@@ -252,6 +264,7 @@ func _exercise(viewport: Vector2) -> void:
 	await get_tree().process_frame
 
 func _ready() -> void:
+	_configure_isolated_save_paths()
 	for viewport in [Vector2(1280, 720), Vector2(576, 1024)]:
 		await _exercise(viewport)
 	if failures.is_empty(): print("PASS: v3 battle accessibility and responsive handoff matrix")
