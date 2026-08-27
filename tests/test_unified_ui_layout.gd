@@ -109,6 +109,58 @@ func _exercise(viewport: Vector2) -> void:
 		queue_creature.emit_signal("pressed")
 		await get_tree().process_frame
 	require(not main.battle.player(0).hand.has("cinderpaw") and main.battle.player(0).queue.size() == 1 and int(main.battle.player(0).filament) == 130, "Queueing a selected creature consumes the hand card and its actual filament cost at %s." % viewport)
+	# Resolve Printing can stop on a completed creature. That mandatory choice must
+	# replace the invalid phase action and conceal optional hand/attack controls.
+	main.battle = STATE.create(deck, deck, 81)
+	main.battle.starting_seat = 0
+	main.battle.active_seat = 0
+	main.battle.turn = 1
+	main.battle.phase = "print"
+	main.battle.player(0).slots = [null, null, null]
+	main.battle.player(0).queue = [{"card_id":"cinderpaw", "remaining":1, "target":-1, "cost":70}]
+	main.battle_mode = "daily_training"
+	main.unified_ai_pending = false
+	main.unified_selected_card_id = ""
+	main.render()
+	await get_tree().process_frame
+	var resolve_printing := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
+	require(resolve_printing != null and resolve_printing.text == "Resolve Printing", "Print phase exposes Resolve Printing before a completed print decision at %s." % viewport)
+	if resolve_printing != null:
+		resolve_printing.emit_signal("pressed")
+		await get_tree().process_frame
+	var pending_panel := main.find_child("UnifiedPendingPrintDecision", true, false) as Control
+	var pending_choices := main.find_child("UnifiedPendingPlaceChoices", true, false) as GridContainer
+	require(str(main.battle.pending.get("kind", "")) == "place", "Resolve Printing creates the pending placement state at %s." % viewport)
+	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null and main.find_child("UnifiedBattleHandGrid", true, false) == null and main.find_child("UnifiedAttackTargetPicker", true, false) == null, "Pending placement hides the invalid phase, hand, and attack controls at %s." % viewport)
+	require(pending_panel != null and _within_viewport(pending_panel, viewport), "Pending placement panel is visible in bounds at %s." % viewport)
+	var pending_place_buttons: Array = pending_choices.get_children() if pending_choices != null else []
+	require(pending_place_buttons.size() == 6, "Every open field slot has Attack and Defense placement choices at %s." % viewport)
+	for choice in pending_place_buttons:
+		require(choice is Button and _within_viewport(choice as Control, viewport) and (choice as Button).focus_mode != Control.FOCUS_NONE and (choice as Button).custom_minimum_size.y >= 44.0 and not (choice as Button).accessibility_name.is_empty(), "Pending placement choice is in-bounds and accessible at %s." % viewport)
+	var place_slot_one_attack := main.find_child("UnifiedPendingPlaceSlot1Attack", true, false) as Button
+	if place_slot_one_attack != null:
+		place_slot_one_attack.emit_signal("pressed")
+		await get_tree().process_frame
+	require(main.battle.pending.is_empty() and main.battle.player(0).slots[0] != null and str(main.battle.player(0).slots[0].get("card_id", "")) == "cinderpaw", "Selecting a pending placement clears it and places the completed creature at %s." % viewport)
+	# Equipment waiting in holding uses the same mandatory decision surface and
+	# only offers occupied creatures with the matching gear slot still empty.
+	main.battle = STATE.create(deck, deck, 81)
+	main.battle.starting_seat = 0
+	main.battle.active_seat = 0
+	main.battle.turn = 1
+	main.battle.phase = "print"
+	main.battle.player(0).slots = [STATE._unit(RULES.card("cinderpaw")), null, null]
+	main.battle.player(0).holding = [{"card_id":"standard_full_suit", "target":0}]
+	main.battle.pending = {"kind":"attach", "seat":0, "card_id":"standard_full_suit", "holding_index":0}
+	main.render()
+	await get_tree().process_frame
+	var attach_panel := main.find_child("UnifiedPendingPrintDecision", true, false) as Control
+	var attach_slot_one := main.find_child("UnifiedPendingAttachSlot1", true, false) as Button
+	require(attach_panel != null and _within_viewport(attach_panel, viewport) and attach_slot_one != null and _within_viewport(attach_slot_one, viewport) and attach_slot_one.focus_mode != Control.FOCUS_NONE and attach_slot_one.custom_minimum_size.y >= 44.0 and not attach_slot_one.accessibility_name.is_empty(), "Pending equipment offers an accessible legal attachment choice at %s." % viewport)
+	if attach_slot_one != null:
+		attach_slot_one.emit_signal("pressed")
+		await get_tree().process_frame
+	require(main.battle.pending.is_empty() and main.battle.player(0).holding.is_empty() and not (main.battle.player(0).slots[0].get("equipment", {}).get("armor", {}) as Dictionary).is_empty(), "Selecting a pending attachment clears it and equips the compatible creature at %s." % viewport)
 	# Rival turns are public-board-only until the deferred AI finishes. The player
 	# must never receive a phase button or a view of the rival's private hand.
 	main.battle = STATE.create(deck, deck, 81)

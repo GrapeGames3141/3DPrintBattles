@@ -3,6 +3,8 @@ extends RefCounted
 ## Shipped v3 battle controller/presenter. Main supplies navigation and theme
 ## helpers; this component owns the battle screen composition and interactions.
 
+const RULES := preload("res://scripts/core/unified_rules.gd")
+
 func _phase_action_label(phase: String) -> String:
 	match phase:
 		"draw": return "Begin Main"
@@ -65,6 +67,18 @@ func render(host: Container, shell: Control) -> void:
 	var phase_label: Label = shell.label("Turn %d · %s phase" % [int(battle.turn), str(battle.phase).capitalize()], 16, Color("9beaff"))
 	phase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	phase_banner.add_child(phase_label)
+	var active: Dictionary = battle.player(int(battle.active_seat))
+	var pending: Dictionary = battle.pending
+	var pending_for_active_human := not pending.is_empty() and int(pending.get("seat", -1)) == int(battle.active_seat)
+	if pending_for_active_human:
+		_render_pending_print_decision(host, shell, active, pending)
+		var pending_return: Button = shell.make_button("Return to Workshop", func(): shell.battle = null; shell.battle_settlement_context.clear(); shell.screen = "workshop"; shell.render(), Color("536c8d"))
+		pending_return.name = "UnifiedBattleWorkshopReturn"
+		pending_return.tooltip_text = "Leave this battle and return to the Workshop"
+		pending_return.accessibility_name = "Return to Workshop"
+		pending_return.focus_mode = Control.FOCUS_ALL
+		host.add_child(pending_return)
+		return
 	var primary_action: Button = shell.make_button(_phase_action_label(str(battle.phase)), shell._submit_unified_intent.bind({"type":"advance_phase"}), Color("2f93a8"))
 	primary_action.name = "UnifiedBattlePrimaryAction"
 	primary_action.tooltip_text = "Advance from %s phase" % str(battle.phase).capitalize()
@@ -73,7 +87,6 @@ func render(host: Container, shell: Control) -> void:
 	primary_action.custom_minimum_size = Vector2(176, 44)
 	primary_action.size_flags_horizontal = Control.SIZE_SHRINK_END
 	phase_banner.add_child(primary_action)
-	var active: Dictionary = battle.player(int(battle.active_seat))
 	var hand_title: Label = shell.label("Player %d hand" % (int(battle.active_seat) + 1), 17, Color("ffd36c"))
 	hand_title.name = "UnifiedHandHeading"
 	host.add_child(hand_title)
@@ -110,3 +123,61 @@ func render(host: Container, shell: Control) -> void:
 	if int(battle.active_seat) == 0 or str(shell.battle_mode) == "local":
 		shell._render_unified_attack_picker(host, active)
 	host.add_child(shell.make_button("Return to Workshop", func(): shell.battle = null; shell.battle_settlement_context.clear(); shell.screen = "workshop"; shell.render(), Color("536c8d")))
+
+func _render_pending_print_decision(host: Container, shell: Control, active: Dictionary, pending: Dictionary) -> void:
+	var panel: VBoxContainer = shell.make_panel(Color("3a241ee8"), Color("f1be69"))
+	panel.name = "UnifiedPendingPrintDecision"
+	host.add_child(panel.get_parent())
+	var kind := str(pending.get("kind", ""))
+	if kind == "place":
+		var unit: Dictionary = pending.get("unit", {})
+		var unit_name := str(unit.get("name", unit.get("card_id", "completed creature")))
+		panel.add_child(shell.label("Completed print ready · %s" % unit_name, 17, Color("ffd36c")))
+		panel.add_child(shell.label("Choose an open field slot and combat mode before continuing the Print phase.", 13, Color("e6dfd0")))
+		var choices := GridContainer.new()
+		choices.name = "UnifiedPendingPlaceChoices"
+		choices.columns = 2 if shell.is_portrait_layout() else 3
+		choices.add_theme_constant_override("h_separation", 8)
+		choices.add_theme_constant_override("v_separation", 8)
+		panel.add_child(choices)
+		for slot in 3:
+			if active.slots[slot] != null: continue
+			for mode in ["attack", "defense"]:
+				var mode_label := str(mode).capitalize()
+				var choice: Button = shell.make_button("Slot %d · %s" % [slot + 1, mode_label], shell._submit_unified_intent.bind({"type":"place_completed", "slot":slot, "mode":mode}), Color("a86b2e") if mode == "attack" else Color("526e93"))
+				choice.name = "UnifiedPendingPlaceSlot%d%s" % [slot + 1, mode_label]
+				choice.tooltip_text = "Place %s in field slot %d in %s mode" % [unit_name, slot + 1, mode_label]
+				choice.accessibility_name = "Place %s in slot %d in %s mode" % [unit_name, slot + 1, mode_label]
+				choice.focus_mode = Control.FOCUS_ALL
+				choice.custom_minimum_size = Vector2(0, 44)
+				choices.add_child(choice)
+		return
+	if kind == "attach":
+		var card_id := str(pending.get("card_id", ""))
+		var card := RULES.card(card_id)
+		var equipment_name := str(card.get("name", card_id))
+		var equipment_slot := str(card.get("equipment_slot", "gear"))
+		panel.add_child(shell.label("Completed equipment ready · %s" % equipment_name, 17, Color("ffd36c")))
+		panel.add_child(shell.label("Choose a creature with an empty %s slot before continuing the Print phase." % equipment_slot.capitalize(), 13, Color("e6dfd0")))
+		var choices := GridContainer.new()
+		choices.name = "UnifiedPendingAttachChoices"
+		choices.columns = 1 if shell.is_portrait_layout() else 3
+		choices.add_theme_constant_override("h_separation", 8)
+		choices.add_theme_constant_override("v_separation", 8)
+		panel.add_child(choices)
+		for slot in 3:
+			var unit = active.slots[slot]
+			if unit == null: continue
+			var equipment: Dictionary = unit.get("equipment", {}) if unit.get("equipment", {}) is Dictionary else {}
+			var attached: Dictionary = equipment.get(equipment_slot, {}) if equipment.get(equipment_slot, {}) is Dictionary else {}
+			if not attached.is_empty(): continue
+			var unit_name := str(unit.get("name", "Print"))
+			var choice: Button = shell.make_button("Attach to slot %d · %s" % [slot + 1, unit_name], shell._submit_unified_intent.bind({"type":"attach_completed", "slot":slot}), Color("a86b2e"))
+			choice.name = "UnifiedPendingAttachSlot%d" % (slot + 1)
+			choice.tooltip_text = "Attach %s to %s in field slot %d" % [equipment_name, unit_name, slot + 1]
+			choice.accessibility_name = "Attach %s to %s in slot %d" % [equipment_name, unit_name, slot + 1]
+			choice.focus_mode = Control.FOCUS_ALL
+			choice.custom_minimum_size = Vector2(0, 44)
+			choices.add_child(choice)
+		return
+	panel.add_child(shell.label("A completed print needs a legal decision before the battle can continue.", 15, Color("fff0a1")))
