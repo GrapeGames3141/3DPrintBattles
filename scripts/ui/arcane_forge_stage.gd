@@ -99,7 +99,11 @@ func _load_assets() -> void:
 	living = CreatureSpriteCache.texture_for_creature(creature_id)
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color("081526d9") if not high_contrast else Color("000000f5"), true)
+	# Active printing must stay image-led.  The idle surface remains dark enough
+	# for its blueprint ghost; printing uses a transparent technical wash rather
+	# than burying the printer beneath a full-stage black overlay.
+	var stage_tint := Color("08152674") if phase == ArcaneForgeSequence.PRINTING else Color("081526d9")
+	draw_rect(Rect2(Vector2.ZERO, size), stage_tint if not high_contrast else Color("000000f5"), true)
 	var printer := printer_frames[mini(printer_frame_index(), printer_frames.size() - 1)] if not printer_frames.is_empty() else null
 	# Center a deliberately dominant square printer. These normalized bounds match
 	# the visible gold build surface in the approved printer frames.
@@ -114,8 +118,10 @@ func _draw() -> void:
 	var printer_rect := _fit_rect(printer, printer_bounds)
 	if printer != null: draw_texture_rect(printer, printer_rect, false)
 	var plate := Rect2(printer_rect.position.x + printer_rect.size.x * 0.28, printer_rect.position.y + printer_rect.size.y * 0.57, printer_rect.size.x * 0.50, printer_rect.size.y * 0.13)
-	if phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase in [ArcaneForgeSequence.IDLE, ArcaneForgeSequence.AWAKENED]):
-		_draw_raw(plate, 0.42 if phase == ArcaneForgeSequence.IDLE else 1.0)
+	# A selected blueprint is visibly loaded even before printing begins. It stays
+	# translucent/raw, never borrowing the living animation before awakening.
+	if phase in [ArcaneForgeSequence.IDLE, ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase == ArcaneForgeSequence.AWAKENED):
+		_draw_raw(plate, 0.48 if phase == ArcaneForgeSequence.IDLE else 1.0)
 	if armor_id.is_empty() and phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
@@ -134,7 +140,7 @@ func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 	if raw == null: return
 	# The raw source has a small raft at its bottom. Align that raft to the actual
 	# plate surface and keep the physical print at about one fifth of printer height.
-	var raw_height := plate.size.y * 1.48
+	var raw_height := plate.size.y * (2.90 if phase == ArcaneForgeSequence.PRINTING else 1.70)
 	var rect := Rect2(Vector2(plate.get_center().x - raw_height * 0.5, _plate_surface_y(plate) - raw_height), Vector2(raw_height, raw_height))
 	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
 	var shown := rect.size.y * float(reveal) / 10000.0

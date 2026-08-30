@@ -1,6 +1,7 @@
 extends Node
 
 const MAIN := preload("res://scenes/main.tscn")
+const RULES := preload("res://scripts/core/unified_rules.gd")
 
 var failures: Array[String] = []
 
@@ -13,10 +14,11 @@ func _ready() -> void:
 	var main_source := (MAIN.instantiate().get_script() as GDScript).source_code
 	require(not main_source.contains("func render_battle_action_dock") and not main_source.contains("func render_battle_secondary"), "Battle dock and tactical panel builders belong to BattleViewComponent")
 	require(main_source.contains("func printer_blueprint_ids") and main_source.contains("func select_printer_blueprint"), "Main retains Printer compatibility facades")
-	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
-	profile.coins = 500
-	var learned: Dictionary = ProgressionRules.purchase_creature_blueprint(profile, "mossmunk")
-	profile = learned.get("profile", profile)
+	var profile: Dictionary = RULES.new_profile()
+	profile = RULES.choose_starter(profile, "cinderpaw").profile
+	profile = RULES.print_starter(profile).profile
+	RULES.grant_card(profile, "mossmunk")
+	profile.forge_coins = 500
 	GameManager.profile = profile
 	var main := MAIN.instantiate()
 	add_child(main)

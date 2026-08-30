@@ -7,6 +7,8 @@ const WORKSHOP_OVERVIEW_PORTRAIT_TEXTURE := preload("res://assets/ui/workshop/wo
 const WORKSHOP_AMBIENT_LAYER := preload("res://scripts/ui/workshop_ambient_layer.gd")
 const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_overlay.gd")
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
+const BLUEPRINT_SCHEMATIC_OVERLAY := preload("res://scripts/ui/blueprint_schematic_overlay.gd")
+const BLUEPRINT_SCHEMATIC_SHADER := preload("res://scripts/ui/blueprint_schematic.gdshader")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
 const SUPPORT_CARD_PRESENTER_PATH := "res://scripts/ui/support_card_presenter.gd"
 const SUPPORT_CARD_VIEW_PATH := "res://scripts/ui/support_card_view.gd"
@@ -78,6 +80,8 @@ var unified_battle_presentation: Dictionary = {"kind":"", "actor":0, "left":{}, 
 var unified_page := 0
 var unified_deck_draft: Array = []
 var unified_preprint_draft: Array = []
+var feedback_deck_draft_initialized := false
+var feedback_deck_loaded_slot := ""
 var unified_printer_draft: Array = []
 var unified_printer_page := 0
 var unified_codex_page := 0
@@ -109,6 +113,7 @@ var printer_capture_freeze := false
 var printer_failure := ""
 var printer_return_screen := "collection"
 var printer_progress_label: Label
+var printer_progress_bar: ProgressBar
 var team_draft_dirty := false
 var calibration_values: Array[int] = [50, 50, 50]
 var calibration_step := 0
@@ -321,6 +326,8 @@ func navigate_to(target: String) -> void:
 	# remain available to retained screens under their explicit legacy ids.
 	var unified_targets := {"shop":"unified_market", "archive":"unified_library", "armor":"unified_library", "deck":"unified_deck", "team":"unified_deck", "calibration":"unified_upgrades", "codex":"unified_forgedex", "collection":"unified_forgedex", "yard":"unified_market"}
 	if unified_targets.has(target): target = str(unified_targets[target])
+	if target == "unified_deck" and screen != "unified_deck":
+		feedback_deck_draft_initialized = false
 	if screen == "workshop" and target != "workshop":
 		workshop_return_view = workshop_view
 	if target == "workshop":
@@ -335,6 +342,19 @@ func navigate_to(target: String) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE): return
 	_focus_after_render = true
+	# Modal dismissal takes precedence over route navigation.  The image-led
+	# routes are full-screen, so leaving their inspector first is especially
+	# important for keyboard and controller players.
+	if not starter_inspector_id.is_empty():
+		starter_inspector_id = ""
+		render()
+		get_viewport().set_input_as_handled()
+		return
+	if not unified_inspector_id.is_empty():
+		unified_inspector_id = ""
+		render()
+		get_viewport().set_input_as_handled()
+		return
 	if screen == "workshop":
 		if not workshop_drawer_object.is_empty():
 			close_workshop_drawer()
@@ -458,11 +478,484 @@ func label(text_value: String, size := 16, color := Color.WHITE) -> Label:
 	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return value
 
+func _visual_style(background: Color, border: Color, radius := 10, width := 1) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(width)
+	style.corner_radius_top_left = radius; style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius; style.corner_radius_bottom_right = radius
+	style.content_margin_left = 10; style.content_margin_right = 10
+	style.content_margin_top = 7; style.content_margin_bottom = 7
+	return style
+
+func _visual_panel(name_value: String, background: Color, border: Color, radius := 10) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = name_value
+	panel.add_theme_stylebox_override("panel", _visual_style(background, border, radius))
+	return panel
+
+func _visual_button(name_value: String, text_value: String, callback: Callable, accent: Color, strong := false) -> Button:
+	var button := Button.new()
+	button.name = name_value
+	button.text = text_value
+	button.custom_minimum_size = Vector2(0, 50 if strong else 44)
+	button.focus_mode = Control.FOCUS_ALL
+	button.accessibility_name = text_value
+	button.add_theme_font_size_override("font_size", scaled_font(17 if strong else 14))
+	button.add_theme_color_override("font_color", Color("f5f5e9"))
+	button.add_theme_stylebox_override("normal", _visual_style(Color(accent, 0.30 if strong else 0.20), accent, 8, 2 if strong else 1))
+	button.add_theme_stylebox_override("hover", _visual_style(Color(accent, 0.48), Color("e9fbff"), 8, 2))
+	button.add_theme_stylebox_override("focus", _visual_style(Color(accent, 0.42), Color("ffffff"), 8, 3))
+	button.add_theme_stylebox_override("pressed", _visual_style(Color(accent, 0.64), Color("ffffff"), 8, 2))
+	button.gui_input.connect(func(event: InputEvent):
+		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
+			_focus_after_render = true)
+	button.pressed.connect(func(): _audio_director.cue("press"); callback.call())
+	return button
+
+func _finish_visual_route() -> void:
+	if _focus_after_render:
+		_focus_after_render = false
+		call_deferred("focus_first_button")
+
+func _deferred_focus_if_ready(instance_id: int) -> void:
+	# Render rebuilds can free a modal in the same frame its initial focus is
+	# deferred. Resolve it by id at execution time and do nothing when it no
+	# longer belongs to the live, visible focus tree.
+	var control := instance_from_id(instance_id) as Control
+	if control == null or not is_instance_valid(control): return
+	if not control.is_inside_tree() or not control.is_visible_in_tree() or control.focus_mode == Control.FOCUS_NONE: return
+	if control is Button and (control as Button).disabled: return
+	control.grab_focus()
+
+func _visual_toast(surface: Control) -> void:
+	if toast.is_empty(): return
+	var notice := _visual_panel("VisualRouteToast", Color("17241ee8"), Color("f1be69"), 8)
+	notice.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	notice.anchor_left = 0.18; notice.anchor_right = 0.82
+	notice.offset_left = 0; notice.offset_right = 0; notice.offset_top = -64; notice.offset_bottom = -20
+	surface.add_child(notice)
+	var copy := label(toast, 13, Color("fff0c4")); copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; notice.add_child(copy)
+
+func _feedback_backdrop(texture: Texture2D, dim := 0.38) -> void:
+	var background := TextureRect.new()
+	background.name = "FeedbackWorkshopBackground"
+	background.texture = texture
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
+	var shade := ColorRect.new()
+	shade.name = "FeedbackWorkshopDim"
+	shade.color = Color(0.025, 0.055, 0.07, dim)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+
+func _apply_blueprint_ink(target: CanvasItem) -> void:
+	# The raw-print art becomes drafting ink while the adjacent native grid and
+	# corner overlay supplies the technical construction context.
+	var material := ShaderMaterial.new()
+	material.shader = BLUEPRINT_SCHEMATIC_SHADER
+	target.material = material
+
+func _feedback_progress_instrument(surface: Control, prefix := "Workshop") -> void:
+	var level := int(GameManager.profile.get("spool_level", 1))
+	var xp := int(GameManager.profile.get("spool_xp", 0))
+	var threshold := level * 100
+	var instrument := _visual_panel("%sProgressInstrument" % prefix, Color("101923dc"), Color("78dded"))
+	instrument.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	instrument.position = Vector2(18, 18)
+	instrument.size = Vector2(230, 80)
+	surface.add_child(instrument)
+	var instrument_body := VBoxContainer.new(); instrument_body.add_theme_constant_override("separation", 3); instrument.add_child(instrument_body)
+	instrument_body.add_child(label("SPOOL LEVEL %d" % level, 18, Color("f6db9a")))
+	var progress := ProgressBar.new(); progress.name = "%sHudProgress" % prefix; progress.max_value = threshold; progress.value = xp; progress.show_percentage = false; progress.custom_minimum_size = Vector2(0, 13); progress.tooltip_text = "Spool Level %d · XP %d / %d" % [level, xp, threshold]; progress.accessibility_name = progress.tooltip_text
+	progress.add_theme_stylebox_override("background", _visual_style(Color("123640"), Color("75e8f2"), 6, 1))
+	progress.add_theme_stylebox_override("fill", _visual_style(Color("20bfcf"), Color("c3fbff"), 6, 1))
+	instrument_body.add_child(progress)
+	instrument_body.add_child(label("XP %d / %d" % [xp, threshold], 12, Color("d5fbff")))
+	var coins := _visual_panel("%sCoinBadge" % prefix, Color("15241bdc"), Color("f1be69"), 18)
+	coins.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	coins.position = Vector2(-190, 18); coins.size = Vector2(172, 44)
+	surface.add_child(coins)
+	var coin_label := label("%d Forge Coins" % int(GameManager.profile.get("forge_coins", 0)), 14, Color("ffe0a1")); coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; coins.add_child(coin_label)
+
+func render_feedback_workshop() -> void:
+	overview_layout_portrait = is_portrait_layout()
+	_feedback_backdrop(_workshop_overview_texture(), 0.08)
+	var surface := Control.new()
+	surface.name = "WorkshopFullBleed"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(surface)
+	_feedback_progress_instrument(surface, "Workshop")
+	var settings_button := _visual_button("WorkshopSettingsButton", "⚙", navigate_to.bind("settings"), Color("78dded"))
+	settings_button.set_anchors_preset(Control.PRESET_TOP_RIGHT); settings_button.position = Vector2(-72, 72); settings_button.size = Vector2(52, 44); surface.add_child(settings_button)
+	for hotspot in _workshop_overview_hotspots():
+		var button := _workshop_overview_hotspot_button(hotspot)
+		surface.add_child(button)
+	_visual_toast(surface)
+
+func _starter_schematic_card(starter_id: String) -> Control:
+	var creature := Catalog.creature(starter_id)
+	var element_color := Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff"))
+	var selected := pending_starter_id == starter_id
+	var card := _visual_panel("StarterSchematic%s" % starter_id.capitalize(), Color("071a25e8"), element_color if selected else Color("4b8193"), 12)
+	card.custom_minimum_size = Vector2(260 if is_portrait_layout() else 370, 390 if is_portrait_layout() else 330)
+	var content := VBoxContainer.new(); content.add_theme_constant_override("separation", 4); card.add_child(content)
+	var art_frame := Control.new(); art_frame.custom_minimum_size = Vector2(0, 172 if is_portrait_layout() else 190); art_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL; content.add_child(art_frame)
+	var art := TextureRect.new(); art.name = "StarterBlueprintSchematic"; art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D; art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _apply_blueprint_ink(art); art_frame.add_child(art)
+	var drafting := BLUEPRINT_SCHEMATIC_OVERLAY.new(); drafting.name = "StarterSchematicDraftGrid"; drafting.configure(Color("72ecff"), 1.0); drafting.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); drafting.mouse_filter = Control.MOUSE_FILTER_IGNORE; art_frame.add_child(drafting)
+	var inspect := _visual_button("StarterInspect%s" % starter_id.capitalize(), "INSPECT BLUEPRINT", show_starter_inspector.bind(starter_id), Color("64dff0"))
+	inspect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); inspect.tooltip_text = "Inspect %s blueprint schematic" % str(creature.get("name", starter_id)); art_frame.add_child(inspect)
+	var name_label := label(str(creature.get("name", starter_id)), 18, element_color); name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(name_label)
+	var detail := label("%s blueprint · %d HP · %d ATK" % [str(creature.get("element", "")), int(creature.get("hp", 0)), int(creature.get("attack", 0))], 11, Color("d8edf4")); detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(detail)
+	var button_text := "FORGE %s" % str(creature.get("name", starter_id)).to_upper() if selected else "SELECT"
+	var action := _visual_button("StarterSelect%s" % starter_id.capitalize(), button_text, confirm_starter if selected else _select_starter_blueprint.bind(starter_id), element_color, true)
+	action.tooltip_text = "Select %s blueprint" % str(creature.get("name", starter_id)); content.add_child(action)
+	return card
+
+func _select_starter_blueprint(starter_id: String) -> void:
+	pending_starter_id = starter_id
+	starter_inspector_id = ""
+	render()
+
+func _attach_feedback_forge(host: Control, minimum_height: float) -> void:
+	var forge_component = _forge_component()
+	if forge_component == null or printer_sequence == null:
+		return
+	forge_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, minimum_height, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
+	forge_component.attach(host)
+	var stage = forge_component.stage
+	if stage != null:
+		stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+func _render_feedback_printer_selector(host: Control) -> void:
+	var ids := printer_blueprint_ids()
+	if ids.is_empty():
+		var empty := label("No learned creature blueprints are ready for the build plate.", 13, Color("fff0a1")); empty.name = "PrinterBlueprintEmptyState"; host.add_child(empty)
+		var offers := _visual_button("PrinterBlueprintEmptyOffers", "OPEN FORGE OFFERS", navigate_to.bind("unified_market"), Color("5abdcf")); host.add_child(offers)
+		return
+	# The free first print has only one known blueprint.  Its loaded schematic is
+	# already shown above; duplicating a one-item selector would make this quiet
+	# onboarding surface read like a carousel.  Normal Forge sessions retain a
+	# horizontally scrollable, controller-focusable switcher.
+	var onboarding: Dictionary = GameManager.profile.get("onboarding", {})
+	if ids.size() == 1 and str(onboarding.get("state", "")) == "starter_selected":
+		return
+	var strip := ScrollContainer.new(); strip.name = "PrinterBlueprintCartridgeStrip"; strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; strip.custom_minimum_size = Vector2(0, 46); strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL; host.add_child(strip)
+	var shelf := HBoxContainer.new(); shelf.name = "PrinterBlueprintCartridgeStripContents"; shelf.add_theme_constant_override("separation", 6); strip.add_child(shelf)
+	for creature_id in ids:
+		var definition := Catalog.creature(creature_id)
+		var card := Control.new(); card.name = "PrinterBlueprintCard%s" % creature_id.capitalize(); card.custom_minimum_size = Vector2(112, 44); card.size = Vector2(112, 44)
+		card.set_meta("creature_id", creature_id); card.set_meta("price", int(UNIFIED_RULES.WORKSHOP_PRINT_COSTS.get(str(definition.get("rarity", "common")), 20))); card.set_meta("owned_count", _blueprint_tray_view.owned_count(GameManager.profile, creature_id))
+		var select := _visual_button("PrinterSelect%s" % creature_id.capitalize(), ("✓ " if creature_id == printer_creature_id else "") + str(definition.get("name", creature_id)), select_printer_blueprint.bind(creature_id), Color("65ddeb") if creature_id == printer_creature_id else Color("587f90"))
+		select.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		select.offset_left = 0; select.offset_top = 0; select.offset_right = 0; select.offset_bottom = 0
+		select.custom_minimum_size = Vector2(112, 44)
+		select.tooltip_text = "Select %s blueprint for the dormant Forge build plate" % str(definition.get("name", creature_id)); card.add_child(select); shelf.add_child(card)
+
+func render_feedback_printer() -> void:
+	if printer_sequence == null:
+		cancel_printer_preview()
+		return
+	var definition := Catalog.creature(printer_creature_id)
+	_feedback_backdrop(_workshop_overview_texture(), 0.38)
+	var surface := Control.new(); surface.name = "FeedbackForgeSurface"; surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); add_child(surface)
+	printer_progress_label = null
+	printer_progress_bar = null
+	var active := printer_sequence.phase != ArcaneForgeSequence.IDLE
+	var stage_shell := _visual_panel("FeedbackForgeStage", Color("07152280") if active else Color("071522d2"), Color("58cfe5"), 14)
+	stage_shell.set_anchors_preset(Control.PRESET_FULL_RECT)
+	if active:
+		stage_shell.anchor_left = 0.035; stage_shell.anchor_top = 0.055; stage_shell.anchor_right = 0.965; stage_shell.anchor_bottom = 0.785
+	else:
+		stage_shell.anchor_left = 0.065; stage_shell.anchor_top = 0.10; stage_shell.anchor_right = 0.935; stage_shell.anchor_bottom = 0.565
+	stage_shell.offset_left = 0; stage_shell.offset_top = 0; stage_shell.offset_right = 0; stage_shell.offset_bottom = 0
+	surface.add_child(stage_shell)
+	_attach_feedback_forge(stage_shell, 650 if active else 410)
+	if not active:
+		var forge_title := label("FORGE · %s" % str(definition.get("name", "Blueprint")).to_upper(), 20, Color("f6db9a")); forge_title.set_anchors_preset(Control.PRESET_TOP_LEFT); forge_title.position = Vector2(16, 12); stage_shell.add_child(forge_title)
+		var fact_row := _visual_panel("PrinterSelectionFacts", Color("0d202be8"), Color("5dbfd3"), 8)
+		fact_row.set_anchors_preset(Control.PRESET_FULL_RECT); fact_row.anchor_left = 0.065; fact_row.anchor_top = 0.585; fact_row.anchor_right = 0.935; fact_row.anchor_bottom = 0.645; fact_row.offset_left = 0; fact_row.offset_top = 0; fact_row.offset_right = 0; fact_row.offset_bottom = 0; surface.add_child(fact_row)
+		var cycle_seconds := ArcaneForgeSequence.PRINT_COMPLETE_BPS / ArcaneForgeSequence.presentation_step_bps(bool(settings().get("reduced_motion", false))) * ArcaneForgeSequence.presentation_interval_seconds(bool(settings().get("reduced_motion", false)))
+		var fact := label("%s · %s · %s · %d printed · %d upgrades · ~%ds cycle" % [str(definition.get("name", "Blueprint")), str(definition.get("element", "")), "FREE" if printer_price == 0 else "%d Forge Coins" % printer_price, _blueprint_tray_view.owned_count(GameManager.profile, printer_creature_id), (GameManager.profile.get("workshop_upgrades", []) as Array).size(), roundi(cycle_seconds)], 12, Color("dff5f6")); fact.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; fact_row.add_child(fact)
+		var starter_onboarding := str((GameManager.profile.get("onboarding", {}) as Dictionary).get("state", "")) == "starter_selected"
+		# The starter's large raw Forge stage is the loaded blueprint. A second
+		# panel merely repeats it and crowds the first image-led decision, so this
+		# onboarding state intentionally has no cartridge selector at all.
+		if not starter_onboarding:
+			var loaded := _visual_panel("PrinterBlueprintSelector", Color("09202adf"), Color("6defff"), 10)
+			loaded.set_anchors_preset(Control.PRESET_FULL_RECT); loaded.anchor_left = 0.065; loaded.anchor_top = 0.66; loaded.anchor_right = 0.935; loaded.anchor_bottom = 0.80; loaded.offset_left = 0; loaded.offset_top = 0; loaded.offset_right = 0; loaded.offset_bottom = 0; surface.add_child(loaded)
+			# The stage already carries the selected raw model at every orientation.
+			# Later visits use a factual label and cartridge shelf, never a duplicate
+			# tall schematic. The row changes shape only to preserve readable targets.
+			var compact_landscape_selector := not is_portrait_layout() and get_viewport().get_visible_rect().size.x > get_viewport().get_visible_rect().size.y
+			if compact_landscape_selector: loaded.anchor_bottom = 0.775
+			var loaded_row: Container = VBoxContainer.new() if not compact_landscape_selector else HBoxContainer.new(); loaded_row.add_theme_constant_override("separation", 4); loaded.add_child(loaded_row)
+			var loaded_copy := label("LOADED · %s" % str(definition.get("name", "Choose a blueprint")), 12, Color("7eeaff")); loaded_copy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if not compact_landscape_selector else Control.SIZE_SHRINK_BEGIN; loaded_copy.autowrap_mode = TextServer.AUTOWRAP_OFF; loaded_copy.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; loaded_row.add_child(loaded_copy)
+			_render_feedback_printer_selector(loaded_row)
+		# Empty inventories deliberately offer recovery plus Back, never a Begin
+		# action with no legal creature selected.
+		if not printer_blueprint_ids().is_empty():
+			var begin := _visual_button("BeginCreaturePrint", "INITIATE PRINT" if printer_price == 0 else "INITIATE PRINT · %d FC" % printer_price, begin_printer, Color("46d7e5"), true)
+			begin.set_anchors_preset(Control.PRESET_FULL_RECT); begin.anchor_left = 0.20; begin.anchor_top = 0.685 if starter_onboarding else 0.825; begin.anchor_right = 0.80; begin.anchor_bottom = 0.745 if starter_onboarding else 0.88; begin.offset_left = 0; begin.offset_top = 0; begin.offset_right = 0; begin.offset_bottom = 0; surface.add_child(begin)
+		var back := _visual_button("ArcaneForgeBack", "Back", cancel_printer_preview, Color("7398ad"))
+		back.set_anchors_preset(Control.PRESET_FULL_RECT); back.anchor_left = 0.34; back.anchor_top = 0.775 if starter_onboarding else 0.92; back.anchor_right = 0.66; back.anchor_bottom = 0.83 if starter_onboarding else 0.99; back.offset_left = 0; back.offset_top = 0; back.offset_right = 0; back.offset_bottom = 0; surface.add_child(back)
+	else:
+		# A PanelContainer lays direct Control children to its content rect.  This
+		# overlay is therefore the single positioned layer above the Forge canvas.
+		var active_overlay := Control.new(); active_overlay.name = "ForgeActiveOverlay"; active_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE; stage_shell.add_child(active_overlay)
+		var active_readout := _visual_panel("ForgeActiveReadout", Color("061a25ee"), Color("56cbe1"), 8); active_readout.set_anchors_preset(Control.PRESET_TOP_LEFT); active_readout.position = Vector2(14, 14); active_readout.size = Vector2(266, 61); active_overlay.add_child(active_readout)
+		var readout_body := VBoxContainer.new(); readout_body.add_theme_constant_override("separation", 0); active_readout.add_child(readout_body)
+		var active_heading := label("FORGE ACTIVE", 19, Color("a6f7ff")); active_heading.name = "ForgeActiveHeading"; readout_body.add_child(active_heading)
+		var active_subtitle := label("%s · %s blueprint" % [str(definition.get("name", "Blueprint")), str(definition.get("element", ""))], 12, Color("e3f9fb")); active_subtitle.name = "ForgeActiveSubtitle"; readout_body.add_child(active_subtitle)
+		var active_coins := _visual_panel("ForgeCoinBadge", Color("15241bf2"), Color("f1be69"), 16); active_coins.set_anchors_preset(Control.PRESET_TOP_RIGHT); active_coins.position = Vector2(-166, 14); active_coins.size = Vector2(150, 38); active_overlay.add_child(active_coins)
+		var active_coin_label := label("%d Forge Coins" % int(GameManager.profile.get("forge_coins", 0)), 12, Color("ffe0a1")); active_coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; active_coins.add_child(active_coin_label)
+		var rail := _visual_panel("ForgeActiveRail", Color("071824ec"), Color("6defff"), 10)
+		var terminal_top := 0.805
+		if printer_sequence.phase == ArcaneForgeSequence.AWAKENED:
+			# Terminal completion has three real actions plus status; it needs a
+			# proper rail instead of pushing the final action below short screens.
+			terminal_top = 0.64
+		elif printer_sequence.phase == ArcaneForgeSequence.FAILED:
+			terminal_top = 0.74
+		rail.set_anchors_preset(Control.PRESET_FULL_RECT); rail.anchor_left = 0.025; rail.anchor_top = terminal_top; rail.anchor_right = 0.975; rail.anchor_bottom = 0.975; rail.offset_left = 0; rail.offset_top = 0; rail.offset_right = 0; rail.offset_bottom = 0; surface.add_child(rail)
+		var rail_body := VBoxContainer.new(); rail_body.add_theme_constant_override("separation", 6); rail.add_child(rail_body)
+		rail_body.add_child(label("%s · %s · %d HP · %d ATK" % [str(definition.get("name", "Blueprint")), str(definition.get("element", "")), int(definition.get("hp", 0)), int(definition.get("attack", 0))], 14, Color("e6f5f5")))
+		match printer_sequence.phase:
+			ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING:
+				var percent := printer_sequence.layer_reveal_bps() / 100
+				var progress_label := label("LAYER PROGRESS %d%%" % percent, 16, Color("8eefff")); progress_label.name = "PrinterProgressStatus"; printer_progress_label = progress_label; rail_body.add_child(progress_label)
+				var bar := ProgressBar.new(); bar.name = "PrinterProgressBar"; bar.max_value = 100; bar.value = percent; bar.show_percentage = false; bar.custom_minimum_size = Vector2(0, 14); bar.tooltip_text = "Print layer progress: %d%%" % percent; bar.accessibility_name = bar.tooltip_text; printer_progress_bar = bar; rail_body.add_child(bar)
+				rail_body.add_child(_visual_button("SkipPrinterAnimation", "SKIP", skip_printer, Color("5abdcf"), true))
+			ArcaneForgeSequence.RAW_COMPLETE:
+				rail_body.add_child(label("RAW PRINT COMPLETE · SECURING FORGE TRANSACTION", 15, Color("fff0a1")))
+			ArcaneForgeSequence.AWAKENED:
+				rail_body.add_child(label("PRINT COMPLETE · READY FOR THE COLLECTION", 15, Color("a8e3a5")))
+				if int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) < int(GameManager.profile.get("starter_pack_rewards", {}).get("entitled", 0)):
+					rail_body.add_child(_visual_button("OpenStarterPack", "OPEN STARTER PACK", _open_next_starter_pack, Color("f1be69"), true))
+				rail_body.add_child(_visual_button("PrintAnother", "PRINT ANOTHER", return_to_printer_picker, Color("5abdcf"), true))
+				rail_body.add_child(_visual_button("ReturnAfterPrint", "RETURN", return_to_printer_station, Color("7398ad")))
+			ArcaneForgeSequence.FAILED:
+				rail_body.add_child(label("FORGE FAILED · %s" % printer_failure, 14, Color("ffaaa1")))
+				rail_body.add_child(_visual_button("ReturnFailedPrint", "RETURN", return_to_printer_station, Color("7398ad"), true))
+			_:
+				rail_body.add_child(label("FORGE PRESENTATION COMPLETE", 14, Color("d9f5f7")))
+	_visual_toast(surface)
+
+func _feedback_archive_cards() -> Array:
+	var owned: Array = []
+	for definition in UNIFIED_RULES.all_cards():
+		if int(GameManager.profile.get("owned_cards", {}).get(str(definition.get("id", "")), 0)) > 0:
+			owned.append(definition)
+	return _filter_archive_cards(owned)
+
+func _feedback_book_pager(host: Container, card_count: int) -> void:
+	var per_page := 9
+	var pages := maxi(1, int(ceil(float(card_count) / float(per_page))))
+	unified_page = clampi(unified_page, 0, pages - 1)
+	var pager := HBoxContainer.new(); pager.name = "ArchiveBookPager"; pager.alignment = BoxContainer.ALIGNMENT_CENTER; pager.add_theme_constant_override("separation", 8); host.add_child(pager)
+	var previous := _visual_button("ArchivePreviousPage", "‹", func(): unified_page = posmod(unified_page - 1, pages); render(), Color("7896a4")); previous.custom_minimum_size = Vector2(48, 44); pager.add_child(previous)
+	pager.add_child(_compact_pager_label("%d / %d" % [unified_page + 1, pages]))
+	var next := _visual_button("ArchiveNextPage", "›", func(): unified_page = posmod(unified_page + 1, pages); render(), Color("7896a4")); next.custom_minimum_size = Vector2(48, 44); pager.add_child(next)
+
+func _archive_blueprint_card(definition: Dictionary) -> Button:
+	var card_id := str(definition.get("id", ""))
+	var is_creature := str(definition.get("type", "")) == "creature"
+	var portrait := is_portrait_layout()
+	var card := Button.new()
+	card.name = "ArchiveBlueprintCard%s" % card_id.capitalize()
+	card.text = ""
+	card.custom_minimum_size = Vector2(0, 144 if portrait else 112)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.focus_mode = Control.FOCUS_ALL
+	card.tooltip_text = "%s · %s · Owned x%d" % [str(definition.get("name", card_id)), "blueprint" if is_creature else str(definition.get("type", "card")), int(GameManager.profile.get("owned_cards", {}).get(card_id, 0))]
+	card.accessibility_name = card.tooltip_text
+	card.add_theme_stylebox_override("normal", _visual_style(Color("13252bdc") if is_creature else Color("293129e8"), Color("55bed0") if is_creature else Color("9a794d"), 7, 1))
+	card.add_theme_stylebox_override("hover", _visual_style(Color("1b4250ef") if is_creature else Color("45412dec"), Color("dcfbff"), 7, 2))
+	card.add_theme_stylebox_override("focus", _visual_style(Color("214e5bf2") if is_creature else Color("55472eee"), Color("ffffff"), 7, 2))
+	var content := VBoxContainer.new(); content.mouse_filter = Control.MOUSE_FILTER_IGNORE; content.add_theme_constant_override("separation", 2); content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 5); card.add_child(content)
+	var title := label(str(definition.get("name", card_id)), 12, Color("bdf7ff") if is_creature else Color("fff0ce")); title.autowrap_mode = TextServer.AUTOWRAP_OFF; title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(title)
+	var art_shell := Control.new(); art_shell.custom_minimum_size = Vector2(0, 66 if portrait else 45); art_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL; art_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE; content.add_child(art_shell)
+	var art := TextureRect.new(); art.name = "ArchiveBlueprintSchematicArt" if is_creature else "ArchiveSupportArt"; art.texture = ResourceLoader.load(str(Catalog.creature(card_id).get("raw_print", ""))) as Texture2D if is_creature else UNIFIED_CARD_VIEW.art_for_definition(definition); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if is_creature:
+		_apply_blueprint_ink(art)
+	art_shell.add_child(art)
+	if is_creature:
+		var overlay := BLUEPRINT_SCHEMATIC_OVERLAY.new(); overlay.name = "ArchiveBlueprintDraftGrid"; overlay.configure(Color("72ecff"), 0.75); overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE; art_shell.add_child(overlay)
+	var real_line := "HP %d · BEND %d" % [int(definition.get("hp", 0)), int(definition.get("bend", 0))] if is_creature else "%s · %d F" % [str(definition.get("type", "support")).capitalize(), int(definition.get("cost", 0))]
+	var detail := label(real_line, 11, Color("d9f8fa") if is_creature else Color("f3dfb5")); detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; detail.autowrap_mode = TextServer.AUTOWRAP_OFF; detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; content.add_child(detail)
+	var count_text := "x%d deck · owned x%d" % [unified_deck_draft.count(card_id), int(GameManager.profile.get("owned_cards", {}).get(card_id, 0))] if screen == "unified_deck" else "Owned x%d" % int(GameManager.profile.get("owned_cards", {}).get(card_id, 0))
+	var footer := label(count_text, 10, Color("a5dfe6") if is_creature else Color("d9c294")); footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; footer.autowrap_mode = TextServer.AUTOWRAP_OFF; footer.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; content.add_child(footer)
+	card.gui_input.connect(func(event: InputEvent):
+		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
+			_focus_after_render = true)
+	card.pressed.connect(func():
+		if screen == "unified_deck":
+			if card_id in unified_deck_draft: unified_deck_draft.erase(card_id)
+			elif unified_deck_draft.count(card_id) < int(GameManager.profile.get("owned_cards", {}).get(card_id, 0)): unified_deck_draft.append(card_id)
+		else:
+			unified_inspector_id = card_id
+			unified_inspector_tab = "card"
+		render())
+	return card
+
+func _feedback_collection_clipboard(host: Container, cards: Array) -> void:
+	host.add_child(label("COLLECTION", 15, Color("352516")))
+	host.add_child(label("%d card types · %d copies" % [cards.size(), _owned_card_total()], 12, Color("483420")))
+	host.add_child(label("OWNED BLUEPRINTS", 11, Color("6a4b2a")))
+	var shown := 0
+	for definition in cards:
+		var card_def: Dictionary = definition
+		if str(card_def.get("type", "")) != "creature": continue
+		var card_id := str(card_def.get("id", ""))
+		host.add_child(label("%s · x%d" % [str(card_def.get("name", card_id)), int(GameManager.profile.get("owned_cards", {}).get(card_id, 0))], 11, Color("513c25")))
+		shown += 1
+		if shown >= 7: break
+	if shown == 0: host.add_child(label("Creature blueprints appear here as cards are collected.", 11, Color("513c25")))
+
+func _ensure_feedback_deck_drafts(force_reload := false) -> void:
+	var active_slot := str(GameManager.profile.get("active_deck_id", "starter-deck"))
+	if force_reload or not feedback_deck_draft_initialized or feedback_deck_loaded_slot != active_slot:
+		unified_deck_draft = GameManager.active_deck_cards().duplicate()
+		# An empty saved pre-print is a valid deliberate loadout.  Initialization
+		# state, rather than Array.is_empty(), distinguishes it from first entry.
+		unified_preprint_draft = (GameManager.profile.get("preprints", []) as Array).duplicate()
+		feedback_deck_loaded_slot = active_slot
+		feedback_deck_draft_initialized = true
+
+func _feedback_deck_clipboard(host: Container) -> void:
+	_ensure_feedback_deck_drafts()
+	host.add_child(label("ACTIVE DECK", 15, Color("352516")))
+	var slots := HBoxContainer.new(); slots.name = "ArchiveDeckSlots"; slots.add_theme_constant_override("separation", 3); host.add_child(slots)
+	var portrait := is_portrait_layout()
+	for index in UNIFIED_RULES.DECK_SLOTS.size():
+		var slot: Dictionary = UNIFIED_RULES.DECK_SLOTS[index]
+		var slot_id := str(slot.get("id", "")); var selected := slot_id == str(GameManager.profile.get("active_deck_id", ""))
+		var short_name: String = ["F", "Q", "A"][index]
+		var slot_name: String = str(slot.get("name", slot_id))
+		var slot_text: String = ("✓ " if selected else "") + (short_name if portrait else slot_name)
+		var slot_button := _visual_button("ArchiveDeckSlot%s" % slot_id.capitalize(), slot_text, func():
+			if GameManager.select_unified_deck(slot_id):
+				_ensure_feedback_deck_drafts(true)
+				_toast("%s selected." % slot_name)
+			else: _toast("That fixed deck slot needs a legal 40-card deck.")
+			render(), Color("478e72") if selected else Color("7a8f9a"))
+		slot_button.custom_minimum_size = Vector2(34 if portrait else 82, 36); slot_button.tooltip_text = "Select %s" % slot_name; slot_button.accessibility_name = slot_button.tooltip_text; slots.add_child(slot_button)
+	var active_slot_name := str(UNIFIED_RULES.DECK_SLOTS.filter(func(slot): return str(slot.get("id", "")) == str(GameManager.profile.get("active_deck_id", ""))).front().get("name", "Forge Deck"))
+	host.add_child(label(active_slot_name, 11, Color("6a4b2a")))
+	host.add_child(label("%d / 40 cards · %d creatures" % [unified_deck_draft.size(), _deck_creature_count()], 12, Color("483420")))
+	host.add_child(label("DECK ENTRIES", 11, Color("6a4b2a")))
+	var entries: Array = []
+	for card_id in unified_deck_draft:
+		if card_id not in entries: entries.append(card_id)
+	for card_id in entries.slice(0, 6): host.add_child(label("%s ×%d" % [str(UNIFIED_RULES.card(str(card_id)).get("name", card_id)), unified_deck_draft.count(card_id)], 11, Color("513c25")))
+	var preprint_slots := UNIFIED_RULES.preprint_slots(GameManager.profile)
+	host.add_child(label("PRE-PRINT %d / %d" % [unified_preprint_draft.size(), preprint_slots], 11, Color("6a4b2a")))
+	var preprint_ids: Array = []
+	for card_id in entries:
+		if str(UNIFIED_RULES.card(str(card_id)).get("type", "")) == "creature": preprint_ids.append(card_id)
+	var preprint_scroll := ScrollContainer.new(); preprint_scroll.name = "ArchivePrePrintScroll"; preprint_scroll.custom_minimum_size = Vector2(0, 104); preprint_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; preprint_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; host.add_child(preprint_scroll)
+	var preprint_list := VBoxContainer.new(); preprint_list.name = "ArchivePrePrintList"; preprint_list.add_theme_constant_override("separation", 3); preprint_scroll.add_child(preprint_list)
+	for creature_id in preprint_ids:
+		var chosen := unified_preprint_draft.count(creature_id)
+		var available := unified_deck_draft.count(creature_id)
+		var pick := _visual_button("ArchivePrePrint%s" % str(creature_id).capitalize(), ("✓ " if chosen > 0 else "○ ") + str(UNIFIED_RULES.card(str(creature_id)).get("name", creature_id)), func():
+			if chosen > 0: unified_preprint_draft.erase(creature_id)
+			elif unified_preprint_draft.size() < preprint_slots and chosen < available: unified_preprint_draft.append(creature_id)
+			render(), Color("4a9aae") if chosen > 0 else Color("718797"))
+		pick.custom_minimum_size = Vector2(0, 32); preprint_list.add_child(pick)
+	var save := _visual_button("SaveActiveDeck", "Save deck", func():
+		var saved := GameManager.save_unified_deck(unified_deck_draft, str(GameManager.profile.get("active_deck_id", "starter-deck")))
+		_toast("Deck saved." if saved else "Deck must be a legal 40-card owned deck.")
+		render(), Color("478e72"), true)
+	save.custom_minimum_size = Vector2(0, 40)
+	host.add_child(save)
+	var preprint := _visual_button("SavePrePrintLoadout", "Save pre-print", func():
+		var saved := GameManager.save_preprints_v3(unified_preprint_draft)
+		_toast("Pre-Print loadout saved." if saved else "Pre-Print loadout is not legal.")
+		render(), Color("558cad"))
+	preprint.custom_minimum_size = Vector2(0, 36)
+	host.add_child(preprint)
+
+func render_feedback_archive_book() -> void:
+	_feedback_backdrop(_workshop_overview_texture(), 0.52)
+	var surface := Control.new(); surface.name = "FeedbackArchiveSurface"; surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); add_child(surface)
+	_feedback_progress_instrument(surface, "Archive")
+	var portrait := is_portrait_layout()
+	var book := _visual_panel("ArchiveBookShell", Color("e3d4b6f5"), Color("8a6035"), 12)
+	book.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Portrait retains a real gutter for the attached filter tabs instead of
+	# allowing their accessible hit targets to intrude over the first card.
+	book.anchor_left = 0.235 if portrait else 0.14; book.anchor_top = 0.13; book.anchor_right = 0.765 if portrait else 0.70; book.anchor_bottom = 0.87 if portrait else 0.91
+	book.offset_left = 0; book.offset_top = 0; book.offset_right = 0; book.offset_bottom = 0; surface.add_child(book)
+	var book_body := VBoxContainer.new(); book_body.name = "ArchiveBookBody"; book_body.add_theme_constant_override("separation", 6); book.add_child(book_body)
+	book_body.add_theme_constant_override("margin_left", 5)
+	var tabs := HBoxContainer.new(); tabs.name = "ArchiveBookTabs"; tabs.add_theme_constant_override("separation", 6); book_body.add_child(tabs)
+	var back := _visual_button("UnifiedFoundryWorkshopReturn", "←", navigate_to.bind("workshop"), Color("78a6b2"))
+	back.custom_minimum_size = Vector2(44, 44); back.tooltip_text = "Return to Workshop"; back.accessibility_name = back.tooltip_text; tabs.add_child(back)
+	tabs.add_child(_visual_button("ArchiveCollectionTab", "Collection", navigate_to.bind("archive"), Color("3f94a8"), screen == "unified_library"))
+	tabs.add_child(_visual_button("ArchiveDeckTab", "Deck Builder", navigate_to.bind("deck"), Color("3f94a8"), screen == "unified_deck"))
+	var heading := label("BLUEPRINT ARCHIVE", 18, Color("372718")); heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; book_body.add_child(heading)
+	var cards := _feedback_archive_cards()
+	var grid := GridContainer.new(); grid.name = "ArchiveBookCardGrid"; grid.columns = 3; grid.size_flags_vertical = Control.SIZE_EXPAND_FILL; grid.add_theme_constant_override("h_separation", 6); grid.add_theme_constant_override("v_separation", 6); book_body.add_child(grid)
+	var page_cards := cards.slice(unified_page * 9, mini(cards.size(), unified_page * 9 + 9))
+	for definition in page_cards:
+		var card_def: Dictionary = definition
+		grid.add_child(_archive_blueprint_card(card_def))
+	_feedback_book_pager(book_body, cards.size())
+	var filters := VBoxContainer.new(); filters.name = "ArchiveBookFilters"; filters.add_theme_constant_override("separation", 8)
+	filters.set_anchors_preset(Control.PRESET_LEFT_WIDE); filters.anchor_left = 0.012; filters.anchor_top = 0.28; filters.anchor_right = 0.145 if portrait else 0.125; filters.anchor_bottom = 0.69; filters.offset_left = 0; filters.offset_top = 0; filters.offset_right = 0; filters.offset_bottom = 0; surface.add_child(filters)
+	for filter in [["all", "All", "ArchiveFilterAll"], ["creature", "Creatures", "ArchiveFilterCreatures"], ["support", "Support", "ArchiveFilterSupport"]]:
+		var filter_id := str(filter[0]); var chip := _visual_button(str(filter[2]), str(filter[1]), set_archive_filter.bind(filter_id), Color("4a95a5"), unified_archive_filter == filter_id); chip.tooltip_text = "Show %s cards" % str(filter[1]).to_lower(); filters.add_child(chip)
+	var clipboard := _visual_panel("ArchiveDeckClipboard", Color("e0c89ff0"), Color("9b6a38"), 10)
+	clipboard.set_anchors_preset(Control.PRESET_FULL_RECT); clipboard.anchor_left = 0.785 if portrait else 0.73; clipboard.anchor_top = 0.24; clipboard.anchor_right = 0.985; clipboard.anchor_bottom = 0.78; clipboard.offset_left = 0; clipboard.offset_top = 0; clipboard.offset_right = 0; clipboard.offset_bottom = 0; surface.add_child(clipboard)
+	var clip_body := VBoxContainer.new(); clip_body.add_theme_constant_override("separation", 8); clipboard.add_child(clip_body)
+	if screen == "unified_library":
+		_feedback_collection_clipboard(clip_body, cards)
+	else:
+		_feedback_deck_clipboard(clip_body)
+	_visual_toast(surface)
+	_render_unified_inspector()
+	# Pack receipts can route straight to Collection.  The image-led Archive is
+	# its own render path, so retain the same exactly-once reveal layer used by
+	# the regular Foundry shell.
+	_render_unified_pack_reveal()
+
+func _owned_card_total() -> int:
+	var total := 0
+	for count in GameManager.profile.get("owned_cards", {}).values(): total += int(count)
+	return total
+
+func _deck_creature_count() -> int:
+	var total := 0
+	for card_id in unified_deck_draft:
+		if str(UNIFIED_RULES.card(str(card_id)).get("type", "")) == "creature": total += 1
+	return total
+
 func render() -> void:
 	_audio_director.configure(settings(), printer_capture_freeze or workshop_ambient_capture_freeze)
 	_audio_director.route("battle" if screen == "unified_battle" else ("forge" if screen == "printer" else "workshop"))
 	_detach_persistent_screen_components()
 	clear_children(self)
+	# These review routes are deliberately image-led compositions rather than
+	# descendants of the legacy framed/scrolled shell. Main still owns every
+	# state transition and action; the presentation simply has room to breathe.
+	if not GameManager.is_save_read_only() and screen == "workshop" and workshop_view == "overview" and str(GameManager.profile.get("onboarding", {}).get("state", "")) == "complete":
+		render_feedback_workshop()
+		_finish_visual_route()
+		return
+	if not GameManager.is_save_read_only() and screen == "printer" and not printer_is_armor:
+		render_feedback_printer()
+		_finish_visual_route()
+		return
+	if not GameManager.is_save_read_only() and screen in ["unified_library", "unified_deck"]:
+		render_feedback_archive_book()
+		_finish_visual_route()
+		return
 	var backdrop := TextureRect.new()
 	backdrop.texture = REFERENCE_TEXTURE
 	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -575,6 +1068,17 @@ func _detach_persistent_screen_components() -> void:
 	_workshop_screen_component.detach()
 
 func focus_first_button() -> void:
+	# A full-screen inspector must never hand keyboard/controller focus back to
+	# obscured route controls while it is visible.  Its Close button is the first
+	# deterministic target, then normal route traversal resumes.
+	for modal_name in ["UnifiedPackReveal", "StarterCardInspector", "UnifiedCardInspector"]:
+		var modal := find_child(modal_name, true, false) as Control
+		if modal != null and modal.is_visible_in_tree():
+			for node in modal.find_children("*", "Button", true, false):
+				var modal_button := node as Button
+				if modal_button != null and modal_button.is_visible_in_tree() and not modal_button.disabled:
+					modal_button.grab_focus()
+					return
 	for node in find_children("*", "Button", true, false):
 		var button := node as Button
 		if button and button.is_visible_in_tree() and button.disabled == false:
@@ -596,6 +1100,9 @@ func _shows_workshop_hud() -> bool:
 	# The shared progression strip belongs to every finished/non-battle surface.
 	# Keep the initial blueprint ceremony intentionally uncluttered; the selected
 	# starter's Forge screen immediately regains this HUD after selection.
+	# Compatibility recovery is deliberately explicit even for a future profile
+	# that happens to resemble a fresh onboarding save.
+	if GameManager.is_save_read_only(): return true
 	return screen != "unified_battle" and screen != "onboarding" and str(GameManager.profile.get("onboarding", {}).get("state", "choose_starter")) != "choose_starter"
 
 func render_header(root: VBoxContainer) -> void:
@@ -645,29 +1152,22 @@ func _compact_pager_label(text_value: String) -> Label:
 	return value
 
 func render_onboarding_fullscreen(host: Container) -> void:
-	var intro := make_panel(Color("182d49ed"), Color("f1be69")); host.add_child(intro.get_parent())
-	intro.name = "StarterBlueprintCeremony"
-	intro.add_child(label("Choose your first blueprint", 25, Color("ffd36c")))
-	intro.add_child(label("Inspect a schematic, then select one pattern for a free first print.", 14, Color("e1eef9")))
+	var ceremony := VBoxContainer.new(); ceremony.name = "StarterBlueprintCeremony"; ceremony.size_flags_horizontal = Control.SIZE_EXPAND_FILL; ceremony.add_theme_constant_override("separation", 12); host.add_child(ceremony)
+	var title := label("CHOOSE A STARTER BLUEPRINT", 25, Color("fff0bb")); title.name = "StarterBlueprintTitle"; title.custom_minimum_size = Vector2(0, 34); title.size_flags_horizontal = Control.SIZE_EXPAND_FILL; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(title)
+	var subtitle := label("Three Forge patterns are ready. Select one to load its free first print.", 13, Color("d7f6ff")); subtitle.name = "StarterBlueprintSubtitle"; subtitle.custom_minimum_size = Vector2(0, 22); subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL; subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(subtitle)
+	var cards := GridContainer.new(); cards.name = "StarterChoiceGrid"; cards.columns = 2 if is_portrait_layout() else 3; cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL; cards.add_theme_constant_override("h_separation", 12); cards.add_theme_constant_override("v_separation", 12)
+	if is_portrait_layout(): ceremony.add_child(cards)
+	else:
+		var centered_row := CenterContainer.new(); centered_row.name = "StarterLandscapeCenterRow"; centered_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL; centered_row.custom_minimum_size = Vector2(0, 338); ceremony.add_child(centered_row)
+		cards.custom_minimum_size = Vector2(1140, 0); centered_row.add_child(cards)
 	var choices := UNIFIED_RULES.STARTER_IDS
-	var visible: Array = choices if not is_portrait_layout() else [choices[clampi(starter_page, 0, choices.size() - 1)]]
-	var cards := GridContainer.new(); cards.name = "StarterChoiceGrid"; cards.columns = 3 if not is_portrait_layout() else 1; cards.add_theme_constant_override("h_separation", 14); host.add_child(cards)
-	for starter_id in visible:
-		var creature := Catalog.creature(str(starter_id)); var element_color := Color(ELEMENT_COLORS.get(str(creature.element), "9beaff"))
-		var card := make_panel(Color("15263fe8"), element_color if pending_starter_id == starter_id else Color("5e7f9b")); cards.add_child(card.get_parent())
-		var portrait := TextureRect.new(); portrait.name = "StarterBlueprintSchematic"; portrait.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D; portrait.custom_minimum_size = Vector2(190, 150 if not is_portrait_layout() else 210); portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; card.add_child(portrait)
-		card.add_child(label("SCHEMATIC · PRINT UNASSEMBLED", 12, Color("9beaff")))
-		card.add_child(label(str(creature.name), 23, element_color)); card.add_child(label("%s · %d HP · %d ATK" % [creature.element, int(creature.hp), int(creature.attack)], 14, Color("dbe9f6")))
-		card.add_child(make_button("Selected" if pending_starter_id == starter_id else "View card", show_starter_inspector.bind(str(starter_id)), element_color.darkened(0.35)))
-	if is_portrait_layout():
-		var pager := HBoxContainer.new(); pager.name = "StarterPager"; pager.alignment = BoxContainer.ALIGNMENT_CENTER; pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER; host.add_child(pager)
-		var prev := make_button("‹", func(): starter_page = posmod(starter_page - 1, choices.size()); render(), Color("536c8d")); prev.custom_minimum_size = Vector2(48, 44); prev.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; prev.size_flags_vertical = Control.SIZE_SHRINK_CENTER; pager.add_child(prev)
-		pager.add_child(_compact_pager_label("%d / %d" % [starter_page + 1, choices.size()]))
-		var next := make_button("›", func(): starter_page = posmod(starter_page + 1, choices.size()); render(), Color("536c8d")); next.custom_minimum_size = Vector2(48, 44); next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; next.size_flags_vertical = Control.SIZE_SHRINK_CENTER; pager.add_child(next)
-	var confirmation := make_panel(Color("352719ed"), Color("f1be69")); host.add_child(confirmation.get_parent())
-	confirmation.add_child(label("Blueprint choice", 18, Color("fff0a1")))
-	if pending_starter_id.is_empty(): confirmation.add_child(label("Choose a card to enable its Forge blueprint.", 14, Color("c6d7e8")))
-	else: confirmation.add_child(make_button("Forge %s blueprint" % Catalog.creature(pending_starter_id).name, confirm_starter, Color("a86b2e")))
+	for index in choices.size():
+		if is_portrait_layout() and index == 2:
+			var centered := CenterContainer.new(); centered.name = "StarterThirdBlueprintCenter"; centered.size_flags_horizontal = Control.SIZE_EXPAND_FILL; centered.custom_minimum_size = Vector2(0, 250); ceremony.add_child(centered)
+			var third := _starter_schematic_card(str(choices[index])); third.custom_minimum_size.x = maxf(250, size.x * 0.58); centered.add_child(third)
+		else:
+			cards.add_child(_starter_schematic_card(str(choices[index])))
+	var hint := label("Blueprints are unassembled patterns. Your selected pattern loads directly into the Forge.", 12, Color("9edeea")); hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(hint)
 	if not starter_inspector_id.is_empty(): render_starter_inspector()
 
 func render_onboarding() -> void:
@@ -719,29 +1219,42 @@ func render_starter_inspector() -> void:
 	modal.color = Color("07111bf0")
 	modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal.mouse_filter = Control.MOUSE_FILTER_STOP
+	modal.focus_mode = Control.FOCUS_ALL
+	modal.accessibility_name = "Starter blueprint inspector"
 	add_child(modal)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal.add_child(center)
 	var shell := PanelContainer.new()
 	shell.custom_minimum_size = Vector2(minf(760, size.x - 28), minf(640, size.y - 28))
+	shell.focus_mode = Control.FOCUS_ALL
+	shell.accessibility_name = "Starter blueprint inspector content"
 	shell.add_theme_stylebox_override("panel", panel_style(Color("102940f8"), Color(ELEMENT_COLORS.get(str(creature.element), "9beaff"))))
 	center.add_child(shell)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
 	shell.add_child(content)
+	var art_frame := Control.new()
+	art_frame.custom_minimum_size = Vector2(300, 300 if is_portrait_layout() else 260)
+	content.add_child(art_frame)
 	var art := TextureRect.new()
 	art.name = "StarterInspectorBlueprintSchematic"
 	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
-	art.custom_minimum_size = Vector2(300, 300 if is_portrait_layout() else 260)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	content.add_child(art)
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_apply_blueprint_ink(art)
+	art_frame.add_child(art)
+	var drafting := BLUEPRINT_SCHEMATIC_OVERLAY.new(); drafting.name = "StarterInspectorDraftGrid"; drafting.configure(Color("72ecff"), 0.9); drafting.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); drafting.mouse_filter = Control.MOUSE_FILTER_IGNORE; art_frame.add_child(drafting)
 	content.add_child(label(str(creature.name), 27, Color(ELEMENT_COLORS.get(str(creature.element), "9beaff"))))
 	content.add_child(label("Blueprint schematic · %s · %s" % [str(creature.element), str(Catalog.rarity(str(creature.rarity)).name)], 15, Color("dce8f4")))
 	content.add_child(label("HP %d · Bend %d\n%s" % [int(creature.hp), int(creature.bend), str(creature.ability)], 17, Color("fff9df")))
 	content.add_child(make_button("Select this blueprint", func(): pending_starter_id = starter_inspector_id; starter_inspector_id = ""; render(), Color("a86b2e")))
-	content.add_child(make_button("Close", func(): starter_inspector_id = ""; render(), Color("536c8d")))
+	var close := make_button("Close", func(): starter_inspector_id = ""; render(), Color("536c8d"))
+	content.add_child(close)
+	# A modal-owned, actionable first focus avoids trapping keyboard/controller
+	# users on a button hidden behind this full-screen overlay.
+	call_deferred("_deferred_focus_if_ready", close.get_instance_id())
 
 func confirm_starter() -> void:
 	if not OnboardingState.can_confirm(GameManager.profile, pending_starter_id):
@@ -795,7 +1308,7 @@ func _workshop_overview_hotspots() -> Array:
 	# pictured physical object, so the overview goes straight to its destination.
 	if is_portrait_layout():
 		return [
-			{"id":"printer", "name":"Workshop Model Forge", "description":"Review owned blueprints and print collection models.", "target":"unified_forgedex", "rect":Rect2(0.03, 0.45, 0.30, 0.15)},
+			{"id":"printer", "name":"Workshop Model Forge", "description":"Review owned blueprints and print collection models.", "target":"printer", "rect":Rect2(0.03, 0.45, 0.30, 0.15)},
 			{"id":"collection", "name":"Printer Drawers", "description":"Review owned blueprints and printed models.", "target":"unified_forgedex", "rect":Rect2(0.06, 0.60, 0.28, 0.18)},
 			{"id":"team", "name":"Pre-Print Board", "description":"Set a v3 deck and creature Pre-Print loadout.", "target":"unified_deck", "rect":Rect2(0.18, 0.10, 0.43, 0.13)},
 			{"id":"armor", "name":"Equipment Cards", "description":"Browse battle full suits, combat gems, and the Filament Ring.", "target":"unified_library", "rect":Rect2(0.62, 0.10, 0.16, 0.20)},
@@ -807,7 +1320,7 @@ func _workshop_overview_hotspots() -> Array:
 			{"id":"upgrade_forge", "name":"Upgrade Forge", "description":"Browse permanent Workshop upgrades and Upgrade Cards.", "target":"calibration", "rect":Rect2(0.29, 0.53, 0.07, 0.07)}
 		]
 	return [
-			{"id":"printer", "name":"Workshop Model Forge", "description":"Review owned blueprints and print collection models.", "target":"unified_forgedex", "rect":Rect2(0.07, 0.43, 0.20, 0.27)},
+		{"id":"printer", "name":"Workshop Model Forge", "description":"Review owned blueprints and print collection models.", "target":"printer", "rect":Rect2(0.07, 0.43, 0.20, 0.27)},
 			{"id":"collection", "name":"Printer Drawers", "description":"Review owned blueprints and printed models.", "target":"unified_forgedex", "rect":Rect2(0.22, 0.66, 0.12, 0.24)},
 			{"id":"team", "name":"Pre-Print Board", "description":"Set a v3 deck and creature Pre-Print loadout.", "target":"unified_deck", "rect":Rect2(0.32, 0.08, 0.25, 0.16)},
 			{"id":"armor", "name":"Equipment Cards", "description":"Browse battle full suits, combat gems, and the Filament Ring.", "target":"unified_library", "rect":Rect2(0.58, 0.08, 0.13, 0.20)},
@@ -1038,7 +1551,8 @@ func _add_workshop_pan_affordance(map: Control, art_plane: Control) -> void:
 
 func _workshop_overview_hotspot_node_suffix(hotspot_id: String) -> String:
 	var suffixes := {"battle_arena":"BattleArena", "card_archive":"CardArchive"}
-	return str(suffixes.get(hotspot_id, hotspot_id.capitalize()))
+	if suffixes.has(hotspot_id): return str(suffixes[hotspot_id])
+	return hotspot_id.replace("_", " ").capitalize().replace(" ", "")
 
 func _workshop_overview_hotspot_button(hotspot: Dictionary) -> Button:
 	var rect: Rect2 = hotspot.rect
@@ -1057,9 +1571,12 @@ func _workshop_overview_hotspot_button(hotspot: Dictionary) -> Button:
 	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
 	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
 	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
-	# Overview targets deliberately have no visual hover/focus treatment: their
-	# pictured prop is the affordance, while tooltip, focus, and cursor retain
-	# discoverability without drawing a box over the v6 art.
+	# A restrained bracket halo makes each pictured prop discoverable without
+	# turning the room into a dashboard of generic button plaques.
+	_add_workshop_hotspot_overlay(button, Color("6defff"))
+	button.gui_input.connect(func(event: InputEvent):
+		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
+			_focus_after_render = true)
 	button.pressed.connect(activate_workshop_overview_hotspot.bind(str(hotspot.id)))
 	return button
 
@@ -1793,7 +2310,10 @@ func _refresh_printer_presentation() -> void:
 	if forge_component != null:
 		forge_component.refresh(printer_creature_id, bool(settings().get("reduced_motion", false)), bool(settings().get("high_contrast", false)), printer_sequence.phase, printer_sequence.progress_bps, printer_sequence.phase_progress_bps(), printer_presentation_seconds, 540 if size.y > size.x else 330, printer_armor_id if printer_is_armor else "", printer_armor_id if printer_is_core else "")
 	if is_instance_valid(printer_progress_label):
-		printer_progress_label.text = _printer_progress_text()
+		var percent := printer_sequence.layer_reveal_bps() / 100
+		printer_progress_label.text = "LAYER PROGRESS %d%%" % percent
+	if is_instance_valid(printer_progress_bar):
+		printer_progress_bar.value = printer_sequence.layer_reveal_bps() / 100
 
 func begin_printer() -> void:
 	if printer_sequence == null or not printer_sequence.begin(): return
@@ -2494,9 +3014,9 @@ func _render_unified_inspector() -> void:
 	if unified_inspector_id.is_empty(): return
 	var card := UNIFIED_RULES.card(unified_inspector_id)
 	if card.is_empty(): return
-	var modal := ColorRect.new(); modal.name = "UnifiedCardInspector"; modal.color = Color("07111bf0"); modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); modal.mouse_filter = Control.MOUSE_FILTER_STOP; add_child(modal)
+	var modal := ColorRect.new(); modal.name = "UnifiedCardInspector"; modal.color = Color("07111bf0"); modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); modal.mouse_filter = Control.MOUSE_FILTER_STOP; modal.focus_mode = Control.FOCUS_ALL; modal.accessibility_name = "Card inspector"; add_child(modal)
 	var center := CenterContainer.new(); center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); modal.add_child(center)
-	var shell := PanelContainer.new(); shell.custom_minimum_size = Vector2(minf(760, size.x - 28), minf(620, size.y - 28)); shell.add_theme_stylebox_override("panel", panel_style(Color("102940f8"), Color("8deaff"))); center.add_child(shell)
+	var shell := PanelContainer.new(); shell.custom_minimum_size = Vector2(minf(760, size.x - 28), minf(620, size.y - 28)); shell.focus_mode = Control.FOCUS_ALL; shell.accessibility_name = "Card inspector content"; shell.add_theme_stylebox_override("panel", panel_style(Color("102940f8"), Color("8deaff"))); center.add_child(shell)
 	var content := VBoxContainer.new(); content.add_theme_constant_override("separation", 10); shell.add_child(content)
 	content.add_child(label(str(card.get("name", unified_inspector_id)), 26, Color("ffd36c")))
 	var thumbnail := _unified_card_thumbnail(card)
@@ -2508,8 +3028,13 @@ func _render_unified_inspector() -> void:
 	if unified_inspector_tab == "card":
 		content.add_child(label("Card · %s · %s · %d filament" % [str(card.get("type", "card")).capitalize(), str(card.get("rarity", "common")).capitalize(), int(card.get("cost", 0))], 16, Color("e6dfd0")))
 	elif unified_inspector_tab == "stats":
-		content.add_child(label("HP %d · Attack %d · Print %d" % [int(card.get("hp", 0)), int(card.get("attack", 0)), int(card.get("print_ticks", 0))], 16, Color("fff0a1")))
-	content.add_child(make_button("Close", func(): unified_inspector_id = ""; render(), Color("536c8d")))
+		if str(card.get("type", "")) == "creature":
+			content.add_child(label("HP %d · BEND %d · PRINT %d" % [int(card.get("hp", 0)), int(card.get("bend", 0)), int(card.get("print_ticks", 0))], 16, Color("fff0a1")))
+		else:
+			content.add_child(label("Cost %d filament · %s" % [int(card.get("cost", 0)), str(card.get("effect", card.get("type", "Support"))).replace("_", " ").capitalize()], 16, Color("fff0a1")))
+	var close := make_button("Close", func(): unified_inspector_id = ""; render(), Color("536c8d"))
+	content.add_child(close)
+	call_deferred("_deferred_focus_if_ready", close.get_instance_id())
 
 func _render_unified_forgedex_page(host: Container) -> void:
 	var creatures: Array = []

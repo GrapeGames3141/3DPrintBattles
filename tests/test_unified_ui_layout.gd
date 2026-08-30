@@ -299,35 +299,110 @@ func _exercise(viewport: Vector2) -> void:
 	main.screen = "onboarding"
 	main.render()
 	await get_tree().process_frame
-	require(main.find_child("StarterBlueprintSchematic", true, false) != null and main.find_child("WorkshopHud", true, false) == null, "Starter ceremony renders blueprint-only art without a post-selection HUD at %s." % viewport)
+	var starter_schematics := main.find_children("StarterBlueprintSchematic", "TextureRect", true, false)
+	require(starter_schematics.size() == 3 and starter_schematics.all(func(schematic): return (schematic as TextureRect).material != null) and main.find_child("StarterPager", true, false) == null and main.find_child("StarterBlueprintTitle", true, false) != null and main.find_child("WorkshopHud", true, false) == null, "Starter ceremony renders all three cyan technical blueprint cards without a pager or post-selection HUD at %s." % viewport)
+	var starter_inspect := main.find_child("StarterInspectCinderpaw", true, false) as Button
+	require(starter_inspect != null and starter_inspect.focus_mode != Control.FOCUS_NONE and starter_inspect.custom_minimum_size.y >= 44.0, "Starter schematic itself exposes a separate touch-safe Inspect action at %s." % viewport)
+	if starter_inspect != null:
+		starter_inspect.emit_signal("pressed")
+		await get_tree().process_frame
+		require(main.find_child("StarterCardInspector", true, false) != null and main.pending_starter_id.is_empty(), "Inspecting a starter opens its schematic without selecting it at %s." % viewport)
+		var inspect_select := _button_named(main, "Select this blueprint")
+		if inspect_select != null: inspect_select.emit_signal("pressed")
+		await get_tree().process_frame
+		require(main.find_child("StarterCardInspector", true, false) == null and main.pending_starter_id == "cinderpaw", "Starter inspector select closes the modal and updates the pending blueprint at %s." % viewport)
+		main.show_starter_inspector("cinderpaw")
+		await get_tree().process_frame
+		var starter_modal := main.find_child("StarterCardInspector", true, false) as Control
+		var starter_close := _button_named(main, "Close")
+		require(starter_modal != null and starter_close != null and starter_close.focus_mode != Control.FOCUS_NONE and starter_modal.is_ancestor_of(starter_close), "Starter inspector installs a modal-owned focus target instead of leaving interaction behind it at %s." % viewport)
+		var escape_event := InputEventKey.new(); escape_event.pressed = true; escape_event.keycode = KEY_ESCAPE
+		main._unhandled_key_input(escape_event)
+		await get_tree().process_frame
+		require(main.find_child("StarterCardInspector", true, false) == null and main.screen == "onboarding", "Escape closes the starter inspector before leaving its ceremony at %s." % viewport)
+		main.show_starter_inspector("cinderpaw")
+		await get_tree().process_frame
+		var inspect_close := _button_named(main, "Close")
+		if inspect_close != null: inspect_close.emit_signal("pressed")
+		await get_tree().process_frame
+		require(main.find_child("StarterCardInspector", true, false) == null and main.pending_starter_id == "cinderpaw", "Starter inspector close preserves the pending selection at %s." % viewport)
 	GameManager.profile = _legal_profile()
 	main.screen = "workshop"
 	main.workshop_view = "overview"
 	main.render()
 	await get_tree().process_frame
-	var workshop_progress := main.find_child("WorkshopHudProgress", true, false) as Label
-	require(workshop_progress != null and _within_viewport(workshop_progress, viewport) and "Spool Level" in workshop_progress.text and "Forge Coins" in workshop_progress.text, "Workshop overview exposes the explicit shared progress HUD inside the viewport at %s." % viewport)
+	var workshop_progress := main.find_child("WorkshopHudProgress", true, false) as ProgressBar
+	require(main.find_child("WorkshopProgressInstrument", true, false) != null and workshop_progress != null and _within_viewport(workshop_progress, viewport) and "Spool Level" in workshop_progress.tooltip_text, "Workshop overview exposes the compact real XP instrument inside the viewport at %s." % viewport)
 	main.screen = "unified_library"
 	main.render()
 	await get_tree().process_frame
-	require(main.find_child("WorkshopHud", true, false) != null and main.find_child("FoundryHudProgress", true, false) == null and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveBookTabs", true, false) != null and main.find_child("ArchiveBookFilters", true, false) != null and main.find_child("ArchiveFilterAll", true, false) != null and main.find_child("ArchiveFilterCreatures", true, false) != null and main.find_child("ArchiveFilterSupport", true, false) != null, "Collection has exactly one shared progress HUD and responsive archive filters at %s." % viewport)
+	await get_tree().process_frame
+	var archive_progress := main.find_child("ArchiveHudProgress", true, false) as ProgressBar
+	var archive_filters := main.find_child("ArchiveBookFilters", true, false) as Control
+	var archive_first_card := main.find_child("ArchiveBlueprintCardCinderpaw", true, false) as Control
+	var archive_creature_art := main.find_child("ArchiveBlueprintSchematicArt", true, false) as TextureRect
+	require(main.find_child("WorkshopHud", true, false) == null and main.find_child("FoundryHudProgress", true, false) == null and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveBookTabs", true, false) != null and archive_filters != null and main.find_child("ArchiveFilterAll", true, false) != null and main.find_child("ArchiveFilterCreatures", true, false) != null and main.find_child("ArchiveFilterSupport", true, false) != null and main.find_child("ArchiveBookCardGrid", true, false) != null and archive_progress != null and _within_viewport(archive_progress, viewport) and archive_first_card != null and _within_viewport(archive_first_card, viewport) and archive_creature_art != null and archive_creature_art.material != null and (viewport.y <= viewport.x or archive_filters.get_global_rect().end.x <= archive_first_card.get_global_rect().position.x), "Collection uses visible native blueprint cards, a compact HUD, attached filters, and no legacy framed HUD at %s." % viewport)
 	main.set_archive_filter("support")
 	await get_tree().process_frame
 	require(main.unified_archive_filter == "support" and main.unified_page == 0, "Archive filters reset pagination at %s." % viewport)
+	main.set_archive_filter("all")
+	await get_tree().process_frame
+	archive_first_card = main.find_child("ArchiveBlueprintCardCinderpaw", true, false) as Button
+	if archive_first_card != null:
+		archive_first_card.emit_signal("pressed")
+		await get_tree().process_frame
+		var archive_modal := main.find_child("UnifiedCardInspector", true, false) as Control
+		var archive_close := _button_named(main, "Close")
+		require(archive_modal != null and main.unified_inspector_tab == "card" and archive_close != null and archive_close.focus_mode != Control.FOCUS_NONE and archive_modal.is_ancestor_of(archive_close), "Collection card opens the card-tab inspector with a modal-owned focus target at %s." % viewport)
+		var archive_escape := InputEventKey.new(); archive_escape.pressed = true; archive_escape.keycode = KEY_ESCAPE
+		main._unhandled_key_input(archive_escape)
+		await get_tree().process_frame
+		require(main.find_child("UnifiedCardInspector", true, false) == null and main.screen == "unified_library", "Escape closes the archive inspector before leaving Collection at %s." % viewport)
 	main.screen = "unified_deck"
 	main.render()
 	await get_tree().process_frame
-	require(main.find_child("ArchiveBookShell", true, false) != null and main.find_child("V3DeckSlots", true, false) != null, "Deck Builder keeps fixed deck slots inside the archive-book route at %s." % viewport)
+	require(main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveDeckClipboard", true, false) != null and main.find_child("ArchiveDeckSlots", true, false) != null and main.find_child("SaveActiveDeck", true, false) != null, "Deck Builder keeps real deck controls inside the archive-book clipboard at %s." % viewport)
 	GameManager.profile = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
 	main.open_printer("cinderpaw")
 	await get_tree().process_frame
-	require(main.find_child("PrinterBlueprintSchematicArt", true, false) != null and main.find_child("PrinterBlueprintIdleArt", true, false) == null, "Starter-selected Forge cartridges use unassembled schematic art only at %s." % viewport)
+	var starter_stage := main.find_child("ArcaneForgeStage", true, false) as Control
+	var starter_facts := main.find_child("PrinterSelectionFacts", true, false) as Control
+	var starter_begin := main.find_child("BeginCreaturePrint", true, false) as Control
+	var starter_back := main.find_child("ArcaneForgeBack", true, false) as Control
+	var starter_fact_rect := starter_facts.get_global_rect() if starter_facts != null else Rect2()
+	var starter_begin_rect := starter_begin.get_global_rect() if starter_begin != null else Rect2()
+	var starter_back_rect := starter_back.get_global_rect() if starter_back != null else Rect2()
+	require(main.find_child("FeedbackForgeStage", true, false) != null and starter_stage != null and str(starter_stage.get("phase")) == ArcaneForgeSequence.IDLE and starter_facts != null and main.find_child("PrinterBlueprintSelector", true, false) == null and main.find_child("PrinterBlueprintSchematicArt", true, false) == null and main.find_child("PrinterBlueprintIdleArt", true, false) == null and starter_begin != null and starter_back != null and _within_viewport(starter_begin, viewport) and _within_viewport(starter_back, viewport) and not starter_fact_rect.intersects(starter_begin_rect) and not starter_fact_rect.intersects(starter_back_rect) and not starter_begin_rect.intersects(starter_back_rect), "Starter-selected Forge keeps one large raw idle stage, fact strip, and separate image-led print/back rails without a duplicate selector at %s." % viewport)
+	main.printer_sequence.phase = ArcaneForgeSequence.PRINTING
+	main.printer_sequence.progress_bps = 6000
+	main.render()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var forge_heading := main.find_child("ForgeActiveHeading", true, false) as Control
+	var forge_coins := main.find_child("ForgeCoinBadge", true, false) as Control
+	var forge_progress := main.find_child("PrinterProgressBar", true, false) as ProgressBar
+	require(forge_heading != null and _within_viewport(forge_heading, viewport) and forge_coins != null and _within_viewport(forge_coins, viewport) and forge_progress != null and _within_viewport(forge_progress, viewport) and forge_progress.value > 0.0, "Active Forge keeps the bright top readout, real coin badge, and numeric layer progress in bounds at %s." % viewport)
+	# The image-led early returns must never bypass compatibility recovery.
+	var prior_profile := GameManager.profile.duplicate(true)
+	var prior_compatibility := GameManager.save_compatibility.duplicate(true)
+	GameManager.profile = RULES.new_profile()
+	GameManager.save_compatibility = {"compatible":false, "state":"future_schema", "message":"A newer build created this profile."}
+	main.screen = "workshop"
+	main.workshop_view = "overview"
+	main.render()
+	await get_tree().process_frame
+	require(main.find_child("ReadOnlyCompatibilityHeader", true, false) != null and main.find_child("WorkshopFullBleed", true, false) == null, "Read-only compatibility keeps Workshop on the recovery shell instead of entering the visual route at %s." % viewport)
+	GameManager.profile = prior_profile
+	GameManager.save_compatibility = prior_compatibility
 	main.queue_free()
 	await get_tree().process_frame
 	subviewport.queue_free()
 	await get_tree().process_frame
 
 func _ready() -> void:
+	var source := (MAIN.instantiate().get_script() as GDScript).source_code
+	var focus_source := source.substr(source.find("func focus_first_button"))
+	require(focus_source.find("StarterCardInspector") >= 0 and focus_source.find("StarterCardInspector") < focus_source.find("for node in find_children"), "Modal focus priority is evaluated before generic route traversal.")
 	_configure_isolated_save_paths()
 	for viewport in [Vector2(1280, 720), Vector2(576, 1024), Vector2(720, 1280)]:
 		await _exercise(viewport)

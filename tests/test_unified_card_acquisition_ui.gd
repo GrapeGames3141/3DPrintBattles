@@ -18,6 +18,15 @@ func _count_card_views(node: Node) -> int:
 	for child in node.get_children(): total += _count_card_views(child)
 	return total
 
+func _count_archive_cards(node: Node) -> int:
+	return node.find_children("ArchiveBlueprintCard*", "Button", true, false).size()
+
+func _tree_has_text(node: Node, fragment: String) -> bool:
+	if node is Label and fragment in (node as Label).text: return true
+	for child in node.get_children():
+		if _tree_has_text(child, fragment): return true
+	return false
+
 func _profile() -> Dictionary:
 	var profile := RULES.new_profile()
 	profile.forge_coins = 1200
@@ -54,11 +63,66 @@ func _ready() -> void:
 	main.screen = "unified_library"
 	main.render()
 	await get_tree().process_frame
-	require(_count_card_views(main) > 0 and main.find_child("ArchiveBookShell", true, false) != null, "Collection renders owned cards in the archive book")
+	require(_count_archive_cards(main) > 0 and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveBookCardGrid", true, false) != null, "Collection renders owned cards in the native archive book")
 	main.screen = "unified_deck"
 	main.render()
 	await get_tree().process_frame
-	require(_count_card_views(main) > 0 and main.find_child("ArchiveBookShell", true, false) != null, "Deck Builder renders owned cards in the archive book")
+	require(_count_archive_cards(main) > 0 and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveDeckClipboard", true, false) != null and main.find_child("SaveActiveDeck", true, false) is Button, "Deck Builder renders owned cards and real deck controls in the native archive book")
+
+	# The feedback Deck route must initialize from persisted state once, including
+	# a deliberately empty (or later cleared) pre-print array. It cannot use an
+	# empty Array as a proxy for first render or it can erase a valid loadout.
+	var varied_deck := GameManager.active_deck_cards()
+	var first_support := -1
+	var second_support := -1
+	for index in varied_deck.size():
+		if str(RULES.card(str(varied_deck[index])).get("type", "")) != "creature":
+			if first_support < 0: first_support = index
+			elif second_support < 0:
+				second_support = index
+				break
+	RULES.grant_card(GameManager.profile, "aquafin")
+	RULES.grant_card(GameManager.profile, "voltwig")
+	if first_support >= 0 and second_support >= 0:
+		var original_first := str(varied_deck[first_support])
+		var original_second := str(varied_deck[second_support])
+		var owned: Dictionary = GameManager.profile.get("owned_cards", {})
+		owned[original_first] = int(owned.get(original_first, 0)) - 1
+		owned[original_second] = int(owned.get(original_second, 0)) - 1
+		varied_deck[first_support] = "aquafin"
+		varied_deck[second_support] = "voltwig"
+		require(RULES.deck_reason(GameManager.profile, varied_deck).is_empty() and GameManager.save_unified_deck(varied_deck), "fixture saves a legal four-creature active deck for Deck Builder draft coverage")
+	GameManager.profile.preprints = ["cinderpaw"]
+	main.feedback_deck_draft_initialized = false
+	main.screen = "unified_deck"
+	main.render()
+	await get_tree().process_frame
+	require(main.unified_preprint_draft == ["cinderpaw"] and main.find_child("ArchivePrePrintVoltwig", true, false) is Button, "Deck Builder first entry loads a saved pre-print and exposes every active-draft creature, including the fourth unique creature")
+	main.unified_preprint_draft.clear()
+	main.render()
+	await get_tree().process_frame
+	var voltwig_pick := main.find_child("ArchivePrePrintVoltwig", true, false) as Button
+	require(main.unified_preprint_draft.is_empty() and voltwig_pick != null, "an intentionally cleared feedback pre-print draft is not silently reloaded on render")
+	if voltwig_pick != null:
+		voltwig_pick.pressed.emit()
+		await get_tree().process_frame
+		require("voltwig" in main.unified_preprint_draft, "the legal creature beyond the old three-entry clipboard slice remains selectable")
+
+	# The physical archive's inspector remains truthful to v3 cards: creatures
+	# have BEND rather than a retired Attack 0 placeholder, while support cards
+	# show their actual card data without creature zeroes.
+	main.screen = "unified_library"
+	main.unified_inspector_id = "cinderpaw"
+	main.unified_inspector_tab = "stats"
+	main.render()
+	await get_tree().process_frame
+	require(_tree_has_text(main, "BEND") and not _tree_has_text(main, "ATK 0"), "creature archive inspector reports real HP/BEND/print data rather than a nonexistent Attack 0")
+	var support_id := "raw_filament"
+	main.unified_inspector_id = support_id
+	main.unified_inspector_tab = "stats"
+	main.render()
+	await get_tree().process_frame
+	require(_tree_has_text(main, "Cost") and not _tree_has_text(main, "HP 0"), "support archive inspector reports truthful support fields without creature zeroes")
 
 	# Open the first entitlement through the UI. Every Keep action must immediately
 	# open the next one until all three exactly-once Basic rewards are exhausted.

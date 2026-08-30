@@ -305,6 +305,28 @@ func wait_for_stable_header() -> void:
 				return
 			await get_tree().process_frame
 			continue
+		if capture_mode in ["feedback_first_print", "feedback_mid_print"]:
+			var forge_stage := workshop.find_child("FeedbackForgeStage", true, false) as Control
+			if forge_stage != null and forge_stage.is_visible_in_tree() and forge_stage.get_global_rect().get_area() > 0.0:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
+		if capture_mode == "feedback_workshop":
+			var progress_instrument := workshop.find_child("WorkshopProgressInstrument", true, false) as Control
+			if progress_instrument != null and progress_instrument.is_visible_in_tree() and progress_instrument.get_global_rect().end.y <= get_viewport().get_visible_rect().size.y:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
+		if capture_mode in ["feedback_collection", "feedback_deck_builder"]:
+			var book := workshop.find_child("ArchiveBookShell", true, false) as Control
+			var archive_progress := workshop.find_child("ArchiveHudProgress", true, false) as Control
+			if book != null and archive_progress != null and book.is_visible_in_tree() and archive_progress.is_visible_in_tree() and book.get_global_rect().end.y <= get_viewport().get_visible_rect().size.y:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
 		if capture_mode == "unified_battle":
 			var battle_heading := workshop.find_child("UnifiedBattleHeading", true, false) as Control
 			if battle_heading and battle_heading.is_visible_in_tree() and battle_heading.get_global_rect().get_area() > 0.0 and battle_heading.get_global_rect().end.y <= get_viewport().get_visible_rect().end.y:
