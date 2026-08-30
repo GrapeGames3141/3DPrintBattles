@@ -38,7 +38,7 @@ func _ready() -> void:
 
 func _prepare_capture() -> void:
 	await get_tree().process_frame
-	GameManager.profile = fixture_profile() if capture_mode != "onboarding" else ProfileRules.new_profile()
+	GameManager.profile = fixture_profile() if capture_mode not in ["onboarding", "feedback_starter"] else ProfileRules.new_profile()
 	if capture_mode.begins_with("unified_"):
 		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
 		GameManager.profile.coins = 720
@@ -48,6 +48,14 @@ func _prepare_capture() -> void:
 			GameManager.profile = UNIFIED_RULES.buy_pack(GameManager.profile, "forge", PackedByteArray([1,2,3,4,5,6,7,8])).profile
 		if capture_mode == "unified_forgedex":
 			UNIFIED_RULES.grant_card(GameManager.profile, "mossmunk")
+	elif capture_mode.begins_with("feedback_"):
+		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
+		GameManager.profile.coins = 720
+		if capture_mode in ["feedback_first_print", "feedback_mid_print"]:
+			GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
+		if capture_mode in ["feedback_workshop", "feedback_collection", "feedback_deck_builder"]:
+			GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
+			GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
 		GameManager.profile = legacy_trial_profile()
 	if capture_mode in ["trials_teamlaunch", "trial_battle_teamlaunch"]:
@@ -126,6 +134,24 @@ func _prepare_capture() -> void:
 		workshop.screen = "unified_battle"
 	elif capture_mode == "unified_pack_reveal": workshop.screen = "unified_market"
 	elif capture_mode == "unified_forgedex": workshop.screen = "unified_forgedex"
+	elif capture_mode == "feedback_starter": workshop.screen = "onboarding"
+	elif capture_mode == "feedback_first_print":
+		workshop.screen = "printer"
+		workshop.printer_creature_id = "cinderpaw"
+		workshop.printer_blueprint_selected_id = "cinderpaw"
+		workshop.printer_price = 0
+		workshop.printer_sequence = ArcaneForgeSequence.create(false)
+	elif capture_mode == "feedback_mid_print":
+		workshop.screen = "printer"
+		workshop.printer_creature_id = "cinderpaw"
+		workshop.printer_blueprint_selected_id = "cinderpaw"
+		workshop.printer_price = 0
+		workshop.printer_sequence = ArcaneForgeSequence.create(false)
+		workshop.printer_sequence.begin()
+		workshop.printer_sequence.advance(4200)
+	elif capture_mode == "feedback_workshop": workshop.screen = "workshop"
+	elif capture_mode == "feedback_collection": workshop.screen = "unified_library"
+	elif capture_mode == "feedback_deck_builder": workshop.screen = "unified_deck"
 	elif capture_mode == "unified_library_inspector": workshop.screen = "unified_library"; workshop.unified_inspector_id = "cinderpaw"; workshop.unified_inspector_tab = "stats"
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	if capture_mode == "proving":
@@ -272,6 +298,13 @@ func wait_frames(count: int) -> void:
 func wait_for_stable_header() -> void:
 	# Avoid capturing before a resized window has completed its first container pass.
 	for _frame in 60:
+		if capture_mode == "feedback_starter":
+			var starter_grid := workshop.find_child("StarterChoiceGrid", true, false) as Control
+			if starter_grid != null and starter_grid.is_visible_in_tree() and starter_grid.get_global_rect().get_area() > 0.0:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
 		if capture_mode == "unified_battle":
 			var battle_heading := workshop.find_child("UnifiedBattleHeading", true, false) as Control
 			if battle_heading and battle_heading.is_visible_in_tree() and battle_heading.get_global_rect().get_area() > 0.0 and battle_heading.get_global_rect().end.y <= get_viewport().get_visible_rect().end.y:
@@ -280,12 +313,14 @@ func wait_for_stable_header() -> void:
 			await get_tree().process_frame
 			continue
 		var header := workshop.find_child("WorkshopHeader", true, false) as Control
+		var workshop_progress := workshop.find_child("WorkshopHudProgress", true, false) as Control
 		var bottom_safe := true
 		if capture_mode in ["art_gallery_page1", "art_gallery_page2"]:
 			var last_card := workshop.find_child("GalleryLastCard", true, false) as Control
 			bottom_safe = last_card != null and last_card.is_visible_in_tree() and last_card.get_global_rect().end.y <= get_viewport().get_visible_rect().end.y - 12.0
 		var header_top := 10.0 if get_viewport().size.y > get_viewport().size.x else 15.0
-		if header and header.is_visible_in_tree() and header.get_global_rect().position.y >= header_top and header.get_global_rect().size.y >= 80.0 and bottom_safe:
+		var progress_safe := capture_mode != "feedback_workshop" or (workshop_progress != null and workshop_progress.is_visible_in_tree() and workshop_progress.get_global_rect().position.y >= 0.0 and workshop_progress.get_global_rect().end.y <= get_viewport().get_visible_rect().size.y)
+		if header and header.is_visible_in_tree() and header.get_global_rect().position.y >= header_top and header.get_global_rect().size.y >= 48.0 and bottom_safe and progress_safe:
 			await wait_frames(6)
 			return
 		await get_tree().process_frame
@@ -308,7 +343,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in ["unified_library_inspector", "unified_battle", "unified_pack_reveal", "unified_forgedex"]: return mode
+			if mode in ["unified_library_inspector", "unified_battle", "unified_pack_reveal", "unified_forgedex", "feedback_starter", "feedback_first_print", "feedback_mid_print", "feedback_workshop", "feedback_collection", "feedback_deck_builder"]: return mode
 			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards", "unified_market", "unified_library", "unified_deck", "unified_upgrades"]: return mode
 	return "onboarding"
 

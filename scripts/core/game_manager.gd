@@ -86,6 +86,16 @@ func buy_card_pack(pack_id: String) -> Dictionary:
 	mutated("buy_card_pack", result.payload)
 	return result
 
+func claim_next_starter_pack() -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
+	var result := UNIFIED_RULES.claim_next_starter_pack(profile)
+	if not bool(result.get("ok", false)):
+		toast_requested.emit(str(result.get("error", "No starter pack available.")))
+		return result
+	profile = result.profile
+	mutated("starter_basic_pack", result.payload)
+	return result
+
 ## Local v3 commerce/reward facades. All use the same journaled mutation path;
 ## a hosted authority may later replace their clock/entropy provider.
 func market_snapshot(unix_time := 0, local_date_key := "") -> Dictionary:

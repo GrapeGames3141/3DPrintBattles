@@ -33,9 +33,33 @@ func _ready() -> void:
 	require(bool(review_floor.ok) and int(review_floor.profile.get("forge_coins", 0)) == REVIEW_RULES.REVIEW_COIN_FLOOR and not review_floor.profile.has("coins"), "review build floor applies to Forge Coins without restoring retired coins")
 	var selected := RULES.choose_starter(profile, "cinderpaw")
 	var printed := RULES.print_starter(selected.profile)
-	require(bool(selected.ok) and int(selected.profile.owned_cards.get("cinderpaw", 0)) == 0, "starter choice grants no extra card copies before the authored deck")
+	require(bool(selected.ok) and int(selected.profile.owned_cards.get("cinderpaw", 0)) == 1 and RULES.has_printable_blueprint(selected.profile, "cinderpaw"), "starter choice grants its first creature card and permanent printable blueprint")
 	require(bool(printed.ok) and printed.profile.decks[0].cards.size() == 40 and RULES.deck_reason(printed.profile, printed.profile.decks[0].cards).is_empty(), "starter is a legal 40-card owned deck")
 	var authored_starter := deck_cards(printed.profile, "starter-deck")
+	# v3.2 migrates both historical ownership directions without touching an
+	# existing deck or printed-model record. Creature dismantling keeps the license.
+	var bridge := RULES.ensure({"onboarding":{"state":"starter_selected","starter_id":"cinderpaw"},"owned_cards":{"aquafin":2},"owned_blueprints":{"voltwig":true},"decks":[{"id":"custom","cards":["aquafin"]}],"printed_models":{"old":{"blueprint_id":"aquafin"}}})
+	var bridge_reensured := RULES.ensure(bridge)
+	require(RULES.has_printable_blueprint(bridge, "aquafin") and int(bridge.owned_cards.get("voltwig", 0)) == 1 and bridge.decks[0].cards == ["aquafin"] and str(bridge.printed_models.old.blueprint_id) == "aquafin" and bridge_reensured == bridge, "two-way creature ownership migration is value-stable on a second ensure and preserves deck/model records")
+	var final_copy_profile := RULES.ensure({"onboarding":{"state":"starter_selected","starter_id":"cinderpaw"},"owned_cards":{"aquafin":1},"owned_blueprints":{"aquafin":true},"decks":[]})
+	var dismantled := RULES.dismantle_card(final_copy_profile, "aquafin", 1)
+	require(bool(dismantled.ok) and int(dismantled.profile.owned_cards.get("aquafin", 0)) == 0 and RULES.has_printable_blueprint(dismantled.profile, "aquafin"), "dismantling the final creature copy with no deck dependency keeps its permanent printable blueprint")
+	var aquafin_selected := RULES.choose_starter(RULES.new_profile(), "aquafin")
+	var aquafin_printed := RULES.print_starter(aquafin_selected.profile)
+	var aquafin_deck := deck_cards(aquafin_printed.profile, "starter-deck")
+	require(bool(aquafin_printed.ok) and aquafin_deck.count("aquafin") == 12 and aquafin_deck.count("mossmunk") == 8 and aquafin_deck.count("cinderpaw") == 0 and RULES.deck_reason(aquafin_printed.profile, aquafin_deck).is_empty(), "non-Cinder starter maps to twelve chosen copies and eight Mossmunk copies")
+	var legacy_complete := RULES.ensure({"onboarding":{"state":"complete","starter_id":"cinderpaw"},"owned_cards":{"cinderpaw":12,"mossmunk":8},"owned_blueprints":{"cinderpaw":true,"mossmunk":true},"decks":[{"id":"starter-deck","name":"Forge Deck","cards":authored_starter}]})
+	require(int(legacy_complete.starter_pack_rewards.entitled) == 0 and int(legacy_complete.starter_pack_rewards.opened) == 0, "completed legacy profiles receive no retroactive starter-pack entitlement")
+	var reward_profile: Dictionary = printed.profile.duplicate(true)
+	require(int(reward_profile.starter_pack_rewards.entitled) == 3 and int(reward_profile.starter_pack_rewards.opened) == 0 and bool(reward_profile.newcomer_claims.get("basic_pack", false)), "first print replaces the free Newcomer Basic pack with three starter rewards")
+	for reward_number in 3:
+		var starter_pack := RULES.claim_next_starter_pack(reward_profile, PackedByteArray([reward_number + 1, 9, 7]))
+		require(bool(starter_pack.ok) and int(starter_pack.payload.starter_opened) == reward_number + 1 and (starter_pack.payload.cards as Array).size() == 5 and int(starter_pack.profile.pack_pity.get("basic", 0)) == reward_number + 1 and str(starter_pack.profile.pending_pack_reveal.receipt) == "starter-basic-%d" % (reward_number + 1), "starter pack %d is a persisted normal five-card Basic reveal and advances normal pity" % (reward_number + 1))
+		var reloaded_reward := RULES.ensure(starter_pack.profile)
+		require(reloaded_reward.pending_pack_reveal == starter_pack.profile.pending_pack_reveal and reloaded_reward.owned_cards == starter_pack.profile.owned_cards and int(reloaded_reward.starter_pack_rewards.opened) == reward_number + 1, "starter pack %d survives reload without duplicate card ownership" % (reward_number + 1))
+		reward_profile = RULES.clear_pack_reveal(reloaded_reward).profile
+	var no_fourth := RULES.claim_next_starter_pack(reward_profile, PackedByteArray([4, 9, 7]))
+	require(not bool(no_fourth.ok) and int(reward_profile.starter_pack_rewards.opened) == 3, "starter rewards stop after exactly three exactly-once Basic packs")
 	var stale_starter: Dictionary = RULES.new_profile()
 	stale_starter.onboarding = {"state":"complete", "starter_id":"cinderpaw"}
 	stale_starter.owned_cards = {"cinderpaw":7, "raw_filament":1}
@@ -43,11 +67,11 @@ func _ready() -> void:
 	stale_starter.active_deck_id = "starter-deck"
 	var repaired_starter := RULES.ensure(stale_starter)
 	var repaired_cards := deck_cards(repaired_starter, "starter-deck")
-	var ownership_exact := int(repaired_starter.owned_cards.get("cinderpaw", 0)) == 7 and int(repaired_starter.owned_cards.get("raw_filament", 0)) == 4
+	var ownership_exact := int(repaired_starter.owned_cards.get("cinderpaw", 0)) == 12 and int(repaired_starter.owned_cards.get("raw_filament", 0)) == 4
 	for card_id in authored_starter:
 		if str(card_id) == "cinderpaw" or str(card_id) == "raw_filament": continue
 		ownership_exact = ownership_exact and int(repaired_starter.owned_cards.get(str(card_id), 0)) == authored_starter.count(card_id)
-	require(repaired_cards.size() == 40 and RULES.deck_reason(repaired_starter, repaired_cards).is_empty() and deck_count(repaired_starter, "starter-deck") == 1 and repaired_starter.decks.size() == 3 and ownership_exact, "a completed stale 15-card starter with pre-created empty slots repairs to the authored owned 40-card Forge Deck without deleting extras")
+	require(repaired_cards.size() == 40 and RULES.deck_reason(repaired_starter, repaired_cards).is_empty() and deck_count(repaired_starter, "starter-deck") == 1 and repaired_starter.decks.size() == 3 and ownership_exact, "a completed stale 15-card starter with pre-created empty slots repairs to the authored 40-card Forge Deck")
 	var repaired_again := RULES.ensure(repaired_starter)
 	require(repaired_again == repaired_starter and int(repaired_again.get("revision", -1)) == int(repaired_starter.get("revision", -2)), "starter repair is idempotent and does not change revisions or add duplicate ownership")
 	var custom_active: Dictionary = printed.profile.duplicate(true)
@@ -64,7 +88,7 @@ func _ready() -> void:
 	var starter_equipment: Array = []
 	for card_id in printed.profile.decks[0].cards:
 		if str(RULES.card(str(card_id)).get("type", "")) == "equipment": starter_equipment.append(card_id)
-	require(printed.profile.decks[0].cards.size() == 40 and starter_equipment == ["standard_full_suit","reinforced_full_suit","iron_gem","filament_ring"], "starter deck keeps the authored 20/6/6/4/2/2 composition with normalized equipment")
+	require(printed.profile.decks[0].cards.size() == 40 and printed.profile.decks[0].cards.count("cinderpaw") == 12 and printed.profile.decks[0].cards.count("mossmunk") == 8 and starter_equipment == ["standard_full_suit","reinforced_full_suit","iron_gem","filament_ring"], "new starter deck is 12 selected starter, 8 Mossmunk, and the established 20 non-creature cards")
 	var equipment_ids: Array = []; var equipment_slots: Array = []; var armor_values: Array = []
 	for definition in RULES.all_cards():
 		if str(definition.get("type", "")) == "equipment":
@@ -133,7 +157,7 @@ func _ready() -> void:
 	for offer in market.blueprints:
 		if not economy.owned_blueprints.has(str(offer.get("id", ""))): blueprint_id = str(offer.get("id", "")); break
 	var blueprint := RULES.buy_blueprint(economy, blueprint_id, 1724284800)
-	require(bool(blueprint.ok) and bool(blueprint.profile.owned_blueprints.get(blueprint_id, false)), "Blueprint Stall grants blueprint ownership separately from cards")
+	require(bool(blueprint.ok) and RULES.has_printable_blueprint(blueprint.profile, blueprint_id) and int(blueprint.profile.owned_cards.get(blueprint_id, 0)) == 1, "Blueprint Stall grants a printable creature blueprint and exactly one card")
 	var before_models: int = int((blueprint.profile.get("printed_models", {}) as Dictionary).size()); var workshop_print := RULES.print_workshop_model(blueprint.profile, blueprint_id, "workshop-model-receipt")
 	var workshop_repeat := RULES.print_workshop_model(workshop_print.profile, blueprint_id, "workshop-model-receipt")
 	require(bool(workshop_print.ok) and workshop_print.profile.printed_models.size() == before_models + 1 and int(workshop_print.payload.price) == int(RULES.WORKSHOP_PRINT_COSTS.get(str(RULES.card(blueprint_id).get("rarity", "common")), 20)) and bool(workshop_repeat.payload.duplicate) and int(workshop_print.profile.owned_cards.get(blueprint_id, 0)) == int(blueprint.profile.owned_cards.get(blueprint_id, 0)), "Workshop printing spends catalog cost, creates only a model record, and journals a receipt")

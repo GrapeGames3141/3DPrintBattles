@@ -25,7 +25,7 @@ const UNIFIED_BATTLE_RULES := preload("res://scripts/battle/unified_battle_rules
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_AI := preload("res://scripts/battle/unified_ai_opponent.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
-const REVIEW_BUILD_LABEL := "0.8.1-v3-card-art"
+const REVIEW_BUILD_LABEL := "0.8.2-feedback-pass"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -85,6 +85,7 @@ var unified_inspector_id := ""
 var unified_inspector_tab := "card"
 var unified_reveal_page := 0
 var unified_market_tab := "blueprints"
+var unified_archive_filter := "all"
 var body: VBoxContainer
 var status: Label
 var battle_mode := "training"
@@ -503,7 +504,7 @@ func render() -> void:
 	# rhythm preserves the explicit phase and return actions at 125% text.
 	root.add_theme_constant_override("separation", 6 if screen == "unified_battle" and not portrait else 12)
 	margin.add_child(root)
-	if screen != "unified_battle": render_header(root)
+	if _shows_workshop_hud(): render_header(root)
 	if GameManager.is_save_read_only():
 		render_save_recovery(root)
 		return
@@ -591,24 +592,31 @@ func render_save_recovery(root: VBoxContainer) -> void:
 	panel.add_child(label("Install the newer build that created this save, or copy the profile and backup files before trying an older build. This session has not changed your local save.", 15, Color("dce8f4")))
 	panel.add_child(label("No workshop, battle, or purchase actions are available while compatibility is blocked.", 14, Color("b9d3e8")))
 
+func _shows_workshop_hud() -> bool:
+	# The shared progression strip belongs to every finished/non-battle surface.
+	# Keep the initial blueprint ceremony intentionally uncluttered; the selected
+	# starter's Forge screen immediately regains this HUD after selection.
+	return screen != "unified_battle" and screen != "onboarding" and str(GameManager.profile.get("onboarding", {}).get("state", "choose_starter")) != "choose_starter"
+
 func render_header(root: VBoxContainer) -> void:
 	var header_box := PanelContainer.new()
 	header_box.name = "WorkshopHeader"
 	var portrait := size.y > size.x
-	header_box.custom_minimum_size = Vector2(0, 126 if portrait else 90)
+	header_box.custom_minimum_size = Vector2(0, 76 if portrait else 60)
 	header_box.add_theme_stylebox_override("panel", panel_style(Color("25211be8"), Color("c39450")))
 	root.add_child(header_box)
-	var header: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 100 if portrait else 64)
+	var header := HBoxContainer.new()
+	header.name = "WorkshopHud"
+	header.custom_minimum_size = Vector2(0, 48)
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_theme_constant_override("separation", 16)
+	header.add_theme_constant_override("separation", 10)
 	header_box.add_child(header)
 	var titles := VBoxContainer.new()
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	titles.custom_minimum_size = Vector2(0 if portrait else 560, 58)
+	titles.custom_minimum_size = Vector2(140 if portrait else 160, 48)
 	header.add_child(titles)
-	titles.add_child(label("Makers Guild Workshop", 25, Color("ffd36c")))
-	titles.add_child(label("Forge console · blueprints · battle prep", 14, Color("9beaff")))
+	titles.add_child(label("PRINTFORGE", 21, Color("ffd36c")))
+	titles.add_child(label("Workshop", 13, Color("9beaff")))
 	if GameManager.is_save_read_only():
 		var compatibility := label("READ-ONLY COMPATIBILITY MODE\nSave schema is newer than this build", 15, Color("ffcfbf"))
 		compatibility.name = "ReadOnlyCompatibilityHeader"
@@ -617,20 +625,15 @@ func render_header(root: VBoxContainer) -> void:
 		compatibility.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
 		compatibility.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		header.add_child(compatibility)
-	elif GameManager.has_selected_starter():
-		var account := label("Forge Coins  %d\nSpool Level  %d / 100" % [int(GameManager.profile.get("forge_coins", 0)), int(GameManager.profile.get("spool_level", 1))], 16, Color("d6f7ff"))
-		account.custom_minimum_size = Vector2(0 if portrait else 190, 40 if portrait else 58)
+	else:
+		var level := int(GameManager.profile.get("spool_level", 1))
+		var account := label("Spool Level %d · XP %d / %d · %d Forge Coins" % [level, int(GameManager.profile.get("spool_xp", 0)), level * 100, int(GameManager.profile.get("forge_coins", 0))], 14 if portrait else 15, Color("d6f7ff"))
+		account.name = "WorkshopHudProgress"
+		account.custom_minimum_size = Vector2(310 if portrait else 360, 52 if portrait else 48)
 		account.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
-		account.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
+		account.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		account.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		header.add_child(account)
-	else:
-		var ceremony := label("AWAKENING CEREMONY", 15, Color("fff0a1"))
-		ceremony.custom_minimum_size = Vector2(0 if portrait else 220, 40 if portrait else 58)
-		ceremony.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if portrait else TextServer.AUTOWRAP_OFF
-		ceremony.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait else HORIZONTAL_ALIGNMENT_RIGHT
-		ceremony.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		header.add_child(ceremony)
 
 func _compact_pager_label(text_value: String) -> Label:
 	var value := label(text_value, 14, Color("e6dfd0"))
@@ -643,15 +646,17 @@ func _compact_pager_label(text_value: String) -> Label:
 
 func render_onboarding_fullscreen(host: Container) -> void:
 	var intro := make_panel(Color("182d49ed"), Color("f1be69")); host.add_child(intro.get_parent())
-	intro.add_child(label("Choose a first blueprint", 25, Color("ffd36c")))
-	intro.add_child(label("Tap a print for its base card. Your first Forge print is free.", 14, Color("e1eef9")))
+	intro.name = "StarterBlueprintCeremony"
+	intro.add_child(label("Choose your first blueprint", 25, Color("ffd36c")))
+	intro.add_child(label("Inspect a schematic, then select one pattern for a free first print.", 14, Color("e1eef9")))
 	var choices := UNIFIED_RULES.STARTER_IDS
 	var visible: Array = choices if not is_portrait_layout() else [choices[clampi(starter_page, 0, choices.size() - 1)]]
 	var cards := GridContainer.new(); cards.name = "StarterChoiceGrid"; cards.columns = 3 if not is_portrait_layout() else 1; cards.add_theme_constant_override("h_separation", 14); host.add_child(cards)
 	for starter_id in visible:
 		var creature := Catalog.creature(str(starter_id)); var element_color := Color(ELEMENT_COLORS.get(str(creature.element), "9beaff"))
 		var card := make_panel(Color("15263fe8"), element_color if pending_starter_id == starter_id else Color("5e7f9b")); cards.add_child(card.get_parent())
-		var portrait := TextureRect.new(); portrait.texture = _creature_idle_atlas(str(starter_id)); portrait.custom_minimum_size = Vector2(190, 150 if not is_portrait_layout() else 210); portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; card.add_child(portrait)
+		var portrait := TextureRect.new(); portrait.name = "StarterBlueprintSchematic"; portrait.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D; portrait.custom_minimum_size = Vector2(190, 150 if not is_portrait_layout() else 210); portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; card.add_child(portrait)
+		card.add_child(label("SCHEMATIC · PRINT UNASSEMBLED", 12, Color("9beaff")))
 		card.add_child(label(str(creature.name), 23, element_color)); card.add_child(label("%s · %d HP · %d ATK" % [creature.element, int(creature.hp), int(creature.attack)], 14, Color("dbe9f6")))
 		card.add_child(make_button("Selected" if pending_starter_id == starter_id else "View card", show_starter_inspector.bind(str(starter_id)), element_color.darkened(0.35)))
 	if is_portrait_layout():
@@ -668,8 +673,8 @@ func render_onboarding_fullscreen(host: Container) -> void:
 func render_onboarding() -> void:
 	var intro := make_panel(Color("182d49ed"), Color("f1be69"))
 	body.add_child(intro.get_parent())
-	intro.add_child(label("Choose a first blueprint", 25, Color("ffd36c")))
-	intro.add_child(label("Tap a print for its base card. Confirming grants three blue blueprints; the first Forge print is free.", 15, Color("e1eef9")))
+	intro.add_child(label("Choose your first blueprint", 25, Color("ffd36c")))
+	intro.add_child(label("Inspect a schematic, then select one pattern for a free first print.", 15, Color("e1eef9")))
 	var cards := GridContainer.new()
 	cards.columns = 3 if size.x >= 900 else 1
 	cards.add_theme_constant_override("h_separation", 14)
@@ -681,12 +686,14 @@ func render_onboarding() -> void:
 		var card := make_panel(Color("15263fe8"), element_color if pending_starter_id == starter_id else Color("5e7f9b"))
 		cards.add_child(card.get_parent())
 		var portrait := TextureRect.new()
-		portrait.texture = _creature_idle_atlas(starter_id)
+		portrait.name = "StarterBlueprintSchematic"
+		portrait.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
 		portrait.custom_minimum_size = Vector2(190, 150)
 		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(portrait)
+		card.add_child(label("SCHEMATIC · PRINT UNASSEMBLED", 12, Color("9beaff")))
 		card.add_child(label(str(creature.name), 24, element_color))
 		card.add_child(label("%s · %d HP · %d ATK" % [creature.element, int(creature.hp), int(creature.attack)], 15, Color("dbe9f6")))
 		card.add_child(make_button("Selected" if pending_starter_id == starter_id else "View card", show_starter_inspector.bind(starter_id), element_color.darkened(0.35)))
@@ -724,13 +731,14 @@ func render_starter_inspector() -> void:
 	content.add_theme_constant_override("separation", 10)
 	shell.add_child(content)
 	var art := TextureRect.new()
-	art.texture = _creature_idle_atlas(starter_inspector_id)
+	art.name = "StarterInspectorBlueprintSchematic"
+	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
 	art.custom_minimum_size = Vector2(300, 300 if is_portrait_layout() else 260)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	content.add_child(art)
 	content.add_child(label(str(creature.name), 27, Color(ELEMENT_COLORS.get(str(creature.element), "9beaff"))))
-	content.add_child(label("Card · %s · %s" % [str(creature.element), str(Catalog.rarity(str(creature.rarity)).name)], 15, Color("dce8f4")))
+	content.add_child(label("Blueprint schematic · %s · %s" % [str(creature.element), str(Catalog.rarity(str(creature.rarity)).name)], 15, Color("dce8f4")))
 	content.add_child(label("HP %d · Bend %d\n%s" % [int(creature.hp), int(creature.bend), str(creature.ability)], 17, Color("fff9df")))
 	content.add_child(make_button("Select this blueprint", func(): pending_starter_id = starter_inspector_id; starter_inspector_id = ""; render(), Color("a86b2e")))
 	content.add_child(make_button("Close", func(): starter_inspector_id = ""; render(), Color("536c8d")))
@@ -1289,8 +1297,8 @@ func _add_workshop_overview_status(art_plane: Control, used_today: int) -> void:
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 3)
 	strip.add_child(content)
-	content.add_child(label("Explore the Workshop", 16, Color("9beaff")))
-	content.add_child(label("Select a pictured tool or display to use it directly. Spool Level %d / 100 · %d XP toward next level." % [int(GameManager.profile.get("spool_level", 1)), int(GameManager.profile.get("spool_xp", 0))], 13, Color("dce8f4")))
+	content.add_child(label("Choose a station", 16, Color("9beaff")))
+	content.add_child(label("Forge · Archive · Battle", 13, Color("dce8f4")))
 
 func _workshop_scene_map(art_plane: Control) -> Control:
 	return art_plane.get_parent() as Control
@@ -1343,6 +1351,7 @@ func render_printer_blueprint_tray(host: Control = null) -> void:
 	printer_blueprint_selected_id = _blueprint_tray_view.render(host if host != null else body, printer_blueprint_selected_id, {
 		"profile": GameManager.profile,
 		"portrait": is_portrait_layout(),
+		"schematic_only": str(GameManager.profile.get("onboarding", {}).get("state", "")) == "starter_selected",
 		"reduced_motion": bool(settings().get("reduced_motion", false)),
 		"label": label,
 		"make_button": make_button,
@@ -1652,7 +1661,7 @@ func adjust_audio_setting(key: String, direction: int) -> void:
 
 func open_printer(creature_id: String) -> void:
 	var free_starter := str(GameManager.profile.get("onboarding", {}).get("state", "")) == "starter_selected" and creature_id == str(GameManager.profile.get("onboarding", {}).get("starter_id", ""))
-	if not creature_id.is_empty() and (Catalog.creature(creature_id).is_empty() or (not bool(GameManager.profile.get("owned_blueprints", {}).get(creature_id, false)) and not free_starter)):
+	if not creature_id.is_empty() and (Catalog.creature(creature_id).is_empty() or (not UNIFIED_RULES.has_printable_blueprint(GameManager.profile, creature_id) and not free_starter)):
 		_toast("That blueprint is not learned yet.")
 		return
 	printer_creature_id = creature_id
@@ -1686,7 +1695,8 @@ func render_printer() -> void:
 	printer_progress_label = null
 	var panel := make_panel(Color("152d49ec"), Color("f1be69"))
 	body.add_child(panel.get_parent())
-	panel.add_child(label("Arcane Forge", 27, Color("ffd36c")))
+	panel.name = "ForgePrintControl"
+	panel.add_child(label("FORGE ACTIVE", 27, Color("ffd36c")))
 	var print_name := (str(ArmorCoreDefinitions.core_blueprint_definition(printer_armor_id).get("name", "Core")) if printer_is_core else str(ProgressionRules.armor_def(printer_armor_id).get("name", "Full Suit"))) if printer_is_armor else str(definition.get("name", "No learned blueprint selected"))
 	var print_type := ("Printed Core" if printer_is_core else "Complete suit") if printer_is_armor else str(definition.get("element", "Creature blueprint"))
 	var portrait := is_portrait_layout()
@@ -1715,13 +1725,13 @@ func render_printer() -> void:
 		var facts := make_panel(Color("102940ec"), Color("6bd6ed"))
 		facts.get_parent().name = "PrinterSelectionFacts"
 		action_column.add_child(facts.get_parent())
-		facts.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 17, Color("9beaff")))
-		facts.add_child(label("Owned prints: %d | Available Forge Coins: %d" % [_blueprint_tray_view.owned_count(GameManager.profile, printer_creature_id), int(GameManager.profile.get("forge_coins", 0))], 14, Color("e6dfd0")))
-		facts.add_child(label("Selecting a cartridge updates this dormant build plate only. Coins and inventory change only at the secured completion seam.", 13, Color("dce8f4")))
+		facts.add_child(label("%s · %s · %s" % [print_name, print_type, "FREE" if printer_price == 0 else "%d FC" % printer_price], 17, Color("9beaff")))
+		facts.add_child(label("Printed: %d · Installed upgrades: %d" % [_blueprint_tray_view.owned_count(GameManager.profile, printer_creature_id), (GameManager.profile.get("workshop_upgrades", []) as Array).size()], 14, Color("e6dfd0")))
+		facts.add_child(label("Select a blueprint, then initiate its build.", 13, Color("dce8f4")))
 		render_printer_blueprint_tray(action_column)
 	else:
-		action_column.add_child(label("%s - %s - %d Forge Coins" % [print_name, print_type, printer_price], 16, Color("9beaff")))
-		action_column.add_child(label("Available Forge Coins: %d. The profile changes only when the raw print completes." % int(GameManager.profile.get("forge_coins", 0)), 15, Color("dce8f4")))
+		action_column.add_child(label("%s · %s · %s" % [print_name, print_type, "FREE" if printer_price == 0 else "%d FC" % printer_price], 16, Color("9beaff")))
+		action_column.add_child(label("Printed: %d · Upgrades: %d" % [_blueprint_tray_view.owned_count(GameManager.profile, printer_creature_id), (GameManager.profile.get("workshop_upgrades", []) as Array).size()], 15, Color("dce8f4")))
 	match printer_sequence.phase:
 		ArcaneForgeSequence.IDLE:
 			if printer_is_armor:
@@ -1732,9 +1742,9 @@ func render_printer() -> void:
 				offers.name = "PrinterBlueprintEmptyOffers"
 				action_column.add_child(offers)
 			else:
-				action_column.add_child(label("Choose a blueprint, then begin when ready.", 16, Color("fff0a1")))
+				action_column.add_child(label("Choose a blueprint, then initiate the Forge.", 16, Color("fff0a1")))
 				var starter_free := str(GameManager.profile.get("onboarding", {}).get("state", "")) == "starter_selected" and printer_creature_id == str(GameManager.profile.get("onboarding", {}).get("starter_id", ""))
-				var begin := make_button("Print starter free" if starter_free else "Begin Print (%d FC)" % printer_price, begin_printer, Color("a86b2e"))
+				var begin := make_button("INITIATE PRINT" if starter_free else "INITIATE PRINT · %d FC" % printer_price, begin_printer, Color("a86b2e"))
 				begin.name = "BeginCreaturePrint"
 				action_column.add_child(begin)
 			var back := make_button("Back to Workshop Overview" if printer_return_screen == "workshop" else "Back to Collection", cancel_printer_preview, Color("536c8d"))
@@ -1761,6 +1771,10 @@ func render_printer() -> void:
 		ArcaneForgeSequence.AWAKENED:
 			var completion_text := ("Core secured: %s is ready for the Equipment Workbench." if printer_is_core else "Full suit secured: %s is ready for the Equipment Workbench.") % print_name if printer_is_armor else "Welcome, %s! Your living print is ready for the Collection." % str(definition.name)
 			action_column.add_child(label(completion_text, 20, Color("a8e3a5")))
+			if not printer_is_armor and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) < int(GameManager.profile.get("starter_pack_rewards", {}).get("entitled", 0)):
+				var starter_packs := make_button("OPEN STARTER PACK %d / 3" % (int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) + 1), _open_next_starter_pack, Color("a86b2e"))
+				starter_packs.name = "OpenStarterPack"
+				action_column.add_child(starter_packs)
 			action_column.add_child(make_button("Print Another" if not printer_is_armor else "Print Another Equipment Item", return_to_printer_picker, Color("a86b2e")))
 			action_column.add_child(make_button(("Return to Workshop Overview" if printer_return_screen == "workshop" else "Return to Collection") if not printer_is_armor else "Return to Equipment Workbench", return_to_printer_station, Color("536c8d")))
 		ArcaneForgeSequence.FAILED:
@@ -1836,6 +1850,19 @@ func return_to_printer_station() -> void:
 		render()
 		return
 	navigate_to("collection")
+
+func _open_next_starter_pack() -> void:
+	var result := GameManager.claim_next_starter_pack()
+	if not bool(result.get("ok", false)):
+		_toast(str(result.get("error", "No starter pack is waiting.")))
+		render()
+		return
+	# The reward opens inside the new archive, not in the market. Pending cards
+	# are committed before this presentation route, so reload resumes safely.
+	printer_sequence = null
+	screen = "unified_library"
+	_toast("Starter pack %d / 3" % int(result.get("payload", {}).get("starter_opened", 0)))
+	render()
 
 func return_to_printer_picker() -> void:
 	if printer_return_screen == "armor":
@@ -2500,7 +2527,7 @@ func _render_unified_forgedex_page(host: Container) -> void:
 	host.add_child(grid)
 	for definition in creatures.slice(unified_codex_page * per_page, mini(creatures.size(), (unified_codex_page + 1) * per_page)):
 		var creature_id := str(definition.get("id", ""))
-		var known: bool = bool(GameManager.profile.get("owned_blueprints", {}).get(creature_id, false))
+		var known: bool = UNIFIED_RULES.has_printable_blueprint(GameManager.profile, creature_id)
 		var printed := 0
 		for model in GameManager.profile.get("printed_models", {}).values():
 			if model is Dictionary and str(model.get("blueprint_id", "")) == creature_id: printed += 1
@@ -2532,10 +2559,34 @@ func _render_unified_forgedex_page(host: Container) -> void:
 	host.add_child(make_button("Open Equipment Cards", navigate_to.bind("archive"), Color("526e93")))
 
 func render_unified_foundry_surface(host: Container) -> void:
-	var title_map := {"unified_market":"Foundry Market", "unified_library":"Card Library", "unified_deck":"Deck Blueprint Rack", "unified_upgrades":"Printer Upgrade Grid", "unified_forgedex":"Forgedex"}
+	var title_map := {"unified_market":"Foundry Market", "unified_library":"Blueprint Archive · Collection", "unified_deck":"Blueprint Archive · Deck Builder", "unified_upgrades":"Printer Upgrade Grid", "unified_forgedex":"Forgedex"}
 	host.add_child(label(str(title_map.get(screen, "Foundry")), 25, Color("ffd36c")))
-	var coins := int(GameManager.profile.get("forge_coins", GameManager.profile.get("coins", 0)))
-	host.add_child(label("Forge Coins %d · Sparks %d" % [coins, int(GameManager.profile.get("sparks", 0))], 14, Color("9beaff")))
+	# Direct Foundry captures can intentionally mount this surface without the
+	# shell; retain a data-complete fallback rather than hiding player progress.
+	if find_child("WorkshopHud", true, false) == null:
+		var foundry_level := int(GameManager.profile.get("spool_level", 1))
+		var foundry_hud := label("Spool Level %d · XP %d / %d · %d Forge Coins" % [foundry_level, int(GameManager.profile.get("spool_xp", 0)), foundry_level * 100, int(GameManager.profile.get("forge_coins", 0))], 14, Color("9beaff"))
+		foundry_hud.name = "FoundryHudProgress"
+		host.add_child(foundry_hud)
+	if screen in ["unified_library", "unified_deck"]:
+		var archive_book := PanelContainer.new()
+		archive_book.name = "ArchiveBookShell"
+		archive_book.custom_minimum_size = Vector2(0, 52)
+		archive_book.add_theme_stylebox_override("panel", panel_style(Color("17384ae8"), Color("6bd6ed")))
+		host.add_child(archive_book)
+		var archive_tabs := HBoxContainer.new(); archive_tabs.name = "ArchiveBookTabs"; archive_tabs.add_theme_constant_override("separation", 8); archive_book.add_child(archive_tabs)
+		archive_tabs.add_child(make_button("Collection", navigate_to.bind("archive"), Color("588d73") if screen == "unified_library" else Color("526e93")))
+		archive_tabs.add_child(make_button("Deck Builder", navigate_to.bind("deck"), Color("588d73") if screen == "unified_deck" else Color("526e93")))
+		host.add_child(label("Bound blueprints · owned cards · saved deck leaves", 14, Color("9beaff")))
+		var archive_filters := HBoxContainer.new(); archive_filters.name = "ArchiveBookFilters"; archive_filters.add_theme_constant_override("separation", 8); host.add_child(archive_filters)
+		for filter in [["all", "All", "ArchiveFilterAll"], ["creature", "Creatures", "ArchiveFilterCreatures"], ["support", "Support", "ArchiveFilterSupport"]]:
+			var filter_id := str(filter[0])
+			var filter_button := make_button(str(filter[1]), set_archive_filter.bind(filter_id), Color("588d73") if unified_archive_filter == filter_id else Color("526e93"))
+			filter_button.name = str(filter[2])
+			filter_button.accessibility_name = "Show %s cards" % str(filter[1]).to_lower()
+			archive_filters.add_child(filter_button)
+	elif screen == "unified_market":
+		host.add_child(label("Sparks %d" % int(GameManager.profile.get("sparks", 0)), 14, Color("9beaff")))
 	# Every Foundry surface is intentionally bounded. Keep this shared return action
 	# above all screen-specific content instead of relying on a clipped footer.
 	var workshop_return := make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d"))
@@ -2607,8 +2658,9 @@ func render_unified_foundry_surface(host: Container) -> void:
 		var owned: Array = []
 		for definition in UNIFIED_RULES.all_cards():
 			if int(GameManager.profile.get("owned_cards", {}).get(str(definition.get("id", "")), 0)) > 0: owned.append(definition)
-		host.add_child(label("Owned cards only.", 15, Color("e6dfd0")))
-		host.add_child(_unified_cards_page(owned, func(id): unified_inspector_id = id; unified_inspector_tab = "card"; render()))
+		var filtered_owned := _filter_archive_cards(owned)
+		host.add_child(label("Collection pages · %d card types · creature cards unlock their printable blueprint." % filtered_owned.size(), 15, Color("e6dfd0")))
+		host.add_child(_unified_cards_page(filtered_owned, func(id): unified_inspector_id = id; unified_inspector_tab = "card"; render()))
 		var library_deck := make_button("Open Deck Blueprint Rack", navigate_to.bind("deck"), Color("a86b2e"))
 		library_deck.name = "UnifiedLibraryDeck"
 		host.add_child(library_deck)
@@ -2634,7 +2686,7 @@ func render_unified_foundry_surface(host: Container) -> void:
 			var definition_id := str(definition.get("id", ""))
 			definition["name"] = str(UNIFIED_RULES.card(definition_id).get("name", definition_id))
 			definition["deck_count"] = unified_deck_draft.count(definition_id)
-		host.add_child(_unified_cards_page(owned_deck, func(id):
+		host.add_child(_unified_cards_page(_filter_archive_cards(owned_deck), func(id):
 			if id in unified_deck_draft: unified_deck_draft.erase(id)
 			elif unified_deck_draft.count(id) < int(GameManager.profile.get("owned_cards", {}).get(id, 0)): unified_deck_draft.append(id)
 			render()))
@@ -2659,7 +2711,21 @@ func render_unified_foundry_surface(host: Container) -> void:
 		host.add_child(label("Printer skill nodes were retired. Workshop Upgrades and Upgrade Cards are available in the Filament Market.", 15, Color("fff0a1")))
 		host.add_child(make_button("Open Upgrade Forge", func(): screen = "unified_market"; unified_market_tab = "upgrades"; render(), Color("588d73")))
 	_render_unified_inspector()
-	if screen == "unified_market": _render_unified_pack_reveal()
+	_render_unified_pack_reveal()
+
+func _filter_archive_cards(definitions: Array) -> Array:
+	if unified_archive_filter == "all": return definitions
+	var filtered: Array = []
+	for definition in definitions:
+		var is_creature := str((definition as Dictionary).get("type", "")) == "creature"
+		if (unified_archive_filter == "creature" and is_creature) or (unified_archive_filter == "support" and not is_creature): filtered.append(definition)
+	return filtered
+
+func set_archive_filter(filter_id: String) -> void:
+	if filter_id not in ["all", "creature", "support"]: return
+	unified_archive_filter = filter_id
+	unified_page = 0
+	render()
 
 func _buy_unified_pack(pack_id: String) -> void:
 	var result := GameManager.buy_card_pack(pack_id)
@@ -2756,9 +2822,18 @@ func _render_unified_pack_reveal() -> void:
 	content.add_child(keep_cards)
 
 func _keep_unified_pack_cards() -> void:
+	var pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {})
+	var starter_reward := bool(pending.get("starter_reward", false))
 	var kept := GameManager.claim_pending_pack_reveal()
 	if kept.is_empty(): _toast("There are no pack cards waiting to keep.")
-	else: _toast("Kept %d cards in your Library." % kept.size())
+	else:
+		var rewards: Dictionary = GameManager.profile.get("starter_pack_rewards", {})
+		if starter_reward and int(rewards.get("opened", 0)) < int(rewards.get("entitled", 0)):
+			var next := GameManager.claim_next_starter_pack()
+			if bool(next.get("ok", false)): _toast("Starter pack %d / 3" % int(next.get("payload", {}).get("starter_opened", 0)))
+			else: _toast("Kept %d cards in your Library." % kept.size())
+		else: _toast("Kept %d cards in your Library." % kept.size())
+	if starter_reward: screen = "unified_library"
 	render()
 
 func _submit_unified_intent(intent: Dictionary) -> void:

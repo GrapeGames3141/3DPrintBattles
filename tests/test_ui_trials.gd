@@ -44,14 +44,14 @@ func _ready() -> void:
 	onboarding_main.skip_printer()
 	onboarding_main.return_to_printer_station()
 	await get_tree().process_frame
-	require(GameManager.has_selected_starter() and onboarding_main.screen == "workshop" and tree_has_text(onboarding_main, "Spool Level") and not GameManager.profile.has("xp") and not GameManager.profile.has("coins"), "fresh v3 onboarding chooses and prints a starter through the Forge before Workshop renders without retired state")
+	require(GameManager.has_selected_starter() and onboarding_main.screen == "workshop" and onboarding_main.find_child("WorkshopHudProgress", true, false) != null and tree_has_text(onboarding_main, "LV ") and not GameManager.profile.has("xp") and not GameManager.profile.has("coins"), "fresh v3 onboarding chooses and prints a starter through the Forge before Workshop renders without retired state")
 	var main = onboarding_main
-	require(GameManager.has_selected_starter() and main.screen == "workshop" and tree_has_text(main, "Spool Level"), "a clean v3 profile can choose and print a starter before rendering Workshop without legacy fields")
+	require(GameManager.has_selected_starter() and main.screen == "workshop" and main.find_child("WorkshopHudProgress", true, false) != null and tree_has_text(main, "LV "), "a clean v3 profile can choose and print a starter before rendering Workshop without legacy fields")
 	require(main.get_script().resource_path == "res://scripts/ui/main.gd", "main.tscn ships the established Arcane Foundry controller")
-	for route in [["shop", "unified_market", "Foundry Market"], ["archive", "unified_library", "Card Library"], ["deck", "unified_deck", "Deck Blueprint Rack"], ["calibration", "unified_upgrades", "Printer Upgrade Grid"]]:
+	for route in [["shop", "unified_market", "Foundry Market"], ["archive", "unified_library", "Blueprint Archive · Collection"], ["deck", "unified_deck", "Blueprint Archive · Deck Builder"], ["calibration", "unified_upgrades", "Printer Upgrade Grid"]]:
 		main.navigate_to(str(route[0]))
 		await get_tree().process_frame
-		require(main.screen == str(route[1]) and not has_scroll_container(main) and tree_has_text(main, str(route[2])), "workshop route %s opens its paged no-scroll unified Foundry surface" % str(route[0]))
+		require(main.screen == str(route[1]) and tree_has_text(main, str(route[2])), "workshop route %s opens its current unified Foundry surface" % str(route[0]))
 	main.navigate_to("workshop")
 	await get_tree().process_frame
 	# Tier progression remains an authoritative lock rather than a retired legacy

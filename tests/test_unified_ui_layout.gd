@@ -289,6 +289,39 @@ func _exercise(viewport: Vector2) -> void:
 		var second_bonus_count := second_bonus_reveal.find_children("UnifiedPackCardView*", "Button", true, false).size() if second_bonus_reveal != null else 0
 		var persisted_pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {})
 		require(persisted_pending.get("cards", []) == original_cards and persisted_pending.get("bonus_cards", []) == original_bonus_cards and first_bonus_count == 5 and second_bonus_count == 5, "Re-rendering a bonus-card reveal preserves its pending receipt and displayed total at %s." % viewport)
+	# Feedback-pass contracts: battle omits the Workshop HUD, onboarding uses raw
+	# blueprint art, and archive/deck routes share the book shell at every layout.
+	main.screen = "unified_battle"
+	main.render()
+	await get_tree().process_frame
+	require(main.find_child("WorkshopHud", true, false) == null, "Battle intentionally omits the Workshop HUD at %s." % viewport)
+	GameManager.profile = RULES.new_profile()
+	main.screen = "onboarding"
+	main.render()
+	await get_tree().process_frame
+	require(main.find_child("StarterBlueprintSchematic", true, false) != null and main.find_child("WorkshopHud", true, false) == null, "Starter ceremony renders blueprint-only art without a post-selection HUD at %s." % viewport)
+	GameManager.profile = _legal_profile()
+	main.screen = "workshop"
+	main.workshop_view = "overview"
+	main.render()
+	await get_tree().process_frame
+	var workshop_progress := main.find_child("WorkshopHudProgress", true, false) as Label
+	require(workshop_progress != null and _within_viewport(workshop_progress, viewport) and "Spool Level" in workshop_progress.text and "Forge Coins" in workshop_progress.text, "Workshop overview exposes the explicit shared progress HUD inside the viewport at %s." % viewport)
+	main.screen = "unified_library"
+	main.render()
+	await get_tree().process_frame
+	require(main.find_child("WorkshopHud", true, false) != null and main.find_child("FoundryHudProgress", true, false) == null and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveBookTabs", true, false) != null and main.find_child("ArchiveBookFilters", true, false) != null and main.find_child("ArchiveFilterAll", true, false) != null and main.find_child("ArchiveFilterCreatures", true, false) != null and main.find_child("ArchiveFilterSupport", true, false) != null, "Collection has exactly one shared progress HUD and responsive archive filters at %s." % viewport)
+	main.set_archive_filter("support")
+	await get_tree().process_frame
+	require(main.unified_archive_filter == "support" and main.unified_page == 0, "Archive filters reset pagination at %s." % viewport)
+	main.screen = "unified_deck"
+	main.render()
+	await get_tree().process_frame
+	require(main.find_child("ArchiveBookShell", true, false) != null and main.find_child("V3DeckSlots", true, false) != null, "Deck Builder keeps fixed deck slots inside the archive-book route at %s." % viewport)
+	GameManager.profile = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
+	main.open_printer("cinderpaw")
+	await get_tree().process_frame
+	require(main.find_child("PrinterBlueprintSchematicArt", true, false) != null and main.find_child("PrinterBlueprintIdleArt", true, false) == null, "Starter-selected Forge cartridges use unassembled schematic art only at %s." % viewport)
 	main.queue_free()
 	await get_tree().process_frame
 	subviewport.queue_free()
@@ -296,7 +329,7 @@ func _exercise(viewport: Vector2) -> void:
 
 func _ready() -> void:
 	_configure_isolated_save_paths()
-	for viewport in [Vector2(1280, 720), Vector2(576, 1024)]:
+	for viewport in [Vector2(1280, 720), Vector2(576, 1024), Vector2(720, 1280)]:
 		await _exercise(viewport)
 	if failures.is_empty(): print("PASS: v3 battle accessibility and responsive handoff matrix")
 	get_tree().quit(0 if failures.is_empty() else 1)

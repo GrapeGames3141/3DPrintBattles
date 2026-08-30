@@ -1,9 +1,9 @@
 class_name UnifiedRules
 extends RefCounted
-## Canonical PrintForge Legends v3.1 catalog and profile transitions.
+## Canonical PrintForge Legends v3.2 catalog and profile transitions.
 ## All costs, odds and timers live here rather than in presentation code.
 
-const VERSION := "3.1.1"
+const VERSION := "3.2.0"
 const V3_CATALOG := preload("res://scripts/core/v3_catalog.gd")
 const V3_PROFILE_STATE := preload("res://scripts/core/v3_profile_state.gd")
 const V3_ECONOMY := preload("res://scripts/core/v3_economy_rules.gd")
@@ -43,22 +43,30 @@ static func card(id: String) -> Dictionary:
 static func ensure(source: Dictionary) -> Dictionary:
 	var p := V3_PROFILE_STATE.ensure_base(source, VERSION)
 	_migrate_equipment_ids(p)
+	_migrate_creature_blueprint_ownership(p)
 	if str(p.onboarding.get("state", "")) == "complete":
 		var active_deck_is_legal := _active_deck_is_legal(p)
-		if _starter_deck_needs_repair(p): _make_starter_deck(p, not active_deck_is_legal)
+		if _starter_deck_needs_repair(p): _make_starter_deck(p, not active_deck_is_legal, str(p.onboarding.get("starter_id", "cinderpaw")))
 		elif not active_deck_is_legal: p.active_deck_id = "starter-deck"
 	if not p.decks.is_empty(): _ensure_deck_slots(p)
 	return p
 static func choose_starter(source: Dictionary, id: String) -> Dictionary:
 	var p := ensure(source)
 	if str(p.onboarding.get("state", "choose_starter")) != "choose_starter" or id not in STARTER_IDS: return fail(p, "Choose an available starter.")
-	p.onboarding = {"state":"starter_selected","starter_id":id}; p.owned_blueprints[id] = true; return ok(p, {"card_id":id})
+	p.onboarding = {"state":"starter_selected","starter_id":id}; grant_card(p, id); return ok(p, {"card_id":id})
 static func print_starter(source: Dictionary) -> Dictionary:
-	var p := ensure(source); var id := str(p.onboarding.get("starter_id", "")); if id not in STARTER_IDS: return fail(p,"Choose a starter first.")
-	p.onboarding.state = "complete"; p.printed_models["starter-%s" % id] = {"blueprint_id":id,"source":"starter"}; _make_starter_deck(p); return ok(p,{"creature_id":id,"free":true})
+	var p := ensure(source); var id := str(p.onboarding.get("starter_id", "")); if str(p.onboarding.get("state", "")) != "starter_selected" or id not in STARTER_IDS: return fail(p,"Choose a starter first.")
+	p.onboarding.state = "complete"
+	p.printed_models["starter-%s" % id] = {"blueprint_id":id,"source":"starter"}
+	_make_starter_deck(p, true, id)
+	if int(p.starter_pack_rewards.get("entitled", 0)) == 0 and int(p.starter_pack_rewards.get("opened", 0)) == 0:
+		p.starter_pack_rewards = {"entitled":3,"opened":0}
+		# Replaces the old free Newcomer Shelf pack while retaining its discounts.
+		p.newcomer_claims["basic_pack"] = true
+	return ok(p,{"creature_id":id,"free":true,"starter_packs":3})
 static func print_workshop_model(source: Dictionary, blueprint_id: String, receipt_id := "") -> Dictionary:
 	var p := ensure(source)
-	if not bool(p.owned_blueprints.get(blueprint_id, false)): return fail(p, "Learn this blueprint before printing it.")
+	if not has_printable_blueprint(p, blueprint_id): return fail(p, "Learn this blueprint before printing it.")
 	var definition := card(blueprint_id)
 	if definition.is_empty() or str(definition.get("type", "")) not in ["creature", "equipment"]: return fail(p, "That Workshop blueprint is unavailable.")
 	var receipt := receipt_id if not receipt_id.is_empty() else "workshop-print-%d" % int(p.rng_nonce)
@@ -71,7 +79,22 @@ static func print_workshop_model(source: Dictionary, blueprint_id: String, recei
 	return ok(p, {"receipt":receipt,"model_id":model_id,"blueprint_id":blueprint_id,"price":price})
 static func grant_card(p: Dictionary, card_id: String, count := 1) -> Dictionary:
 	if card(card_id).is_empty() or count <= 0: return {"card_id":card_id,"count":0}
-	p.owned_cards[card_id] = int(p.owned_cards.get(card_id,0)) + count; return {"card_id":card_id,"count":count}
+	p.owned_cards[card_id] = int(p.owned_cards.get(card_id,0)) + count
+	if str(card(card_id).get("type", "")) == "creature": p.owned_blueprints[card_id] = true
+	return {"card_id":card_id,"count":count}
+
+static func has_printable_blueprint(p: Dictionary, blueprint_id: String) -> bool:
+	return bool(p.get("owned_blueprints", {}).get(blueprint_id, false)) and not card(blueprint_id).is_empty()
+
+static func _migrate_creature_blueprint_ownership(p: Dictionary) -> void:
+	# Cards and printable licenses now travel together, while printed models and
+	# decks remain independent records. Both loops are idempotent.
+	for card_id in p.owned_cards.keys():
+		if str(card(str(card_id)).get("type", "")) == "creature" and int(p.owned_cards.get(card_id, 0)) > 0:
+			p.owned_blueprints[str(card_id)] = true
+	for blueprint_id in p.owned_blueprints.keys():
+		if str(card(str(blueprint_id)).get("type", "")) == "creature" and bool(p.owned_blueprints.get(blueprint_id, false)) and int(p.owned_cards.get(blueprint_id, 0)) <= 0:
+			grant_card(p, str(blueprint_id), 1)
 
 static func _migrate_equipment_ids(p: Dictionary) -> void:
 	# This is an idempotent catalog alias pass for the initial v3 save namespace,
@@ -117,12 +140,11 @@ static func _migrate_equipment_ids(p: Dictionary) -> void:
 			var normalized_cards: Array = []
 			for card_id in raw_cards: normalized_cards.append(str(aliases.get(str(card_id), str(card_id))))
 			p.pending_pack_reveal[key] = normalized_cards
-static func _starter_cards() -> Array:
-	var creatures := ["cinderpaw","aquafin","voltwig","mossmunk","frostling","galehopper","stoneback","sparkotter","glassdrake","coralisk"]
+static func _starter_cards(starter_id: String) -> Array:
 	var cards: Array = []
-	for id in creatures:
-		for _copy in 2: cards.append(id)
-	# 20 creatures / 6 filament / 6 spells / 4 equipment / 2 traps / 2 upgrades.
+	for _copy in 12: cards.append(starter_id)
+	for _copy in 8: cards.append("mossmunk")
+	# The existing twenty non-creature support cards stay unchanged.
 	for id in ["raw_filament","raw_filament","raw_filament","raw_filament","heated_spool","heated_spool","layer_melt","print_jam","spool_drain","forge_surge","emergency_reprint_spell","blueprint_thief","standard_full_suit","reinforced_full_suit","iron_gem","filament_ring","counter_strike","print_interrupt","speed_spool","reinforced_chassis"]: cards.append(id)
 	return cards
 static func _starter_deck_needs_repair(p: Dictionary) -> bool:
@@ -139,8 +161,8 @@ static func _active_deck_is_legal(p: Dictionary) -> bool:
 			var cards: Array = deck.get("cards", []) if deck.get("cards", []) is Array else []
 			return deck_reason(p, cards).is_empty()
 	return false
-static func _make_starter_deck(p: Dictionary, activate_starter := true) -> void:
-	var cards := _starter_cards()
+static func _make_starter_deck(p: Dictionary, activate_starter := true, starter_id := "cinderpaw") -> void:
+	var cards := _starter_cards(starter_id if starter_id in STARTER_IDS else "cinderpaw")
 	for id in cards: grant_card(p,id,maxi(0,cards.count(id)-int(p.owned_cards.get(id,0))))
 	var normalized_decks: Array = []
 	var starter_added := false
@@ -321,7 +343,7 @@ static func buy_blueprint(source: Dictionary, id: String, unix_time: int) -> Dic
 	if offer.is_empty():
 		for candidate in snapshot.get("newcomer", {}).get("blueprints", []):
 			if str(candidate.get("id", "")) == id: offer = candidate; break
-	if offer.is_empty() or p.owned_blueprints.has(id): return fail(p, "Blueprint is unavailable.")
+	if offer.is_empty() or has_printable_blueprint(p, id): return fail(p, "Blueprint is unavailable.")
 	var price := int(offer.price)
 	if "blueprint_discount" in p.workshop_upgrades: price = price * 9500 / 10000
 	var rarity := str(card(id).get("rarity", "common"))
@@ -330,6 +352,7 @@ static func buy_blueprint(source: Dictionary, id: String, unix_time: int) -> Dic
 	price = _daily_price(snapshot, "blueprint", id, price)
 	if not V3_ECONOMY.spend(p, "forge_coins", price): return fail(p, "Not enough Forge Coins.")
 	p.owned_blueprints[id] = true
+	if str(card(id).get("type", "")) == "creature": grant_card(p, id)
 	if bool(snapshot.newcomer.get("active", false)) and rarity == "common" and newcomer_blueprints < 3: p.newcomer_claims["blueprint_discount"] = newcomer_blueprints + 1
 	return ok(p, {"id":id,"price":price,"shop":"blueprint"})
 
@@ -461,6 +484,35 @@ static func buy_pack(source: Dictionary, pack_id: String, entropy: PackedByteArr
 	for id in bonus_cards: grant_card(p, str(id))
 	p.pending_pack_reveal = {"pack_id":pack_id,"cards":cards,"bonus_cards":bonus_cards,"receipt":"pack-%d" % p.rng_nonce}
 	return ok(p,{"pack_id":pack_id,"cards":cards,"bonus_cards":bonus_cards,"pending_reveal":true})
+
+static func claim_next_starter_pack(source: Dictionary, entropy: PackedByteArray = PackedByteArray()) -> Dictionary:
+	var p := ensure(source)
+	var rewards: Dictionary = p.get("starter_pack_rewards", {})
+	var opened := int(rewards.get("opened", 0)); var entitled := int(rewards.get("entitled", 0))
+	if str(p.get("onboarding", {}).get("state", "")) != "complete" or entitled != 3 or opened >= entitled:
+		return fail(p, "No starter packs are waiting.")
+	if not p.pending_pack_reveal.is_empty(): return fail(p, "Reveal the current pack first.")
+	var receipt := "starter-basic-%d" % (opened + 1)
+	if p.claim_receipts.has(receipt): return fail(p, "That starter pack was already claimed.")
+	# Same deterministic Basic card generation and pity behavior as a paid pack,
+	# but no cost or duplicate Newcomer Shelf grant.
+	var seed := _seed_bytes(entropy, p.rng_nonce)
+	var cards := _generate_pack_cards("basic", seed)
+	var pity := int(p.pack_pity.get("basic", 0)) + 1
+	var bonus_cards: Array = []
+	if pity >= 51:
+		bonus_cards = _generate_guaranteed_cards(5, _next(seed + 51), "common", "primordial", 1, "rare", false)
+		pity = 0
+	var found_legendary := false
+	for card_id in cards + bonus_cards:
+		if _rarity_index(str(card(str(card_id)).get("rarity", "common"))) >= _rarity_index("legendary"): found_legendary = true
+	if found_legendary: pity = 0
+	p.pack_pity["basic"] = pity; p.rng_nonce += 1
+	p.claim_receipts[receipt] = true; rewards["opened"] = opened + 1; p.starter_pack_rewards = rewards
+	for card_id in cards: grant_card(p, str(card_id))
+	for card_id in bonus_cards: grant_card(p, str(card_id))
+	p.pending_pack_reveal = {"pack_id":"basic","cards":cards,"bonus_cards":bonus_cards,"receipt":receipt,"starter_reward":true,"starter_opened":opened + 1}
+	return ok(p,{"pack_id":"basic","cards":cards,"bonus_cards":bonus_cards,"receipt":receipt,"pending_reveal":true,"starter_opened":opened + 1})
 static func clear_pack_reveal(source: Dictionary) -> Dictionary:
 	var p := ensure(source)
 	var cards: Array = p.pending_pack_reveal.get("cards", [])

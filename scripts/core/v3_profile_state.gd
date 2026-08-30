@@ -8,7 +8,7 @@ static func ensure_base(source: Dictionary, catalog_version: String) -> Dictiona
 	var profile := source.duplicate(true)
 	profile["schema_version"] = 31
 	profile["catalog_version"] = catalog_version
-	for key in ["owned_cards","owned_blueprints","printed_models","gear_loadouts","market_epochs","quest_state","pack_pity","drop_receipts","claim_receipts","cosmetics","entitlements","notifications","season_receipts","newcomer_claims","unified_settlements"]:
+	for key in ["owned_cards","owned_blueprints","printed_models","gear_loadouts","market_epochs","quest_state","pack_pity","drop_receipts","claim_receipts","cosmetics","entitlements","notifications","season_receipts","newcomer_claims","unified_settlements","starter_pack_rewards"]:
 		if not profile.has(key) or not profile.get(key) is Dictionary: profile[key] = {}
 	for key in ["workshop_upgrades","preprints","decks","wishlist"]:
 		if not profile.has(key) or not profile.get(key) is Array: profile[key] = []
@@ -28,6 +28,10 @@ static func ensure_base(source: Dictionary, catalog_version: String) -> Dictiona
 	if not profile.has("academy_rewards"): profile["academy_rewards"] = {}
 	if not profile.has("fake_store_receipts"): profile["fake_store_receipts"] = {}
 	if not profile.has("pending_pack_reveal"): profile["pending_pack_reveal"] = {}
+	# Only the first-print transition creates this entitlement. Existing complete
+	# saves gain an empty stable record during migration, never retroactive packs.
+	if not profile.starter_pack_rewards.has("entitled"): profile.starter_pack_rewards["entitled"] = 0
+	if not profile.starter_pack_rewards.has("opened"): profile.starter_pack_rewards["opened"] = 0
 	if not profile.has("active_deck_id"): profile["active_deck_id"] = "starter-deck"
 	if not profile.has("onboarding") or not profile.onboarding is Dictionary: profile["onboarding"] = {"state":"choose_starter","starter_id":""}
 	return profile

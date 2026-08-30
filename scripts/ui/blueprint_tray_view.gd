@@ -13,7 +13,8 @@ func blueprint_ids(profile: Dictionary) -> Array[String]:
 	# suit print.
 	var stored_blueprints: Array = []
 	for stored_id in profile.get("owned_blueprints", {}).keys():
-		stored_blueprints.append(str(stored_id))
+		if UnifiedRules.has_printable_blueprint(profile, str(stored_id)):
+			stored_blueprints.append(str(stored_id))
 	stored_blueprints.sort()
 	if stored_blueprints != _cached_profile_blueprints:
 		_cached_profile_blueprints = stored_blueprints.duplicate(true)
@@ -44,10 +45,15 @@ func _idle_texture(definition: Dictionary) -> Texture2D:
 	var raw_path := str(definition.get("raw_print", ""))
 	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
 
+func _schematic_texture(definition: Dictionary) -> Texture2D:
+	var raw_path := str(definition.get("raw_print", ""))
+	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
+
 func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	var definition := Catalog.creature(creature_id)
 	var rarity := Catalog.rarity(str(definition.get("rarity", "common")))
 	var portrait: bool = bool(context.portrait)
+	var schematic_only: bool = bool(context.get("schematic_only", false))
 	var card := Control.new()
 	card.name = "PrinterBlueprintCard%s" % creature_id.capitalize()
 	card.set_meta("creature_id", creature_id)
@@ -80,13 +86,18 @@ func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(title)
 	var preview := TextureRect.new()
-	preview.name = "PrinterBlueprintIdleArt"
+	preview.name = "PrinterBlueprintSchematicArt" if schematic_only else "PrinterBlueprintIdleArt"
 	preview.custom_minimum_size = Vector2(0, 106 if portrait else 72)
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	preview.texture = _idle_texture(definition)
+	preview.texture = _schematic_texture(definition) if schematic_only else _idle_texture(definition)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(preview)
+	if schematic_only:
+		var schematic_label: Label = context.label.call("SCHEMATIC · UNASSEMBLED", 11, Color("76ddff"))
+		schematic_label.name = "PrinterBlueprintSchematicLabel"
+		schematic_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		content.add_child(schematic_label)
 	var facts: Label = context.label.call("%s / %s" % [str(definition.get("element", "Unknown")), str(rarity.get("name", "Common"))], 12, Color("b8dcef"))
 	facts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(facts)
@@ -99,7 +110,7 @@ func render(host: Control, selected_id: String, context: Dictionary) -> String:
 	var selector: VBoxContainer = context.make_panel.call(Color("15344bea"), Color("f1be69"))
 	selector.get_parent().name = "PrinterBlueprintSelector"
 	host.add_child(selector.get_parent())
-	var title: Label = context.label.call("Learned Blueprint Cartridges", 18, Color("ffd36c"))
+	var title: Label = context.label.call("Starter Blueprint Schematic" if bool(context.get("schematic_only", false)) else "Learned Blueprint Cartridges", 18, Color("76ddff") if bool(context.get("schematic_only", false)) else Color("ffd36c"))
 	title.name = "PrinterBlueprintSelectorTitle"
 	selector.add_child(title)
 	var ids := blueprint_ids(context.profile)

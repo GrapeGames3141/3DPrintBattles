@@ -1,4 +1,4 @@
-# PrintForge Legends mechanics v3.1
+# PrintForge Legends mechanics v3.2
 
 This is the implementation authority for the v3 replacement. Catalog data is
 the source for card costs, print times, market prices, rewards, and effects.
@@ -31,8 +31,12 @@ The earlier 0.7 three-phase/15-card rules are retired for the unified modes.
 
 ## Data boundaries
 
-`owned_cards`, `owned_blueprints`, and `printed_models` are separate. Cards do
-not grant a Workshop blueprint or model. SaveService writes only the clean
+`owned_cards`, `owned_blueprints`, and `printed_models` remain distinct records.
+Creature-card ownership permanently unlocks that creature's printable blueprint;
+buying a creature blueprint grants one creature card. Extra copies do not create
+licenses, and dismantling the last copy never revokes a learned blueprint.
+Printed models remain separate proof that a Forge print completed. Non-creature
+cards never gain a printable license. SaveService writes only the clean
 `printforge_v3_*` namespace and does not migrate the 0.7 profile.
 
 All randomness is seeded from profile RNG state or an injected entropy payload;
@@ -43,7 +47,7 @@ redacted opponent snapshots, hiding hand, deck, and trap identity.
 
 The authoritative Godot layer implements five phases, queues, staging/holding,
 modes, deterministic combat, equipment, traps, upgrades, pre-print consumption,
-40-card validation, starter deck ownership, five catalog-driven Market shops,
+40-card validation, linked creature-card/blueprint ownership, five catalog-driven Market shops,
 Daily Deals, wishlists, newcomer claims, packs/pity, quests, drops, Season
 claims, and the v3 save namespace. The TypeScript boundary validates matching
 explicit intent shapes, including installed Emergency Reprint charges, and
@@ -82,8 +86,12 @@ silently fall back to the retired 0.7 economy.
   91–100, with a deterministic 0.2% Primordial injection.
 - The Card Shop uses 40/28/18/9/4/1 Common through Mythic+ weighting.
   Market epochs are persisted and never move backward when a local clock rolls
-  back. The Newcomer Shelf explicitly presents three half-price Common
-  blueprints, its free Basic pack, discounted Speed Spool, and Forge Boost
+  back. A new starter deck is exactly 40 cards: 12 selected-starter cards,
+  8 Mossmunk companion cards, and the established 20 non-creature starter
+  cards. Completing the first starter print grants exactly three sequential
+  five-card Basic packs using normal pity and one pending reveal at a time.
+  These replace the old free Newcomer Shelf Basic pack; the Shelf still presents
+  three half-price Common blueprints, discounted Speed Spool, and Forge Boost
   introductory Spark price.
 - Match drops use 300/500/700/1,000/1,200 bp win chances, +5 bp per ten
   lifetime wins capped at +200, 50 bp loss consolation, and a 41st-win drop.
