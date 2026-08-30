@@ -27,7 +27,7 @@ const UNIFIED_BATTLE_RULES := preload("res://scripts/battle/unified_battle_rules
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_AI := preload("res://scripts/battle/unified_ai_opponent.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
-const REVIEW_BUILD_LABEL := "0.8.2-feedback-pass"
+const REVIEW_BUILD_LABEL := "0.8.3-visual-feedback-pass"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
