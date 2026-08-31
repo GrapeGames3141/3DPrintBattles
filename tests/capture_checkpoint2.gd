@@ -10,11 +10,15 @@ const CORE_POWER_SHOWCASE := preload("res://tests/core_power_showcase.gd")
 const CORE_POWER_TIMELINE := preload("res://tests/core_power_timeline.gd")
 const HELMET_GEM_CLOSEUP_SHOWCASE := preload("res://tests/helmet_gem_closeup_showcase.gd")
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
+const M1_TITLE_MODES := ["m1_title", "m1_title_text150", "m1_tall_safe_top"]
+const M1_STARTER_MODES := ["m1_starter_focused", "m1_starter_inspector", "m1_starter_text150", "m1_starter_inspector_text150", "m1_starter_inspector_focus_select", "m1_starter_inspector_focus_close"]
+const M1_FIRST_PRINT_MODES := ["m1_first_print_setup", "m1_first_print_text150"]
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
 var capture_tag := ""
 var capture_feature_setup
+var capture_output_dir := OUTPUT_DIR
 
 func _ready() -> void:
 	# Legacy feature captures are optional after the unified cleanup removed their
@@ -27,11 +31,13 @@ func _ready() -> void:
 	# mask a project stretch failure with a content-scale override here.
 	if forced_viewport.x > 0 and forced_viewport.y > 0:
 		DisplayServer.window_set_size(forced_viewport)
-	# Captures are visual evidence, not interactive runs; keep the desktop cursor
-	# out of contact sheets and existing workshop screenshots.
-	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+	# Captures are visual evidence, but must never hide, trap, or confine the
+	# user's pointer. Visible pointer mode remains the exit invariant as well.
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	capture_mode = requested_mode()
 	capture_tag = requested_tag()
+	capture_output_dir = requested_output_dir()
+	DirAccess.make_dir_recursive_absolute(capture_output_dir)
 	# Autoload _ready() may still be pending on this same first frame. Configure
 	# deterministic fixtures one frame later so a save load cannot replace them.
 	call_deferred("_prepare_capture")
@@ -56,6 +62,16 @@ func _prepare_capture() -> void:
 		if capture_mode in ["feedback_workshop", "feedback_collection", "feedback_deck_builder"]:
 			GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
 			GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
+	if capture_mode.begins_with("m1_"):
+		GameManager.profile = ProfileRules.new_profile() if capture_mode in M1_TITLE_MODES or capture_mode in M1_STARTER_MODES else UNIFIED_RULES.ensure(ProfileRules.new_profile())
+		if capture_mode in M1_FIRST_PRINT_MODES:
+			GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
+		elif capture_mode not in M1_TITLE_MODES and capture_mode not in M1_STARTER_MODES:
+			GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
+			GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
+		if "text150" in capture_mode: GameManager.profile.settings.text_scale_bps = 15000
+		if capture_mode == "m1_workshop_contrast": GameManager.profile.settings.high_contrast = true
+		if capture_mode == "m1_workshop_reduced": GameManager.profile.settings.reduced_motion = true
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
 		GameManager.profile = legacy_trial_profile()
 	if capture_mode in ["trials_teamlaunch", "trial_battle_teamlaunch"]:
@@ -153,7 +169,22 @@ func _prepare_capture() -> void:
 	elif capture_mode == "feedback_collection": workshop.screen = "unified_library"
 	elif capture_mode == "feedback_deck_builder": workshop.screen = "unified_deck"
 	elif capture_mode == "unified_library_inspector": workshop.screen = "unified_library"; workshop.unified_inspector_id = "cinderpaw"; workshop.unified_inspector_tab = "stats"
+	elif capture_mode in M1_TITLE_MODES: workshop.screen = "title"
+	elif capture_mode in M1_STARTER_MODES:
+		workshop.screen = "onboarding"
+		workshop.starter_page = 0
+		if "inspector" in capture_mode: workshop.starter_inspector_id = "cinderpaw"
+	elif capture_mode in M1_FIRST_PRINT_MODES:
+		workshop.screen = "printer"
+		workshop.printer_creature_id = "cinderpaw"
+		workshop.printer_blueprint_selected_id = "cinderpaw"
+		workshop.printer_price = 0
+		workshop.printer_sequence = ArcaneForgeSequence.create(false)
+	elif capture_mode.begins_with("m1_workshop"):
+		workshop.screen = "workshop"
+		if capture_mode == "m1_workshop_synthetic": workshop.set_meta("synthetic_admob_overlay_stress", true)
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
+	if capture_mode == "m1_tall_safe_top": workshop.set_meta("presentation_safe_top_inset", 84.0)
 	if capture_mode == "proving":
 		# The real navigation path freezes the daily contracts before rendering;
 		# reproduce that precondition for an honest Proving Door visual capture.
@@ -221,6 +252,26 @@ func capture() -> void:
 		workshop._audio_director.cue("impact")
 		workshop.render()
 	await wait_for_stable_header()
+	var requested_focus := m1_requested_focus_button()
+	if not requested_focus.is_empty():
+		var focus_hotspot := workshop.find_child(requested_focus, true, false) as Button
+		if focus_hotspot == null or not focus_hotspot.is_visible_in_tree():
+			push_error("M1 focus capture could not find %s." % requested_focus)
+			get_tree().quit(1)
+			return
+		focus_hotspot.release_focus()
+		await wait_frames(1)
+		focus_hotspot.call_deferred("grab_focus")
+		await wait_frames(4)
+		await RenderingServer.frame_post_draw
+		await RenderingServer.frame_post_draw
+		if not focus_hotspot.has_focus():
+			push_error("M1 focus capture did not receive keyboard focus before rasterization.")
+			get_tree().quit(1)
+			return
+	if capture_mode.begins_with("m1_") and not validate_m1_capture():
+		get_tree().quit(1)
+		return
 	if capture_mode in ["workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk"]:
 		# Fixture setup bypasses Main.open_printer(), so run its focus/scroll reset
 		# only after the Forge has rendered into the tree and header has settled.
@@ -257,10 +308,34 @@ func capture() -> void:
 		if hotspot != null:
 			hotspot.grab_focus()
 			await wait_frames(2)
-	# Hide/capture the Windows pointer immediately before the viewport readback.
-	# This is more reliable than the initial hidden request while the window gains focus.
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	# Captures must never trap or confine the user's pointer. The viewport readback
+	# is deterministic without taking mouse ownership, so leave it visible.
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	await wait_frames(2)
+	if capture_mode.begins_with("m1_workshop") and requested_focus.is_empty():
+		# Never rely on pointer hover for capture state. Clear incidental hover rings.
+		for transient_ring in workshop.find_children("WorkshopHotspotTightFocusRing", "Panel", true, false):
+			(transient_ring as Panel).hide()
+		await wait_frames(1)
+	if not requested_focus.is_empty():
+		var raster_focus_hotspot := workshop.find_child(requested_focus, true, false) as Button
+		if raster_focus_hotspot == null:
+			push_error("M1 focus capture lost the printer hotspot before rasterization.")
+			get_tree().quit(1)
+			return
+		raster_focus_hotspot.grab_focus()
+		var raster_focus_ring := raster_focus_hotspot.find_child("WorkshopHotspotTightFocusRing", true, false) as Panel
+		if raster_focus_ring != null:
+			raster_focus_ring.show()
+			for edge in ["Top", "Right", "Bottom", "Left"]:
+				var stroke := raster_focus_ring.find_child("WorkshopHotspotTightFocusStroke%s" % edge, true, false) as Control
+				if stroke == null or stroke.get_global_rect().get_area() <= 0.0:
+					push_error("M1 focus capture lost %s edge on %s." % [edge, requested_focus])
+					get_tree().quit(1)
+					return
+		await wait_frames(2)
+		await RenderingServer.frame_post_draw
+		await RenderingServer.frame_post_draw
 	capture_size = requested_resolution()
 	var suffix := "_%s" % capture_tag if not capture_tag.is_empty() else ""
 	var image := get_viewport().get_texture().get_image()
@@ -269,15 +344,27 @@ func capture() -> void:
 		push_error("Capture dimension mismatch: expected %s, received %s" % [expected, image.get_size()])
 		get_tree().quit(1)
 		return
-	image.save_png(OUTPUT_DIR.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix]))
-	print("CAPTURED: %s (%s, %s%s)" % [OUTPUT_DIR, capture_mode, capture_size, suffix])
+	var output_path := capture_output_dir.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix])
+	var save_error := image.save_png(output_path)
+	if save_error != OK:
+		push_error("Capture PNG save failed: %s (%s)" % [output_path, save_error])
+		get_tree().quit(1)
+		return
+	print("CAPTURED: %s (%s, %s%s)" % [capture_output_dir, capture_mode, capture_size, suffix])
 	get_tree().quit()
+
+func m1_requested_focus_button() -> String:
+	var workshop_targets := {"m1_workshop_focus_printer":"WorkshopHotspotPrinter", "m1_workshop_focus_battle_arena":"WorkshopHotspotBattleArena", "m1_workshop_focus_card_archive":"WorkshopHotspotCardArchive", "m1_workshop_focus_deck":"WorkshopHotspotDeck", "m1_workshop_focus_supplies":"WorkshopHotspotSupplies", "m1_workshop_focus_settings":"WorkshopHotspotSettings", "m1_workshop_focus":"WorkshopHotspotPrinter"}
+	if workshop_targets.has(capture_mode): return str(workshop_targets[capture_mode])
+	if capture_mode == "m1_starter_inspector_focus_select": return "StarterInspectorSelect"
+	if capture_mode == "m1_starter_inspector_focus_close": return "StarterInspectorClose"
+	return ""
 
 func capture_contact_sheet() -> void:
 	# Raw capture-only ImageTextures finish their first render after the root
 	# attachment; retain extra frames so every labeled VFX cell is present.
 	await wait_frames(24)
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	await wait_frames(2)
 	capture_size = requested_resolution()
 	var suffix := "_%s" % capture_tag if not capture_tag.is_empty() else ""
@@ -287,8 +374,13 @@ func capture_contact_sheet() -> void:
 		push_error("Capture dimension mismatch: expected %s, received %s" % [expected, image.get_size()])
 		get_tree().quit(1)
 		return
-	image.save_png(OUTPUT_DIR.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix]))
-	print("CAPTURED: %s (%s, %s%s)" % [OUTPUT_DIR, capture_mode, capture_size, suffix])
+	var output_path := capture_output_dir.path_join("%s_%s%s.png" % [capture_mode, capture_size, suffix])
+	var save_error := image.save_png(output_path)
+	if save_error != OK:
+		push_error("Capture PNG save failed: %s (%s)" % [output_path, save_error])
+		get_tree().quit(1)
+		return
+	print("CAPTURED: %s (%s, %s%s)" % [capture_output_dir, capture_mode, capture_size, suffix])
 	get_tree().quit()
 
 func wait_frames(count: int) -> void:
@@ -298,6 +390,14 @@ func wait_frames(count: int) -> void:
 func wait_for_stable_header() -> void:
 	# Avoid capturing before a resized window has completed its first container pass.
 	for _frame in 60:
+		if capture_mode.begins_with("m1_"):
+			var anchor_name := "TitleContinue" if capture_mode in M1_TITLE_MODES else "StarterCarouselCard" if capture_mode in M1_STARTER_MODES else "FirstPrintEmptyBedProof" if capture_mode in M1_FIRST_PRINT_MODES else "WorkshopProgressInstrument"
+			var m1_anchor := workshop.find_child(anchor_name, true, false) as Control
+			if m1_anchor != null and m1_anchor.is_visible_in_tree() and m1_anchor.get_global_rect().get_area() > 0.0:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
 		if capture_mode == "feedback_starter":
 			var starter_grid := workshop.find_child("StarterChoiceGrid", true, false) as Control
 			if starter_grid != null and starter_grid.is_visible_in_tree() and starter_grid.get_global_rect().get_area() > 0.0:
@@ -367,6 +467,7 @@ func requested_mode() -> String:
 			var mode := arg.trim_prefix("--capture-mode=")
 			if mode in ["unified_library_inspector", "unified_battle", "unified_pack_reveal", "unified_forgedex", "feedback_starter", "feedback_first_print", "feedback_mid_print", "feedback_workshop", "feedback_collection", "feedback_deck_builder"]: return mode
 			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards", "unified_market", "unified_library", "unified_deck", "unified_upgrades"]: return mode
+			if mode in ["m1_title", "m1_title_text150", "m1_tall_safe_top", "m1_starter_focused", "m1_starter_inspector", "m1_starter_text150", "m1_starter_inspector_text150", "m1_starter_inspector_focus_select", "m1_starter_inspector_focus_close", "m1_first_print_setup", "m1_first_print_text150", "m1_workshop", "m1_workshop_focus", "m1_workshop_focus_printer", "m1_workshop_focus_battle_arena", "m1_workshop_focus_card_archive", "m1_workshop_focus_deck", "m1_workshop_focus_supplies", "m1_workshop_focus_settings", "m1_workshop_text150", "m1_workshop_contrast", "m1_workshop_reduced", "m1_workshop_synthetic"]: return mode
 	return "onboarding"
 
 func capture_workshop_object() -> String:
@@ -381,3 +482,66 @@ func requested_tag() -> String:
 		if arg.begins_with("--capture-tag="):
 			return arg.trim_prefix("--capture-tag=").validate_filename()
 	return ""
+
+func requested_output_dir() -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--capture-output-dir="):
+			return arg.trim_prefix("--capture-output-dir=")
+	return OUTPUT_DIR
+func m1_visual_bottom() -> float:
+	var size := get_viewport().get_visible_rect().size
+	if capture_mode != "m1_workshop_synthetic": return size.y
+	var reserve := 96.0 if is_equal_approx(size.x, 576.0) else 120.0 if is_equal_approx(size.x, 720.0) else 180.0
+	return size.y - reserve
+
+func m1_control_in_bounds(control: Control, bottom: float) -> bool:
+	if control == null or not control.is_visible_in_tree(): return false
+	var rect := control.get_global_rect()
+	return rect.position.x >= -0.5 and rect.end.x <= get_viewport().get_visible_rect().size.x + 0.5 and rect.end.y <= bottom + 0.5
+
+func m1_require(value: bool, message: String) -> bool:
+	if not value: push_error(message)
+	return value
+
+func validate_m1_capture() -> bool:
+	var bottom := m1_visual_bottom()
+	var ok := true
+	if capture_mode in M1_TITLE_MODES:
+		var enter := workshop.find_child("TitleContinue", true, false) as Button
+		var settings_action := workshop.find_child("TitleSettings", true, false) as Button
+		var version := workshop.find_child("TitleStatusVersion", true, false) as Label
+		ok = m1_require(enter != null and enter.custom_minimum_size.y >= 56.0 and m1_control_in_bounds(enter, bottom), "M1 title primary is live, touch-safe, and in bounds.") and ok
+		ok = m1_require(settings_action != null and settings_action.custom_minimum_size.y >= 48.0 and m1_control_in_bounds(settings_action, bottom) and version != null, "M1 title native settings/version nodes are in bounds.") and ok
+	elif capture_mode in M1_STARTER_MODES:
+		var card := workshop.find_child("StarterCarouselCard", true, false) as Control
+		var starter_plate := workshop.find_child("StarterR2PhysicalPlate", true, false) as Control
+		var inspect := workshop.find_child("StarterInspectFocused", true, false) as Button
+		var confirm := workshop.find_child("StarterConfirmFocused", true, false) as Button
+		ok = m1_require(starter_plate != null and card != null and inspect != null and confirm != null and m1_control_in_bounds(inspect, bottom) and m1_control_in_bounds(confirm, bottom), "M1 starter carousel has the approved physical desk, native focused card, and separate in-bounds Inspect/Confirm controls.") and ok
+		if "inspector" in capture_mode: ok = m1_require(workshop.find_child("StarterCardInspector", true, false) != null, "M1 starter inspector is live before capture.") and ok
+	elif capture_mode in M1_FIRST_PRINT_MODES:
+		var plate := workshop.find_child("FirstPrintR2PhysicalPlate", true, false) as Control
+		var empty_bed := workshop.find_child("FirstPrintEmptyBedProof", true, false) as Control
+		var begin := workshop.find_child("BeginCreaturePrint", true, false) as Button
+		ok = m1_require(plate != null and empty_bed != null and begin != null and m1_control_in_bounds(begin, bottom) and workshop.find_child("FeedbackForgeStage", true, false) == null and workshop.find_child("ArcaneForgeStage", true, false) == null, "M1 first-print setup has the physical empty bed, no Forge/raw/living stage, and an in-bounds begin action.") and ok
+	else:
+		var hotspots := workshop.find_children("WorkshopHotspot*", "Button", true, false)
+		ok = m1_require(hotspots.size() == 6, "M1 Workshop has exactly six live physical station hotspots.") and ok
+		for hotspot_name in ["WorkshopHotspotPrinter", "WorkshopHotspotBattleArena", "WorkshopHotspotCardArchive", "WorkshopHotspotDeck", "WorkshopHotspotSupplies", "WorkshopHotspotSettings"]:
+			var hotspot := workshop.find_child(hotspot_name, true, false) as Button
+			ok = m1_require(hotspot != null and hotspot.custom_minimum_size.y >= 48.0 and not hotspot.accessibility_name.is_empty() and m1_control_in_bounds(hotspot, bottom - (28.0 if capture_mode == "m1_workshop_synthetic" else 0.0)), "%s is live, touch-safe, and in bounds." % hotspot_name) and ok
+		var station_label_limit := bottom - (28.0 if capture_mode == "m1_workshop_synthetic" else 0.0)
+		for station_suffix in ["Printer", "BattleArena", "CardArchive", "Deck", "Supplies", "Settings"]:
+			var station_label := workshop.find_child("WorkshopStationLabel%s" % station_suffix, true, false) as Label
+			ok = m1_require(station_label != null and station_label.is_visible_in_tree() and not station_label.text.is_empty() and m1_control_in_bounds(station_label, station_label_limit), "Workshop native %s label is visibly rendered inside the content boundary." % station_suffix) and ok
+			if capture_mode == "m1_workshop_contrast" and station_label != null:
+				ok = m1_require(station_label.get_theme_color("font_color") == Color("000000") and station_label.get_theme_constant("outline_size") >= 1, "High-contrast Workshop %s label retains its local black-on-white override." % station_suffix) and ok
+		if capture_mode.begins_with("m1_workshop_focus"):
+			var focused_hotspot := workshop.find_child(m1_requested_focus_button(), true, false) as Button
+			var focus_ring := focused_hotspot.find_child("WorkshopHotspotTightFocusRing", true, false) as Panel if focused_hotspot != null else null
+			ok = m1_require(focused_hotspot != null and focused_hotspot.has_focus() and focus_ring != null and focus_ring.is_visible_in_tree() and focus_ring.get_global_rect().size.x > 0.0 and focus_ring.get_global_rect().size.y > 0.0, "M1 focused Workshop capture has a visible, nonzero tight keyboard-focus ring on the printer hotspot.") and ok
+		if capture_mode == "m1_workshop_synthetic":
+			var band := workshop.find_child("SyntheticAdMobOverlayStress", true, false) as ColorRect
+			var stress_label := workshop.find_child("SyntheticAdMobOverlayStressLabel", true, false) as Label
+			ok = m1_require(band != null and stress_label != null and "Synthetic overlay stress" in stress_label.text and is_equal_approx(band.get_global_rect().size.y, get_viewport().get_visible_rect().size.y - bottom), "M1 synthetic fixture is visibly labeled and owns the exact bottom stress reserve.") and ok
+	return ok

@@ -27,7 +27,11 @@ const UNIFIED_BATTLE_RULES := preload("res://scripts/battle/unified_battle_rules
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_AI := preload("res://scripts/battle/unified_ai_opponent.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
-const REVIEW_BUILD_LABEL := "0.8.3-visual-feedback-pass"
+const PORTRAIT_PRESENTATION_BOUNDARY := preload("res://scripts/ui/portrait_presentation_boundary.gd")
+const CREATURE_SPRITE_CACHE := preload("res://scripts/ui/creature_sprite_cache.gd")
+const PHYSICAL_PORTRAIT_PLATE := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
+const M1_PHYSICAL_UI := preload("res://scripts/ui/m1_physical_ui_component.gd")
+const REVIEW_BUILD_LABEL := "physical-ui-spike-r10"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -39,13 +43,14 @@ const WORKSHOP_CLOSEUP_PATHS := {
 	"yard": "res://assets/ui/workshop/workshop_yard_closeup_v2.png"
 }
 
-var screen := "workshop"
+var screen := "title"
 var workshop_selected := "printer"
 var workshop_view := "overview"
 var workshop_drawer_object := ""
 var printer_picker_open := false
 var printer_blueprint_selected_id := ""
 var workshop_return_view := "overview"
+var settings_return_screen := "workshop"
 var pending_starter_id := ""
 var starter_inspector_id := ""
 var starter_page := 0
@@ -123,6 +128,7 @@ var workshop_station_live_capture_progress := -1
 var workshop_station_live_capture_seed := 17
 var overview_layout_portrait := false
 var _workshop_screen_component := WorkshopScreenComponent.new()
+var _portrait_presentation_boundary := PORTRAIT_PRESENTATION_BOUNDARY.new()
 var _blueprint_tray_view := BLUEPRINT_TRAY_VIEW.new()
 # Battle, Forge, cards, and equipment are intentionally absent from the first
 # workshop frame. Their resources now load only when their screen is requested.
@@ -328,6 +334,10 @@ func navigate_to(target: String) -> void:
 	if unified_targets.has(target): target = str(unified_targets[target])
 	if target == "unified_deck" and screen != "unified_deck":
 		feedback_deck_draft_initialized = false
+	if target == "settings" and screen != "settings":
+		# Settings is inspection-only until an explicit setting action. Preserve the
+		# exact presentation origin so Title never silently becomes Workshop.
+		settings_return_screen = screen
 	if screen == "workshop" and target != "workshop":
 		workshop_return_view = workshop_view
 	if target == "workshop":
@@ -432,7 +442,7 @@ func button_style(accent: Color, state: String) -> StyleBox:
 func make_button(text_value: String, callback: Callable, accent := Color("2f93a8")) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 44)
+	button.custom_minimum_size = Vector2(0, 48)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", scaled_font(15))
 	button.add_theme_font_override("font", ARCANE_FOUNDRY_THEME_KIT.display_font())
@@ -499,7 +509,7 @@ func _visual_button(name_value: String, text_value: String, callback: Callable, 
 	var button := Button.new()
 	button.name = name_value
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 50 if strong else 44)
+	button.custom_minimum_size = Vector2(0, 56 if strong else 48)
 	button.focus_mode = Control.FOCUS_ALL
 	button.accessibility_name = text_value
 	button.add_theme_font_size_override("font_size", scaled_font(17 if strong else 14))
@@ -583,20 +593,118 @@ func _feedback_progress_instrument(surface: Control, prefix := "Workshop") -> vo
 	surface.add_child(coins)
 	var coin_label := label("%d Forge Coins" % int(GameManager.profile.get("forge_coins", 0)), 14, Color("ffe0a1")); coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; coins.add_child(coin_label)
 
+func _m1_r2_cropped_texture(source: Texture2D, crop: Rect2i) -> AtlasTexture:
+	return M1_PHYSICAL_UI.atlas_texture(source, crop)
+
+func _m1_r2_workshop_props() -> Array:
+	return M1_PHYSICAL_UI.workshop_prop_specs({"battle":M1_PHYSICAL_UI.texture_for("battle"), "archive":M1_PHYSICAL_UI.texture_for("archive"), "deck":M1_PHYSICAL_UI.texture_for("deck"), "supplies":M1_PHYSICAL_UI.texture_for("supplies"), "settings":M1_PHYSICAL_UI.texture_for("settings")})
+
+func _add_m1_r2_workshop_props(surface: Control) -> void:
+	for prop in _m1_r2_workshop_props():
+		var rect: Rect2 = prop.rect
+		var art := TextureRect.new()
+		art.name = "WorkshopR2Prop%s" % _workshop_overview_hotspot_node_suffix(str(prop.id))
+		art.texture = _m1_r2_cropped_texture(prop.texture as Texture2D, prop.crop as Rect2i)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art.anchor_left = rect.position.x; art.anchor_top = rect.position.y; art.anchor_right = rect.end.x; art.anchor_bottom = rect.end.y
+		surface.add_child(art)
+		var label_face := Panel.new()
+		label_face.name = "WorkshopStationLabelFace%s" % _workshop_overview_hotspot_node_suffix(str(prop.id))
+		label_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var label_rect := M1_PHYSICAL_UI.workshop_label_rect(prop)
+		label_face.anchor_left = label_rect.position.x; label_face.anchor_right = label_rect.end.x
+		label_face.anchor_top = label_rect.position.y; label_face.anchor_bottom = label_rect.end.y
+		var high_contrast := bool(settings().get("high_contrast", false))
+		label_face.add_theme_stylebox_override("panel", _visual_style(Color("fff1c8") if not high_contrast else Color("ffffff"), Color("39220f") if not high_contrast else Color("000000"), 5, 2 if high_contrast else 1))
+		surface.add_child(label_face)
+		var native_label := label(str(prop.label), int(prop.get("label_font_size", 10)), Color("071a25") if not high_contrast else Color("000000"))
+		native_label.name = "WorkshopStationLabel%s" % _workshop_overview_hotspot_node_suffix(str(prop.id))
+		native_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		native_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		native_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		native_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		native_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		# Keep the native copy legible after the global high-contrast theme applies.
+		# This local override intentionally comes last so white label faces never lose
+		# their black station names.
+		native_label.add_theme_color_override("font_color", Color("000000") if high_contrast else Color("071a25"))
+		native_label.add_theme_color_override("font_outline_color", Color("ffffff") if high_contrast else Color("fff1c8"))
+		native_label.add_theme_constant_override("outline_size", 1)
+		label_face.add_child(native_label)
 func render_feedback_workshop() -> void:
 	overview_layout_portrait = is_portrait_layout()
-	_feedback_backdrop(_workshop_overview_texture(), 0.08)
+	var workshop_plate := PHYSICAL_PORTRAIT_PLATE.new()
+	workshop_plate.name = "WorkshopPortraitPlate"
+	workshop_plate.configure(M1_PHYSICAL_UI.texture_for("workshop"))
+	workshop_plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(workshop_plate)
+	_apply_synthetic_overlay_stress(workshop_plate)
 	var surface := Control.new()
 	surface.name = "WorkshopFullBleed"
 	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(surface)
+	workshop_plate.content_layer().add_child(surface)
 	_feedback_progress_instrument(surface, "Workshop")
-	var settings_button := _visual_button("WorkshopSettingsButton", "⚙", navigate_to.bind("settings"), Color("78dded"))
-	settings_button.set_anchors_preset(Control.PRESET_TOP_RIGHT); settings_button.position = Vector2(-72, 72); settings_button.size = Vector2(52, 44); surface.add_child(settings_button)
-	for hotspot in _workshop_overview_hotspots():
+	_add_m1_r2_workshop_props(surface)
+	var printer_label := label("PRINTER", 12, Color("071a25") if not bool(settings().get("high_contrast", false)) else Color("000000"))
+	printer_label.add_theme_color_override("font_color", Color("000000") if bool(settings().get("high_contrast", false)) else Color("071a25"))
+	printer_label.add_theme_color_override("font_outline_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("fff1c8"))
+	printer_label.add_theme_constant_override("outline_size", 1)
+	# The label is initialized before its late local contrast overrides.
+	printer_label.name = "WorkshopStationLabelPrinter"
+	surface.add_child(printer_label)
+	printer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	printer_label.add_theme_color_override("font_color", Color("000000") if bool(settings().get("high_contrast", false)) else Color("071a25"))
+	printer_label.add_theme_color_override("font_outline_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("fff1c8"))
+	printer_label.add_theme_constant_override("outline_size", 1)
+	printer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	printer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	printer_label.add_theme_stylebox_override("normal", _visual_style(Color("fff1c8") if not bool(settings().get("high_contrast", false)) else Color("ffffff"), Color("39220f"), 5, 2))
+	printer_label.anchor_left = 0.36; printer_label.anchor_top = 0.48; printer_label.anchor_right = 0.64; printer_label.anchor_bottom = 0.535
+	for hotspot in _physical_workshop_hotspots():
 		var button := _workshop_overview_hotspot_button(hotspot)
 		surface.add_child(button)
 	_visual_toast(surface)
+
+func _apply_synthetic_overlay_stress(plate: Control) -> void:
+	_apply_presentation_safe_area(plate)
+	var enabled := bool(get_meta("synthetic_admob_overlay_stress", false))
+	_portrait_presentation_boundary.set_synthetic_overlay_stress(enabled)
+	if not enabled:
+		return
+	var reserve := _portrait_presentation_boundary.effective_visual_stress_reserve(get_viewport().get_visible_rect().size.x)
+	plate.offset_bottom = -reserve
+	var band := ColorRect.new()
+	band.name = "SyntheticAdMobOverlayStress"
+	band.color = Color("432019")
+	band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	band.offset_top = -reserve; band.offset_bottom = 0
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fixture_label := label(_portrait_presentation_boundary.synthetic_fixture_label(), 14, Color("fff0bb"))
+	fixture_label.name = "SyntheticAdMobOverlayStressLabel"
+	fixture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	fixture_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	fixture_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	band.add_child(fixture_label)
+	add_child(band)
+
+func _apply_presentation_safe_area(plate: Control) -> void:
+	var top_inset := float(get_meta("presentation_safe_top_inset", 0.0))
+	_portrait_presentation_boundary.set_top_safe_inset(top_inset)
+	if top_inset <= 0.0:
+		return
+	plate.offset_top = top_inset
+	var label_node := label(_portrait_presentation_boundary.tall_safe_top_fixture_label(), 12, Color("fff0bb"))
+	label_node.name = "TallSafeTopFixtureLabel"
+	label_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label_node.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	label_node.offset_top = 2; label_node.offset_bottom = top_inset - 2
+	add_child(label_node)
+
+func _physical_workshop_hotspots() -> Array:
+	return M1_PHYSICAL_UI.physical_workshop_hotspots()
 
 func _starter_schematic_card(starter_id: String) -> Control:
 	var creature := Catalog.creature(starter_id)
@@ -617,10 +725,75 @@ func _starter_schematic_card(starter_id: String) -> Control:
 	action.tooltip_text = "Select %s blueprint" % str(creature.get("name", starter_id)); content.add_child(action)
 	return card
 
+func render_m1_r2_first_print_setup(definition: Dictionary) -> void:
+	_render_m1_r4_empty_first_print_setup(definition)
+
 func _select_starter_blueprint(starter_id: String) -> void:
 	pending_starter_id = starter_id
 	starter_inspector_id = ""
 	render()
+
+func _render_m1_r4_empty_first_print_setup(definition: Dictionary) -> void:
+	var plate := PHYSICAL_PORTRAIT_PLATE.new()
+	plate.name = "FirstPrintR2PhysicalPlate"
+	plate.configure(M1_PHYSICAL_UI.texture_for("first_print"))
+	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(plate)
+	_apply_presentation_safe_area(plate)
+	var surface := Control.new()
+	surface.name = "FirstPrintR2PhysicalSurface"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	plate.content_layer().add_child(surface)
+	var empty_bed := Control.new()
+	empty_bed.name = "FirstPrintEmptyBedProof"
+	M1_PHYSICAL_UI.place_design(empty_bed, M1_PHYSICAL_UI.FIRST_PRINT_EMPTY_BED)
+	surface.add_child(empty_bed)
+	var docked := TextureRect.new()
+	docked.name = "FirstPrintDockedBlueprint"
+	var cartridge_source := ResourceLoader.load(M1_PHYSICAL_UI.BLUEPRINT_CARTRIDGE_PATH) as Texture2D
+	if cartridge_source != null:
+		docked.texture = M1_PHYSICAL_UI.atlas_texture(cartridge_source, M1_PHYSICAL_UI.BLUEPRINT_CARTRIDGE_CROP)
+	else:
+		_toast("The docked blueprint art is unavailable. Printing has not started.")
+	docked.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	docked.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	docked.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	docked.accessibility_name = "Docked blueprint: %s" % str(definition.get("name", "Cinderpaw"))
+	M1_PHYSICAL_UI.place_design(docked, M1_PHYSICAL_UI.FIRST_PRINT_CARTRIDGE)
+	surface.add_child(docked)
+	var cycle_seconds := roundi(ArcaneForgeSequence.PRINT_COMPLETE_BPS / ArcaneForgeSequence.presentation_step_bps(bool(settings().get("reduced_motion", false))) * ArcaneForgeSequence.presentation_interval_seconds(bool(settings().get("reduced_motion", false))))
+	# The 150% accessibility size must still fit inside the three physical dials.
+	# Keep truthful terms but shorten each line rather than relying on clipping.
+	var dial_font := 8 if int(settings().get("text_scale_bps", 10000)) >= 15000 else 11
+	var readouts := [[Rect2(108, 1030, 205, 150), "RECIPE\n%s\nFREE MATL" % str(definition.get("name", "BLUEPRINT")).to_upper(), dial_font], [Rect2(368, 1030, 205, 150), "LAYERS\n0 / 100", dial_font], [Rect2(628, 1030, 205, 150), "ETA ~%ds\nFORGE READY" % cycle_seconds, dial_font]]
+	for readout in readouts:
+		var copy := label(str(readout[1]), int(readout[2]), Color("10283a"))
+		copy.name = "FirstPrintNativeInstrument"
+		copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		copy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		M1_PHYSICAL_UI.place_design(copy, readout[0])
+		surface.add_child(copy)
+	var back := _visual_button("ArcaneForgeBack", "BACK", cancel_printer_preview, Color("10283a"))
+	back.custom_minimum_size = Vector2(48, 48)
+	back.accessibility_name = "Back to Workshop without starting this print"
+	M1_PHYSICAL_UI.apply_cream_action(back)
+	M1_PHYSICAL_UI.place_design(back, Rect2(94, 1360, 236, 160))
+	surface.add_child(back)
+	var begin := _visual_button("BeginCreaturePrint", "START", begin_printer, Color("10283a"), true)
+	begin.custom_minimum_size = Vector2(0, 56)
+	begin.accessibility_name = "Start the free %s print" % str(definition.get("name", "starter"))
+	M1_PHYSICAL_UI.apply_cream_action(begin)
+	M1_PHYSICAL_UI.place_design(begin, Rect2(356, 1360, 236, 160))
+	surface.add_child(begin)
+	var bed_status := label("BED EMPTY\nNO MODEL YET", 11, Color("10283a"))
+	bed_status.name = "FirstPrintBedStatus"
+	bed_status.accessibility_name = "Build bed is empty; no model has been printed yet"
+	bed_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bed_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	bed_status.autowrap_mode = TextServer.AUTOWRAP_OFF
+	bed_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	M1_PHYSICAL_UI.place_design(bed_status, Rect2(618, 1360, 236, 160))
+	surface.add_child(bed_status)
 
 func _attach_feedback_forge(host: Control, minimum_height: float) -> void:
 	var forge_component = _forge_component()
@@ -662,6 +835,10 @@ func render_feedback_printer() -> void:
 		cancel_printer_preview()
 		return
 	var definition := Catalog.creature(printer_creature_id)
+	var starter_setup := is_portrait_layout() and str((GameManager.profile.get("onboarding", {}) as Dictionary).get("state", "")) == "starter_selected" and printer_sequence.phase == ArcaneForgeSequence.IDLE
+	if starter_setup:
+		render_m1_r2_first_print_setup(definition)
+		return
 	_feedback_backdrop(_workshop_overview_texture(), 0.38)
 	var surface := Control.new(); surface.name = "FeedbackForgeSurface"; surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); add_child(surface)
 	printer_progress_label = null
@@ -941,9 +1118,59 @@ func render() -> void:
 	_audio_director.route("battle" if screen == "unified_battle" else ("forge" if screen == "printer" else "workshop"))
 	_detach_persistent_screen_components()
 	clear_children(self)
+	if screen == "title":
+		var title_plate := PHYSICAL_PORTRAIT_PLATE.new()
+		title_plate.name = "TitlePortraitPlate"
+		title_plate.configure(M1_PHYSICAL_UI.texture_for("title"))
+		title_plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(title_plate)
+		_apply_synthetic_overlay_stress(title_plate)
+		var title_surface := Control.new()
+		title_surface.name = "PrintForgeTitleScreen"
+		title_surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		title_plate.content_layer().add_child(title_surface)
+		var title := label("PRINTFORGE", 32, Color("fff0bb"))
+		title.name = "TitleNativeBrand"
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.set_anchors_preset(Control.PRESET_TOP_WIDE)
+		title.offset_top = 76; title.offset_bottom = 124
+		title_surface.add_child(title)
+		var hero := TextureRect.new(); hero.name = "TitleCinderpawHero"; hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var hero_atlas := AtlasTexture.new(); hero_atlas.atlas = CREATURE_SPRITE_CACHE.texture_for_creature("cinderpaw"); hero_atlas.region = CREATURE_SPRITE_CACHE.safe_source_region(0)
+		hero.texture = hero_atlas; hero.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; hero.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		hero.anchor_left = 0.22; hero.anchor_right = 0.78; hero.anchor_top = 0.22; hero.anchor_bottom = 0.61
+		hero.offset_left = 0; hero.offset_right = 0; hero.offset_top = 0; hero.offset_bottom = 0
+		hero.tooltip_text = "Cinderpaw, a living printed companion"
+		title_surface.add_child(hero)
+		var title_destination := OnboardingState.screen_for_profile(GameManager.profile)
+		var fresh_maker := title_destination == "onboarding"
+		var enter := _visual_button("TitleContinue", "NEW MAKER" if fresh_maker else "CONTINUE", navigate_to.bind(title_destination), Color("f1be69"), true)
+		enter.tooltip_text = "Start a new maker profile" if fresh_maker else "Continue the current maker profile"
+		enter.accessibility_name = enter.tooltip_text
+		enter.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		enter.anchor_left = 0.17; enter.anchor_right = 0.83
+		enter.offset_top = -150; enter.offset_bottom = -90
+		title_surface.add_child(enter)
+		var settings_action := _visual_button("TitleSettings", "SETTINGS", navigate_to.bind("settings"), Color("78dded"))
+		settings_action.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		settings_action.anchor_left = 0.17; settings_action.anchor_right = 0.83
+		settings_action.offset_top = -84; settings_action.offset_bottom = -32
+		title_surface.add_child(settings_action)
+		var title_status := label("PrintForge Legends · %s" % REVIEW_BUILD_LABEL, 12, Color("d7f6ff"))
+		title_status.name = "TitleStatusVersion"
+		title_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_status.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		title_status.offset_top = -24; title_status.offset_bottom = -4
+		title_surface.add_child(title_status)
+		_finish_visual_route()
+		return
 	# These review routes are deliberately image-led compositions rather than
 	# descendants of the legacy framed/scrolled shell. Main still owns every
 	# state transition and action; the presentation simply has room to breathe.
+	if not GameManager.is_save_read_only() and screen == "onboarding" and is_portrait_layout():
+		render_m1_r2_starter_page()
+		_finish_visual_route()
+		return
 	if not GameManager.is_save_read_only() and screen == "workshop" and workshop_view == "overview" and str(GameManager.profile.get("onboarding", {}).get("state", "")) == "complete":
 		render_feedback_workshop()
 		_finish_visual_route()
@@ -1152,6 +1379,9 @@ func _compact_pager_label(text_value: String) -> Label:
 	return value
 
 func render_onboarding_fullscreen(host: Container) -> void:
+	if is_portrait_layout():
+		_render_portrait_starter_carousel(host)
+		return
 	var ceremony := VBoxContainer.new(); ceremony.name = "StarterBlueprintCeremony"; ceremony.size_flags_horizontal = Control.SIZE_EXPAND_FILL; ceremony.add_theme_constant_override("separation", 12); host.add_child(ceremony)
 	var title := label("CHOOSE A STARTER BLUEPRINT", 25, Color("fff0bb")); title.name = "StarterBlueprintTitle"; title.custom_minimum_size = Vector2(0, 34); title.size_flags_horizontal = Control.SIZE_EXPAND_FILL; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(title)
 	var subtitle := label("Three Forge patterns are ready. Select one to load its free first print.", 13, Color("d7f6ff")); subtitle.name = "StarterBlueprintSubtitle"; subtitle.custom_minimum_size = Vector2(0, 22); subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL; subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(subtitle)
@@ -1168,6 +1398,128 @@ func render_onboarding_fullscreen(host: Container) -> void:
 		else:
 			cards.add_child(_starter_schematic_card(str(choices[index])))
 	var hint := label("Blueprints are unassembled patterns. Your selected pattern loads directly into the Forge.", 12, Color("9edeea")); hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(hint)
+	if not starter_inspector_id.is_empty(): render_starter_inspector()
+
+func render_m1_r2_starter_page() -> void:
+	var choices := UNIFIED_RULES.STARTER_IDS
+	starter_page = posmod(starter_page, choices.size())
+	var starter_id := str(choices[starter_page])
+	var creature := Catalog.creature(starter_id)
+	var accent := Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff"))
+	var plate := PHYSICAL_PORTRAIT_PLATE.new()
+	plate.name = "StarterR2PhysicalPlate"
+	plate.configure(M1_PHYSICAL_UI.texture_for("starter_desk"))
+	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(plate)
+	_apply_presentation_safe_area(plate)
+	var surface := Control.new()
+	surface.name = "StarterR2PhysicalSurface"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	plate.content_layer().add_child(surface)
+	var content := Control.new()
+	content.name = "StarterCarouselCard"
+	content.set_meta("starter_id", starter_id)
+	M1_PHYSICAL_UI.place_design(content, Rect2(205, 150, 530, 710))
+	surface.add_child(content)
+	var heading := label("CHOOSE A\nSTARTER BLUEPRINT", 18, Color("fff0bb"))
+	heading.name = "StarterBlueprintTitle"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading.autowrap_mode = TextServer.AUTOWRAP_OFF
+	heading.anchor_right = 1.0; heading.offset_bottom = 92
+	content.add_child(heading)
+	var art := TextureRect.new()
+	art.name = "StarterBlueprintSchematic"
+	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.anchor_left = 0.10; art.anchor_top = 0.15; art.anchor_right = 0.90; art.anchor_bottom = 0.62
+	content.add_child(art)
+	var name_label := label(str(creature.get("name", starter_id)), 28, accent)
+	name_label.name = "StarterNativeName"
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.anchor_left = 0.05; name_label.anchor_right = 0.95; name_label.anchor_top = 0.63; name_label.anchor_bottom = 0.71
+	content.add_child(name_label)
+	var stats := label("%s  ·  HP %d  ·  BEND %d" % [str(creature.get("element", "")), int(creature.get("hp", 0)), int(creature.get("bend", 0))], 15, Color("e7f8f7"))
+	stats.name = "StarterNativeStats"
+	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats.anchor_left = 0.04; stats.anchor_right = 0.96; stats.anchor_top = 0.72; stats.anchor_bottom = 0.78
+	content.add_child(stats)
+	var free_status := label("FIRST PRINT · FREE", 15, Color("6b431f") if not bool(settings().get("high_contrast", false)) else Color("000000"))
+	free_status.name = "StarterNativeFreeStatus"
+	free_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	free_status.anchor_left = 0.04; free_status.anchor_right = 0.96; free_status.anchor_top = 0.80; free_status.anchor_bottom = 0.86
+	content.add_child(free_status)
+	var previous := _visual_button("StarterPrevious", "PREVIOUS", func(): starter_page = posmod(starter_page - 1, choices.size()); render(), Color("587f90"))
+	previous.custom_minimum_size = Vector2(48, 48)
+	M1_PHYSICAL_UI.place_design(previous, Rect2(22, 920, 185, 105))
+	previous.accessibility_name = "Previous starter blueprint"
+	M1_PHYSICAL_UI.apply_cream_action(previous)
+	surface.add_child(previous)
+	var next := _visual_button("StarterNext", "NEXT", func(): starter_page = posmod(starter_page + 1, choices.size()); render(), Color("587f90"))
+	next.custom_minimum_size = Vector2(48, 48)
+	M1_PHYSICAL_UI.place_design(next, Rect2(733, 920, 186, 105))
+	surface.add_child(next)
+	var medallion := label("%d / %d" % [starter_page + 1, choices.size()], 17, Color("fff0bb"))
+	medallion.name = "StarterPageMedallion"
+	medallion.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	medallion.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	next.accessibility_name = "Next starter blueprint"
+	M1_PHYSICAL_UI.apply_cream_action(next)
+	M1_PHYSICAL_UI.place_design(medallion, Rect2(374, 920, 190, 105))
+	surface.add_child(medallion)
+	var inspect := _visual_button("StarterInspectFocused", "INSPECT", show_starter_inspector.bind(starter_id), accent)
+	inspect.custom_minimum_size = Vector2(48, 48)
+	inspect.accessibility_name = "Inspect %s blueprint" % str(creature.get("name", starter_id))
+	M1_PHYSICAL_UI.place_design(inspect, Rect2(72, 1100, 310, 120))
+	M1_PHYSICAL_UI.apply_cream_action(inspect)
+	surface.add_child(inspect)
+	var confirm := _visual_button("StarterConfirmFocused", "CONFIRM", func(): pending_starter_id = starter_id; confirm_starter(), Color("f1be69"), true)
+	confirm.custom_minimum_size = Vector2(0, 56)
+	confirm.accessibility_name = "Confirm %s blueprint and open its free first print" % str(creature.get("name", starter_id))
+	M1_PHYSICAL_UI.place_design(confirm, Rect2(558, 1100, 310, 120))
+	M1_PHYSICAL_UI.apply_cream_action(confirm)
+	surface.add_child(confirm)
+	var helper := label("INSPECT TO PREVIEW\nCONFIRM TO FORGE", 11, Color("10283a") if not bool(settings().get("high_contrast", false)) else Color("000000"))
+	helper.name = "StarterNativeHelper"
+	helper.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	helper.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	helper.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# This compact instruction sits on its own lower plaque, below the center
+	# counter and the two authored action plates.
+	M1_PHYSICAL_UI.place_design(helper, Rect2(175, 1360, 591, 95))
+	surface.add_child(helper)
+	for index in 3:
+		var socket := TextureRect.new()
+		socket.name = "StarterInnerSocket%d" % index
+		socket.texture = ResourceLoader.load(str(Catalog.creature(str(choices[index])).get("raw_print", ""))) as Texture2D
+		socket.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		socket.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		socket.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		M1_PHYSICAL_UI.place_design(socket, Rect2(250 + index * 150, 1480, 100, 100))
+		surface.add_child(socket)
+	if not starter_inspector_id.is_empty(): render_starter_inspector()
+
+func _render_portrait_starter_carousel(host: Container) -> void:
+	var choices := UNIFIED_RULES.STARTER_IDS
+	starter_page = posmod(starter_page, choices.size()); var starter_id := str(choices[starter_page]); var creature := Catalog.creature(starter_id)
+	var ceremony := VBoxContainer.new(); ceremony.name = "StarterBlueprintCarousel"; ceremony.size_flags_horizontal = Control.SIZE_EXPAND_FILL; ceremony.add_theme_constant_override("separation", 10); host.add_child(ceremony)
+	var title := label("CHOOSE A STARTER BLUEPRINT", 24, Color("fff0bb")); title.name = "StarterBlueprintTitle"; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(title)
+	var pager := HBoxContainer.new(); pager.alignment = BoxContainer.ALIGNMENT_CENTER; ceremony.add_child(pager)
+	var previous := _visual_button("StarterPrevious", "‹", func(): starter_page = posmod(starter_page - 1, choices.size()); render(), Color("587f90")); previous.custom_minimum_size = Vector2(48,48); pager.add_child(previous)
+	pager.add_child(_compact_pager_label("%d / %d" % [starter_page + 1, choices.size()]))
+	var next := _visual_button("StarterNext", "›", func(): starter_page = posmod(starter_page + 1, choices.size()); render(), Color("587f90")); next.custom_minimum_size = Vector2(48,48); pager.add_child(next)
+	var card := _visual_panel("StarterCarouselCard", Color("071a25e8"), Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff")), 12); card.custom_minimum_size = Vector2(0, 420); ceremony.add_child(card)
+	card.set_meta("starter_id", starter_id)
+	var content := VBoxContainer.new(); content.add_theme_constant_override("separation", 6); card.add_child(content)
+	var art := TextureRect.new(); art.name = "StarterBlueprintSchematic"; art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D; art.custom_minimum_size = Vector2(0,240); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; content.add_child(art)
+	var element_color := Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff")); var name_label := label(str(creature.get("name", starter_id)), 24, element_color); name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(name_label)
+	var stats := label("%s · HP %d · BEND %d · FIRST PRINT FREE" % [str(creature.get("element", "")), int(creature.get("hp", 0)), int(creature.get("bend", 0))], 14, Color("d8edf4")); stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(stats)
+	var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); ceremony.add_child(actions)
+	var inspect := _visual_button("StarterInspectFocused", "INSPECT", show_starter_inspector.bind(starter_id), element_color); inspect.size_flags_horizontal = Control.SIZE_EXPAND_FILL; actions.add_child(inspect)
+	var confirm := _visual_button("StarterConfirmFocused", "CONFIRM BLUEPRINT", func(): pending_starter_id = starter_id; confirm_starter(), Color("f1be69"), true); confirm.size_flags_horizontal = Control.SIZE_EXPAND_FILL; actions.add_child(confirm)
+	var hint := label("Inspect does not choose. Confirm grants one starter and opens its empty Forge bed.", 12, Color("9edeea")); hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ceremony.add_child(hint)
 	if not starter_inspector_id.is_empty(): render_starter_inspector()
 
 func render_onboarding() -> void:
@@ -1211,9 +1563,64 @@ func show_starter_inspector(starter_id: String) -> void:
 	starter_inspector_id = starter_id
 	render()
 
+func render_m1_r2_starter_inspector_folio(creature: Dictionary) -> void:
+	var modal := ColorRect.new()
+	modal.name = "StarterCardInspector"
+	modal.color = Color("07111bf0")
+	modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal.mouse_filter = Control.MOUSE_FILTER_STOP
+	modal.focus_mode = Control.FOCUS_ALL
+	modal.accessibility_name = "Starter blueprint inspector"
+	add_child(modal)
+	var plate := PHYSICAL_PORTRAIT_PLATE.new()
+	plate.name = "StarterR2InspectionFolio"
+	plate.configure(M1_PHYSICAL_UI.texture_for("starter_inspector"))
+	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal.add_child(plate)
+	_apply_presentation_safe_area(plate)
+	var surface := Control.new()
+	surface.name = "StarterR2InspectorSurface"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	plate.content_layer().add_child(surface)
+	var art := TextureRect.new()
+	art.name = "StarterInspectorBlueprintSchematic"
+	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	M1_PHYSICAL_UI.place_design(art, Rect2(154, 270, 630, 540))
+	surface.add_child(art)
+	var title := label(str(creature.get("name", "")).to_upper(), 21, Color("10283a"))
+	title.name = "StarterInspectorNativeTitle"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	M1_PHYSICAL_UI.place_design(title, Rect2(285, 160, 370, 80))
+	surface.add_child(title)
+	var facts := label("%s · HP %d · BEND %d\n%s" % [str(creature.get("element", "")), int(creature.get("hp", 0)), int(creature.get("bend", 0)), str(creature.get("ability", ""))], 17, Color("10283a"))
+	facts.name = "StarterInspectorNativeFacts"
+	facts.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	facts.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	facts.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	M1_PHYSICAL_UI.place_design(facts, Rect2(100, 820, 741, 280))
+	surface.add_child(facts)
+	var select := _visual_button("StarterInspectorSelect", "SELECT", func(): pending_starter_id = starter_inspector_id; starter_inspector_id = ""; render(), Color("f1be69"), true)
+	select.accessibility_name = "Select this blueprint"
+	select.custom_minimum_size = Vector2(0, 56)
+	M1_PHYSICAL_UI.place_design(select, Rect2(84, 1400, 360, 120))
+	M1_PHYSICAL_UI.apply_cream_action(select)
+	surface.add_child(select)
+	var close := _visual_button("StarterInspectorClose", "CLOSE", func(): starter_inspector_id = ""; render(), Color("7398ad"))
+	close.custom_minimum_size = Vector2(48, 48)
+	M1_PHYSICAL_UI.place_design(close, Rect2(500, 1400, 360, 120))
+	M1_PHYSICAL_UI.apply_cream_action(close)
+	surface.add_child(close)
+	call_deferred("_deferred_focus_if_ready", close.get_instance_id())
 func render_starter_inspector() -> void:
 	var creature := Catalog.creature(starter_inspector_id)
 	if creature.is_empty(): return
+	if is_portrait_layout():
+		render_m1_r2_starter_inspector_folio(creature)
+		return
 	var modal := ColorRect.new()
 	modal.name = "StarterCardInspector"
 	modal.color = Color("07111bf0")
@@ -1563,21 +1970,24 @@ func _workshop_overview_hotspot_button(hotspot: Dictionary) -> Button:
 	button.accessibility_name = str(hotspot.name)
 	button.anchor_left = rect.position.x; button.anchor_top = rect.position.y; button.anchor_right = rect.end.x; button.anchor_bottom = rect.end.y
 	button.offset_left = 0; button.offset_top = 0; button.offset_right = 0; button.offset_bottom = 0
-	button.custom_minimum_size = Vector2(44, 44)
+	button.custom_minimum_size = Vector2(48, 48)
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.set_meta("workshop_target", str(hotspot.target))
 	button.add_theme_stylebox_override("normal", workshop_hotspot_style())
 	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
-	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
+	button.add_theme_stylebox_override("focus", _visual_style(Color(0, 0, 0, 0), Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("6defff"), 12, 4 if bool(settings().get("high_contrast", false)) else 3))
 	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
-	# A restrained bracket halo makes each pictured prop discoverable without
-	# turning the room into a dashboard of generic button plaques.
-	_add_workshop_hotspot_overlay(button, Color("6defff"))
+	# The ring follows the exact approved-prop zone, rather than covering the
+	# Workshop with a generic cyan action plaque.
+	_add_workshop_tight_focus_ring(button, str(hotspot.id))
 	button.gui_input.connect(func(event: InputEvent):
 		if (event is InputEventKey or event is InputEventJoypadButton) and event.pressed:
 			_focus_after_render = true)
-	button.pressed.connect(activate_workshop_overview_hotspot.bind(str(hotspot.id)))
+	if bool(hotspot.get("m1_physical", false)):
+		button.pressed.connect(_run_workshop_station.bind(str(hotspot.target)))
+	else:
+		button.pressed.connect(activate_workshop_overview_hotspot.bind(str(hotspot.id)))
 	return button
 
 func _workshop_object_rect(object: Dictionary) -> Rect2:
@@ -1626,6 +2036,10 @@ func _select_workshop_object_if_not_dragged(object_id: String, button: Button) -
 		button.set_meta("workshop_pan_cancelled", false)
 		return
 	select_workshop_object(object_id)
+
+func _add_workshop_tight_focus_ring(button: Button, hotspot_id: String) -> void:
+	var high_contrast := bool(settings().get("high_contrast", false))
+	M1_PHYSICAL_UI.add_complete_focus_ring(button, hotspot_id, high_contrast, _visual_style)
 
 func _add_workshop_hotspot_overlay(button: Button, color: Color) -> void:
 	var overlay := WORKSHOP_HOTSPOT_OVERLAY.new()
@@ -1987,12 +2401,16 @@ func claim_overview_calibration() -> void:
 func _run_workshop_station(id: String) -> void:
 	match id:
 		"printer": open_printer_picker()
-		"collection", "shop", "codex", "team", "deck", "archive", "armor", "settings", "unified_forgedex", "unified_deck", "unified_library", "unified_upgrades": navigate_to(id)
+		"collection", "shop", "codex", "team", "deck", "archive", "armor", "settings", "unified_forgedex", "unified_deck", "unified_library", "unified_market", "unified_upgrades": navigate_to(id)
 		"proving": navigate_to("proving")
 		"trials": navigate_to("trials")
 		"local_vs": start_local_vs()
 		"trade": local_trade = null; trade_creator_choice = ""; trade_partner_choice = ""; navigate_to("trade")
 		"yard", "calibration": navigate_to(id)
+		_:
+			_toast("%s is unavailable. Your Workshop state is unchanged." % id.replace("_", " ").capitalize())
+			screen = "workshop"
+			render()
 
 func start_local_vs() -> void:
 	# Hot-seat uses the same public v3 snapshot and seat-redacted hands as solo.
@@ -2154,12 +2572,23 @@ func render_settings() -> void:
 		raise.size_flags_horizontal = Control.SIZE_SHRINK_END
 		row.add_child(raise)
 	panel.add_child(label("Daily contract difficulty is fixed by the Guild: Apprentice, Craftsman, and Master. The legacy Training AI setting remains saved for compatibility but is no longer selectable.", 14, Color("9beaff")))
-	body.add_child(make_button("Back to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
+	var return_label := "Back to Title" if settings_return_screen == "title" else "Back to Workshop"
+	var return_button := make_button(return_label, _return_from_settings, Color("536c8d"))
+	return_button.name = "SettingsReturn"
+	return_button.accessibility_name = return_label
+	body.add_child(return_button)
 	# The shared keyboard-first focus pass targets the first text-scale button.
 	# On a short landscape viewport Godot can then retain that button's old scroll
 	# offset and hide the Settings heading. Reset only the initial route origin;
 	# later keyboard/touch focus still uses the normal ScrollContainer behavior.
 	call_deferred("_restore_settings_scroll_origin")
+
+func _return_from_settings() -> void:
+	var destination := settings_return_screen if settings_return_screen in ["title", "workshop"] else "workshop"
+	screen = destination
+	if destination == "workshop":
+		workshop_view = workshop_return_view
+	render()
 
 func _restore_settings_scroll_origin() -> void:
 	await get_tree().process_frame

@@ -1,6 +1,26 @@
 {
   "version": 1,
   "purpose": "Runtime-only assets referenced dynamically by PrintForge Legends v3.",
+  "m1_physical_ui": {
+    "blueprint_cartridge": {
+      "runtime_path": "res://assets/ui/physical_ui/m1-r2/blueprint-cartridge-text-free-v1.png",
+      "source_path": "res://docs/art/printforge-physical-ui-spike-20260830/runtime-masters/blueprint-cartridge-text-free-v1.png",
+      "dimensions": [724, 2172],
+      "bytes": 2161030,
+      "sha256": "66F50A5B85B45762C602556FF32A847D2BE72D03D59443845460C0DEA5AF4367",
+      "alpha_expected": true,
+      "approved_crop": [96, 0, 584, 2172],
+      "runtime_role": "First Print docked blueprint cartridge outside the empty printer bed.",
+      "provenance": {
+        "generator": "OpenAI ImageGen",
+        "prompt_summary": "reconstructed-from-approved-brief: text-free vertical brass-and-paper blueprint cartridge, physical PrintForge workshop material family",
+        "prompt_status": "reconstructed-from-approved-brief",
+        "approval_date": "2026-08-30",
+        "approval_source": "Pat UI Concept Match approved runtime-master review"
+      },
+      "rejected_alternatives": ["native diamond placeholder glyph", "raw-print creature art as a docked cartridge"]
+    }
+  },
   "groups": {
     "battle_backgrounds": [
       "res://assets/ui/battle_backgrounds/daily_arena_landscape_v1.png",

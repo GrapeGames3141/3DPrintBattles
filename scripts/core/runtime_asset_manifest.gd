@@ -18,6 +18,23 @@ static func validation_errors() -> Array[String]:
 		failures.append("Runtime asset manifest is missing version 1.")
 		return failures
 	var groups: Dictionary = manifest.get("groups", {}) if manifest.get("groups", {}) is Dictionary else {}
+	var m1: Dictionary = manifest.get("m1_physical_ui", {}) if manifest.get("m1_physical_ui", {}) is Dictionary else {}
+	var cartridge: Dictionary = m1.get("blueprint_cartridge", {}) if m1.get("blueprint_cartridge", {}) is Dictionary else {}
+	for field in ["runtime_path", "source_path", "dimensions", "bytes", "sha256", "alpha_expected", "approved_crop", "runtime_role", "provenance", "rejected_alternatives"]:
+		if not cartridge.has(field): failures.append("M1 blueprint cartridge manifest is missing %s." % field)
+	if not cartridge.is_empty():
+		var runtime_path := str(cartridge.get("runtime_path", ""))
+		var source_path := str(cartridge.get("source_path", ""))
+		if not ResourceLoader.exists(runtime_path): failures.append("Missing promoted M1 blueprint cartridge: %s" % runtime_path)
+		if not FileAccess.file_exists(source_path): failures.append("Missing approved M1 blueprint cartridge source: %s" % source_path)
+		var dimensions: Array = cartridge.get("dimensions", []) if cartridge.get("dimensions", []) is Array else []
+		var crop: Array = cartridge.get("approved_crop", []) if cartridge.get("approved_crop", []) is Array else []
+		var provenance: Dictionary = cartridge.get("provenance", {}) if cartridge.get("provenance", {}) is Dictionary else {}
+		var dimensions_match := dimensions.size() == 2 and int(dimensions[0]) == 724 and int(dimensions[1]) == 2172
+		var crop_match := crop.size() == 4 and int(crop[0]) == 96 and int(crop[1]) == 0 and int(crop[2]) == 584 and int(crop[3]) == 2172
+		if not dimensions_match or not crop_match or int(cartridge.get("bytes", 0)) != 2161030: failures.append("M1 blueprint cartridge dimensions, crop, or byte identity is invalid.")
+		if str(cartridge.get("sha256", "")) != "66F50A5B85B45762C602556FF32A847D2BE72D03D59443845460C0DEA5AF4367": failures.append("M1 blueprint cartridge SHA-256 identity is invalid.")
+		if str(provenance.get("prompt_status", "")) != "reconstructed-from-approved-brief": failures.append("M1 cartridge provenance must disclose reconstructed prompt status.")
 	for key in ["battle_backgrounds", "printer_frames", "card_atlases", "card_fronts"]:
 		var paths: Array = groups.get(key, []) if groups.get(key, []) is Array else []
 		if paths.is_empty(): failures.append("Manifest group %s is empty." % key)

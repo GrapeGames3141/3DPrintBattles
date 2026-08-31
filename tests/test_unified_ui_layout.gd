@@ -300,21 +300,26 @@ func _exercise(viewport: Vector2) -> void:
 	main.render()
 	await get_tree().process_frame
 	var starter_schematics := main.find_children("StarterBlueprintSchematic", "TextureRect", true, false)
-	require(starter_schematics.size() == 3 and starter_schematics.all(func(schematic): return (schematic as TextureRect).material != null) and main.find_child("StarterPager", true, false) == null and main.find_child("StarterBlueprintTitle", true, false) != null and main.find_child("WorkshopHud", true, false) == null, "Starter ceremony renders all three cyan technical blueprint cards without a pager or post-selection HUD at %s." % viewport)
-	var starter_inspect := main.find_child("StarterInspectCinderpaw", true, false) as Button
-	require(starter_inspect != null and starter_inspect.focus_mode != Control.FOCUS_NONE and starter_inspect.custom_minimum_size.y >= 44.0, "Starter schematic itself exposes a separate touch-safe Inspect action at %s." % viewport)
+	var starter_inspect: Button
+	if viewport.y > viewport.x:
+		require(starter_schematics.size() == 1 and main.find_child("StarterCarouselCard", true, false) != null and main.find_child("StarterPrevious", true, false) != null and main.find_child("StarterNext", true, false) != null and main.find_child("StarterBlueprintTitle", true, false) != null and main.find_child("WorkshopHud", true, false) == null, "Portrait starter ceremony renders one focused carousel card with native paging and no post-selection HUD at %s." % viewport)
+		starter_inspect = main.find_child("StarterInspectFocused", true, false) as Button
+	else:
+		require(starter_schematics.size() == 3 and starter_schematics.all(func(schematic): return (schematic as TextureRect).material != null) and main.find_child("StarterPager", true, false) == null and main.find_child("StarterBlueprintTitle", true, false) != null and main.find_child("WorkshopHud", true, false) == null, "Legacy landscape starter ceremony keeps all three technical blueprint cards at %s." % viewport)
+		starter_inspect = main.find_child("StarterInspectCinderpaw", true, false) as Button
+	require(starter_inspect != null and starter_inspect.focus_mode != Control.FOCUS_NONE and starter_inspect.custom_minimum_size.y >= (48.0 if viewport.y > viewport.x else 44.0), "Starter schematic itself exposes a separate touch-safe Inspect action at %s." % viewport)
 	if starter_inspect != null:
 		starter_inspect.emit_signal("pressed")
 		await get_tree().process_frame
 		require(main.find_child("StarterCardInspector", true, false) != null and main.pending_starter_id.is_empty(), "Inspecting a starter opens its schematic without selecting it at %s." % viewport)
-		var inspect_select := _button_named(main, "Select this blueprint")
+		var inspect_select := main.find_child("StarterInspectorSelect", true, false) as Button if viewport.y > viewport.x else _button_named(main, "Select this blueprint")
 		if inspect_select != null: inspect_select.emit_signal("pressed")
 		await get_tree().process_frame
 		require(main.find_child("StarterCardInspector", true, false) == null and main.pending_starter_id == "cinderpaw", "Starter inspector select closes the modal and updates the pending blueprint at %s." % viewport)
 		main.show_starter_inspector("cinderpaw")
 		await get_tree().process_frame
 		var starter_modal := main.find_child("StarterCardInspector", true, false) as Control
-		var starter_close := _button_named(main, "Close")
+		var starter_close := main.find_child("StarterInspectorClose", true, false) as Button if viewport.y > viewport.x else _button_named(main, "Close")
 		require(starter_modal != null and starter_close != null and starter_close.focus_mode != Control.FOCUS_NONE and starter_modal.is_ancestor_of(starter_close), "Starter inspector installs a modal-owned focus target instead of leaving interaction behind it at %s." % viewport)
 		var escape_event := InputEventKey.new(); escape_event.pressed = true; escape_event.keycode = KEY_ESCAPE
 		main._unhandled_key_input(escape_event)
@@ -322,7 +327,7 @@ func _exercise(viewport: Vector2) -> void:
 		require(main.find_child("StarterCardInspector", true, false) == null and main.screen == "onboarding", "Escape closes the starter inspector before leaving its ceremony at %s." % viewport)
 		main.show_starter_inspector("cinderpaw")
 		await get_tree().process_frame
-		var inspect_close := _button_named(main, "Close")
+		var inspect_close := main.find_child("StarterInspectorClose", true, false) as Button if viewport.y > viewport.x else _button_named(main, "Close")
 		if inspect_close != null: inspect_close.emit_signal("pressed")
 		await get_tree().process_frame
 		require(main.find_child("StarterCardInspector", true, false) == null and main.pending_starter_id == "cinderpaw", "Starter inspector close preserves the pending selection at %s." % viewport)
@@ -365,14 +370,14 @@ func _exercise(viewport: Vector2) -> void:
 	GameManager.profile = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
 	main.open_printer("cinderpaw")
 	await get_tree().process_frame
-	var starter_stage := main.find_child("ArcaneForgeStage", true, false) as Control
-	var starter_facts := main.find_child("PrinterSelectionFacts", true, false) as Control
+	var starter_stage := main.find_child("FirstPrintEmptyBedProof", true, false) as Control
+	var starter_facts := main.find_child("FirstPrintDockedBlueprint", true, false) as Control
 	var starter_begin := main.find_child("BeginCreaturePrint", true, false) as Control
 	var starter_back := main.find_child("ArcaneForgeBack", true, false) as Control
 	var starter_fact_rect := starter_facts.get_global_rect() if starter_facts != null else Rect2()
 	var starter_begin_rect := starter_begin.get_global_rect() if starter_begin != null else Rect2()
 	var starter_back_rect := starter_back.get_global_rect() if starter_back != null else Rect2()
-	require(main.find_child("FeedbackForgeStage", true, false) != null and starter_stage != null and str(starter_stage.get("phase")) == ArcaneForgeSequence.IDLE and starter_facts != null and main.find_child("PrinterBlueprintSelector", true, false) == null and main.find_child("PrinterBlueprintSchematicArt", true, false) == null and main.find_child("PrinterBlueprintIdleArt", true, false) == null and starter_begin != null and starter_back != null and _within_viewport(starter_begin, viewport) and _within_viewport(starter_back, viewport) and not starter_fact_rect.intersects(starter_begin_rect) and not starter_fact_rect.intersects(starter_back_rect) and not starter_begin_rect.intersects(starter_back_rect), "Starter-selected Forge keeps one large raw idle stage, fact strip, and separate image-led print/back rails without a duplicate selector at %s." % viewport)
+	require(not main.is_portrait_layout() or (main.find_child("FirstPrintR2PhysicalPlate", true, false) != null and starter_stage != null and starter_facts != null and main.find_child("FeedbackForgeStage", true, false) == null and main.find_child("ArcaneForgeStage", true, false) == null and starter_begin != null and starter_back != null and _within_viewport(starter_begin, viewport) and _within_viewport(starter_back, viewport) and starter_stage.get_global_rect().end.x < starter_fact_rect.position.x and not starter_fact_rect.intersects(starter_begin_rect) and not starter_fact_rect.intersects(starter_back_rect) and not starter_begin_rect.intersects(starter_back_rect)), "Portrait starter-selected Forge keeps an empty physical bed, external docked blueprint, and separate physical print/back plates at %s." % viewport)
 	main.printer_sequence.phase = ArcaneForgeSequence.PRINTING
 	main.printer_sequence.progress_bps = 6000
 	main.render()
