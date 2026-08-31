@@ -47,7 +47,9 @@ func _ready() -> void:
 	# The unified shell intentionally replaces the retired legacy navigation
 	# surface. Keep this boundary test deterministic by validating the current
 	# authored Trial adapter instead of falling through to removed callbacks.
-	if not main.has_method("navigate_to"):
+	# M2 owns the shipped current Trial route.  Legacy Team Builder callbacks may
+	# remain as compatibility helpers, but must not select the retired launch test.
+	if main.has_method("start_mode"):
 		var unified_profile := UNIFIED_RULES.ensure(ProfileRules.new_profile())
 		unified_profile = UNIFIED_RULES.choose_starter(unified_profile, "cinderpaw").profile
 		unified_profile = UNIFIED_RULES.print_starter(unified_profile).profile

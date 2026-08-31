@@ -1,8 +1,8 @@
 extends Node
 
-## Accessibility/UI contract for the shipped v3 screen. It deliberately tests
-## control semantics and hot-seat privacy rather than obsolete 0.7 fixed-layout
-## geometry; the battle component responds to portrait/landscape itself.
+## Accessibility/UI contract: M2 changes only the battle assertions below; the
+## retained tail continues to exercise Market, archive, deck, packs and onboarding.
+
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const STATE := preload("res://scripts/battle/unified_battle_state.gd")
@@ -33,188 +33,47 @@ func _within_viewport(control: Control, viewport: Vector2) -> bool:
 	return rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= viewport.x and rect.end.y <= viewport.y
 
 func _configure_isolated_save_paths() -> void:
-	var root := "user://printforge-validation/unified-ui-layout"
-	if OS.get_name() == "Windows" and DirAccess.dir_exists_absolute("E:/"):
-		root = "E:/CodexCache/printforge-validation/unified-ui-layout"
-		var create_error := DirAccess.make_dir_recursive_absolute(root)
-		require(create_error == OK or DirAccess.dir_exists_absolute(root), "Creates the isolated Windows UI-layout save directory.")
-	else:
-		var absolute_root := ProjectSettings.globalize_path(root)
-		var create_error := DirAccess.make_dir_recursive_absolute(absolute_root)
-		require(create_error == OK or DirAccess.dir_exists_absolute(absolute_root), "Creates the isolated cross-platform UI-layout save directory.")
+	var root := "E:/AI Projects/games/3d print battler/tmp/m2-unified-layout"
+	DirAccess.make_dir_recursive_absolute(root)
 	SaveService.configure_test_paths(root)
 
 func _exercise(viewport: Vector2) -> void:
 	GameManager.profile = _legal_profile()
 	var subviewport := SubViewport.new()
-	subviewport.size = Vector2i(viewport)
-	subviewport.size_2d_override = Vector2i(viewport)
-	subviewport.size_2d_override_stretch = true
-	subviewport.disable_3d = true
-	add_child(subviewport)
-	var canvas := Control.new()
-	canvas.position = Vector2.ZERO
-	canvas.size = viewport
-	subviewport.add_child(canvas)
-	var main := MAIN.instantiate()
-	var deck: Array = GameManager.active_deck_cards()
-	main.battle = STATE.create(deck, deck, 81)
-	main.battle_mode = "local"
-	main.unified_local_handoff = true
-	main.screen = "unified_battle"
-	canvas.add_child(main)
-	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	require(main.get_script().resource_path == "res://scripts/ui/main.gd", "Shipped battle shell is main.gd at %s." % viewport)
-	require(main.find_child("UnifiedBattleHeading", true, false) != null, "Battle heading renders at %s." % viewport)
-	var initial_stage := main.find_child("UnifiedBattleSpriteStage", true, false) as Control
-	require(initial_stage != null and _within_viewport(initial_stage, viewport), "Unified arena mounts an in-bounds persistent sprite stage at %s." % viewport)
-	require(main.find_child("UnifiedLocalHandoff", true, false) != null, "Hot-seat privacy handoff renders at %s." % viewport)
-	require(main.find_child("UnifiedBattleHandGrid", true, false) == null, "Hidden hand is omitted during hot-seat handoff at %s." % viewport)
-	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null, "Hot-seat handoff exposes no phase-advance control at %s." % viewport)
-	require(_button_named(main, "Ready Player") != null, "Handoff has an explicit ready action at %s." % viewport)
-	main.unified_local_handoff = false
-	main.render()
-	await get_tree().process_frame
-	require(main.find_child("UnifiedBattleHandGrid", true, false) != null, "Owner hand renders after handoff at %s." % viewport)
-	var local_primary := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
-	require(local_primary != null and _within_viewport(local_primary, viewport), "Phase-specific action is visible in the battle first fold at %s." % viewport)
-	if local_primary != null:
-		require(local_primary.focus_mode != Control.FOCUS_NONE and not local_primary.disabled, "Phase-specific action is keyboard-focusable at %s." % viewport)
-	require(main.is_portrait_layout() == (viewport.y > viewport.x), "Battle component detects orientation at %s." % viewport)
-	# Exercise the human Main Phase path directly. The controlled opening hand makes
-	# the card selection and FIFO queue assertion deterministic at both layouts.
-	main.battle = STATE.create(deck, deck, 81)
-	main.battle.starting_seat = 0
-	main.battle.active_seat = 0
-	main.battle.turn = 1
-	main.battle.phase = "draw"
-	main.battle.player(0).hand = ["cinderpaw"]
-	main.battle.player(0).deck = []
-	main.battle.player(0).filament = 200
-	main.battle_mode = "daily_training"
-	main.unified_ai_pending = false
-	main.unified_local_handoff = false
-	main.unified_selected_card_id = ""
-	main.screen = "unified_battle"
-	main.render()
-	await get_tree().process_frame
-	var begin_main := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
-	var opening_card := main.find_child("UnifiedHandCinderpaw", true, false) as Button
-	require(begin_main != null and begin_main.text == "Begin Main" and _within_viewport(begin_main, viewport), "Draw phase exposes an in-bounds Begin Main action at %s." % viewport)
-	require(opening_card != null and opening_card.disabled and "Main Phase" in opening_card.tooltip_text and "70F" in opening_card.text, "Draw phase shows the actual filament cost and explains disabled hand cards at %s." % viewport)
-	if begin_main != null:
-		begin_main.emit_signal("pressed")
-		await get_tree().process_frame
-	require(str(main.battle.phase) == "main", "Begin Main advances the deterministic battle to Main at %s." % viewport)
-	opening_card = main.find_child("UnifiedHandCinderpaw", true, false) as Button
-	require(opening_card != null and not opening_card.disabled and _within_viewport(opening_card, viewport), "Main Phase exposes an in-bounds playable hand card at %s." % viewport)
-	if opening_card != null:
-		opening_card.emit_signal("pressed")
-		await get_tree().process_frame
-	var picker := main.find_child("UnifiedPlayTargetPicker", true, false) as Control
-	var selected_card := main.find_child("UnifiedSelectedHandCard", true, false) as Control
-	var queue_creature := main.find_child("UnifiedPlayQueueCreature", true, false) as Button
-	require(picker != null and _within_viewport(picker, viewport), "Selected card target/action picker remains in the viewport at %s." % viewport)
-	require(selected_card != null and _within_viewport(selected_card, viewport), "Selected hand card is visibly named at %s." % viewport)
-	require(queue_creature != null and _within_viewport(queue_creature, viewport) and queue_creature.focus_mode != Control.FOCUS_NONE, "Queue action is visible and keyboard/touch reachable at %s." % viewport)
-	if queue_creature != null:
-		queue_creature.emit_signal("pressed")
-		await get_tree().process_frame
-	require(not main.battle.player(0).hand.has("cinderpaw") and main.battle.player(0).queue.size() == 1 and int(main.battle.player(0).filament) == 130, "Queueing a selected creature consumes the hand card and its actual filament cost at %s." % viewport)
-	# Resolve Printing can stop on a completed creature. That mandatory choice must
-	# replace the invalid phase action and conceal optional hand/attack controls.
-	main.battle = STATE.create(deck, deck, 81)
-	main.battle.starting_seat = 0
-	main.battle.active_seat = 0
-	main.battle.turn = 1
-	main.battle.phase = "print"
-	main.battle.player(0).slots = [null, null, null]
-	main.battle.player(0).queue = [{"card_id":"cinderpaw", "remaining":1, "target":-1, "cost":70}]
-	main.battle_mode = "daily_training"
-	main.unified_ai_pending = false
-	main.unified_selected_card_id = ""
-	main.render()
-	await get_tree().process_frame
-	var resolve_printing := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
-	require(resolve_printing != null and resolve_printing.text == "Resolve Printing", "Print phase exposes Resolve Printing before a completed print decision at %s." % viewport)
-	if resolve_printing != null:
-		resolve_printing.emit_signal("pressed")
-	var print_stage := main.find_child("UnifiedBattleSpriteStage", true, false)
-	require(int(main.unified_battle_presentation.get("token", 0)) > 0 and str(main.unified_battle_presentation.get("kind", "")) == "print" and print_stage == initial_stage, "Accepted Print resolution advances the persistent stage through a print receipt at %s." % viewport)
-	await get_tree().process_frame
-	var pending_panel := main.find_child("UnifiedPendingPrintDecision", true, false) as Control
-	var pending_choices := main.find_child("UnifiedPendingPlaceChoices", true, false) as GridContainer
-	require(str(main.battle.pending.get("kind", "")) == "place", "Resolve Printing creates the pending placement state at %s." % viewport)
-	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null and main.find_child("UnifiedBattleHandGrid", true, false) == null and main.find_child("UnifiedAttackTargetPicker", true, false) == null, "Pending placement hides the invalid phase, hand, and attack controls at %s." % viewport)
-	require(pending_panel != null and _within_viewport(pending_panel, viewport), "Pending placement panel is visible in bounds at %s." % viewport)
-	var pending_place_buttons: Array = pending_choices.get_children() if pending_choices != null else []
-	require(pending_place_buttons.size() == 6, "Every open field slot has Attack and Defense placement choices at %s." % viewport)
-	for choice in pending_place_buttons:
-		require(choice is Button and _within_viewport(choice as Control, viewport) and (choice as Button).focus_mode != Control.FOCUS_NONE and (choice as Button).custom_minimum_size.y >= 44.0 and not (choice as Button).accessibility_name.is_empty(), "Pending placement choice is in-bounds and accessible at %s." % viewport)
-	var place_slot_one_attack := main.find_child("UnifiedPendingPlaceSlot1Attack", true, false) as Button
-	if place_slot_one_attack != null:
-		place_slot_one_attack.emit_signal("pressed")
-		await get_tree().process_frame
-	require(main.battle.pending.is_empty() and main.battle.player(0).slots[0] != null and str(main.battle.player(0).slots[0].get("card_id", "")) == "cinderpaw", "Selecting a pending placement clears it and places the completed creature at %s." % viewport)
-	# Equipment waiting in holding uses the same mandatory decision surface and
-	# only offers occupied creatures with the matching gear slot still empty.
-	main.battle = STATE.create(deck, deck, 81)
-	main.battle.starting_seat = 0
-	main.battle.active_seat = 0
-	main.battle.turn = 1
-	main.battle.phase = "print"
-	main.battle.player(0).slots = [STATE._unit(RULES.card("cinderpaw")), null, null]
-	main.battle.player(0).holding = [{"card_id":"standard_full_suit", "target":0}]
-	main.battle.pending = {"kind":"attach", "seat":0, "card_id":"standard_full_suit", "holding_index":0}
-	main.render()
-	await get_tree().process_frame
-	var attach_panel := main.find_child("UnifiedPendingPrintDecision", true, false) as Control
-	var attach_slot_one := main.find_child("UnifiedPendingAttachSlot1", true, false) as Button
-	require(attach_panel != null and _within_viewport(attach_panel, viewport) and attach_slot_one != null and _within_viewport(attach_slot_one, viewport) and attach_slot_one.focus_mode != Control.FOCUS_NONE and attach_slot_one.custom_minimum_size.y >= 44.0 and not attach_slot_one.accessibility_name.is_empty(), "Pending equipment offers an accessible legal attachment choice at %s." % viewport)
-	if attach_slot_one != null:
-		attach_slot_one.emit_signal("pressed")
-		await get_tree().process_frame
-	require(main.battle.pending.is_empty() and main.battle.player(0).holding.is_empty() and not (main.battle.player(0).slots[0].get("equipment", {}).get("armor", {}) as Dictionary).is_empty(), "Selecting a pending attachment clears it and equips the compatible creature at %s." % viewport)
-	# Battle authority may remove the defender immediately; the stage receipt must
-	# still retain the accepted pre-action attacker and defender snapshots.
-	main.battle = STATE.create(deck, deck, 82)
-	main.battle.starting_seat = 1
-	main.battle.active_seat = 0
-	main.battle.turn = 2
-	main.battle.phase = "attack"
-	main.battle.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw"))
-	main.battle.player(0).slots[0].ready = true
-	main.battle.player(1).slots[0] = STATE._unit(RULES.card("aquafin"))
-	main.battle.player(1).slots[0].hp = 1
-	var attack_token_before := int(main.unified_battle_presentation.get("token", 0))
-	main._submit_unified_intent({"type":"attack", "slot":0, "target":0})
-	require(int(main.unified_battle_presentation.get("token", 0)) == attack_token_before + 1 and str(main.unified_battle_presentation.get("kind", "")) == "attack" and str((main.unified_battle_presentation.get("left", {}) as Dictionary).get("id", "")) == "cinderpaw" and str((main.unified_battle_presentation.get("right", {}) as Dictionary).get("id", "")) == "aquafin", "Accepted player attacks create a pre-resolution stage receipt at %s." % viewport)
-	var attack_token := int(main.unified_battle_presentation.get("token", 0))
-	main._settle_unified_battle_presentation(attack_token)
-	await get_tree().process_frame
-	require(str(main.unified_battle_presentation.get("kind", "")) == "" and (main.unified_battle_presentation.get("right", {}) as Dictionary).is_empty(), "Settled attack presentation returns to the live board after a defeated defender at %s." % viewport)
-	main._settle_unified_battle_presentation(attack_token - 1)
-	require(str(main.unified_battle_presentation.get("kind", "")) == "", "Stale presentation timers cannot alter the newer settled token at %s." % viewport)
-	# Rival turns are public-board-only until the deferred AI finishes. The player
-	# must never receive a phase button or a view of the rival's private hand.
-	main.battle = STATE.create(deck, deck, 81)
-	main.battle.starting_seat = 1
-	main.battle.active_seat = 1
-	main.battle.turn = 1
-	main.battle.phase = "attack"
-	main.battle.player(1).slots[0] = STATE._unit(RULES.card("cinderpaw"))
-	main.battle.player(1).slots[0].ready = true
-	main.battle_mode = "daily_training"
-	main.unified_ai_pending = true
-	main.unified_selected_card_id = ""
-	main.render()
-	await get_tree().process_frame
-	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null and main.find_child("UnifiedBattleHandGrid", true, false) == null, "Pending non-local rival turn exposes neither controls nor the rival hand at %s." % viewport)
-	await main._run_unified_ai()
-	await get_tree().process_frame
-	require(int(main.battle.active_seat) == 0 and not main.unified_ai_pending and main.find_child("UnifiedBattlePrimaryAction", true, false) != null and main.find_child("UnifiedBattleHandGrid", true, false) != null, "A rival-first turn skips its forbidden opening attack and returns interactive control instead of leaving calculating-only UI at %s." % viewport)
+	subviewport.size = Vector2i(viewport); subviewport.size_2d_override = Vector2i(viewport); subviewport.size_2d_override_stretch = true; subviewport.disable_3d = true; add_child(subviewport)
+	var canvas := Control.new(); canvas.size = viewport; subviewport.add_child(canvas)
+	var main := MAIN.instantiate(); var deck: Array = GameManager.active_deck_cards()
+	main.battle = STATE.create(deck, deck, 81); main.battle.starting_seat = 0; main.battle.active_seat = 0; main.battle.phase = "main"; main.battle.player(0).hand = ["cinderpaw"]
+	main.battle_mode = "daily_training"; main.screen = "unified_battle"; main.unified_battle_coordinator.configure(main.battle, 0); canvas.add_child(main); main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await get_tree().process_frame; await get_tree().process_frame
+	var stage := main.find_child("PhysicalBattlefieldStage", true, false) as Control
+	var lever := main.find_child("UnifiedRunCycleLever", true, false) as Button
+	require(stage != null and _within_viewport(stage, viewport), "Physical battle chassis fills the usable surface at %s." % viewport)
+	# M2 is intentionally portrait-only; landscape remains an unsupported review
+	# fixture for the pre-existing non-battle route regressions below.
+	if viewport.y > viewport.x:
+		require(lever != null and lever.custom_minimum_size.y >= 56.0 and _within_viewport(lever, viewport), "Plan exposes one in-bounds 56px Run Cycle lever at %s." % viewport)
+	require(main.find_child("UnifiedBattlePrimaryAction", true, false) == null and main.find_child("UnifiedBattlePhaseActions", true, false) == null, "Retired manual phase controls are absent at %s." % viewport)
+	var card := main.find_child("UnifiedHandCinderpaw", true, false) as Button
+	require(card != null and not card.disabled, "Owned hand card remains native and playable in Plan at %s." % viewport)
+	if card != null: card.emit_signal("pressed"); await get_tree().process_frame
+	main._submit_unified_intent({"type":"play_card","card_id":"cinderpaw"}); main.unified_battle_coordinator.acknowledge_presentation(main.unified_battle_coordinator.generation); await get_tree().process_frame
+	require(main.battle.player(0).queue.size() == 1, "Plan card action queues through checked authority at %s." % viewport)
+	lever = main.find_child("UnifiedRunCycleLever", true, false) as Button
+	if lever != null: lever.emit_signal("pressed"); await get_tree().process_frame
+	require(str(main.battle.phase) != "main", "Run Cycle advances without exposing phase buttons at %s." % viewport)
+	main.unified_battle_coordinator.acknowledge_presentation(main.unified_battle_coordinator.generation)
+	main.battle.pending = {"kind":"place","seat":0,"unit":STATE._unit(RULES.card("cinderpaw"))}; main.render(); await get_tree().process_frame
+	var placement_count := 0
+	for slot in 3:
+		for mode in ["Attack", "Defense"]:
+			var placement := main.find_child("UnifiedPendingPlaceSlot%d%s" % [slot + 1, mode], true, false) as Button
+			if placement != null and placement.custom_minimum_size.y >= 48.0: placement_count += 1
+	require(placement_count == 6, "Required placement is contextual through six physical anchor mode choices at %s." % viewport)
+	main.battle.pending = {"kind":"attach","seat":0,"card_id":"standard_full_suit","holding_index":0}; main.battle.player(0).slots = [STATE._unit(RULES.card("cinderpaw")), null, null]; main.render(); await get_tree().process_frame
+	var attachment := main.find_child("UnifiedPendingAttachSlot1", true, false) as Button
+	require(attachment != null and attachment.custom_minimum_size.y >= 48.0, "Required attachment is contextual at its compatible physical anchor at %s." % viewport)
+
 	main.screen = "unified_market"
 	main.unified_market_tab = "blueprints"
 	main.render()

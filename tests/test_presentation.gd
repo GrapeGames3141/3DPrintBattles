@@ -30,6 +30,11 @@ func _ready() -> void:
 	var main := MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
+	# The physical Workshop instrument is a Workshop route assertion; the app
+	# deliberately starts at Title for a completed profile.
+	main.screen = "workshop"
+	main.render()
+	await get_tree().process_frame
 	var progress_instrument := main.find_child("WorkshopProgressInstrument", true, false) as PanelContainer
 	var progress_bar := main.find_child("WorkshopHudProgress", true, false) as ProgressBar
 	var shared_keycap: Button = main.make_button("Style probe", func(): pass)
@@ -51,8 +56,8 @@ func _ready() -> void:
 	main.render()
 	await get_tree().process_frame
 	var battle_heading := main.find_child("UnifiedBattleHeading", true, false) as Label
-	var phase_action := main.find_child("UnifiedBattlePrimaryAction", true, false) as Button
-	require(main.battle != null and main.screen == "unified_battle" and battle_heading != null and phase_action != null and not phase_action.tooltip_text.is_empty() and not phase_action.accessibility_name.is_empty(), "supported v3 battle launch renders explicit accessible phase presentation")
+	var lever := main.find_child("UnifiedRunCycleLever", true, false) as Button
+	require(main.battle != null and main.screen == "unified_battle" and battle_heading != null and lever != null and lever.custom_minimum_size.y >= 56.0 and not lever.accessibility_name.is_empty() and main.find_child("UnifiedBattlePrimaryAction", true, false) == null, "supported v3 battle launch renders the physical accessible Plan and one Run Cycle lever")
 	main.queue_free()
 	if failures.is_empty(): print("PASS: presentation audio settings, captions, battle feedback, and card detail")
 	call_deferred("finish")

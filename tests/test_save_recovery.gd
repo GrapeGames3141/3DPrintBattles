@@ -1,5 +1,5 @@
 extends Node
-const ROOT := "E:/CodexCache/printforge-validation/checkpoint5-save-isolated"
+const ROOT := "E:/AI Projects/games/3d print battler/build/validation/checkpoint5-save-isolated"
 var failures: Array[String] = []
 func require(value: bool, message: String) -> void:
 	if not value: failures.append(message); push_error(message)

@@ -1,0 +1,186 @@
+extends Node
+
+const STAGE := preload("res://scripts/ui/physical_battlefield_stage.gd")
+const COMPONENT := preload("res://scripts/ui/unified_battle_screen_component.gd")
+const MAIN := preload("res://scenes/main.tscn")
+const RULES := preload("res://scripts/core/unified_rules.gd")
+var failures: Array[String] = []
+
+func _ready() -> void:
+	var stage: Control = STAGE.new()
+	stage.size = Vector2(576, 1024)
+	add_child(stage)
+	require(stage.anchors().rival_slots.size() == 3 and stage.anchors().player_slots.size() == 3, "Physical stage exposes two printers and six ordered slots.")
+	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}],"hand":[]},{"slots":[{"card_id":"aquafin","name":"Aquafin","hp":100}],"hand_count":3}]}, {"kind":"attack","actor":0,"source_slot":0,"target_slot":0,"generation":1})
+	await get_tree().process_frame
+	var sprite := stage.find_child("LivingPrintSlot0", true, false) as TextureRect
+	var stable_atlas := sprite.texture
+	var start := sprite.position
+	await get_tree().create_timer(0.12).timeout
+	require(sprite.position != start and is_same(sprite.texture, stable_atlas), "Attack receipt moves only its source-slot sprite during the finite window without reallocating its slot atlas.")
+	await get_tree().create_timer(0.8).timeout
+	require(sprite.position.is_zero_approx(), "Finite attack presentation settles once at the slot origin.")
+	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}]},{"slots":[null,null,null]}]}, {"kind":"attack","actor":0,"source_slot":0,"target_slot":0,"target":{"card_id":"aquafin","name":"Aquafin","hp":0},"generation":2})
+	await get_tree().create_timer(0.10).timeout
+	require((stage.find_child("LivingPrintSlot3", true, false) as TextureRect).visible, "A defeated defender remains visible through attack contact.")
+	await get_tree().create_timer(0.55).timeout
+	require(not (stage.find_child("LivingPrintSlot3", true, false) as TextureRect).visible, "The defender is removed only at the finite defeat beat.")
+	stage.set_focus(1, 0); stage.set_selected_slot(0, 0); await get_tree().process_frame
+	require((stage.find_child("BattleFocusRing3", true, false) as Panel).visible and (stage.find_child("BattleSelectionRing0", true, false) as Panel).visible, "Rival focus and friendly selection rings persist together after rerender.")
+	stage.set_focus(-1, -1); await get_tree().process_frame
+	require(not (stage.find_child("BattleFocusRing3", true, false) as Panel).visible and (stage.find_child("BattleSelectionRing0", true, false) as Panel).visible, "Friendly selection remains visible when no rival focus exists.")
+	stage.configure({"players":[{"slots":[null,null,null]},{"slots":[null,null,null],"hand_count":2}]}, {"kind":"print","actor":0,"card_id":"cinderpaw","generation":3})
+	await get_tree().process_frame
+	var raw := stage.find_child("BattlePrinterSolidRaw0", true, false) as TextureRect
+	var schematic := stage.find_child("BattlePrinterSchematic0", true, false) as TextureRect
+	require(raw != null and schematic != null and raw.visible and schematic.visible and (stage.find_child("BattlePrinterClip0", true, false) as Control).clip_contents, "Printer has clipped raw-solid and shader-schematic construction layers.")
+	var stable_raw := raw.texture
+	await get_tree().process_frame
+	require(is_same(raw.texture, stable_raw), "Printer raw-print texture is cached across visual sync frames.")
+	stage.configure({"players":[{"slots":[null,null,null]},{"slots":[null,null,null],"hand_count":2}],"pending":{"kind":"place","seat":0,"unit":{"card_id":"cinderpaw"}}}, {"kind":"print","actor":0,"card_id":"cinderpaw","generation":3})
+	await get_tree().create_timer(0.9).timeout
+	require(raw.visible, "A completed creature raw print remains in its printer while placement is pending.")
+	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}],"hand":[]},{"slots":[null,null,null],"hand_count":2}]}, {"kind":"deploy","actor":0,"card_id":"cinderpaw","target_slot":0,"generation":4})
+	await get_tree().create_timer(0.35).timeout
+	require((stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and not (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible and not raw.visible and not schematic.visible, "Deploy transfers single ownership from chamber layers to the interpolating print.")
+	await get_tree().create_timer(0.55).timeout
+	require(not (stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "Deploy settles to exactly one living slot sprite.")
+	stage.configure({"players":[{"slots":[{"card_id":"mossmunk","name":"Mossmunk","hp":100}],"hand":[]},{"slots":[null,null,null],"hand_count":1}]}, {"kind":"deploy","actor":0,"card_id":"mossmunk","target_slot":0,"reduced_motion":true,"generation":5})
+	await get_tree().process_frame
+	require(not (stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "Reduced motion settles deploy directly without a duplicate flash.")
+	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}],"hand":[]},{"slots":[null,null,null],"hand_count":1}]}, {"kind":"attack","actor":0,"source_slot":0,"target_slot":-1,"printer_target":true,"generation":6})
+	await get_tree().process_frame
+	var printer_attack_start := (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).position
+	await get_tree().create_timer(0.14).timeout
+	require((stage.find_child("LivingPrintSlot0", true, false) as TextureRect).position != printer_attack_start, "A printer-target attack lunges the correct source living print toward the opposing printer.")
+	await get_tree().create_timer(0.8).timeout
+	require((stage.find_child("LivingPrintSlot0", true, false) as TextureRect).position.is_zero_approx(), "Printer-target lunge returns to its origin after the finite contact.")
+	var lip := stage.find_child("BattleSlotLip0", true, false) as ColorRect
+	require(lip != null and lip.z_index > (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).z_index, "Native lower lip is z-ordered above the living-print feet.")
+	require((stage.find_child("BattlePrinterScanLine0", true, false) as ColorRect).name == "BattlePrinterScanLine0", "Printer owns a native cyan scan-line control at the solid/schematic split.")
+	require(COMPONENT.new() != null, "Physical battle component loads.")
+	var profile := RULES.ensure(ProfileRules.new_profile()); profile = RULES.choose_starter(profile, "cinderpaw").profile; profile = RULES.print_starter(profile).profile; GameManager.profile = profile
+	var shell = MAIN.instantiate(); shell.screen = "proving"; add_child(shell); await get_tree().process_frame; shell.render(); await get_tree().process_frame
+	require(shell.find_child("PhysicalChallengeBoard", true, false) != null and shell.find_child("ChallengeContinuePreflight", true, false) != null, "Battle dais begins on its distinct physical Challenge browse surface.")
+	shell.set_meta("battle_preflight", true); shell.render(); await get_tree().process_frame
+	require(shell.find_child("PhysicalBattlePreflight", true, false) != null and shell.find_child("ChallengeBeginBattle", true, false) != null, "Challenge continue opens the distinct legal Battle Preflight surface.")
+	var legal_profile: Dictionary = GameManager.profile.duplicate(true)
+	var invalid_profile: Dictionary = GameManager.profile.duplicate(true)
+	invalid_profile["decks"] = [{"id":"starter-deck", "name":"Short", "cards":[]}]
+	invalid_profile["active_deck_id"] = "starter-deck"
+	GameManager.profile = invalid_profile; shell.render(); await get_tree().process_frame
+	var invalid_preflight := shell.find_child("PhysicalBattlePreflight", true, false) as PanelContainer
+	var invalid_copy := invalid_preflight.get_child(0).get_child(0) as Label if invalid_preflight != null else null
+	var invalid_begin := shell.find_child("ChallengeBeginBattle", true, false) as Button
+	require(invalid_copy != null and invalid_copy.text.contains(RULES.deck_reason(GameManager.profile, [])) and invalid_begin != null and invalid_begin.disabled and invalid_begin.tooltip_text == RULES.deck_reason(GameManager.profile, []), "Preflight derives legality feedback and Begin disabled state from the existing deck validator.")
+	GameManager.profile = legal_profile; shell.render(); await get_tree().process_frame
+	# In local hot-seat mode the player who has acknowledged Ready is the only
+	# viewer whose hand may be public, and that owner maps to the lower row.
+	var hotseat := UnifiedBattleState.create(["cinderpaw"], ["aquafin"], 41)
+	hotseat.active_seat = 1; hotseat.phase = "main"; hotseat.player(0).hand = ["cinderpaw"]; hotseat.player(1).hand = ["aquafin"]; hotseat.player(1).filament = 130; hotseat.player(1).queue = [{"card_id":"cinderpaw", "remaining":1}]
+	shell.battle = hotseat; shell.battle_mode = "local"; shell.unified_local_handoff = true; shell.screen = "unified_battle"; shell.unified_battle_coordinator.configure(hotseat, 0); shell.render(); await get_tree().process_frame
+	shell.unified_local_handoff = false; shell._complete_unified_cycle_handoff()
+	require(shell.unified_local_handoff and not shell.unified_ai_pending, "Completed local Run Cycle requests a privacy handoff instead of scheduling rival automation.")
+	shell.unified_local_handoff = false; shell.battle_mode = "training"; shell._complete_unified_cycle_handoff()
+	require(shell.unified_ai_pending, "Completed non-local Run Cycle schedules one deferred rival intent.")
+	# Cancel this test-only deferred callback before yielding again; it must not be
+	# able to mutate the constructed hot-seat authority after the assertion.
+	shell.unified_battle_coordinator.invalidate_generation(); shell.unified_ai_pending = false; shell.battle_mode = "local"; shell.unified_local_handoff = true; shell.unified_battle_coordinator.configure(hotseat, 0)
+	require(shell.find_child("PhysicalBattleHandScroll", true, false) == null, "Local handoff keeps all face-up hand controls hidden before Ready.")
+	var hotseat_stage := shell.find_child("PhysicalBattlefieldStage", true, false) as PhysicalBattlefieldStage
+	require(hotseat_stage != null and (hotseat_stage.snapshot.get("players", [])[0] as Dictionary).get("hand", []) == ["aquafin"], "Ready owner is mapped to the lower physical row without exposing seat zero's hand.")
+	shell.unified_local_handoff = false; shell.render(); await get_tree().process_frame
+	require(shell.find_child("UnifiedHandAquafin", true, false) != null and shell.find_child("UnifiedHandCinderpaw", true, false) == null, "After Ready only the active local owner hand is visible and playable.")
+	var queue_hud := shell.find_child("PhysicalBattleHud0Resources", true, false) as Label
+	require(queue_hud != null and queue_hud.text == "130/400 filament · Queue 1\nHead: Cinderpaw · 1 turn left" and label_lines_fit(queue_hud, 6.0), "Player printer resource face exposes an explicit two-line FIFO head and remaining-turn readout without clipping.")
+	hotseat.player(1).hand = ["cinderpaw"]; shell.unified_selected_card_id = "cinderpaw"; shell.unified_battle_coordinator.set_transient_focus(-1); shell.render(); await get_tree().process_frame
+	var selected_blueprint := shell.find_child("UnifiedSelectedCreatureBlueprint", true, false) as PanelContainer
+	var selected_art := shell.find_child("UnifiedSelectedCreatureArt", true, false) as TextureRect
+	var selected_copy := shell.find_child("UnifiedSelectedCreatureBlueprintCopy", true, false) as Label
+	var selected_status := shell.find_child("PhysicalBattleStatus", true, false) as Label
+	require(selected_blueprint != null and selected_art != null and selected_art.texture != null and selected_copy != null and selected_copy.text.contains(str(RULES.card("cinderpaw").get("name", ""))) and selected_copy.text.contains("%dF" % int(RULES.card("cinderpaw").get("filament_cost", RULES.card("cinderpaw").get("cost", 0)))) and selected_status != null and not selected_status.visible and selected_status.text.is_empty() and (shell.find_child("PhysicalBattleAnchor1_0", true, false) as Button).disabled, "Selected creature uses the central native-art blueprint instrument, clears duplicate status copy, and does not target rival anchors.")
+	hotseat.player(1).hand = ["aquafin"]; shell.unified_selected_card_id = "aquafin"; shell.render(); await get_tree().process_frame
+	selected_copy = shell.find_child("UnifiedSelectedCreatureBlueprintCopy", true, false) as Label
+	selected_status = shell.find_child("PhysicalBattleStatus", true, false) as Label
+	require(selected_copy != null and selected_copy.text.contains(str(RULES.card("aquafin").get("name", ""))) and selected_copy.text.contains("%dF" % int(RULES.card("aquafin").get("filament_cost", RULES.card("aquafin").get("cost", 0)))) and selected_copy.text.ends_with("Queue print") and selected_status != null and not selected_status.visible and selected_status.text.is_empty(), "Selected blueprint derives Aquafin name/cost from the catalog while its central instrument hides duplicate status copy.")
+	hotseat.player(1).hand = ["cinderpaw"]; shell.unified_selected_card_id = "cinderpaw"
+	for size in [Vector2(576, 1024), Vector2(720, 1280)]:
+		shell.size = size; shell.render(); await get_tree().process_frame
+		selected_blueprint = shell.find_child("UnifiedSelectedCreatureBlueprint", true, false) as PanelContainer
+		selected_art = shell.find_child("UnifiedSelectedCreatureArt", true, false) as TextureRect
+		selected_copy = shell.find_child("UnifiedSelectedCreatureBlueprintCopy", true, false) as Label
+		var status_instrument := shell.find_child("PhysicalBattleStatus", true, false) as Label
+		var resource_hud := shell.find_child("PhysicalBattleHud0Resources", true, false) as Label
+		var hand_rail := shell.find_child("PhysicalBattleHandScroll", true, false) as ScrollContainer
+		var queue_print := shell.find_child("UnifiedPlayQueueCreature", true, false) as Button
+		var selected_rect := selected_blueprint.get_global_rect() if selected_blueprint != null else Rect2()
+		var selected_complete := selected_blueprint != null and selected_blueprint.clip_contents and selected_art != null and selected_art.texture != null and selected_copy != null and not selected_copy.text.is_empty() and selected_copy.get_global_rect().size.x > 0.0 and Rect2(Vector2.ZERO, size).encloses(selected_copy.get_global_rect())
+		var instruments_present := status_instrument != null and resource_hud != null and hand_rail != null and queue_print != null
+		var queue_touch_ok := queue_print != null and queue_print.custom_minimum_size.y >= 48.0
+		var hud_copy_ok := resource_hud != null and resource_hud.text == "130/400 filament · Queue 1\nHead: Cinderpaw · 1 turn left" and label_lines_fit(resource_hud, 6.0)
+		var contained := Rect2(Vector2.ZERO, size).encloses(selected_rect)
+		var in_status_instrument := status_instrument != null and status_instrument.get_global_rect().encloses(selected_rect) and not status_instrument.visible and status_instrument.text.is_empty()
+		var clear_of_hud_hand_gap := resource_hud != null and selected_rect.end.y <= resource_hud.get_global_rect().position.y and hand_rail != null and selected_rect.end.y <= hand_rail.get_global_rect().position.y
+		require(selected_complete and instruments_present and queue_touch_ok and hud_copy_ok and contained and in_status_instrument and clear_of_hud_hand_gap, "Selected native-art blueprint is contained by the central status instrument with no painted HUD-to-hand detail surface at %dx%d (complete=%s instruments=%s queue48=%s hud_copy=%s contained=%s central=%s clear_gap=%s rect=%s)." % [int(size.x), int(size.y), str(selected_complete), str(instruments_present), str(queue_touch_ok), str(hud_copy_ok), str(contained), str(in_status_instrument), str(clear_of_hud_hand_gap), str(selected_rect)])
+	shell.size = Vector2(1024, 1024); shell.render(); await get_tree().process_frame
+	hotseat.player(1).hand = ["aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin"]
+	hotseat.pending = {"kind":"place","seat":1,"unit":UnifiedBattleState._unit(RULES.card("aquafin"))}; hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]; shell.render(); await get_tree().process_frame
+	var locked_anchor := shell.find_child("PhysicalBattleAnchor0_0", true, false) as Button
+	var open_choice := shell.find_child("UnifiedPendingPlaceSlot2Attack", true, false) as Button
+	require(locked_anchor != null and locked_anchor.disabled and open_choice != null and not open_choice.disabled and shell.find_child("UnifiedPendingPlaceSlot1Attack", true, false) == null, "Required placement locks base anchors and creates choices only on open physical anchors.")
+	var anchor_focus := locked_anchor.get_theme_stylebox("focus") as StyleBoxFlat if locked_anchor != null else null
+	require(anchor_focus != null and anchor_focus.bg_color.a <= .08 and anchor_focus.border_width_top >= 3 and anchor_focus.border_width_right >= 3 and anchor_focus.border_width_bottom >= 3 and anchor_focus.border_width_left >= 3, "Anchor keyboard focus is a transparent-center four-edge outline, never an opaque sprite cover.")
+	hotseat.pending = {"kind":"attach","seat":1,"card_id":"iron_gem","holding_index":0}; hotseat.phase = "print"; hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]; shell.render(); await get_tree().process_frame
+	var held_token := shell.find_child("UnifiedHeldEquipmentToken", true, false) as PanelContainer
+	var attach_choice := shell.find_child("UnifiedPendingAttachSlot1", true, false) as Button
+	require(held_token != null and str((held_token.get_child(0) as Label).text).contains(str(RULES.card("iron_gem").get("name", ""))) and str((held_token.get_child(0) as Label).text).contains("Gem socket") and attach_choice != null and attach_choice.accessibility_name.contains(str(RULES.card("iron_gem").get("name", ""))), "Pending equipment token and anchor accessibility use the actual equipment name and slot.")
+	hotseat.pending.clear(); hotseat.phase = "collect"; shell.unified_selected_card_id = ""; shell.render(); await get_tree().process_frame
+	var overflow_rail := shell.find_child("UnifiedOverflowChoices", true, false) as ScrollContainer
+	var overflow_row := overflow_rail.get_child(0) as HBoxContainer if overflow_rail != null and overflow_rail.get_child_count() > 0 else null
+	var overflow_first := overflow_row.get_child(0) as Button if overflow_row != null else null
+	var overflow_second := overflow_row.get_child(1) as Button if overflow_row != null and overflow_row.get_child_count() > 1 else null
+	var overflow_third := overflow_row.get_child(2) as Button if overflow_row != null and overflow_row.get_child_count() > 2 else null
+	require(overflow_first != null and overflow_second != null and overflow_third != null and overflow_first.custom_minimum_size.x == overflow_second.custom_minimum_size.x and overflow_third.position.x >= overflow_rail.size.x, "Overflow uses two whole normal-text occurrence chips per visible rail page; the third begins outside the clip.")
+	GameManager.profile.settings = {"text_scale_bps":15000,"high_contrast":true,"reduced_motion":false}; hotseat.phase = "main"; hotseat.player(1).hand = ["cinderpaw", "aquafin"]; hotseat.player(0).hand = ["cinderpaw", "aquafin", "mossmunk", "cinderpaw", "aquafin"]; shell.unified_selected_card_id = "cinderpaw"
+	for size in [Vector2(576, 1024), Vector2(720, 1280)]:
+		shell.size = size; shell.render(); await get_tree().process_frame
+		var accessibility_title := shell.find_child("UnifiedBattleHeading", true, false) as Label
+		var accessibility_hand := shell.find_child("PhysicalBattleHandScroll", true, false) as ScrollContainer
+		var accessibility_lever := shell.find_child("UnifiedRunCycleLever", true, false) as Button
+		var accessibility_row := shell.find_child("PhysicalBattleHand", true, false) as HBoxContainer
+		var accessibility_next := accessibility_row.get_child(1) as Control if accessibility_row != null and accessibility_row.get_child_count() > 1 else null
+		var accessibility_stage := shell.find_child("PhysicalBattlefieldStage", true, false) as PhysicalBattlefieldStage
+		var accessibility_selected := shell.find_child("UnifiedSelectedCreatureBlueprint", true, false) as PanelContainer
+		var accessibility_status := shell.find_child("PhysicalBattleStatus", true, false) as Label
+		var title_rect := accessibility_title.get_global_rect() if accessibility_title != null else Rect2()
+		var viewport_rect := Rect2(Vector2.ZERO, size)
+		var card_backs_clear := accessibility_stage != null
+		if accessibility_stage != null:
+			for index in 5:
+				var back := accessibility_stage.find_child("RivalConcealedCard%d" % index, true, false) as TextureRect
+				card_backs_clear = card_backs_clear and back != null and back.visible and back.get_global_rect().position.y >= title_rect.end.y + 4.0 and not back.get_global_rect().intersects(title_rect)
+		var large_hud := shell.find_child("PhysicalBattleHud0Resources", true, false) as Label
+		require(accessibility_title != null and accessibility_title.autowrap_mode != TextServer.AUTOWRAP_OFF and accessibility_title.get_theme_font_size("font_size") >= 15 and viewport_rect.encloses(title_rect) and card_backs_clear and accessibility_hand != null and accessibility_row != null and (accessibility_row.get_child(0) as Control).custom_minimum_size.x <= accessibility_hand.size.x and accessibility_next != null and accessibility_next.position.x >= accessibility_hand.size.x and accessibility_lever != null and accessibility_lever.custom_minimum_size.y >= 56.0 and large_hud != null and viewport_rect.encloses(large_hud.get_global_rect()) and accessibility_selected != null and accessibility_status != null and accessibility_status.get_global_rect().encloses(accessibility_selected.get_global_rect()) and not accessibility_status.visible, "150%% title stays legible in its taller top plate; all rival backs clear it while HUD, whole hand pages, central selected blueprint, and Run Cycle fit at %dx%d." % [int(size.x), int(size.y)])
+	GameManager.profile.settings = {"text_scale_bps":10000,"high_contrast":false,"reduced_motion":false}; hotseat.phase = "main"; hotseat.revision = 13; shell.toast = "Stale revision 12; latest revision 13 · snapshot restored."; shell.render(); await get_tree().process_frame
+	var full_hand := shell.find_child("PhysicalBattleHand", true, false) as HBoxContainer
+	var recovery_status := shell.find_child("PhysicalBattleStatus", true, false) as Label
+	require(full_hand == null and shell.find_child("PhysicalBattleHud1", true, false) != null and shell.find_child("PhysicalBattleDismiss", true, false) != null and shell.find_child("PhysicalBattleRetry", true, false) != null and recovery_status != null and recovery_status.text.contains("Rev 13"), "Recovery locks hand controls while exposing the exact native retry/dismiss revision.")
+	shell.toast = "Rival turn paused safely after 48 checked actions. Retry the battle flow."; shell.battle_mode = "training"; hotseat.active_seat = 1; shell.unified_ai_pending = false; shell.render(); await get_tree().process_frame
+	require(shell.find_child("PhysicalBattleRetryAI", true, false) != null and shell.find_child("PhysicalBattleDismiss", true, false) != null and shell.find_child("PhysicalBattleHandScroll", true, false) == null and shell.find_child("UnifiedRunCycleLever", true, false) == null, "A bounded rival safety pause exposes native Retry/Dismiss while rival ownership keeps hand and Run Cycle unreachable.")
+	if failures.is_empty(): print("PASS: M2 physical battle UI seams")
+	get_tree().quit(0 if failures.is_empty() else 1)
+
+func require(value: bool, message: String) -> void:
+	if not value:
+		failures.append(message)
+		push_error(message)
+
+func label_lines_fit(label: Label, margin: float) -> bool:
+	if label == null: return false
+	var font := label.get_theme_font("font")
+	var font_size := label.get_theme_font_size("font_size")
+	if font == null or font_size <= 0: return false
+	var rect := label.get_global_rect()
+	for line in label.text.split("\n"):
+		if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - margin: return false
+	return rect.size.y >= font.get_height(font_size) * 2.0

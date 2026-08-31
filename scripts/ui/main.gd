@@ -23,12 +23,12 @@ const FORGE_SCREEN_COMPONENT_PATH := "res://scripts/ui/arcane_forge_screen_compo
 const BATTLE_SPRITE_STAGE_PATH := "res://scripts/ui/battle_sprite_stage.gd"
 const UNIFIED_BATTLE_SCREEN_COMPONENT_PATH := "res://scripts/ui/unified_battle_screen_component.gd"
 const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
-const UNIFIED_BATTLE_RULES := preload("res://scripts/battle/unified_battle_rules.gd")
+const UNIFIED_BATTLE_COORDINATOR := preload("res://scripts/battle/unified_battle_cycle_coordinator.gd")
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
-const UNIFIED_AI := preload("res://scripts/battle/unified_ai_opponent.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
 const PORTRAIT_PRESENTATION_BOUNDARY := preload("res://scripts/ui/portrait_presentation_boundary.gd")
 const CREATURE_SPRITE_CACHE := preload("res://scripts/ui/creature_sprite_cache.gd")
+const BATTLE_MOVE_VFX := preload("res://scripts/ui/battle_move_vfx.gd")
 const PHYSICAL_PORTRAIT_PLATE := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
 const M1_PHYSICAL_UI := preload("res://scripts/ui/m1_physical_ui_component.gd")
 const REVIEW_BUILD_LABEL := "physical-ui-spike-r10"
@@ -67,6 +67,7 @@ var card_archive_detail_id := ""
 # and is no longer an entry point from Workshop, Daily Training, Trials, or
 # local hot-seat play.
 var battle
+var unified_battle_coordinator: UnifiedBattleCycleCoordinator = UNIFIED_BATTLE_COORDINATOR.new()
 var battle_settlement_context: Dictionary = {}
 var battle_settlement_finished := false
 var toast := ""
@@ -77,11 +78,13 @@ var unified_selected_target := -2
 var unified_attack_slot := -1
 var unified_attack_target := -2
 var unified_ai_pending := false
+const UNIFIED_AI_STEP_BUDGET := 48
+var unified_ai_steps := 0
 var unified_local_handoff := false
 var unified_arrival_presented: Dictionary = {}
 # Visual receipts are deliberately separate from UnifiedBattleState.  They only
 # exist after an accepted intent and contain stage-safe public creature IDs.
-var unified_battle_presentation: Dictionary = {"kind":"", "actor":0, "left":{}, "right":{}, "token":0}
+var unified_battle_presentation: Dictionary = {"kind":"", "actor":0, "token":0}
 var unified_page := 0
 var unified_deck_draft: Array = []
 var unified_preprint_draft: Array = []
@@ -175,72 +178,30 @@ func _new_local_battle_stage():
 	var script = _optional_script(BATTLE_SPRITE_STAGE_PATH, "Local battle presentation")
 	return null if script == null else script.new()
 
-func _unified_stage_unit(unit) -> Dictionary:
-	if not (unit is Dictionary): return {}
-	var card_id := str((unit as Dictionary).get("card_id", (unit as Dictionary).get("id", "")))
-	return {"id":card_id} if not card_id.is_empty() else {}
-
-func _unified_first_stage_unit(seat: int) -> Dictionary:
-	if battle == null: return {}
-	for unit in battle.player(seat).get("slots", []):
-		if unit != null: return _unified_stage_unit(unit)
-	return {}
-
-func _unified_presentation_pair(actor: int, source = null, target = null) -> Dictionary:
-	var left := _unified_first_stage_unit(0)
-	var right := _unified_first_stage_unit(1)
-	if actor == 0:
-		if source != null: left = _unified_stage_unit(source)
-		if target != null: right = _unified_stage_unit(target)
-	else:
-		if source != null: right = _unified_stage_unit(source)
-		if target != null: left = _unified_stage_unit(target)
-	return {"left":left, "right":right}
-
-func _unified_presentation_before_intent(intent: Dictionary, seat: int) -> Dictionary:
-	if battle == null: return {}
-	var kind := ""
-	var source = null
-	var target = null
-	match str(intent.get("type", "")):
-		"attack":
-			kind = "attack"
-			var source_slot := int(intent.get("slot", -1))
-			var target_slot := int(intent.get("target", -2))
-			if source_slot >= 0 and source_slot < 3: source = battle.player(seat).slots[source_slot]
-			if target_slot >= 0 and target_slot < 3: target = battle.player(1 - seat).slots[target_slot]
-		"advance_phase":
-			if str(battle.phase) != "print": return {}
-			kind = "print"
-			var queue: Array = battle.player(seat).get("queue", [])
-			if not queue.is_empty():
-				var card_id := str((queue[0] as Dictionary).get("card_id", ""))
-				if str(UNIFIED_RULES.card(card_id).get("type", "")) == "creature": source = {"card_id":card_id}
-	if kind.is_empty(): return {}
-	var pair := _unified_presentation_pair(seat, source, target)
-	pair["kind"] = kind
-	pair["actor"] = seat
-	return pair
-
 func _present_unified_battle_event(event: Dictionary) -> void:
 	if event.is_empty(): return
 	var token := int(unified_battle_presentation.get("token", 0)) + 1
-	unified_battle_presentation = {
-		"kind":str(event.get("kind", "")), "actor":int(event.get("actor", 0)),
-		"left":event.get("left", {}).duplicate(true) if event.get("left", {}) is Dictionary else {},
-		"right":event.get("right", {}).duplicate(true) if event.get("right", {}) is Dictionary else {}, "token":token
-	}
+	# Keep the whole public receipt.  The physical stage needs the exact source
+	# and target slots (and public pre-action units) to animate causally; reducing
+	# it to a generic left/right pair made every attack appear static.
+	unified_battle_presentation = event.duplicate(true)
+	unified_battle_presentation["kind"] = str(event.get("kind", ""))
+	unified_battle_presentation["actor"] = int(event.get("actor", 0))
+	unified_battle_presentation["token"] = token
+	unified_battle_presentation["generation"] = int(event.get("generation", unified_battle_coordinator.generation))
 	_schedule_unified_presentation_settlement(token, str(event.get("kind", "")))
 
 func _reset_unified_battle_presentation() -> void:
 	# Advance the serial on reset as well: a timer from a prior battle can never
 	# settle a newly launched battle that happens to have the same event count.
-	unified_battle_presentation = {"kind":"", "actor":0, "left":{}, "right":{}, "token":int(unified_battle_presentation.get("token", 0)) + 1}
+	unified_battle_presentation = {"kind":"", "actor":0, "token":int(unified_battle_presentation.get("token", 0)) + 1}
 
 func _leave_unified_battle() -> void:
+	unified_battle_coordinator.invalidate_generation()
 	battle = null
 	battle_settlement_context.clear()
 	unified_ai_pending = false
+	unified_ai_steps = 0
 	_reset_unified_battle_presentation()
 	screen = "workshop"
 	render()
@@ -250,6 +211,7 @@ func _unified_presentation_wait_seconds(kind: String) -> float:
 	return _unified_presentation_duration(kind) + 0.10
 
 func _unified_presentation_duration(kind: String) -> float:
+	if kind == "deploy": return BATTLE_MOVE_VFX.event_duration("deploy")
 	match kind:
 		"print": return 0.78
 		"attack", "ability": return 0.62
@@ -269,17 +231,12 @@ func _settle_unified_battle_presentation(token: int) -> void:
 	# Token matching prevents a delayed timer from clearing a newer player action,
 	# a subsequent AI receipt, or a completely new battle after leaving the arena.
 	if battle == null or token != int(unified_battle_presentation.get("token", -1)) or str(unified_battle_presentation.get("kind", "")).is_empty(): return
-	unified_battle_presentation = {"kind":"", "actor":0, "left":_unified_first_stage_unit(0), "right":_unified_first_stage_unit(1), "token":token}
+	if int(unified_battle_presentation.get("generation", -1)) != unified_battle_coordinator.generation: return
+	# Ack only the receipt that is still visible; a late timer from a replaced
+	# match or newer action cannot unlock a different coordinator request.
+	unified_battle_coordinator.acknowledge_presentation(int(unified_battle_presentation.get("generation", -1)))
+	unified_battle_presentation = {"kind":"", "actor":0, "token":token}
 	if screen == "unified_battle": render()
-
-func _replay_unified_ai_presentations(trace: Array) -> void:
-	for event_value in trace:
-		if not (event_value is Dictionary) or battle == null: continue
-		_present_unified_battle_event(event_value as Dictionary)
-		render()
-		var wait_seconds := _unified_presentation_wait_seconds(str((event_value as Dictionary).get("kind", "")))
-		if wait_seconds > 0.0: await get_tree().create_timer(wait_seconds).timeout
-		else: await get_tree().process_frame
 
 func _ready() -> void:
 	print("PRINTFORGE_STARTUP marker=ui_ready renderer=%s platform=%s" % [RenderingServer.get_current_rendering_method(), OS.get_name()])
@@ -1181,6 +1138,21 @@ func render() -> void:
 		return
 	if not GameManager.is_save_read_only() and screen in ["unified_library", "unified_deck"]:
 		render_feedback_archive_book()
+		_finish_visual_route()
+		return
+	# M2 battle routes own the whole safe game surface.  They must be entered
+	# before the legacy backdrop/VBox shell, otherwise the portrait chassis would
+	# be reduced to a small stacked panel beneath generic controls.
+	if not GameManager.is_save_read_only() and screen == "proving":
+		var challenge_component = _unified_battle_component()
+		if challenge_component != null:
+			challenge_component.render_preflight(self)
+		else:
+			screen = "workshop"
+		_finish_visual_route()
+		return
+	if not GameManager.is_save_read_only() and screen == "unified_battle":
+		render_m2_physical_battle()
 		_finish_visual_route()
 		return
 	var backdrop := TextureRect.new()
@@ -3302,6 +3274,7 @@ func _launch_unified_mode(mode: String, opponent_setup: Dictionary, seed: int) -
 		_toast("The battle snapshot could not be created.")
 		return
 	battle_mode = str(setup.get("mode", mode))
+	unified_battle_coordinator.configure(battle, 0)
 	battle_settlement_context = setup.get("settlement_context", {}).duplicate(true) if setup.get("settlement_context", {}) is Dictionary else {}
 	unified_hand_page = 0
 	unified_selected_card_id = ""
@@ -3310,6 +3283,7 @@ func _launch_unified_mode(mode: String, opponent_setup: Dictionary, seed: int) -
 	unified_attack_slot = -1
 	unified_attack_target = -2
 	unified_ai_pending = false
+	unified_ai_steps = 0
 	unified_local_handoff = battle_mode == "local"
 	unified_arrival_presented.clear()
 	_reset_unified_battle_presentation()
@@ -3318,10 +3292,33 @@ func _launch_unified_mode(mode: String, opponent_setup: Dictionary, seed: int) -
 	# A seeded non-local battle can legitimately give the rival the first turn.
 	# Compose the public board first, then let the AI resolve so its private hand is
 	# never exposed or left waiting for player input.
-	if battle_mode != "local" and int(battle.active_seat) == 1 and not battle.finished:
-		unified_ai_pending = true
 	render()
-	if unified_ai_pending: call_deferred("_run_unified_ai")
+	_queue_unified_ai_if_needed()
+
+func _queue_unified_ai_if_needed() -> void:
+	if battle_mode == "local" or battle == null or battle.finished or int(battle.active_seat) != 1:
+		return
+	unified_ai_pending = true
+	unified_ai_steps = 0
+	# Defer exactly one checked rival action. The generation is captured here so a
+	# newly launched match or later Run Cycle can never receive this callback.
+	call_deferred("_run_unified_ai", unified_battle_coordinator.generation)
+
+func _complete_unified_cycle_handoff() -> void:
+	if battle == null or battle.finished:
+		unified_ai_pending = false
+		unified_ai_steps = 0
+		return
+	if battle_mode == "local":
+		unified_ai_pending = false
+		unified_ai_steps = 0
+		unified_local_handoff = true
+		return
+	if int(battle.active_seat) == 1:
+		_queue_unified_ai_if_needed()
+	else:
+		unified_ai_pending = false
+		unified_ai_steps = 0
 
 func _unified_side_panel(title: String, state: Dictionary, color: Color) -> Control:
 	var panel := make_panel(Color("132b3be8"), color)
@@ -3793,57 +3790,106 @@ func _keep_unified_pack_cards() -> void:
 func _submit_unified_intent(intent: Dictionary) -> void:
 	if battle == null or battle.finished: return
 	var previous_seat := int(battle.active_seat)
-	# Capture actor/defender before rules mutate them.  The snapshot is visual
-	# only, so a lethal hit still gets a coherent finite animation.
-	var presentation := _unified_presentation_before_intent(intent, previous_seat)
-	var result: Dictionary = UNIFIED_BATTLE_RULES.apply_intent(battle, int(battle.active_seat), intent)
+	var result := unified_battle_coordinator.submit_checked(unified_battle_coordinator.envelope(previous_seat, intent), unified_battle_coordinator.generation)
 	if not bool(result.get("ok", false)):
 		_toast(str(result.get("error", "That action is not legal.")))
 		return
-	_present_unified_battle_event(presentation)
+	_present_unified_battle_event(result.get("receipt", {}) as Dictionary)
 	unified_selected_card_id = ""
 	unified_selected_slot = -2
 	unified_selected_target = -2
 	unified_attack_slot = -1
 	unified_attack_target = -2
 	if battle_mode != "local" and int(battle.active_seat) == 1 and not battle.finished:
-		unified_ai_pending = true
+		_queue_unified_ai_if_needed()
 	if battle_mode == "local" and int(battle.active_seat) != previous_seat:
 		unified_local_handoff = true
+		unified_ai_steps = 0
 	render()
-	if unified_ai_pending: call_deferred("_run_unified_ai")
 
-func _run_unified_ai() -> void:
+func _enter_unified_plan() -> void:
+	if battle == null or str(battle.phase) != "draw": return
+	var result := unified_battle_coordinator.enter_plan_if_needed(int(battle.active_seat))
+	if not bool(result.get("ok", false)): _toast(str(result.get("error", "Could not prepare Plan.")))
+	else: _present_unified_battle_event(result.get("receipt", {}) as Dictionary)
+	render()
+
+func _start_unified_run_cycle() -> void:
+	if battle == null: return
+	var result := unified_battle_coordinator.start_run_cycle(int(battle.active_seat))
+	_handle_unified_cycle_result(result)
+
+func _submit_required_battle_decision(intent: Dictionary) -> void:
+	if battle == null: return
+	var result := unified_battle_coordinator.submit_required_decision(int(battle.active_seat), intent, unified_battle_coordinator.generation)
+	_handle_unified_cycle_result(result)
+
+func _submit_overflow_discard(card_ids: Array) -> void:
+	_submit_required_battle_decision({"type":"discard_overflow", "card_ids":card_ids})
+
+func _set_unified_focus(slot: int) -> void:
+	if battle == null or str(battle.phase) != "main": return
+	unified_battle_coordinator.set_transient_focus(slot)
+	_toast("Focus this cycle: rival slot %d" % (slot + 1))
+	render()
+
+func _handle_unified_cycle_result(result: Dictionary) -> void:
+	if not bool(result.get("ok", false)):
+		_toast(str(result.get("error", "Run Cycle stopped."))); render(); return
+	if bool(result.get("complete", false)):
+		_complete_unified_cycle_handoff()
+		render()
+		return
+	_present_unified_battle_event(result.get("receipt", {}) as Dictionary)
+	if not bool(result.get("paused", false)):
+		call_deferred("_continue_unified_run_cycle", int(result.get("generation", unified_battle_coordinator.generation)))
+	render()
+
+func _continue_unified_run_cycle(token: int) -> void:
+	if token != unified_battle_coordinator.generation: return
+	if battle == null: return
+	if unified_battle_coordinator.presentation_active:
+		await get_tree().create_timer(_unified_presentation_wait_seconds(str(unified_battle_presentation.get("kind", "")))).timeout
+		unified_battle_coordinator.acknowledge_presentation(token)
+	if token != unified_battle_coordinator.generation: return
+	var result := unified_battle_coordinator.advance_run_cycle(int(battle.active_seat), token)
+	_handle_unified_cycle_result(result)
+
+func _run_unified_ai(token := -1) -> void:
+	if token >= 0 and token != unified_battle_coordinator.generation: return
 	if not unified_ai_pending or battle == null or battle.finished: return
+	if unified_ai_steps >= UNIFIED_AI_STEP_BUDGET:
+		unified_ai_pending = false
+		_toast("Rival turn paused safely after %d checked actions. Retry the battle flow." % UNIFIED_AI_STEP_BUDGET)
+		render()
+		return
 	# Yield one composed frame so a player print arriving after Collect is visible
 	# before the rival response. This is presentation scheduling only.
 	var wait_seconds := 0.0 if bool(settings().get("reduced_motion", false)) else 0.52
 	if wait_seconds > 0.0: await get_tree().create_timer(wait_seconds).timeout
 	else: await get_tree().process_frame
+	if token >= 0 and token != unified_battle_coordinator.generation: return
 	if battle != null and not battle.finished and int(battle.active_seat) == 1:
-		var outcome: Dictionary = UNIFIED_AI.take_turn(battle, 1)
-		var trace: Array = outcome.get("presentation_trace", []) if outcome.get("presentation_trace", []) is Array else []
-		# Authority has completed its deterministic chunk already. Replay only the
-		# public visual receipts while controls stay locked for the rival.
-		if not trace.is_empty(): await _replay_unified_ai_presentations(trace)
-		if battle.finished or int(battle.active_seat) != 1:
-			unified_ai_pending = false
-		elif str(outcome.get("status", "")) == "exhausted" and bool(outcome.get("progressed", false)):
-			# A productive chunk may legitimately contain more than 32 legal actions.
-			# Keep the rival ownership marker alive and continue on a later frame.
-			unified_ai_pending = true
-			render()
-			call_deferred("_run_unified_ai")
-			return
+		var intent := unified_battle_coordinator.next_ai_intent(1)
+		if intent.is_empty(): unified_ai_pending = false; _toast("Rival has no legal continuation.")
 		else:
-			# The AI has no legal continuation. Conceding through battle authority
-			# leaves a finished, escapable battle instead of an endless calculation UI.
-			var stalled_reason := str(outcome.get("error", "Rival AI could not make a legal move."))
-			var conceded: Dictionary = UNIFIED_BATTLE_RULES.apply_intent(battle, 1, {"type":"concede"})
-			unified_ai_pending = false
-			_toast("Rival turn could not continue (%s). The rival conceded." % stalled_reason if bool(conceded.get("ok", false)) else "Rival turn could not continue: %s" % stalled_reason)
+			var result := unified_battle_coordinator.submit_checked(unified_battle_coordinator.envelope(1, intent), unified_battle_coordinator.generation)
+			if not bool(result.get("ok", false)):
+				unified_ai_pending = false; _toast(str(result.get("error", "Rival action rejected.")))
+			else:
+				# One increment maps to exactly one accepted checked envelope. Rejects
+				# and stale deferred callbacks never consume the safety budget.
+				unified_ai_steps += 1
+				_present_unified_battle_event(result.get("receipt", {}) as Dictionary)
+				if unified_battle_coordinator.presentation_active:
+					await get_tree().create_timer(_unified_presentation_wait_seconds(str(unified_battle_presentation.get("kind", "")))).timeout
+					unified_battle_coordinator.acknowledge_presentation(unified_battle_coordinator.generation)
+				unified_ai_pending = not battle.finished and int(battle.active_seat) == 1
+				if unified_ai_pending: call_deferred("_run_unified_ai", token)
+				else: unified_ai_steps = 0
 	else:
 		unified_ai_pending = false
+		unified_ai_steps = 0
 	render()
 
 func _settle_finished_unified_battle() -> void:
@@ -3946,10 +3992,24 @@ func _render_unified_attack_picker(host: Container, active: Dictionary) -> void:
 	if not guarded: targets.add_child(make_button(("✓ " if unified_attack_target == -1 else "") + "Rival printer", func(): unified_attack_target = -1; render(), Color("588d73") if unified_attack_target == -1 else Color("526e93")))
 	if unified_attack_target >= -1: panel.add_child(make_button("Confirm attack", _submit_unified_intent.bind({"type":"attack","slot":unified_attack_slot,"target":unified_attack_target}), Color("a86b2e")))
 
+func render_m2_physical_battle() -> void:
+	if battle != null and unified_battle_coordinator.state != battle:
+		# Tests/recovery fixtures may replace the public authority directly. Treat it
+		# as a match replacement, cancelling stale callbacks before any render.
+		unified_battle_coordinator.configure(battle, 0)
+	var component = _unified_battle_component()
+	if component == null:
+		_toast("Battle presentation could not load. Return to Workshop and retry.")
+		screen = "workshop"
+		return
+	component.render_fullscreen(self)
+
 func render_unified_battle_fullscreen(host: Container) -> void:
 	var component = _unified_battle_component()
 	if component != null:
-		component.render(host, self)
+		# There is one maintained M2 composition.  Older callers delegate back to
+		# the physical full-surface route instead of mounting a second UI shell.
+		render_m2_physical_battle()
 		return
 	# Fallback keeps a damaged optional component from blanking the Workshop
 	# shell. Normal shipped presentation is owned by UnifiedBattleScreenComponent.
@@ -3957,66 +4017,8 @@ func render_unified_battle_fullscreen(host: Container) -> void:
 		host.add_child(label("No unified battle is active.", 20, Color("fff0a1")))
 		host.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 		return
-	var heading := label("Foundry Battle · %s" % battle_mode.capitalize().replace("_", " "), 25, Color("ffd36c"))
-	heading.name = "UnifiedBattleHeading"
-	host.add_child(heading)
-	var arena := TextureRect.new(); arena.texture = load(_unified_battle_background_path()); arena.custom_minimum_size = Vector2(0, 74 if is_portrait_layout() else 72); arena.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; arena.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED; arena.mouse_filter = Control.MOUSE_FILTER_IGNORE; host.add_child(arena)
-	if not toast.is_empty(): host.add_child(label(toast, 14, Color("fff0a1")))
-	host.add_child(label("Turn %d · %s phase" % [int(battle.turn), str(battle.phase).capitalize()], 16, Color("9beaff")))
-	host.add_child(_unified_side_panel("Rival", battle.player(1), Color("ffaaa1")))
-	host.add_child(_unified_side_panel("Your", battle.player(0), Color("8deaff")))
-	if battle_mode == "local" and unified_local_handoff:
-		var handoff := make_panel(Color("2b213ee8"), Color("f1be69"))
-		handoff.name = "UnifiedLocalHandoff"
-		host.add_child(handoff.get_parent())
-		handoff.add_child(label("Pass the device · Player %d" % (int(battle.active_seat) + 1), 18, Color("fff0a1")))
-		handoff.add_child(label("Hands remain concealed until the next player is ready.", 14, Color("e6dfd0")))
-		handoff.add_child(make_button("Ready Player %d" % (int(battle.active_seat) + 1), func(): unified_local_handoff = false; unified_hand_page = 0; render(), Color("a86b2e")))
-		return
-	if battle.finished:
-		host.add_child(label("%s printer broke." % ("Rival" if int(battle.winner) == 0 else "Your"), 20, Color("a8e3a5") if int(battle.winner) == 0 else Color("ffaaa1")))
-		if not battle_settlement_context.is_empty() and not battle_settlement_finished:
-			host.add_child(label("Saving the battle result…", 14, Color("fff0a1")))
-			call_deferred("_settle_finished_unified_battle")
-		else:
-			host.add_child(make_button("Return to Workshop", func(): battle = null; battle_settlement_context.clear(); screen = "workshop"; render(), Color("536c8d")))
-		return
-	if unified_ai_pending:
-		host.add_child(label("Rival printer is calculating its turn…", 15, Color("fff0a1")))
-		return
-	var active: Dictionary = battle.player(int(battle.active_seat))
-	var hand_title := label("Player %d hand" % (int(battle.active_seat) + 1), 17, Color("ffd36c"))
-	hand_title.name = "UnifiedHandHeading"
-	host.add_child(hand_title)
-	var hand: Array = active.get("hand", [])
-	var hand_page_size := 4 if is_portrait_layout() else 7
-	var pages := maxi(1, int(ceil(float(hand.size()) / float(hand_page_size))))
-	unified_hand_page = clampi(unified_hand_page, 0, pages - 1)
-	var hand_grid := GridContainer.new()
-	hand_grid.name = "UnifiedBattleHandGrid"
-	hand_grid.columns = 2 if is_portrait_layout() else 4
-	hand_grid.add_theme_constant_override("h_separation", 8)
-	hand_grid.add_theme_constant_override("v_separation", 8)
-	host.add_child(hand_grid)
-	for card_id in hand.slice(unified_hand_page * hand_page_size, mini(hand.size(), (unified_hand_page + 1) * hand_page_size)):
-		hand_grid.add_child(_unified_card_button(str(card_id)))
-	var pager := HBoxContainer.new(); pager.name = "UnifiedBattleHandPager"; pager.alignment = BoxContainer.ALIGNMENT_CENTER; pager.size_flags_vertical = Control.SIZE_SHRINK_CENTER; host.add_child(pager)
-	var hand_prev := make_button("‹", func(): unified_hand_page = posmod(unified_hand_page - 1, pages); render(), Color("536c8d")); hand_prev.custom_minimum_size = Vector2(48, 44); hand_prev.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; hand_prev.size_flags_vertical = Control.SIZE_SHRINK_CENTER; pager.add_child(hand_prev)
-	var hand_label := _compact_pager_label("Hand %d / %d" % [unified_hand_page + 1, pages]); pager.add_child(hand_label)
-	var hand_next := make_button("›", func(): unified_hand_page = posmod(unified_hand_page + 1, pages); render(), Color("536c8d")); hand_next.custom_minimum_size = Vector2(48, 44); hand_next.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; hand_next.size_flags_vertical = Control.SIZE_SHRINK_CENTER; pager.add_child(hand_next)
-	if int(battle.active_seat) == 0 or battle_mode == "local":
-		_render_unified_play_picker(host, active)
-		_render_unified_attack_picker(host, active)
-	var actions := HBoxContainer.new()
-	actions.name = "UnifiedBattlePhaseActions"
-	actions.add_theme_constant_override("separation", 8)
-	host.add_child(actions)
-	# The full legal target/card picker is added by the Foundry battle component;
-	# these phase controls are intentionally explicit and never infer a target.
-	actions.add_child(make_button("Advance phase", _submit_unified_intent.bind({"type":"advance_phase"}), Color("2f93a8")))
-	if str(battle.phase) == "collect":
-		actions.add_child(label("Scrap collection is automatic when you advance this phase.", 13, Color("e6dfd0")))
-	host.add_child(make_button("Return to Workshop", func(): battle = null; battle_settlement_context.clear(); screen = "workshop"; render(), Color("536c8d")))
+	host.add_child(label("Battle presentation is unavailable. Return to the Workshop and retry.", 16, Color("fff0a1")))
+	host.add_child(make_button("Return to Workshop", navigate_to.bind("workshop"), Color("536c8d")))
 
 func _toast(message: String) -> void:
 	toast = message

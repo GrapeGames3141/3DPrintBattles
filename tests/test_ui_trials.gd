@@ -67,7 +67,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	require(main.battle != null and str(main.battle_settlement_context.get("source_id", "")) == "first_layers_1", "First Layers launches the authored first encounter through the unified UI")
 	require(main.battle != null and int(main.battle.player(1).filament) == 200 and int(main.battle.player(1).filament_max) == 400 and str(main.battle_mode) == "trial", "Trial UI launches the v3 rival filament economy and arena mode")
-	require(not has_scroll_container(main) and tree_has_text(main, "Foundry Battle") and tree_has_text(main, "Hand 1 / 1"), "shipped unified battle uses a no-scroll Foundry shell with a paged hand")
+	require(main.find_child("PhysicalBattlefieldStage", true, false) != null and main.find_child("PhysicalBattleHandScroll", true, false) is ScrollContainer and main.find_child("UnifiedRunCycleLever", true, false) != null, "shipped unified battle uses the physical chassis with a complete horizontal hand rail and one Run Cycle lever")
 	if main.battle != null:
 		main.battle.finished = true
 		main.battle.winner = 0

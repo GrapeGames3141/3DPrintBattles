@@ -4,6 +4,26 @@ const RULES := preload("res://scripts/core/unified_rules.gd")
 const BATTLE := preload("res://scripts/battle/unified_battle_rules.gd")
 ## Deterministic, legal intent-only AI. It sees public queues and field state,
 ## but never opponent hands or face-down trap identities.
+static func next_legal_intent(state: UnifiedBattleState, seat: int) -> Dictionary:
+	if state == null or state.finished or state.active_seat != seat: return {}
+	if not state.pending.is_empty():
+		if str(state.pending.get("kind", "")) == "place": return {"type":"place_completed","slot":_open(state.player(seat)),"mode":"attack"}
+		if str(state.pending.get("kind", "")) == "attach":
+			var held := RULES.card(str(state.pending.get("card_id", "")))
+			return {"type":"attach_completed","slot":_best_friend(state.player(seat), str(held.get("equipment_slot", "")))}
+		return {}
+	match state.phase:
+		"draw", "print": return {"type":"advance_phase"}
+		"main":
+			var main := _main_intent(state, seat)
+			return main if not main.is_empty() else {"type":"advance_phase"}
+		"attack":
+			var attack := _attack_intent(state, seat)
+			return attack if not attack.is_empty() else {"type":"advance_phase"}
+		"collect":
+			var hand: Array = state.player(seat).get("hand", [])
+			return {"type":"discard_overflow","card_ids":hand.slice(0, hand.size() - 8)} if hand.size() > 8 else {"type":"advance_phase"}
+	return {}
 static func take_turn(state: UnifiedBattleState, seat: int) -> Dictionary:
 	var safety := 0
 	var progressed := false

@@ -21,6 +21,24 @@
       "rejected_alternatives": ["native diamond placeholder glyph", "raw-print creature art as a docked cartridge"]
     }
   },
+  "m2_physical_battle": {
+    "battle_chassis_base": {
+      "runtime_path": "res://assets/ui/physical_ui/m2/battle-chassis-base-text-free-v1.png",
+      "source_path": "res://docs/art/printforge-physical-ui-spike-20260830/runtime-masters/battle-chassis-base-text-free-v1.png",
+      "dimensions": [941, 1672],
+      "sha256": "25F19144AA79FEA43978F5C579E7C7CD373A9F1D6ECCF48D391769748D7AC902",
+      "alpha_expected": false,
+      "approved_region": [0, 0, 941, 1672],
+      "runtime_role": "Portrait physical battle chassis, contain centered with native dynamic overlays.",
+      "provenance": {
+        "generator": "OpenAI ImageGen",
+        "prompt_status": "approved runtime-master",
+        "approval_date": "2026-08-31",
+        "approval_source": "PrintForge physical UI M2 battle checkpoint"
+      },
+      "rejected_alternatives": ["battle foreground RGB attempts", "baked dynamic text or units"]
+    }
+  },
   "groups": {
     "battle_backgrounds": [
       "res://assets/ui/battle_backgrounds/daily_arena_landscape_v1.png",

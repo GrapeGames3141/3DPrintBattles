@@ -72,6 +72,23 @@ func player(seat: int) -> Dictionary:
 	return players[seat] if seat >= 0 and seat < players.size() else {}
 func serialize() -> Dictionary:
 	return {"schema":schema,"revision":revision,"seed":seed,"starting_seat":starting_seat,"active_seat":active_seat,"turn":turn,"phase":phase,"finished":finished,"winner":winner,"pending":pending.duplicate(true),"players":players.duplicate(true),"log":log.duplicate()}
+static func from_snapshot(snapshot: Dictionary) -> UnifiedBattleState:
+	# Recovery owns no game decisions.  A fully serialized authority snapshot is
+	# copied exactly so a coordinator can resume without replaying an intent.
+	var state := UnifiedBattleState.new()
+	state.schema = str(snapshot.get("schema", state.schema))
+	state.revision = int(snapshot.get("revision", 0))
+	state.seed = int(snapshot.get("seed", 0))
+	state.starting_seat = int(snapshot.get("starting_seat", 0))
+	state.active_seat = int(snapshot.get("active_seat", 0))
+	state.turn = int(snapshot.get("turn", 1))
+	state.phase = str(snapshot.get("phase", "draw"))
+	state.finished = bool(snapshot.get("finished", false))
+	state.winner = int(snapshot.get("winner", -1))
+	state.pending = (snapshot.get("pending", {}) as Dictionary).duplicate(true)
+	state.players = (snapshot.get("players", []) as Array).duplicate(true)
+	state.log = (snapshot.get("log", []) as Array).duplicate()
+	return state
 func public_snapshot(viewer_seat: int = -1) -> Dictionary:
 	var snapshot := serialize()
 	for seat in 2:
