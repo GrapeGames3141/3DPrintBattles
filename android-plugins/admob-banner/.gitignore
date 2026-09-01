@@ -1,0 +1,8 @@
+# Source, Gradle wrapper, and build scripts remain reviewable. These are the
+# reproducible Android-plugin byproducts and copied Godot template only.
+.gradle/
+build/
+admob-banner/build/
+godot-lib.template_debug.aar
+local.properties
+*.log

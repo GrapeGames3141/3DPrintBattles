@@ -1,0 +1,33 @@
+{
+  "review_build": "0.8.4-physical-ui-review",
+  "promotion": "byte-identical copy; no density derivation retained in source control",
+  "assets": [
+    {
+      "role": "legacy_main_launcher",
+      "source": "docs/art/printforge-physical-ui-spike-20260830/branding-app-icon-v1.png",
+      "runtime": "assets/ui/branding/android/branding-app-icon-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2399131,
+      "sha256": "91C67524D124506EE74333957F9D6CD1A37654315032C1417248A085B681034F"
+    },
+    {
+      "role": "adaptive_background",
+      "source": "docs/art/printforge-physical-ui-spike-20260830/branding-adaptive-icon-background-v1.png",
+      "runtime": "assets/ui/branding/android/branding-adaptive-icon-background-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2484293,
+      "sha256": "397ED26029D9BF6D1F1657546CDC5081A3111278402CD6B3A78A9607880A9935"
+    },
+    {
+      "role": "adaptive_foreground",
+      "source": "docs/art/printforge-physical-ui-spike-20260830/branding-adaptive-icon-foreground-v2.png",
+      "runtime": "assets/ui/branding/android/branding-adaptive-icon-foreground-v2.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 1231795,
+      "sha256": "22D433B4EFDD4DE827A591B5C70B9C82C8A3B36BDA3F9D3E87600C3CE68CAE3B"
+    }
+  ]
+}
