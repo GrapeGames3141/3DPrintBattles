@@ -1,0 +1,178 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "glassdrake",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.13",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\sources\\glassdrake-imagegen-rgb-v1.png",
+    "bytes": 1698797,
+    "sha256": "B04D76FE23EEDCFDFF6BDBCCEE7AFAE5E0AC347F65731A13AA65F658DF740156",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "ImageGen canonical-reference blueprint candidate v1"
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\glassdrake_blueprint_ink_v2-candidate-v1.png",
+      "bytes": 1876286,
+      "sha256": "FC4D4918EC940431154F57DD239A2A4DC186E8F51A4BE5A7812698A436BB4421",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\glassdrake_blueprint_ink_v2-candidate-v1-light-parchment.png",
+      "bytes": 775342,
+      "sha256": "6E16B2B92D0CD4AABC115029CCF8B1F31DA35BE9E4E18738A889E1B25A9E77A9",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\glassdrake_blueprint_ink_v2-candidate-v1-dark-parchment.png",
+      "bytes": 785315,
+      "sha256": "A97A9EBD378D7A8019190D36A9AAEB5504163A917D9ADB8EE5A2B0F6BB8ABC6F",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\glassdrake_blueprint_ink_v2-candidate-v1-proof-160px.png",
+      "bytes": 16950,
+      "sha256": "57F03A9E30BE3186CD79BF0BA8263ABE04D189EE925681C189E2C171E2162F41",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1316418,
+      "partial": 94935,
+      "opaque": 161163
+    },
+    "initial_counts_before_datum": {
+      "zero": 1316418,
+      "partial": 94935,
+      "opaque": 161163
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "normalization_applied": false,
+    "normalization_statement": "No automated full-width cyan datum band was detected; source cyan was preserved for visual review.",
+    "row_band": [],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      102,
+      1148
+    ],
+    "outside_cyan_suppressed": 0,
+    "inside_cyan_subdued": 0,
+    "non_datum_cyan_preserved": 806
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "normalization_applied": true,
+      "normalization_statement": "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued.",
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}

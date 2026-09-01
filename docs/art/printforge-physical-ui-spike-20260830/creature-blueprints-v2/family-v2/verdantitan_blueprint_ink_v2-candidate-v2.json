@@ -1,0 +1,178 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "verdantitan",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.13",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "E:\\AI Projects\\games\\3d print battler\\docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\sources\\verdantitan-imagegen-rgb-v2.png",
+    "bytes": 2493493,
+    "sha256": "DCFAB22D9610E1595C029B6DCFAC77D13A4EA12E0F5B550321D0BF6E30DD28C5",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "ImageGen v2 toe-puck correction of the approved Verdantitan family brief"
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "E:\\AI Projects\\games\\3d print battler\\docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\verdantitan_blueprint_ink_v2-candidate-v2.png",
+      "bytes": 2804841,
+      "sha256": "0CD24B6FB0521C7751B49A96CEA75ADF80B3062F6CC37F6F005F27F6A238B092",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "E:\\AI Projects\\games\\3d print battler\\docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\verdantitan_blueprint_ink_v2-candidate-v2-light-parchment.png",
+      "bytes": 1064572,
+      "sha256": "C6ACB697FEF75F5AA174B0AE77C8712A35D214E781F0CE81584E48E33CA37725",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "E:\\AI Projects\\games\\3d print battler\\docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\verdantitan_blueprint_ink_v2-candidate-v2-dark-parchment.png",
+      "bytes": 1105992,
+      "sha256": "876BC5027973EE5DF56091C69A6E41E4DB999C23EB0398BE0CD2840358002E66",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "E:\\AI Projects\\games\\3d print battler\\docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\verdantitan_blueprint_ink_v2-candidate-v2-proof-160px.png",
+      "bytes": 22326,
+      "sha256": "DECD530945AF322C2A8A28140F07B04CD0292BF7ABA49A08F1C574BA38F75E45",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1211601,
+      "partial": 165298,
+      "opaque": 195617
+    },
+    "initial_counts_before_datum": {
+      "zero": 1211601,
+      "partial": 165298,
+      "opaque": 195617
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "normalization_applied": false,
+    "normalization_statement": "No automated full-width cyan datum band was detected; source cyan was preserved for visual review.",
+    "row_band": [],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      82,
+      1169
+    ],
+    "outside_cyan_suppressed": 0,
+    "inside_cyan_subdued": 0,
+    "non_datum_cyan_preserved": 333
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "normalization_applied": true,
+      "normalization_statement": "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued.",
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}

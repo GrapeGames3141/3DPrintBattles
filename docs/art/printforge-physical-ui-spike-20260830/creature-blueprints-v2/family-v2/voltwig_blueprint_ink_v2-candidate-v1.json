@@ -1,0 +1,178 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "voltwig",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.13",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\sources\\voltwig-imagegen-rgb-v1.png",
+    "bytes": 1375650,
+    "sha256": "22CC5BAF6CD293D3365993F9B14B54238A54CFFF09B2A6CDCBB990FB53CACBFD",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "ImageGen canonical-reference blueprint candidate v1"
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\voltwig_blueprint_ink_v2-candidate-v1.png",
+      "bytes": 1628398,
+      "sha256": "5FB7434086EBB3C992C289E76D994507475DBE2106445E78A8FAE881EC0A3E46",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\voltwig_blueprint_ink_v2-candidate-v1-light-parchment.png",
+      "bytes": 359227,
+      "sha256": "CF7F89759167810A136C22C7DD089AB211B18CB110F14726828B1CCB3DE15F66",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\voltwig_blueprint_ink_v2-candidate-v1-dark-parchment.png",
+      "bytes": 383390,
+      "sha256": "0C6DE76AB156BBF265412F750EEC45CDA15F482AD31B4AAE69B1E14C841D83E1",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\voltwig_blueprint_ink_v2-candidate-v1-proof-160px.png",
+      "bytes": 8352,
+      "sha256": "0CB42A81D1E62E3D611224004D414EFCDFE2E630F6FEF2EA09EE8D394FFA9CCD",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1453204,
+      "partial": 65505,
+      "opaque": 53807
+    },
+    "initial_counts_before_datum": {
+      "zero": 1453204,
+      "partial": 65505,
+      "opaque": 53807
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "normalization_applied": false,
+    "normalization_statement": "No automated full-width cyan datum band was detected; source cyan was preserved for visual review.",
+    "row_band": [],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      287,
+      965
+    ],
+    "outside_cyan_suppressed": 0,
+    "inside_cyan_subdued": 0,
+    "non_datum_cyan_preserved": 192
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "normalization_applied": true,
+      "normalization_statement": "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued.",
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}
