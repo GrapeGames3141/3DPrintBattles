@@ -35,7 +35,7 @@ func _ready() -> void:
 		require(ResourceLoader.exists(path) and ResourceLoader.load(path) != null, "%s runtime icon/splash path loads" % path)
 	var workshop_boot_splash := Image.load_from_file(ProjectSettings.globalize_path(WORKSHOP_BOOT_SPLASH_PATH))
 	require(workshop_boot_splash != null and not workshop_boot_splash.is_empty() and workshop_boot_splash.get_width() == 1672 and workshop_boot_splash.get_height() == 941, "boot splash uses the canonical 1672x941 Workshop overview plate")
-	require(int(ProjectSettings.get_setting("display/window/handheld/orientation", -1)) == 6, "sensor orientation is configured")
+	require(int(ProjectSettings.get_setting("display/window/handheld/orientation", -1)) == 1, "portrait orientation is locked and configured")
 	require(str(ProjectSettings.get_setting("application/boot_splash/image", "")) == WORKSHOP_BOOT_SPLASH_PATH, "boot splash setting uses the canonical Workshop overview plate")
 	var fallback := Catalog.creature("future_unmapped_creature")
 	require(fallback.is_empty() and BattleSpriteStage.sprite_path_for("future_unmapped_creature").ends_with("mossmunk_sprite_sheet.png"), "unknown future IDs retain the safe mascot visual fallback")

@@ -8,6 +8,7 @@ const VFX := preload("res://scripts/ui/battle_move_vfx.gd")
 const CHASSIS := preload("res://assets/ui/physical_ui/m2/battle-chassis-base-text-free-v1.png")
 const CARD_BACK := preload("res://assets/cards/support_card_back_source_v1.png")
 const SCHEMATIC := preload("res://scripts/ui/blueprint_schematic.gdshader")
+const PORTRAIT_PRESENTER := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
 const DESIGN := Vector2(941, 1672)
 const RIVAL_PRINTER := Rect2(18, 50, 254, 328)
 const PLAYER_PRINTER := Rect2(18, 1160, 255, 318)
@@ -33,6 +34,9 @@ var _impact_marks: Array[Panel] = []
 var _scan_lines: Array[ColorRect] = []
 var _deploy_sprite: TextureRect
 var _deploy_atlas: AtlasTexture
+var _attack_sprite: TextureRect
+var _attack_atlas: AtlasTexture
+var _attack_overlay_index := -1
 var _raw_texture_cache: Dictionary = {}
 var _elapsed := 0.0
 var _event_elapsed := 0.0
@@ -89,6 +93,8 @@ func _ready() -> void:
 		var scan := ColorRect.new(); scan.name = "BattlePrinterScanLine%d" % seat; scan.color = Color("7fefff"); scan.mouse_filter = Control.MOUSE_FILTER_IGNORE; scan.z_index = 4; chamber.add_child(scan); _scan_lines.append(scan)
 	_deploy_sprite = TextureRect.new(); _deploy_sprite.name = "BattleDeploySprite"; _deploy_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; _deploy_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; _deploy_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE; _deploy_sprite.z_index = 30; add_child(_deploy_sprite)
 	_deploy_atlas = AtlasTexture.new()
+	_attack_sprite = TextureRect.new(); _attack_sprite.name = "BattleContactPeakOverlay"; _attack_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; _attack_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; _attack_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE; _attack_sprite.z_index = 31; add_child(_attack_sprite)
+	_attack_atlas = AtlasTexture.new()
 	queue_redraw()
 
 func _ring_style(color: Color, width: int) -> StyleBoxFlat:
@@ -100,6 +106,9 @@ func configure(public_view: Dictionary, receipt: Dictionary = {}) -> void:
 	if receipt != event:
 		event = receipt.duplicate(true); _event_elapsed = 0.0; _event_serial = int(event.get("token", event.get("generation", _event_serial + 1)))
 		if bool(event.get("reduced_motion", false)): _event_elapsed = VFX.event_duration(str(event.get("kind", "")))
+		var requested_progress := int(event.get("presentation_progress_bps", -1))
+		if requested_progress >= 0:
+			_event_elapsed = VFX.event_duration(str(event.get("kind", ""))) * clampf(float(requested_progress) / 10000.0, 0.0, 1.0)
 		_printed_preview = str(event.get("card_id", event.get("print_card_id", ""))) if str(event.get("kind", "")) in ["print", "deploy"] else ""
 		_preview_seat = int(event.get("actor", 0))
 	var pending: Dictionary = snapshot.get("pending", {}) if snapshot.get("pending", {}) is Dictionary else {}
@@ -137,10 +146,7 @@ func _process(delta: float) -> void:
 	_sync()
 
 func _fit() -> Rect2:
-	if chassis == null or size.x <= 0.0 or size.y <= 0.0: return Rect2(Vector2.ZERO, size)
-	var ratio := DESIGN.x / DESIGN.y
-	var width := minf(size.x, size.y * ratio)
-	return Rect2(Vector2((size.x - width) * 0.5, (size.y - width / ratio) * 0.5), Vector2(width, width / ratio))
+	return PORTRAIT_PRESENTER.composition_rect(size, DESIGN)
 
 func _rect(design_rect: Rect2) -> Rect2:
 	var fit := _fit()
@@ -181,8 +187,7 @@ func _sync() -> void:
 				var frame := int(floor(_elapsed * 6.0)) % 4
 				atlas.region = CACHE.safe_source_region(frame)
 				_sprites[index].texture = atlas
-				var offset := _event_offset(seat, slot, rect.size)
-				_sprites[index].position = offset
+				_sprites[index].position = _event_offset(seat, slot, rect.size)
 				_sprites[index].scale = Vector2.ONE * _presentation_scale(id)
 				_sprites[index].pivot_offset = rect.size * .5
 				_sprites[index].modulate = Color.WHITE
@@ -193,7 +198,7 @@ func _sync() -> void:
 						_sprites[index].position += Vector2(sin(hit_p * 60.0) * rect.size.x * .035, 0)
 						_impact_marks[index].visible = true
 					if bool(event.get("defeated", false)) and hit_p >= .55: _sprites[index].modulate.a = clampf(1.0 - (hit_p - .55) / .17, 0.0, 1.0)
-				_sprites[index].visible = true
+				_sprites[index].visible = index != _attack_overlay_index
 				_labels[index].text = "%s  %d HP" % [str((unit as Dictionary).get("name", "Print")), int((unit as Dictionary).get("hp", 0))]
 				_labels[index].visible = true
 			else:
@@ -230,6 +235,7 @@ func _sync() -> void:
 			var raw_texture := _raw_texture_for(_printed_preview)
 			_printer_sprites[seat].texture = raw_texture; _printer_schematics[seat].texture = raw_texture
 	_sync_deploy_overlay()
+	_sync_attack_overlay()
 
 func _raw_texture_for(card_id: String) -> Texture2D:
 	if _raw_texture_cache.has(card_id): return _raw_texture_cache[card_id] as Texture2D
@@ -276,19 +282,53 @@ func _sync_deploy_overlay() -> void:
 		_deploy_atlas.atlas = CACHE.texture_for_creature(_printed_preview); _deploy_atlas.region = CACHE.safe_source_region(int(floor(_elapsed * 6.0)) % 4); _deploy_sprite.texture = _deploy_atlas
 	_deploy_sprite.modulate = Color.WHITE; _deploy_sprite.scale = Vector2.ONE * (1.0 + sin(p * PI) * .08)
 
+func _sync_attack_overlay() -> void:
+	_attack_overlay_index = -1
+	if _attack_sprite == null: return
+	_attack_sprite.visible = false
+	if str(event.get("kind", "")) != "attack": return
+	var actor := int(event.get("actor", -1)); var source_slot := int(event.get("source_slot", event.get("slot", -1))); var target_slot := int(event.get("target_slot", -1))
+	if actor < 0 or actor > 1 or source_slot < 0 or source_slot > 2: return
+	var reduced := bool(event.get("reduced_motion", false))
+	var p := 0.5 if reduced else clampf(_event_elapsed / maxf(.01, VFX.event_duration("attack")), 0.0, 1.0)
+	if not reduced and (p < .42 or p > .58): return
+	var source_rect := _rect((PLAYER_SLOTS if actor == 0 else RIVAL_SLOTS)[source_slot])
+	var target_rect := _rect(RIVAL_PRINTER if actor == 0 else PLAYER_PRINTER) if target_slot < 0 else _rect((RIVAL_SLOTS if actor == 0 else PLAYER_SLOTS)[clampi(target_slot, 0, 2)])
+	# Keep the contact clearly inside the target field but bias the root overlay
+	# away from the bottom native name/HP strip. Rects are already stage-scaled,
+	# so this remains the same physical relationship at both portrait sizes.
+	var contact_center := target_rect.get_center() - Vector2(target_rect.size.x * .08, target_rect.size.y * .42)
+	var contact_size := source_rect.size * 1.08
+	_attack_sprite.position = contact_center - contact_size * .5
+	_attack_sprite.size = contact_size
+	var players: Array = snapshot.get("players", []) if snapshot.get("players", []) is Array else []
+	var actor_slots: Array = (players[actor] as Dictionary).get("slots", []) if actor < players.size() and players[actor] is Dictionary else []
+	var unit: Dictionary = actor_slots[source_slot] if source_slot < actor_slots.size() and actor_slots[source_slot] is Dictionary else {}
+	var card_id := str(unit.get("card_id", event.get("card_id", "mossmunk")))
+	_attack_atlas.atlas = CACHE.texture_for_creature(card_id)
+	_attack_atlas.region = CACHE.safe_source_region(int(floor(_elapsed * 6.0)) % 4)
+	_attack_sprite.texture = _attack_atlas
+	_attack_sprite.modulate = Color("ffffff") if not reduced else Color("ffe5a8")
+	_attack_sprite.visible = true
+	_attack_overlay_index = actor * 3 + source_slot
+	if _attack_overlay_index >= 0 and _attack_overlay_index < _sprites.size():
+		_sprites[_attack_overlay_index].visible = false
+		_labels[_attack_overlay_index].visible = false
+
 func _event_offset(seat: int, slot: int, slot_size: Vector2) -> Vector2:
 	if str(event.get("kind", "")) != "attack" or bool(event.get("reduced_motion", false)): return Vector2.ZERO
 	if seat != int(event.get("actor", -1)) or slot != int(event.get("source_slot", event.get("slot", -1))): return Vector2.ZERO
 	var progress := clampf(_event_elapsed / maxf(0.01, VFX.event_duration("attack")), 0.0, 1.0)
+	# The root overlay owns the actual contact beat.  Retain the finite local
+	# wind-up/recovery movement outside that beat so existing attack pacing stays
+	# intact and only the home copy disappears while contact is presented.
+	if progress >= .42 and progress <= .58: return Vector2.ZERO
 	var target_slot := int(event.get("target_slot", -1))
 	if target_slot > 2: return Vector2.ZERO
 	var source_rect := _rect((PLAYER_SLOTS if seat == 0 else RIVAL_SLOTS)[slot])
 	var target_rect := _rect(RIVAL_PRINTER if seat == 0 else PLAYER_PRINTER) if target_slot < 0 else _rect((RIVAL_SLOTS if seat == 0 else PLAYER_SLOTS)[target_slot])
 	var direction := (target_rect.get_center() - source_rect.get_center()).normalized()
-	# Contact has a clear, diagonal source-to-target lunge in the physical lane,
-	# then returns before the finite presentation settles.
-	var pulse := sin(progress * PI) * .52
-	return direction * slot_size.y * pulse
+	return direction * slot_size.y * sin(progress * PI) * .52
 
 func _draw() -> void:
 	var fit := _fit()

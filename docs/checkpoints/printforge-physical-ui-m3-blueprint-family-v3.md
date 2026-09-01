@@ -1,5 +1,13 @@
 # PrintForge physical UI M3 intact blueprint family checkpoint v3
 
+> **Superseded visual direction (2026-09-01):** The user rejected the v1/v3
+> blueprint-card grammar after this historical checkpoint. Its 24-image ledger is
+> retained as provenance only and is not runtime art authority or an allowed fallback.
+> `printforge-physical-ui-m6-visual-correction-v1.md` and the reviewed
+> `creature-blueprints-v2/README.md` pilot now govern blueprint presentation. The
+> deterministic route/state contracts below remain authoritative only where they do
+> not depend on the superseded v1/v3 visual grammar.
+
 Status: decision-complete integration contract; runtime evidence pending
 
 Date: 2026-08-31
@@ -418,4 +426,3 @@ Deterministic acceptance:
 - No mapping-dependent legality, reward, ownership, or save field.
 - No landscape duplicate, Android/build/signing/device claim, production AdMob ID,
   Godot-side banner reserve, Drive delivery, or cloud-sync claim.
-

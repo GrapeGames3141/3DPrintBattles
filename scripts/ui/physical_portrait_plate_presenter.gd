@@ -33,13 +33,22 @@ func _notification(what: int) -> void:
 		queue_redraw()
 
 func fit_rect() -> Rect2:
-	if plate_texture == null or size.x <= 0.0 or size.y <= 0.0:
-		return Rect2(Vector2.ZERO, size)
-	var ratio := float(plate_texture.get_width()) / float(plate_texture.get_height())
-	var width := minf(size.x, size.y * ratio)
-	var result := Rect2((size - Vector2(width, width / ratio)) * 0.5, Vector2(width, width / ratio))
+	var texture_size := Vector2(plate_texture.get_width(), plate_texture.get_height()) if plate_texture != null else Vector2.ZERO
+	var result := composition_rect(size, texture_size)
 	plate_rect = result
 	return result
+
+static func composition_rect(container_size: Vector2, master_size: Vector2) -> Rect2:
+	## Normal portrait retains the authored contain composition.  The named M6 very
+	## tall fixture instead maps one physical composition across the whole usable
+	## surface: there is no second bottom reserve or letterbox ownership.
+	if container_size.x <= 0.0 or container_size.y <= 0.0 or master_size.x <= 0.0 or master_size.y <= 0.0:
+		return Rect2(Vector2.ZERO, container_size)
+	if container_size.y / maxf(container_size.x, 1.0) > 2.05:
+		return Rect2(Vector2.ZERO, container_size)
+	var ratio := master_size.x / master_size.y
+	var width := minf(container_size.x, container_size.y * ratio)
+	return Rect2((container_size - Vector2(width, width / ratio)) * 0.5, Vector2(width, width / ratio))
 
 func design_rect(rect: Rect2, design_size := Vector2(576, 928)) -> Rect2:
 	var fitted := fit_rect()

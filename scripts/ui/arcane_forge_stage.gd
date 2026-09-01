@@ -12,6 +12,7 @@ const CELL := Vector2i(384, 512)
 const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
 # TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
 const TIERED_ARMOR_PREVIEW := preload("res://scripts/ui/tiered_armor_palette_preview.gd")
+const SCHEMATIC := preload("res://scripts/ui/blueprint_schematic.gdshader")
 
 var creature_id := "cinderpaw"
 var armor_id := ""
@@ -27,12 +28,21 @@ var raw: Texture2D
 var living: Texture2D
 var _last_frame_index := -1
 var equipment_preview: Control
+var _wireframe_clip: Control
+var _wireframe: TextureRect
+var _last_solid_rect := Rect2()
+var _last_wireframe_rect := Rect2()
+var _last_scan_count := 0
 
 func _ready() -> void:
 	# The portrait caller deliberately gives the forge more vertical room.
 	# Landscape stays compact enough that its primary controls are on-screen.
 	custom_minimum_size = Vector2(0, 330)
 	equipment_preview = TIERED_ARMOR_PREVIEW.new(); equipment_preview.name = "ForgeEquipmentPalettePreview"; equipment_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(equipment_preview)
+	_wireframe_clip = Control.new(); _wireframe_clip.name = "ForgePrintWireframeClip"; _wireframe_clip.clip_contents = true; _wireframe_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE; _wireframe_clip.z_index = 4; add_child(_wireframe_clip)
+	_wireframe = TextureRect.new(); _wireframe.name = "ForgePrintWireframe"; _wireframe.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; _wireframe.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; _wireframe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var wireframe_material := ShaderMaterial.new(); wireframe_material.shader = SCHEMATIC; _wireframe.material = wireframe_material
+	_wireframe_clip.add_child(_wireframe)
 	_load_assets()
 	_update_motion_processing()
 	queue_redraw()
@@ -126,6 +136,8 @@ func _draw() -> void:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
 	if high_contrast: draw_rect(Rect2(2, 2, size.x - 4, size.y - 4), Color.WHITE, false, 3.0)
+	if phase != ArcaneForgeSequence.PRINTING or not armor_id.is_empty():
+		_set_wireframe_split(Rect2(), Rect2(), false)
 
 func _fit_rect(texture: Texture2D, bounds: Rect2) -> Rect2:
 	if texture == null: return bounds
@@ -144,17 +156,42 @@ func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 	var rect := Rect2(Vector2(plate.get_center().x - raw_height * 0.5, _plate_surface_y(plate) - raw_height), Vector2(raw_height, raw_height))
 	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
 	var shown := rect.size.y * float(reveal) / 10000.0
-	if shown <= 0.5: return
+	_last_solid_rect = Rect2()
+	_last_wireframe_rect = Rect2()
+	_last_scan_count = 0
+	if shown <= 0.5:
+		_set_wireframe_split(Rect2(), Rect2(), false)
+		return
 	var source_height := raw.get_height() * float(reveal) / 10000.0
 	var source := Rect2(0, raw.get_height() - source_height, raw.get_width(), source_height)
 	var destination := Rect2(rect.position + Vector2(0, rect.size.y - shown), Vector2(rect.size.x, shown))
+	_last_solid_rect = destination
 	var raw_alpha := 1.0
 	if phase == ArcaneForgeSequence.AWAKENING:
 		raw_alpha = 1.0 - clampf(float(phase_progress_bps) / 10000.0, 0.0, 1.0)
 	draw_texture_rect_region(raw, destination, source, Color(1, 1, 1, raw_alpha * preview_alpha))
 	if phase == ArcaneForgeSequence.PRINTING:
 		var scan_y := destination.position.y
-		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("69efff"), 2.0)
+		# The complementary, clipped upper region is the exact same raw creature
+		# rendered through the technical schematic shader.  It never introduces the
+		# living sprite before the existing awakening phase.
+		_set_wireframe_split(Rect2(rect.position, Vector2(rect.size.x, maxf(0.0, scan_y - rect.position.y))), rect, true)
+		_last_wireframe_rect = Rect2(rect.position, Vector2(rect.size.x, maxf(0.0, scan_y - rect.position.y)))
+		_last_scan_count = 1
+		# One explicit, high-value cyan datum owns the complementary material split.
+		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("8ff6ff"), 3.0)
+	else:
+		_set_wireframe_split(Rect2(), Rect2(), false)
+
+func _set_wireframe_split(upper: Rect2, full_rect: Rect2, visible: bool) -> void:
+	if _wireframe_clip == null or _wireframe == null: return
+	_wireframe_clip.visible = visible and raw != null and upper.size.x > 0.5 and upper.size.y > 0.5
+	if not _wireframe_clip.visible: return
+	_wireframe_clip.position = upper.position
+	_wireframe_clip.size = upper.size
+	_wireframe.position = full_rect.position - upper.position
+	_wireframe.size = full_rect.size
+	_wireframe.texture = raw
 
 func _draw_armor_part(plate: Rect2, preview_alpha := 1.0) -> void:
 	if raw == null: return

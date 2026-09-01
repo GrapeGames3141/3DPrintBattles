@@ -1,5 +1,11 @@
 # PrintForge physical UI M2 battle checkpoint v1
 
+> **Visual-evidence addendum (2026-09-01):**
+> `printforge-physical-ui-m6-visual-correction-v1.md` supersedes the visual acceptance
+> for the 60% print frame, attack-contact frame, tall printer instruments, and the
+> historical synthetic positive-reserve capture. M2's deterministic Plan -> Run Cycle
+> rules remain unchanged. M5/M6 require a zero-reserve, no-AdMob usable surface.
+
 Status: decision-complete; M2 implementation authorized under the screen-first
 production workflow
 

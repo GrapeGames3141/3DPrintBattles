@@ -7,6 +7,7 @@ extends Button
 const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
 const FULL_SIZE := Vector2(166, 249)
 const COMPACT_SIZE := Vector2(142, 213)
+var _focus_ring: Panel
 
 func configure(definition: Dictionary, copies := 0, market_price := -1, status_text := "", compact := true, interactive := true, unknown := false) -> void:
 	text = ""
@@ -23,6 +24,7 @@ func configure(definition: Dictionary, copies := 0, market_price := -1, status_t
 	add_theme_stylebox_override("hover", _frame(true))
 	add_theme_stylebox_override("pressed", _frame(true))
 	add_theme_stylebox_override("disabled", _frame(false))
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	if unknown: _build_unknown_back(compact)
 	else: _build_front(definition, copies, market_price, status_text, compact)
 
@@ -83,7 +85,9 @@ func _build_front(definition: Dictionary, copies: int, market_price: int, status
 	inset.add_child(content)
 	var title_plate := PanelContainer.new()
 	title_plate.name = "UnifiedCardTitlePlate"
-	title_plate.custom_minimum_size = Vector2(0, 25 if compact else 28)
+	# Leave a stable native title aperture at accessibility scale.  The focus ring
+	# belongs to the separate art aperture below, never to the label plate.
+	title_plate.custom_minimum_size = Vector2(0, 32 if compact else 36)
 	title_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title_plate.add_theme_stylebox_override("panel", _title_frame())
 	content.add_child(title_plate)
@@ -115,16 +119,35 @@ func _build_front(definition: Dictionary, copies: int, market_price: int, status
 	aspect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(aspect)
 	var art_shell := PanelContainer.new()
+	art_shell.name = "UnifiedCardArtShell"
 	art_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_shell.add_theme_stylebox_override("panel", _art_frame())
 	aspect.add_child(art_shell)
+	var art_content := Control.new()
+	art_content.name = "UnifiedCardArtContent"
+	art_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_shell.add_child(art_content)
 	var art := TextureRect.new()
 	art.name = "UnifiedCardArt"
 	art.texture = art_for_definition(definition)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art_shell.add_child(art)
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art_content.add_child(art)
+	_focus_ring = Panel.new()
+	_focus_ring.name = "UnifiedCardFocusRing"
+	_focus_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_focus_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_focus_ring.offset_left = 4
+	_focus_ring.offset_top = 4
+	_focus_ring.offset_right = -4
+	_focus_ring.offset_bottom = -4
+	_focus_ring.add_theme_stylebox_override("panel", _focus_frame())
+	_focus_ring.visible = false
+	art_content.add_child(_focus_ring)
+	if not focus_entered.is_connected(_refresh_focus_ring): focus_entered.connect(_refresh_focus_ring)
+	if not focus_exited.is_connected(_refresh_focus_ring): focus_exited.connect(_refresh_focus_ring)
 	var metadata := _text("%s · %s" % [str(definition.get("rarity", "common")).capitalize(), str(definition.get("type", "card")).capitalize()], 8 if compact else 9, _rarity_color(str(definition.get("rarity", "common"))))
 	metadata.name = "UnifiedCardMetadata"
 	metadata.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -183,6 +206,17 @@ func _frame(active: bool) -> StyleBoxFlat:
 	frame.shadow_color = Color(0, 0, 0, 0.42); frame.shadow_size = 3; frame.shadow_offset = Vector2(0, 2)
 	frame.content_margin_left = 3; frame.content_margin_right = 3; frame.content_margin_top = 3; frame.content_margin_bottom = 3
 	return frame
+
+func _focus_frame() -> StyleBoxFlat:
+	var frame := StyleBoxFlat.new()
+	frame.bg_color = Color(0, 0, 0, 0)
+	frame.border_color = Color("74efff")
+	frame.set_border_width_all(2)
+	return frame
+
+func _refresh_focus_ring() -> void:
+	if _focus_ring != null:
+		_focus_ring.visible = has_focus() and not disabled
 
 func _inset_frame() -> StyleBoxFlat:
 	var frame := StyleBoxFlat.new(); frame.bg_color = Color("202426"); frame.border_color = Color("705f43")
