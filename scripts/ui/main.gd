@@ -9,6 +9,7 @@ const WORKSHOP_HOTSPOT_OVERLAY := preload("res://scripts/ui/workshop_hotspot_ove
 const WORKSHOP_PAN_AFFORDANCE := preload("res://scripts/ui/workshop_pan_affordance.gd")
 const BLUEPRINT_SCHEMATIC_OVERLAY := preload("res://scripts/ui/blueprint_schematic_overlay.gd")
 const BLUEPRINT_SCHEMATIC_SHADER := preload("res://scripts/ui/blueprint_schematic.gdshader")
+const PARCHMENT_BLUEPRINT_INK_SHADER := preload("res://scripts/ui/physical_catalog_imprint.gdshader")
 const TOUCH_SCROLL_CONTAINER := preload("res://scripts/ui/touch_scroll_container.gd")
 const SUPPORT_CARD_PRESENTER_PATH := "res://scripts/ui/support_card_presenter.gd"
 const SUPPORT_CARD_VIEW_PATH := "res://scripts/ui/support_card_view.gd"
@@ -609,29 +610,26 @@ func _add_m1_r2_workshop_props(surface: Control) -> void:
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		art.anchor_left = rect.position.x; art.anchor_top = rect.position.y; art.anchor_right = rect.end.x; art.anchor_bottom = rect.end.y
 		surface.add_child(art)
-		var label_face := Panel.new()
-		label_face.name = "WorkshopStationLabelFace%s" % _workshop_overview_hotspot_node_suffix(str(prop.id))
-		label_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var label_rect := M1_PHYSICAL_UI.workshop_label_rect(prop)
-		label_face.anchor_left = label_rect.position.x; label_face.anchor_right = label_rect.end.x
-		label_face.anchor_top = label_rect.position.y; label_face.anchor_bottom = label_rect.end.y
 		var high_contrast := bool(settings().get("high_contrast", false))
-		label_face.add_theme_stylebox_override("panel", _visual_style(Color("fff1c8") if not high_contrast else Color("ffffff"), Color("39220f") if not high_contrast else Color("000000"), 5, 2 if high_contrast else 1))
-		surface.add_child(label_face)
-		var native_label := label(str(prop.label), int(prop.get("label_font_size", 10)), Color("071a25") if not high_contrast else Color("000000"))
+		var native_ink: Color = prop.get("label_color", Color("071a25")) if not high_contrast else Color("000000")
+		var native_outline: Color = prop.get("label_outline", Color("fff1c8")) if not high_contrast else Color("ffffff")
+		var native_label := label(str(prop.label), int(prop.get("label_font_size", 10)), native_ink)
 		native_label.name = "WorkshopStationLabel%s" % _workshop_overview_hotspot_node_suffix(str(prop.id))
 		native_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		native_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		native_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		native_label.clip_text = true
 		native_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		native_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		native_label.anchor_left = label_rect.position.x; native_label.anchor_right = label_rect.end.x
+		native_label.anchor_top = label_rect.position.y; native_label.anchor_bottom = label_rect.end.y
 		# Keep the native copy legible after the global high-contrast theme applies.
 		# This local override intentionally comes last so white label faces never lose
 		# their black station names.
-		native_label.add_theme_color_override("font_color", Color("000000") if high_contrast else Color("071a25"))
-		native_label.add_theme_color_override("font_outline_color", Color("ffffff") if high_contrast else Color("fff1c8"))
+		native_label.add_theme_color_override("font_color", native_ink)
+		native_label.add_theme_color_override("font_outline_color", native_outline)
 		native_label.add_theme_constant_override("outline_size", 1)
-		label_face.add_child(native_label)
+		surface.add_child(native_label)
 func render_feedback_workshop() -> void:
 	overview_layout_portrait = is_portrait_layout()
 	var workshop_plate := PHYSICAL_PORTRAIT_PLATE.new()
@@ -659,7 +657,9 @@ func render_feedback_workshop() -> void:
 	printer_label.add_theme_constant_override("outline_size", 1)
 	printer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	printer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	printer_label.add_theme_stylebox_override("normal", _visual_style(Color("fff1c8") if not bool(settings().get("high_contrast", false)) else Color("ffffff"), Color("39220f"), 5, 2))
+	# The authored printer plaque supplies its own material face. Keep this native
+	# label transparent so it cannot become a generic cream button overlay.
+	printer_label.add_theme_stylebox_override("normal", workshop_hotspot_style())
 	printer_label.anchor_left = 0.36; printer_label.anchor_top = 0.48; printer_label.anchor_right = 0.64; printer_label.anchor_bottom = 0.535
 	for hotspot in _physical_workshop_hotspots():
 		var button := _workshop_overview_hotspot_button(hotspot)
@@ -750,6 +750,30 @@ func _render_m1_r4_empty_first_print_setup(definition: Dictionary) -> void:
 	empty_bed.name = "FirstPrintEmptyBedProof"
 	M1_PHYSICAL_UI.place_design(empty_bed, M1_PHYSICAL_UI.FIRST_PRINT_EMPTY_BED)
 	surface.add_child(empty_bed)
+	# The right-hand cartridge is a fold-out paper instrument, not a narrow white
+	# thumbnail.  Its runtime owner is seated precisely in the authored cream
+	# paper inset (rather than over the whole blue canister), so the blueprint's
+	# full-width cyan datum can never spill across the cartridge hardware.
+	var dock := Panel.new()
+	dock.name = "FirstPrintBlueprintDock"
+	dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# The authored cartridge already owns the cream/brass aperture.  This is only
+	# its clipped runtime owner: adding another rounded parchment face made the
+	# blueprint read as a pasted app tile instead of ink inside the canister.
+	dock.clip_contents = true
+	dock.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	# These are the actual inner paper-label bounds in the 941x1672 first-print
+	# plate. Keeping this narrowly clipped is more important than giving the
+	# transparent source an arbitrary app-card frame: its visible contour,
+	# supports, and datum remain on the cream label at 576 portrait.
+	M1_PHYSICAL_UI.place_design(dock, Rect2(793, 380, 94, 236))
+	surface.add_child(dock)
+	var paper_aperture := Control.new()
+	paper_aperture.name = "FirstPrintBlueprintPaperAperture"
+	paper_aperture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	paper_aperture.clip_contents = true
+	paper_aperture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dock.add_child(paper_aperture)
 	var docked := TextureRect.new()
 	docked.name = "FirstPrintDockedBlueprint"
 	# Before extrusion the dock carries the exact intact creature blueprint card,
@@ -760,11 +784,44 @@ func _render_m1_r4_empty_first_print_setup(definition: Dictionary) -> void:
 	docked.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	docked.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	docked.accessibility_name = "Docked blueprint: %s" % str(definition.get("name", "Cinderpaw"))
-	# The cartridge has a narrow ivory aperture.  Preserve the full square card,
-	# but fit it inside that aperture rather than letting its navy perimeter cross
-	# the pictured brass cartridge boundary.
-	M1_PHYSICAL_UI.place_design(docked, Rect2(792, 402, 82, 145))
-	surface.add_child(docked)
+	# This specific cartridge is a parchment inspection surface. Tint the approved
+	# transparent ink with the same alpha-aware sepia treatment as the Deck without
+	# changing its source texture or any later Forge/field representation.
+	var dock_ink := ShaderMaterial.new()
+	dock_ink.shader = PARCHMENT_BLUEPRINT_INK_SHADER
+	dock_ink.set_shader_parameter("ink_tint", Color("47331f"))
+	dock_ink.set_shader_parameter("ink_strength", 0.82)
+	dock_ink.set_shader_parameter("remove_dark_matte", false)
+	docked.material = dock_ink
+	docked.set_meta("first_print_parchment_ink", true)
+	# Keep an uninterrupted parchment/brass lip around the complete card. This is
+	# intentionally about three times the old dock aperture at 576px portrait.
+	docked.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Keep the complete blueprint inside the original aperture, with no runtime
+	# face or border.  The slightly wider inset preserves its support/datum lines
+	# at 576 while leaving the authored brass frame visible.
+	# Reserve the lower paper strip for the native loaded state. The transparent
+	# artwork stays fully above it instead of competing with the brass lower lip.
+	docked.offset_left = 4; docked.offset_top = 4; docked.offset_right = -4; docked.offset_bottom = -64
+	paper_aperture.add_child(docked)
+	# The cartridge has one compact physical status line; keeping it single-word
+	# prevents accessibility scaling from wrapping into the authored lower hardware.
+	var dock_caption := label("LOADED", 7, Color("47331f"))
+	dock_caption.name = "FirstPrintDockCaption"
+	# This narrow physical instrument has a fixed native micro-caption. The global
+	# label helper normally floors all copy at 12px, which would trim the final
+	# glyph inside this 94-design-pixel paper inset.
+	dock_caption.add_theme_font_size_override("font_size", 7)
+	dock_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dock_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dock_caption.autowrap_mode = TextServer.AUTOWRAP_OFF
+	dock_caption.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	dock_caption.clip_text = true
+	dock_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# The lower brass is below this paper strip. Explicit four-edge padding keeps
+	# all six glyphs visible at 576 rather than letting the lip occlude the L/E.
+	dock_caption.anchor_left = 0.06; dock_caption.anchor_top = 0.75; dock_caption.anchor_right = 0.94; dock_caption.anchor_bottom = 0.86
+	paper_aperture.add_child(dock_caption)
 	var cycle_seconds := roundi(ArcaneForgeSequence.PRINT_COMPLETE_BPS / ArcaneForgeSequence.presentation_step_bps(bool(settings().get("reduced_motion", false))) * ArcaneForgeSequence.presentation_interval_seconds(bool(settings().get("reduced_motion", false))))
 	# The 150% accessibility size must still fit inside the three physical dials.
 	# Keep truthful terms but shorten each line rather than relying on clipping.
@@ -840,16 +897,16 @@ func _render_feedback_printer_selector(host: Control) -> void:
 	var onboarding: Dictionary = GameManager.profile.get("onboarding", {})
 	if ids.size() == 1 and str(onboarding.get("state", "")) == "starter_selected":
 		return
-	var strip := ScrollContainer.new(); strip.name = "PrinterBlueprintCartridgeStrip"; strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; strip.custom_minimum_size = Vector2(0, 46); strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL; host.add_child(strip)
+	var strip := ScrollContainer.new(); strip.name = "PrinterBlueprintCartridgeStrip"; strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; strip.custom_minimum_size = Vector2(0, 50); strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL; host.add_child(strip)
 	var shelf := HBoxContainer.new(); shelf.name = "PrinterBlueprintCartridgeStripContents"; shelf.add_theme_constant_override("separation", 6); strip.add_child(shelf)
 	for creature_id in ids:
 		var definition := Catalog.creature(creature_id)
-		var card := Control.new(); card.name = "PrinterBlueprintCard%s" % creature_id.capitalize(); card.custom_minimum_size = Vector2(112, 44); card.size = Vector2(112, 44)
+		var card := Control.new(); card.name = "PrinterBlueprintCard%s" % creature_id.capitalize(); card.custom_minimum_size = Vector2(112, 48); card.size = Vector2(112, 48)
 		card.set_meta("creature_id", creature_id); card.set_meta("price", int(UNIFIED_RULES.WORKSHOP_PRINT_COSTS.get(str(definition.get("rarity", "common")), 20))); card.set_meta("owned_count", _blueprint_tray_view.owned_count(GameManager.profile, creature_id))
 		var select := _visual_button("PrinterSelect%s" % creature_id.capitalize(), ("✓ " if creature_id == printer_creature_id else "") + str(definition.get("name", creature_id)), select_printer_blueprint.bind(creature_id), Color("65ddeb") if creature_id == printer_creature_id else Color("587f90"))
 		select.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		select.offset_left = 0; select.offset_top = 0; select.offset_right = 0; select.offset_bottom = 0
-		select.custom_minimum_size = Vector2(112, 44)
+		select.custom_minimum_size = Vector2(112, 48)
 		select.tooltip_text = "Select %s blueprint for the dormant Forge build plate" % str(definition.get("name", creature_id)); card.add_child(select); shelf.add_child(card)
 
 func render_feedback_printer() -> void:
@@ -866,10 +923,18 @@ func render_feedback_printer() -> void:
 	printer_progress_label = null
 	printer_progress_bar = null
 	var active := printer_sequence.phase != ArcaneForgeSequence.IDLE
-	var stage_shell := _visual_panel("FeedbackForgeStage", Color("07152280") if active else Color("071522d2"), Color("58cfe5"), 14)
+	# Active printing remains a workshop machine: navy enamel and brass framing
+	# replace the former generic cyan glass surface while ArcaneForgeStage owns the
+	# raw/wireframe construction split.
+	var stage_shell := PanelContainer.new()
+	stage_shell.name = "FeedbackForgeStage"
+	stage_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# ArcaneForgeStage draws only the local printer.  Keeping this owner entirely
+	# transparent lets the authored Workshop plate remain visible around it.
+	stage_shell.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	stage_shell.set_anchors_preset(Control.PRESET_FULL_RECT)
 	if active:
-		stage_shell.anchor_left = 0.035; stage_shell.anchor_top = 0.055; stage_shell.anchor_right = 0.965; stage_shell.anchor_bottom = 0.785
+		stage_shell.anchor_left = 0.025; stage_shell.anchor_top = 0.035; stage_shell.anchor_right = 0.975; stage_shell.anchor_bottom = 0.800
 	else:
 		stage_shell.anchor_left = 0.065; stage_shell.anchor_top = 0.10; stage_shell.anchor_right = 0.935; stage_shell.anchor_bottom = 0.565
 	stage_shell.offset_left = 0; stage_shell.offset_top = 0; stage_shell.offset_right = 0; stage_shell.offset_bottom = 0
@@ -907,29 +972,32 @@ func render_feedback_printer() -> void:
 		# A PanelContainer lays direct Control children to its content rect.  This
 		# overlay is therefore the single positioned layer above the Forge canvas.
 		var active_overlay := Control.new(); active_overlay.name = "ForgeActiveOverlay"; active_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE; stage_shell.add_child(active_overlay)
-		var active_readout := _visual_panel("ForgeActiveReadout", Color("061a25ee"), Color("56cbe1"), 8); active_readout.set_anchors_preset(Control.PRESET_TOP_LEFT); active_readout.position = Vector2(14, 14); active_readout.size = Vector2(266, 61); active_overlay.add_child(active_readout)
+		var active_readout := _visual_panel("ForgeActiveReadout", Color("13231edc"), Color("bd8a43"), 8); active_readout.set_anchors_preset(Control.PRESET_TOP_LEFT); active_readout.position = Vector2(14, 14); active_readout.size = Vector2(266, 61); active_overlay.add_child(active_readout)
 		var readout_body := VBoxContainer.new(); readout_body.add_theme_constant_override("separation", 0); active_readout.add_child(readout_body)
-		var active_heading := label("FORGE ACTIVE", 19, Color("a6f7ff")); active_heading.name = "ForgeActiveHeading"; readout_body.add_child(active_heading)
-		var active_subtitle := label("%s · %s blueprint" % [str(definition.get("name", "Blueprint")), str(definition.get("element", ""))], 12, Color("e3f9fb")); active_subtitle.name = "ForgeActiveSubtitle"; readout_body.add_child(active_subtitle)
-		var active_coins := _visual_panel("ForgeCoinBadge", Color("15241bf2"), Color("f1be69"), 16); active_coins.set_anchors_preset(Control.PRESET_TOP_RIGHT); active_coins.position = Vector2(-166, 14); active_coins.size = Vector2(150, 38); active_overlay.add_child(active_coins)
-		var active_coin_label := label("%d Forge Coins" % int(GameManager.profile.get("forge_coins", 0)), 12, Color("ffe0a1")); active_coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; active_coins.add_child(active_coin_label)
-		var rail := _visual_panel("ForgeActiveRail", Color("071824ec"), Color("6defff"), 10)
+		var active_heading := label("FORGE ACTIVE", 19, Color("f3d995")); active_heading.name = "ForgeActiveHeading"; readout_body.add_child(active_heading)
+		var active_subtitle := label("%s · %s blueprint" % [str(definition.get("name", "Blueprint")), str(definition.get("element", ""))], 12, Color("f1e2c1")); active_subtitle.name = "ForgeActiveSubtitle"; readout_body.add_child(active_subtitle)
+		var active_coins := _visual_panel("ForgeCoinBadge", Color("17251edf"), Color("c9984c"), 10); active_coins.set_anchors_preset(Control.PRESET_TOP_RIGHT); active_coins.position = Vector2(-166, 14); active_coins.size = Vector2(150, 38); active_overlay.add_child(active_coins)
+		var active_coin_label := label("%d Forge Coins" % int(GameManager.profile.get("forge_coins", 0)), 12, Color("f3d995")); active_coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; active_coins.add_child(active_coin_label)
+		var rail := _visual_panel("ForgeActiveRail", Color("13231ef2"), Color("bd8a43"), 10)
 		var terminal_top := 0.805
 		if printer_sequence.phase == ArcaneForgeSequence.AWAKENED:
 			# Terminal completion has three real actions plus status; it needs a
 			# proper rail instead of pushing the final action below short screens.
-			terminal_top = 0.64
+			terminal_top = 0.62
 		elif printer_sequence.phase == ArcaneForgeSequence.FAILED:
-			terminal_top = 0.74
-		rail.set_anchors_preset(Control.PRESET_FULL_RECT); rail.anchor_left = 0.025; rail.anchor_top = terminal_top; rail.anchor_right = 0.975; rail.anchor_bottom = 0.975; rail.offset_left = 0; rail.offset_top = 0; rail.offset_right = 0; rail.offset_bottom = 0; surface.add_child(rail)
+			terminal_top = 0.72
+		rail.set_anchors_preset(Control.PRESET_FULL_RECT); rail.anchor_left = 0.025; rail.anchor_top = terminal_top; rail.anchor_right = 0.975; rail.anchor_bottom = 0.940 if printer_sequence.phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING] else 0.985; rail.offset_left = 0; rail.offset_top = 0; rail.offset_right = 0; rail.offset_bottom = 0; surface.add_child(rail)
 		var rail_body := VBoxContainer.new(); rail_body.add_theme_constant_override("separation", 6); rail.add_child(rail_body)
-		rail_body.add_child(label("%s · %s · %d HP · %d ATK" % [str(definition.get("name", "Blueprint")), str(definition.get("element", "")), int(definition.get("hp", 0)), int(definition.get("attack", 0))], 14, Color("e6f5f5")))
+		rail_body.add_child(label("%s · %s · %d HP · %d ATK" % [str(definition.get("name", "Blueprint")), str(definition.get("element", "")), int(definition.get("hp", 0)), int(definition.get("attack", 0))], 14, Color("f1e2c1")))
 		match printer_sequence.phase:
 			ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING:
 				var percent := printer_sequence.layer_reveal_bps() / 100
-				var progress_label := label("LAYER PROGRESS %d%%" % percent, 16, Color("8eefff")); progress_label.name = "PrinterProgressStatus"; printer_progress_label = progress_label; rail_body.add_child(progress_label)
-				var bar := ProgressBar.new(); bar.name = "PrinterProgressBar"; bar.max_value = 100; bar.value = percent; bar.show_percentage = false; bar.custom_minimum_size = Vector2(0, 14); bar.tooltip_text = "Print layer progress: %d%%" % percent; bar.accessibility_name = bar.tooltip_text; printer_progress_bar = bar; rail_body.add_child(bar)
-				rail_body.add_child(_visual_button("SkipPrinterAnimation", "SKIP", skip_printer, Color("5abdcf"), true))
+				var instrument_row := HBoxContainer.new(); instrument_row.name = "ForgeActiveInstrumentRow"; instrument_row.add_theme_constant_override("separation", 10); instrument_row.custom_minimum_size = Vector2(0, 58); rail_body.add_child(instrument_row)
+				var progress_well := PanelContainer.new(); progress_well.name = "ForgeProgressInstrumentWell"; progress_well.size_flags_horizontal = Control.SIZE_EXPAND_FILL; progress_well.add_theme_stylebox_override("panel", ARCANE_FOUNDRY_THEME_KIT.inset("surface", bool(settings().get("high_contrast", false)))); instrument_row.add_child(progress_well)
+				var progress_body := VBoxContainer.new(); progress_body.add_theme_constant_override("separation", 1); progress_well.add_child(progress_body)
+				var progress_label := label("LAYER PROGRESS %d%%" % percent, 14, Color("f3d995")); progress_label.name = "PrinterProgressStatus"; progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; printer_progress_label = progress_label; progress_body.add_child(progress_label)
+				var bar := ProgressBar.new(); bar.name = "PrinterProgressBar"; bar.max_value = 100; bar.value = percent; bar.show_percentage = false; bar.custom_minimum_size = Vector2(0, 12); bar.tooltip_text = "Print layer progress: %d%%" % percent; bar.accessibility_name = bar.tooltip_text; bar.add_theme_stylebox_override("background", ARCANE_FOUNDRY_THEME_KIT.inset("surface", bool(settings().get("high_contrast", false)))); var fill := StyleBoxFlat.new(); fill.bg_color = Color("4ed8e8") if not bool(settings().get("high_contrast", false)) else Color.WHITE; fill.border_color = Color("c9984c"); fill.set_border_width_all(1); fill.corner_radius_top_left = 3; fill.corner_radius_top_right = 3; fill.corner_radius_bottom_left = 3; fill.corner_radius_bottom_right = 3; bar.add_theme_stylebox_override("fill", fill); printer_progress_bar = bar; progress_body.add_child(bar)
+				var skip := _visual_button("SkipPrinterAnimation", "SKIP", skip_printer, Color("536c8d"), false); skip.custom_minimum_size = Vector2(96, 56); skip.add_theme_stylebox_override("normal", ARCANE_FOUNDRY_THEME_KIT.button("secondary", "normal", bool(settings().get("high_contrast", false)))); skip.add_theme_stylebox_override("hover", ARCANE_FOUNDRY_THEME_KIT.button("secondary", "hover", bool(settings().get("high_contrast", false)))); skip.add_theme_stylebox_override("pressed", ARCANE_FOUNDRY_THEME_KIT.button("secondary", "pressed", bool(settings().get("high_contrast", false)))); skip.add_theme_stylebox_override("focus", ARCANE_FOUNDRY_THEME_KIT.button("secondary", "focus", bool(settings().get("high_contrast", false)))); instrument_row.add_child(skip)
 			ArcaneForgeSequence.RAW_COMPLETE:
 				rail_body.add_child(label("RAW PRINT COMPLETE · SECURING FORGE TRANSACTION", 15, Color("fff0a1")))
 			ArcaneForgeSequence.AWAKENED:
@@ -2105,7 +2173,9 @@ func _workshop_overview_hotspot_button(hotspot: Dictionary) -> Button:
 	button.set_meta("workshop_target", str(hotspot.target))
 	button.add_theme_stylebox_override("normal", workshop_hotspot_style())
 	button.add_theme_stylebox_override("hover", workshop_hotspot_style())
-	button.add_theme_stylebox_override("focus", _visual_style(Color(0, 0, 0, 0), Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("6defff"), 12, 4 if bool(settings().get("high_contrast", false)) else 3))
+	# All direct hit states stay transparent over the authored prop. The child
+	# four-edge ring below is the only focus chrome, inset to the actual silhouette.
+	button.add_theme_stylebox_override("focus", workshop_hotspot_style())
 	button.add_theme_stylebox_override("pressed", workshop_hotspot_style())
 	# The ring follows the exact approved-prop zone, rather than covering the
 	# Workshop with a generic cyan action plaque.

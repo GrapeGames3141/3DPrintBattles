@@ -1,11 +1,10 @@
 extends Node
 
-## Current v3.2 acquisition UI coverage. This stays on the Foundry surfaces and
-## verifies the permanently-linked creature card/blueprint rule through the
-## same transition the Card Shop uses.
+## Acquisition coverage stays transaction-oriented while asserting the current M3
+## physical owners rather than the retired generic Market, Archive, and Pack shells.
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
-const CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
+
 var failures: Array[String] = []
 
 func require(value: bool, message: String) -> void:
@@ -13,31 +12,25 @@ func require(value: bool, message: String) -> void:
 		failures.append(message)
 		push_error(message)
 
-func _count_card_views(node: Node) -> int:
-	var total := 1 if node.get_script() == CARD_VIEW else 0
-	for child in node.get_children(): total += _count_card_views(child)
-	return total
-
-func _count_archive_cards(node: Node) -> int:
-	return node.find_children("ArchiveBlueprintCard*", "Button", true, false).size()
-
-func _tree_has_text(node: Node, fragment: String) -> bool:
-	if node is Label and fragment in (node as Label).text: return true
-	for child in node.get_children():
-		if _tree_has_text(child, fragment): return true
-	return false
-
 func _profile() -> Dictionary:
-	var profile := RULES.new_profile()
+	var profile: Dictionary = RULES.new_profile()
 	profile.forge_coins = 1200
 	profile = RULES.choose_starter(profile, "cinderpaw").profile
 	return RULES.print_starter(profile).profile
 
 func _current_creature_offer() -> Dictionary:
-	for offer in (GameManager.market_snapshot().get("cards", []) as Array):
-		var card_id := str(offer.get("id", ""))
-		if not Catalog.creature(card_id).is_empty(): return offer
+	for offer_variant in (GameManager.market_snapshot().get("cards", []) as Array):
+		if offer_variant is Dictionary:
+			var offer: Dictionary = offer_variant
+			if not Catalog.creature(str(offer.get("id", ""))).is_empty():
+				return offer
 	return {}
+
+func _pack_grid_ok(main) -> bool:
+	var plate := main.find_child("M3PhysicalPackPlate", true, false) as Control
+	var grid := main.find_child("UnifiedPackRevealGrid", true, false) as Control
+	var cards: Array = main.find_children("UnifiedPackCardView*", "Button", true, false)
+	return plate != null and grid != null and grid.get_child_count() == 5 and cards.size() == 5
 
 func _ready() -> void:
 	GameManager.profile = _profile()
@@ -45,39 +38,43 @@ func _ready() -> void:
 	add_child(main)
 	await get_tree().process_frame
 
-	# Use current market stock and the authoritative GameManager facade, instead
-	# of a retired fixed day key or pre-v3 blueprint/discovered fields.
+	# Market browsing is presentation-only; the existing GameManager purchase
+	# facade remains the atomic acquisition authority.
 	var offer := _current_creature_offer()
 	require(not offer.is_empty(), "fixture finds a current Card Shop creature offer")
 	main.screen = "unified_market"
 	main.unified_market_tab = "cards"
 	main.render()
 	await get_tree().process_frame
-	require(_count_card_views(main) >= 0 and main.find_child("UnifiedMarketScroll", true, false) != null, "current Foundry Card Shop renders inside its responsive market surface")
+	var cubbies := main.find_child("MarketOfferCubbies", true, false) as Control
+	var offer_buttons: Array = main.find_children("MarketOffer*Slot*", "Button", true, false)
+	require(main.find_child("M3SupplyCabinet", true, false) != null and cubbies != null and not offer_buttons.is_empty(), "Current Market uses M3SupplyCabinet cubbies with visible physical offer Buttons.")
 	var creature_id := str(offer.get("id", ""))
 	var before_cards := int(GameManager.profile.get("owned_cards", {}).get(creature_id, 0))
 	var buy := GameManager.buy_market_card_v3(creature_id)
 	await get_tree().process_frame
-	require(bool(buy.get("ok", false)) and int(GameManager.profile.get("owned_cards", {}).get(creature_id, 0)) == before_cards + 1 and bool(GameManager.profile.get("owned_blueprints", {}).get(creature_id, false)), "current Card Shop creature grant adds its card copy and permanently linked printable blueprint")
+	require(bool(buy.get("ok", false)) and int(GameManager.profile.get("owned_cards", {}).get(creature_id, 0)) == before_cards + 1 and bool(GameManager.profile.get("owned_blueprints", {}).get(creature_id, false)), "Market creature purchase adds exactly one owned card and its permanent blueprint license.")
 
 	main.screen = "unified_library"
 	main.render()
 	await get_tree().process_frame
-	require(_count_archive_cards(main) > 0 and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveBookCardGrid", true, false) != null, "Collection renders owned cards in the native archive book")
+	var archive_cards: Array = main.find_children("ArchiveBlueprintCard*", "Button", true, false)
+	require(main.find_child("ArchiveNavyArchHud", true, false) != null and main.find_child("ArchiveBookCardGrid", true, false) != null and not archive_cards.is_empty(), "Collection uses the physical archive HUD, six-card grid, and native ArchiveBlueprintCard controls.")
+
 	main.screen = "unified_deck"
 	main.render()
 	await get_tree().process_frame
-	require(_count_archive_cards(main) > 0 and main.find_child("ArchiveBookShell", true, false) != null and main.find_child("ArchiveDeckClipboard", true, false) != null and main.find_child("SaveActiveDeck", true, false) is Button, "Deck Builder renders owned cards and real deck controls in the native archive book")
+	require(main.find_child("M3DeckWorkbench", true, false) != null and main.find_child("ArchiveDeckSlots", true, false) != null and main.find_child("DeckOwnedArtTray", true, false) != null and main.find_child("SaveActiveDeck", true, false) is Button, "Deck Builder uses its physical workbench, fixed deck slots, owned-art tray, and real Save control.")
 
-	# The feedback Deck route must initialize from persisted state once, including
-	# a deliberately empty (or later cleared) pre-print array. It cannot use an
-	# empty Array as a proxy for first render or it can erase a valid loadout.
-	var varied_deck := GameManager.active_deck_cards()
+	# Save an active legal four-creature deck. This retains the fourth unique
+	# creature in the physical owned tray without changing any deck rule.
+	var varied_deck: Array = GameManager.active_deck_cards()
 	var first_support := -1
 	var second_support := -1
 	for index in varied_deck.size():
 		if str(RULES.card(str(varied_deck[index])).get("type", "")) != "creature":
-			if first_support < 0: first_support = index
+			if first_support < 0:
+				first_support = index
 			elif second_support < 0:
 				second_support = index
 				break
@@ -91,62 +88,74 @@ func _ready() -> void:
 		owned[original_second] = int(owned.get(original_second, 0)) - 1
 		varied_deck[first_support] = "aquafin"
 		varied_deck[second_support] = "voltwig"
-		require(RULES.deck_reason(GameManager.profile, varied_deck).is_empty() and GameManager.save_unified_deck(varied_deck), "fixture saves a legal four-creature active deck for Deck Builder draft coverage")
+		require(RULES.deck_reason(GameManager.profile, varied_deck).is_empty() and GameManager.save_unified_deck(varied_deck), "Fixture saves a legal four-creature active deck before workbench pre-print coverage.")
 	GameManager.profile.preprints = ["cinderpaw"]
-	main.feedback_deck_draft_initialized = false
+	main.m3_deck_loaded_slot_id = ""
 	main.screen = "unified_deck"
 	main.render()
 	await get_tree().process_frame
-	require(main.unified_preprint_draft == ["cinderpaw"] and main.find_child("ArchivePrePrintVoltwig", true, false) is Button, "Deck Builder first entry loads a saved pre-print and exposes every active-draft creature, including the fourth unique creature")
+	require(main.unified_preprint_draft == ["cinderpaw"] and main.find_child("DeckOwnedCardVoltwig", true, false) is Button, "Physical Deck initialization loads persisted Cinderpaw pre-print once and exposes fourth unique Voltwig in the owned tray.")
 	main.unified_preprint_draft.clear()
 	main.render()
 	await get_tree().process_frame
-	var voltwig_pick := main.find_child("ArchivePrePrintVoltwig", true, false) as Button
-	require(main.unified_preprint_draft.is_empty() and voltwig_pick != null, "an intentionally cleared feedback pre-print draft is not silently reloaded on render")
+	var voltwig_pick := main.find_child("DeckOwnedCardVoltwig", true, false) as Button
+	require(main.unified_preprint_draft.is_empty() and voltwig_pick != null, "Clearing the physical pre-print draft remains cleared on rerender rather than silently reloading persistence.")
 	if voltwig_pick != null:
-		voltwig_pick.pressed.emit()
+		voltwig_pick.emit_signal("pressed")
 		await get_tree().process_frame
-		require("voltwig" in main.unified_preprint_draft, "the legal creature beyond the old three-entry clipboard slice remains selectable")
+		var empty_clamp: Button = null
+		for clamp_variant in main.find_children("PrePrintClamp*", "Button", true, false):
+			var clamp := clamp_variant as Button
+			if clamp != null and not clamp.disabled and clamp.tooltip_text.begins_with("Place"):
+				empty_clamp = clamp
+				break
+		require(empty_clamp != null, "Selected Voltwig exposes an available empty physical Pre-Print clamp.")
+		if empty_clamp != null:
+			empty_clamp.emit_signal("pressed")
+			await get_tree().process_frame
+			require("voltwig" in main.unified_preprint_draft, "Pressing the selected empty Pre-Print clamp adds Voltwig through the ordered draft method.")
 
-	# The physical archive's inspector remains truthful to v3 cards: creatures
-	# have BEND rather than a retired Attack 0 placeholder, while support cards
-	# show their actual card data without creature zeroes.
+	# Archive detail owns one CO-02 surface. Creature facts are exact native
+	# rules, while support facts must not fabricate creature stat zeroes.
 	main.screen = "unified_library"
 	main.unified_inspector_id = "cinderpaw"
-	main.unified_inspector_tab = "stats"
 	main.render()
 	await get_tree().process_frame
-	require(_tree_has_text(main, "BEND") and not _tree_has_text(main, "ATK 0"), "creature archive inspector reports real HP/BEND/print data rather than a nonexistent Attack 0")
-	var support_id := "raw_filament"
-	main.unified_inspector_id = support_id
-	main.unified_inspector_tab = "stats"
+	var cinder := RULES.card("cinderpaw")
+	var expected_creature_fact := "HP %d · B%d · %dF" % [int(cinder.get("hp", 0)), int(cinder.get("bend", 0)), int(cinder.get("cost", 0))]
+	var print_fact := main.find_child("ArchiveDetailFact4", true, false) as Label
+	require(main.find_child("M3ArchiveDetailApertures", true, false) != null and main.find_child("ArchiveDetailFacts", true, false) != null and print_fact != null and print_fact.text.contains(expected_creature_fact) and not print_fact.text.contains("ATK"), "Creature archive detail uses CO-02 fact wells with truthful HP/BEND/filament print facts and no retired Attack stat.")
+	main.unified_inspector_id = "raw_filament"
 	main.render()
 	await get_tree().process_frame
-	require(_tree_has_text(main, "Cost") and not _tree_has_text(main, "HP 0"), "support archive inspector reports truthful support fields without creature zeroes")
+	var support_facts := main.find_child("ArchiveDetailNativeFacts", true, false) as Label
+	require(support_facts != null and support_facts.text.contains("Owned copies") and support_facts.text.contains("Filament") and support_facts.text.contains("filament") and not support_facts.text.contains("HP 0") and not support_facts.text.contains("ATK 0"), "Support archive detail reports owned/type/cost/rules facts without fabricated creature zeroes.")
 
-	# Open the first entitlement through the UI. Every Keep action must immediately
-	# open the next one until all three exactly-once Basic rewards are exhausted.
+	# Keep drives the persisted 1→2→3 starter receipt chain. Each intermediate
+	# render remains the exclusive five-dock M3 Pack plate; after the third Keep,
+	# Collection returns and no fourth claim changes cards or pending state.
+	main.unified_inspector_id = ""
+	main.render()
+	await get_tree().process_frame
 	main._open_next_starter_pack()
 	await get_tree().process_frame
-	var reveal := main.find_child("UnifiedPackReveal", true, false) as Control
-	require(main.screen == "unified_library" and reveal != null and reveal.is_visible_in_tree() and _count_card_views(reveal) > 0 and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 1, "first starter reward opens as a visible Collection reveal")
+	require(main.screen == "unified_library" and _pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 1, "Starter pack 1 opens as a persisted five-dock physical receipt.")
 	main._keep_unified_pack_cards()
 	await get_tree().process_frame
-	reveal = main.find_child("UnifiedPackReveal", true, false) as Control
-	require(reveal != null and reveal.is_visible_in_tree() and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 2 and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)), "keeping starter pack 1 automatically opens starter pack 2")
+	require(_pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 2, "Keeping pack 1 opens persisted starter pack 2 in the same physical receipt owner.")
 	main._keep_unified_pack_cards()
 	await get_tree().process_frame
-	reveal = main.find_child("UnifiedPackReveal", true, false) as Control
-	require(reveal != null and reveal.is_visible_in_tree() and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3 and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)), "keeping starter pack 2 automatically opens starter pack 3")
+	require(_pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3, "Keeping pack 2 opens persisted starter pack 3 in the same physical receipt owner.")
 	main._keep_unified_pack_cards()
 	await get_tree().process_frame
 	var owned_after_rewards: Dictionary = (GameManager.profile.get("owned_cards", {}) as Dictionary).duplicate(true)
 	var pending_after_rewards: Dictionary = (GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).duplicate(true)
-	require(main.screen == "unified_library" and main.find_child("UnifiedPackReveal", true, false) == null and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3 and pending_after_rewards.is_empty(), "keeping starter pack 3 clears the reveal and leaves the player in Collection")
+	require(main.find_child("M3PhysicalPackPlate", true, false) == null and main.find_child("UnifiedPackRevealGrid", true, false) == null and main.find_child("ArchiveBookCardGrid", true, false) != null and pending_after_rewards.is_empty(), "Keeping pack 3 clears pending receipt and restores physical Collection grid.")
 	var fourth := GameManager.claim_next_starter_pack()
-	require(not bool(fourth.get("ok", false)) and GameManager.profile.get("owned_cards", {}) == owned_after_rewards and GameManager.profile.get("pending_pack_reveal", {}) == pending_after_rewards and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3, "no fourth starter pack can change cards, pending state, or the three-pack receipt count")
+	require(not bool(fourth.get("ok", false)) and GameManager.profile.get("owned_cards", {}) == owned_after_rewards and GameManager.profile.get("pending_pack_reveal", {}) == pending_after_rewards and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3, "No fourth starter claim mutates cards, pending receipt, or the three-pack count.")
 
 	main.queue_free()
 	await get_tree().process_frame
-	if failures.is_empty(): print("PASS: unified card acquisition and three-pack Collection reveal chain")
+	if failures.is_empty():
+		print("PASS: M3 physical acquisition, deck pre-print, archive facts, and starter receipt chain")
 	get_tree().quit(0 if failures.is_empty() else 1)

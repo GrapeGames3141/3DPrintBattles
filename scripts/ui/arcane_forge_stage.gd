@@ -109,15 +109,14 @@ func _load_assets() -> void:
 	living = CreatureSpriteCache.texture_for_creature(creature_id)
 
 func _draw() -> void:
-	# Active printing must stay image-led.  The idle surface remains dark enough
-	# for its blueprint ghost; printing uses a transparent technical wash rather
-	# than burying the printer beneath a full-stage black overlay.
-	var stage_tint := Color("08152674") if phase == ArcaneForgeSequence.PRINTING else Color("081526d9")
-	draw_rect(Rect2(Vector2.ZERO, size), stage_tint if not high_contrast else Color("000000f5"), true)
+	# This is a transparent stage compositor.  The authored Workshop plate owns
+	# the surrounding material; drawing a full canvas wash here made the printer
+	# read as a generic black/glass card instead of a machine in that workshop.
 	var printer := printer_frames[mini(printer_frame_index(), printer_frames.size() - 1)] if not printer_frames.is_empty() else null
-	# Center a deliberately dominant square printer. These normalized bounds match
-	# the visible gold build surface in the approved printer frames.
-	var printer_bounds := Rect2(size.x * 0.17, 0, size.x * 0.66, size.y)
+	# Center a deliberately dominant printer chassis. The active forge has no
+	# separate glass void: the machine fills roughly 86% of the stage width and
+	# its existing brass build surface remains the anchor for all print layers.
+	var printer_bounds := Rect2(size.x * 0.07, 0, size.x * 0.86, size.y)
 	if equipment_preview != null:
 		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE and TIERED_ARMOR_ROSTER.has_master(creature_id)
 		equipment_preview.configure_creature(creature_id)
@@ -135,7 +134,10 @@ func _draw() -> void:
 	if armor_id.is_empty() and phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
-	if high_contrast: draw_rect(Rect2(2, 2, size.x - 4, size.y - 4), Color.WHITE, false, 3.0)
+	# High contrast marks only the functional build aperture.  The scan datum and
+	# progress rail already carry the other state cues; an outer printer frame was
+	# visually indistinguishable from a giant stock rectangle around the machine.
+	if high_contrast: draw_rect(plate.grow(2.0), Color.WHITE, false, 3.0)
 	if phase != ArcaneForgeSequence.PRINTING or not armor_id.is_empty():
 		_set_wireframe_split(Rect2(), Rect2(), false)
 
@@ -179,7 +181,9 @@ func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 		_last_wireframe_rect = Rect2(rect.position, Vector2(rect.size.x, maxf(0.0, scan_y - rect.position.y)))
 		_last_scan_count = 1
 		# One explicit, high-value cyan datum owns the complementary material split.
-		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("8ff6ff"), 3.0)
+		# One unequivocal cyan datum separates raw filament below from technical
+		# wireframe above. It is intentionally bright without covering the hardware.
+		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("b4fbff"), 4.0)
 	else:
 		_set_wireframe_split(Rect2(), Rect2(), false)
 

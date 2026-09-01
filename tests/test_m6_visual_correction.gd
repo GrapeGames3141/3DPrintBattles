@@ -31,6 +31,15 @@ func _ready() -> void:
 	forge.configure("cinderpaw", true, false)
 	await get_tree().process_frame
 	require(wire_clip.visible and forge._last_scan_count == 1, "M6 reduced motion holds the same semantic 60 percent print split.")
+	var forge_720 := FORGE.new()
+	forge_720.size = Vector2(720, 1280)
+	add_child(forge_720)
+	forge_720.configure("cinderpaw", false, true)
+	forge_720.set_preview_phase(ArcaneForgeSequence.PRINTING, 4200)
+	await get_tree().process_frame
+	require(forge_720._last_scan_count == 1 and forge_720._last_solid_rect.size.y > 0.0 and forge_720._last_wireframe_rect.size.y > 0.0, "M6/M7 Forge keeps its single scan split at the 720x1280 portrait geometry too.")
+	var forge_source := FileAccess.get_file_as_string("res://scripts/ui/arcane_forge_stage.gd")
+	require(not forge_source.contains("draw_rect(Rect2(Vector2.ZERO, size)") and not forge_source.contains("draw_rect(printer_rect.grow") and forge_source.contains("draw_rect(plate.grow(2.0)"), "M7 Active Print keeps the full stage and printer perimeter borderless, using only the local build-aperture high-contrast cue plus the scan datum.")
 
 	var stage := STAGE.new()
 	stage.size = Vector2(576, 1024)
@@ -44,7 +53,7 @@ func _ready() -> void:
 	require(contact != null and contact.visible and home != null and not home.visible and target != null and target.visible and target_caption != null and not contact.get_global_rect().intersects(target_caption.get_global_rect()) and contact.get_global_rect().get_center().distance_to(target.get_global_rect().get_center()) < target.get_global_rect().size.length(), "M6-BA-CT-01 transfers the attacker to an unclipped target-contact overlay while preserving the target name/HP strip.")
 	stage.configure(stage.snapshot, {"kind":"attack","actor":0,"source_slot":0,"target_slot":1,"reduced_motion":true,"generation":7})
 	await get_tree().process_frame
-	require(contact.visible and not home.visible, "M6 reduced motion uses the finite held contact pose rather than skipping the attack presentation.")
+	require(not contact.visible and home.visible and target.visible and target_caption.visible, "M7 reduced motion holds the resolved readable battle end frame at home without a contact overlay.")
 
 	var card := CARD.new()
 	card.size = CARD.COMPACT_SIZE

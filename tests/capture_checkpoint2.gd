@@ -19,6 +19,8 @@ const M2_MATRIX_MODES := ["m2_challenge", "m2_preflight", "m2_battle_plan", "m2_
 const M6_BATTLE_MODES := ["m6_battle_contact_peak", "m6_tall_printer_hud", "m6_tall_printer_hud_text150"]
 const M6_FORGE_MODES := ["m6_active_print60"]
 const M6_WORKSHOP_MODES := ["m6_tall_zero_reserve"]
+const M7_FORGE_MODES := ["m7_active_print60_text150", "m7_active_print60_contrast"]
+const M7_BATTLE_MODES := ["m7_battle_reduced_contrast"]
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -79,18 +81,21 @@ func _prepare_capture() -> void:
 		if "text150" in capture_mode: GameManager.profile.settings.text_scale_bps = 15000
 		if capture_mode == "m1_workshop_contrast": GameManager.profile.settings.high_contrast = true
 		if capture_mode == "m1_workshop_reduced": GameManager.profile.settings.reduced_motion = true
-	if capture_mode.begins_with("m6_"):
+	if capture_mode.begins_with("m6_") or capture_mode.begins_with("m7_"):
 		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
 		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
 		GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
 		if capture_mode == "m6_tall_printer_hud_text150": GameManager.profile.settings.text_scale_bps = 15000
-	if capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES:
+		if capture_mode == "m7_active_print60_text150": GameManager.profile.settings.text_scale_bps = 15000
+		if capture_mode == "m7_active_print60_contrast": GameManager.profile.settings.high_contrast = true
+	if capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES or capture_mode in M7_BATTLE_MODES:
 		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
 		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
 		GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
 		if capture_mode == "m2_battle_text150": GameManager.profile.settings = {"text_scale_bps":15000,"high_contrast":false,"reduced_motion":false}
 		elif capture_mode == "m2_battle_contrast": GameManager.profile.settings = {"text_scale_bps":10000,"high_contrast":true,"reduced_motion":false}
 		elif capture_mode == "m2_battle_reduced": GameManager.profile.settings = {"text_scale_bps":10000,"high_contrast":false,"reduced_motion":true}
+		elif capture_mode == "m7_battle_reduced_contrast": GameManager.profile.settings = {"text_scale_bps":10000,"high_contrast":true,"reduced_motion":true}
 		elif capture_mode == "m2_battle_accessibility": GameManager.profile.settings = {"text_scale_bps":15000,"high_contrast":true,"reduced_motion":true}
 		elif capture_mode == "m6_tall_printer_hud_text150": GameManager.profile.settings = {"text_scale_bps":15000,"high_contrast":false,"reduced_motion":false}
 	if capture_mode in ["trials_legacy", "trial_battle_legacy"]:
@@ -174,7 +179,7 @@ func _prepare_capture() -> void:
 		# real Return versus Begin focus provides two truthful zero-mutation views.
 		workshop.screen = "proving"
 		if capture_mode == "m2_preflight": workshop.set_meta("battle_preflight", true)
-	elif capture_mode in M2_BATTLE_MODES or capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES:
+	elif capture_mode in M2_BATTLE_MODES or capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES or capture_mode in M7_BATTLE_MODES:
 		var setup: Dictionary = GameManager.create_unified_battle("trial_first_layers", {}, 61)
 		workshop.battle = setup.get("battle", null)
 		workshop.battle_mode = "trial_first_layers"
@@ -203,7 +208,7 @@ func _prepare_capture() -> void:
 				var six_slot_ids := ["cinderpaw", "aquafin", "mossmunk"]
 				for seat in 2:
 					for slot in 3: workshop.battle.player(seat).slots[slot] = UnifiedBattleState._unit(UNIFIED_RULES.card(str(six_slot_ids[(slot + seat) % six_slot_ids.size()])))
-			if capture_mode in ["m2_battle_attack", "m2_battle_contact", "m2_battle_defeat", "m2_battle_focus", "m2_battle_reduced", "m6_battle_contact_peak"]:
+			if capture_mode in ["m2_battle_attack", "m2_battle_contact", "m2_battle_defeat", "m2_battle_focus", "m2_battle_reduced", "m6_battle_contact_peak", "m7_battle_reduced_contrast"]:
 				workshop.battle.phase = "attack"
 				workshop.battle.turn = 2
 				workshop.battle.player(0).slots[0] = UnifiedBattleState._unit(UNIFIED_RULES.card("cinderpaw"))
@@ -217,7 +222,7 @@ func _prepare_capture() -> void:
 				workshop.battle.player(1).hand = ["mossmunk", "mossmunk", "raw_filament", "layer_melt", "standard_full_suit"]
 			if capture_mode == "m2_battle_text150": workshop.battle.player(0).hand = ["cinderpaw", "mossmunk", "raw_filament", "forge_surge"]
 			workshop.unified_battle_coordinator.configure(workshop.battle, 0)
-			if capture_mode in ["m2_battle_attack", "m2_battle_contact", "m2_battle_reduced", "m6_battle_contact_peak"]:
+			if capture_mode in ["m2_battle_attack", "m2_battle_contact", "m2_battle_reduced", "m6_battle_contact_peak", "m7_battle_reduced_contrast"]:
 				# The proof fixture uses the checked coordinator path. The public receipt
 				# is therefore the exact accepted outcome shown by full and reduced motion.
 				var checked_attack: Dictionary = workshop.unified_battle_coordinator.submit_checked(workshop.unified_battle_coordinator.envelope(0, {"type":"attack","slot":0,"target":1}), workshop.unified_battle_coordinator.generation)
@@ -241,7 +246,7 @@ func _prepare_capture() -> void:
 		workshop.printer_blueprint_selected_id = "cinderpaw"
 		workshop.printer_price = 0
 		workshop.printer_sequence = ArcaneForgeSequence.create(false)
-	elif capture_mode == "feedback_mid_print" or capture_mode == "m6_active_print60":
+	elif capture_mode == "feedback_mid_print" or capture_mode == "m6_active_print60" or capture_mode in M7_FORGE_MODES:
 		workshop.screen = "printer"
 		workshop.printer_creature_id = "cinderpaw"
 		workshop.printer_blueprint_selected_id = "cinderpaw"
@@ -341,14 +346,14 @@ func capture() -> void:
 		# merely because the process otherwise exits cleanly.
 		get_tree().quit(1)
 		return
-	if capture_mode in ["m2_battle_print60", "m2_battle_deploy", "m2_battle_contact", "m2_battle_reduced", "m6_battle_contact_peak"]:
+	if capture_mode in ["m2_battle_print60", "m2_battle_deploy", "m2_battle_contact", "m2_battle_reduced", "m6_battle_contact_peak", "m7_battle_reduced_contrast"]:
 		# Sample real physical-stage progress only after its contained chassis has
 		# completed layout. No gameplay authority is changed for proof capture.
 		var physical_stage := workshop.find_child("PhysicalBattlefieldStage", true, false) as PhysicalBattlefieldStage
 		if physical_stage != null:
 			var proof_event: Dictionary = workshop.unified_battle_presentation.duplicate(true)
 			if capture_mode == "m2_battle_print60": proof_event = {"kind":"print","actor":0,"card_id":"cinderpaw","generation":1,"token":901}
-			elif capture_mode == "m2_battle_reduced": proof_event["reduced_motion"] = true
+			elif capture_mode in ["m2_battle_reduced", "m7_battle_reduced_contrast"]: proof_event["reduced_motion"] = true
 			elif capture_mode == "m2_battle_deploy": proof_event = {"kind":"deploy","actor":0,"card_id":"cinderpaw","target_slot":0,"generation":1,"token":902}
 			physical_stage.configure(physical_stage.snapshot, proof_event)
 			physical_stage._event_elapsed = .47 if capture_mode == "m2_battle_print60" else .36 if capture_mode == "m2_battle_deploy" else VFX.event_duration("attack") * .5 if capture_mode == "m6_battle_contact_peak" else .34
@@ -532,7 +537,7 @@ func wait_for_stable_header() -> void:
 				return
 			await get_tree().process_frame
 			continue
-		if capture_mode in ["feedback_first_print", "feedback_mid_print", "m6_active_print60"]:
+		if capture_mode in ["feedback_first_print", "feedback_mid_print", "m6_active_print60"] or capture_mode in M7_FORGE_MODES:
 			var forge_stage := workshop.find_child("FeedbackForgeStage", true, false) as Control
 			if forge_stage != null and forge_stage.is_visible_in_tree() and forge_stage.get_global_rect().get_area() > 0.0:
 				await wait_frames(6)
@@ -561,11 +566,11 @@ func wait_for_stable_header() -> void:
 				return
 			await get_tree().process_frame
 			continue
-		if (capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES) and capture_mode not in ["m2_challenge", "m2_preflight"]:
+		if (capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES or capture_mode in M7_BATTLE_MODES) and capture_mode not in ["m2_challenge", "m2_preflight"]:
 			var physical_stage := workshop.find_child("PhysicalBattlefieldStage", true, false) as Control
 			var physical_heading := workshop.find_child("UnifiedBattleHeading", true, false) as Control
 			var physical_status := workshop.find_child("PhysicalBattleStatus", true, false) as Control
-			if capture_mode in ["m2_battle_contact", "m2_battle_reduced"] and physical_stage != null:
+			if capture_mode in ["m2_battle_contact", "m2_battle_reduced", "m7_battle_reduced_contrast"] and physical_stage != null:
 				# The checked receipt is reconfigured at its contact beat immediately
 				# after this wait. A mounted physical stage is its truthful stable anchor.
 				await wait_frames(6)
@@ -617,7 +622,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in M2_MATRIX_MODES or mode in M6_BATTLE_MODES or mode in M6_FORGE_MODES or mode in M6_WORKSHOP_MODES: return mode
+			if mode in M2_MATRIX_MODES or mode in M6_BATTLE_MODES or mode in M6_FORGE_MODES or mode in M6_WORKSHOP_MODES or mode in M7_FORGE_MODES or mode in M7_BATTLE_MODES: return mode
 			if mode in ["unified_library_inspector", "unified_battle", "unified_pack_reveal", "unified_forgedex", "feedback_starter", "feedback_first_print", "feedback_mid_print", "feedback_workshop", "feedback_collection", "feedback_deck_builder"]: return mode
 			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards", "unified_market", "unified_library", "unified_deck", "unified_upgrades"]: return mode
 			if mode in ["m1_title", "m1_title_text150", "m1_tall_safe_top", "m1_starter_focused", "m1_starter_inspector", "m1_starter_text150", "m1_starter_inspector_text150", "m1_starter_inspector_focus_select", "m1_starter_inspector_focus_close", "m1_first_print_setup", "m1_first_print_text150", "m1_workshop", "m1_workshop_focus", "m1_workshop_focus_printer", "m1_workshop_focus_battle_arena", "m1_workshop_focus_card_archive", "m1_workshop_focus_deck", "m1_workshop_focus_supplies", "m1_workshop_focus_settings", "m1_workshop_text150", "m1_workshop_contrast", "m1_workshop_reduced", "m1_workshop_synthetic"]: return mode

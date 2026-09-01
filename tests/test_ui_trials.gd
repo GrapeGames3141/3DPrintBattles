@@ -49,10 +49,22 @@ func _ready() -> void:
 	var main = onboarding_main
 	require(GameManager.has_selected_starter() and main.screen == "workshop" and main.find_child("WorkshopProgressInstrument", true, false) != null and main.find_child("WorkshopHudProgress", true, false) is ProgressBar and tree_has_text(main, "SPOOL LEVEL"), "a clean v3 profile can choose and print a starter before rendering Workshop without legacy fields")
 	require(main.get_script().resource_path == "res://scripts/ui/main.gd", "main.tscn ships the established Arcane Foundry controller")
-	for route in [["shop", "unified_market", "Foundry Market"], ["archive", "unified_library", "BLUEPRINT ARCHIVE"], ["deck", "unified_deck", "BLUEPRINT ARCHIVE"], ["calibration", "unified_upgrades", "Printer Upgrade Grid"]]:
-		main.navigate_to(str(route[0]))
+	var workshop_routes := [
+		{"route":"shop", "screen":"unified_market", "owners":["M3SupplyCabinet"]},
+		{"route":"archive", "screen":"unified_library", "owners":["ArchiveNavyArchHud", "ArchiveBookCardGrid"]},
+		{"route":"deck", "screen":"unified_deck", "owners":["M3DeckWorkbench", "ArchiveDeckSlots"]},
+		{"route":"calibration", "screen":"unified_upgrades", "text":"Printer Upgrade Grid"}
+	]
+	for route_case in workshop_routes:
+		var route: Dictionary = route_case
+		main.navigate_to(str(route.get("route", "")))
 		await get_tree().process_frame
-		require(main.screen == str(route[1]) and tree_has_text(main, str(route[2])), "workshop route %s opens its current unified Foundry surface" % str(route[0]))
+		var owner_ok := true
+		var owners: Array = route.get("owners", []) as Array
+		for owner_name in owners:
+			owner_ok = owner_ok and main.find_child(str(owner_name), true, false) != null
+		var expected_text := str(route.get("text", ""))
+		require(main.screen == str(route.get("screen", "")) and owner_ok and (expected_text.is_empty() or tree_has_text(main, expected_text)), "workshop route %s opens its current physical owner contract" % str(route.get("route", "")))
 	main.navigate_to("workshop")
 	await get_tree().process_frame
 	# Tier progression remains an authoritative lock rather than a retired legacy

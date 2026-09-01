@@ -19,6 +19,10 @@ func _has_dark_cream_font(button: Button) -> bool:
 	return color.r <= 0.12 and color.g <= 0.18 and color.b <= 0.26
 
 func _configure_isolated_save_paths() -> void:
+	var absolute_root := ProjectSettings.globalize_path(TEST_ROOT)
+	var create_error := DirAccess.make_dir_recursive_absolute(absolute_root)
+	var directory := DirAccess.open(absolute_root)
+	require(create_error == OK and directory != null, "Starter carousel creates and opens its unique test-local SaveService directory before mutation.")
 	SaveService.configure_test_paths(TEST_ROOT)
 	for path in [SaveService.profile_path, SaveService.profile_temp_path, SaveService.profile_backup_path, SaveService.profile_backup_temp_path, SaveService.journal_path]:
 		if FileAccess.file_exists(path): DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

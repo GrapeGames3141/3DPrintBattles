@@ -96,14 +96,23 @@ func test_read_only_ui() -> void:
 	var prior_status := GameManager.save_compatibility.duplicate(true)
 	GameManager.profile = representative_profile(Catalog.SCHEMA_VERSION + 1)
 	GameManager.save_compatibility = ProfileRules.compatibility(GameManager.profile)
+	var before_profile := GameManager.profile.duplicate(true)
+	var before_revision := int(GameManager.profile.get("revision", -1))
 	var main := MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
-	var compatibility := main.find_child("ReadOnlyCompatibilityHeader", true, false) as Label
+	var recovery := main.find_child("M3RecoveryLedger", true, false) as Control
+	var title := main.find_child("RecoveryPlayerTitle", true, false) as Label
+	var explanation := main.find_child("RecoveryPlayerExplanation", true, false) as Label
+	var protection := main.find_child("RecoveryProtectionIndicator", true, false) as Label
 	var ceremony_found := false
 	for candidate in main.find_children("*", "Label", true, false):
 		if (candidate as Label).text.contains("AWAKENING CEREMONY"): ceremony_found = true
-	require(compatibility != null and compatibility.text.contains("READ-ONLY COMPATIBILITY MODE") and not ceremony_found, "future-save UI header explicitly shows read-only compatibility instead of onboarding ceremony")
+	var forbidden_actions := ["TitleContinue", "TitleNewMaker", "TitleSettings", "TitleConfirmNewMaker", "TitleCancelNewMaker", "RecoveryBack"]
+	var no_navigation := true
+	for action_name in forbidden_actions:
+		no_navigation = no_navigation and main.find_child(action_name, true, false) == null
+	require(recovery != null and title != null and title.text == "NEWER WORKSHOP RECORD" and explanation != null and explanation.text.to_lower().contains("newer printforge") and explanation.text.to_lower().contains("update") and protection != null and protection.text.contains("READ-ONLY") and not ceremony_found and no_navigation and main.find_child("WorkshopFullBleed", true, false) == null and GameManager.profile == before_profile and int(GameManager.profile.get("revision", -1)) == before_revision, "future-save uses the truthful physical recovery ledger with newer-version/read-only copy, no onboarding or navigation actions, no Workshop route, and zero mutation")
 	main.queue_free()
 	GameManager.profile = prior_profile
 	GameManager.save_compatibility = prior_status

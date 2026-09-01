@@ -30,13 +30,13 @@ func _ready() -> void:
 	require(frame_a != frame_b and sequence.printer_frame_index(true) == 0, "four-frame printer head has deterministic normal motion and reduced-motion freeze")
 
 	var production: Dictionary = ProfileRules.new_profile()
-	production.coins = 180
+	production.forge_coins = 180
 	var production_floor: Dictionary = ReviewBuildRules.apply_coin_floor(production, false)
-	require(not bool(production_floor.ok) and int(production_floor.profile.coins) == 180, "production profiles never receive Android review coins")
+	require(not bool(production_floor.ok) and int(production_floor.profile.forge_coins) == 180, "production profiles never receive Android review forge coins")
 	var review_floor: Dictionary = ReviewBuildRules.apply_coin_floor(production, true)
-	require(bool(review_floor.ok) and int(review_floor.profile.coins) == 5000, "Android review profile floors coins to exactly 5000")
+	require(bool(review_floor.ok) and int(review_floor.profile.forge_coins) == 5000, "Android review profile floors forge coins to exactly 5000")
 	var review_again: Dictionary = ReviewBuildRules.apply_coin_floor(review_floor.profile, true)
-	require(not bool(review_again.ok) and int(review_again.profile.coins) == 5000, "Android review coin floor is idempotent")
+	require(not bool(review_again.ok) and int(review_again.profile.forge_coins) == 5000, "Android review forge coin floor is idempotent")
 
 	var profile: Dictionary = ProfileRules.choose_starter(ProfileRules.new_profile(), "cinderpaw").profile
 	profile.coins = 1000

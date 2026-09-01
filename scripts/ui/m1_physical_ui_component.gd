@@ -67,11 +67,11 @@ static func workshop_prop_specs(textures: Dictionary = {}) -> Array:
 	return [
 		# Label faces are individually fitted to the pictured ivory/paper plaques.
 		# Manual line breaks prevent orphaned syllables at 150% text scale.
-		{"id":"battle_arena", "label":"BATTLE\nDAIS", "label_rect":Rect2(25.0 / 576.0, 378.0 / 928.0, 102.0 / 576.0, 48.0 / 928.0), "label_font_size":10, "texture":textures.battle, "crop":Rect2i(82, 7, 1090, 1205), "rect":Rect2(16.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
-		{"id":"card_archive", "label":"ARCHIVE\nFOLIO", "label_rect":Rect2(449.0 / 576.0, 378.0 / 928.0, 102.0 / 576.0, 48.0 / 928.0), "label_font_size":10, "texture":textures.archive, "crop":Rect2i(101, 6, 1056, 1185), "rect":Rect2(440.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
-		{"id":"deck", "label":"DECK\nCLIPBOARD", "label_rect":Rect2(44.0 / 576.0, 646.0 / 928.0, 194.0 / 576.0, 42.0 / 928.0), "label_font_size":10, "texture":textures.deck, "crop":Rect2i(112, 37, 1030, 1128), "rect":Rect2(16.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
-		{"id":"supplies", "label":"SUPPLY\nCABINET", "label_rect":Rect2(338.0 / 576.0, 646.0 / 928.0, 194.0 / 576.0, 42.0 / 928.0), "label_font_size":10, "texture":textures.supplies, "crop":Rect2i(38, 145, 1184, 950), "rect":Rect2(310.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
-		{"id":"settings", "label":"SETTINGS", "label_rect":Rect2(228.0 / 576.0, 842.0 / 928.0, 120.0 / 576.0, 36.0 / 928.0), "label_font_size":10, "texture":textures.settings, "crop":Rect2i(107, 107, 1040, 1045), "rect":Rect2(166.0 / 576.0, 732.0 / 928.0, 244.0 / 576.0, 168.0 / 928.0)}
+		{"id":"battle_arena", "label":"BATTLE\nDAIS", "label_rect":Rect2(31.0 / 576.0, 344.0 / 928.0, 90.0 / 576.0, 38.0 / 928.0), "label_font_size":9, "label_color":Color("1a2a30"), "label_outline":Color("f5e5bd"), "texture":textures.battle, "crop":Rect2i(82, 7, 1090, 1205), "rect":Rect2(16.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
+		{"id":"card_archive", "label":"ARCHIVE\nFOLIO", "label_rect":Rect2(456.0 / 576.0, 347.0 / 928.0, 88.0 / 576.0, 38.0 / 928.0), "label_font_size":9, "label_color":Color("362317"), "label_outline":Color("fff0c9"), "texture":textures.archive, "crop":Rect2i(101, 6, 1056, 1185), "rect":Rect2(440.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
+		{"id":"deck", "label":"DECK\nCLIPBOARD", "label_rect":Rect2(73.0 / 576.0, 575.0 / 928.0, 136.0 / 576.0, 42.0 / 928.0), "label_font_size":9, "label_color":Color("47331f"), "label_outline":Color("fff0c9"), "texture":textures.deck, "crop":Rect2i(112, 37, 1030, 1128), "rect":Rect2(16.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
+		{"id":"supplies", "label":"SUPPLY\nCABINET", "label_rect":Rect2(399.0 / 576.0, 582.0 / 928.0, 118.0 / 576.0, 38.0 / 928.0), "label_font_size":9, "label_color":Color("f7e5bd"), "label_outline":Color("152832"), "texture":textures.supplies, "crop":Rect2i(38, 145, 1184, 950), "rect":Rect2(310.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
+		{"id":"settings", "label":"SETTINGS", "label_rect":Rect2(228.0 / 576.0, 807.0 / 928.0, 120.0 / 576.0, 36.0 / 928.0), "label_font_size":10, "label_color":Color("172c35"), "label_outline":Color("f5e5bd"), "texture":textures.settings, "crop":Rect2i(107, 107, 1040, 1045), "rect":Rect2(166.0 / 576.0, 732.0 / 928.0, 244.0 / 576.0, 168.0 / 928.0)}
 	]
 
 static func workshop_label_rect(prop: Dictionary) -> Rect2:
@@ -91,7 +91,18 @@ static func apply_cream_action(button: Button) -> void:
 	button.add_theme_stylebox_override("pressed", transparent_plate_style(Color("10283a"), 3))
 	button.add_theme_stylebox_override("focus", transparent_plate_style(Color("10283a"), 3))
 
-static func add_complete_focus_ring(button: Button, hotspot_id: String, high_contrast: bool, style_factory: Callable) -> Panel:
+static func workshop_focus_rect(hotspot_id: String) -> Rect2:
+	# Hit regions intentionally span the full authored object. Focus instead marks
+	# a small physical latch/medallion inside it, so keyboard focus never reads as
+	# a generic rectangle drawn over scenery or a station label.
+	match hotspot_id:
+		"printer": return Rect2(0.28, 0.58, 0.44, 0.17)
+		"battle_arena", "card_archive": return Rect2(0.17, 0.12, 0.66, 0.33)
+		"deck", "supplies": return Rect2(0.34, 0.16, 0.32, 0.38)
+		"settings": return Rect2(0.35, 0.16, 0.30, 0.36)
+	return Rect2(0.25, 0.25, 0.50, 0.50)
+
+static func add_complete_focus_ring(button: Button, hotspot_id: String, high_contrast: bool, _style_factory: Callable) -> Panel:
 	var stroke := 4 if high_contrast else 3
 	var ring := Panel.new()
 	ring.name = "WorkshopHotspotTightFocusRing"
@@ -99,9 +110,11 @@ static func add_complete_focus_ring(button: Button, hotspot_id: String, high_con
 	ring.z_index = 16
 	ring.set_meta("hotspot_id", hotspot_id)
 	ring.set_meta("focus_stroke_width", stroke)
-	ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ring.offset_left = 2; ring.offset_top = 2; ring.offset_right = -2; ring.offset_bottom = -2
-	ring.add_theme_stylebox_override("panel", style_factory.call(Color(0, 0, 0, 0), Color("ffffff") if high_contrast else Color("6defff"), 12, stroke))
+	var focus_rect := workshop_focus_rect(hotspot_id)
+	ring.anchor_left = focus_rect.position.x; ring.anchor_top = focus_rect.position.y
+	ring.anchor_right = focus_rect.end.x; ring.anchor_bottom = focus_rect.end.y
+	ring.offset_left = 0; ring.offset_top = 0; ring.offset_right = 0; ring.offset_bottom = 0
+	ring.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var stroke_color := Color("ffffff") if high_contrast else Color("6defff")
 	for edge in ["Top", "Right", "Bottom", "Left"]:
 		var line := ColorRect.new()

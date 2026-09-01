@@ -2,6 +2,9 @@ shader_type canvas_item;
 // Paper ink treatment: alpha-aware transparent creatures retain clean edges while
 // opaque support art receives a deterministic light/chroma matte removal.
 uniform vec4 ink_tint : source_color = vec4(0.19, 0.12, 0.07, 1.0);
+// Route-local seats can strengthen the same transparent linework against their
+// authored parchment without changing the approved source texture.
+uniform float ink_strength : hint_range(0.0, 1.0) = 0.48;
 uniform bool remove_dark_matte = false;
 void fragment() {
 	vec4 source = texture(TEXTURE, UV);
@@ -13,6 +16,6 @@ void fragment() {
 	// only low-chroma, low-luminance, low-edge fields so dark ink linework survives.
 	float dark_matte = (1.0 - smoothstep(0.035, 0.20, lightness)) * (1.0 - smoothstep(0.025, 0.13, chroma)) * (1.0 - smoothstep(0.025, 0.12, edge));
 	float alpha = source.a * (1.0 - max(opaque_matte * 0.88, dark_matte * 0.96 * float(remove_dark_matte)));
-	vec3 printed = mix(ink_tint.rgb, source.rgb, 0.52);
+	vec3 printed = mix(source.rgb, ink_tint.rgb, ink_strength);
 	COLOR = vec4(printed, alpha * 0.82);
 }

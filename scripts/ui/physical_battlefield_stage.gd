@@ -290,7 +290,12 @@ func _sync_attack_overlay() -> void:
 	var actor := int(event.get("actor", -1)); var source_slot := int(event.get("source_slot", event.get("slot", -1))); var target_slot := int(event.get("target_slot", -1))
 	if actor < 0 or actor > 1 or source_slot < 0 or source_slot > 2: return
 	var reduced := bool(event.get("reduced_motion", false))
-	var p := 0.5 if reduced else clampf(_event_elapsed / maxf(.01, VFX.event_duration("attack")), 0.0, 1.0)
+	# Reduced motion owns the resolved combat frame, not an abbreviated contact
+	# flyover. Leave the awakened attacker in its home slot and expose the damaged
+	# target, printers, hands, and native HP labels together.
+	if reduced:
+		return
+	var p := clampf(_event_elapsed / maxf(.01, VFX.event_duration("attack")), 0.0, 1.0)
 	if not reduced and (p < .42 or p > .58): return
 	var source_rect := _rect((PLAYER_SLOTS if actor == 0 else RIVAL_SLOTS)[source_slot])
 	var target_rect := _rect(RIVAL_PRINTER if actor == 0 else PLAYER_PRINTER) if target_slot < 0 else _rect((RIVAL_SLOTS if actor == 0 else PLAYER_SLOTS)[clampi(target_slot, 0, 2)])

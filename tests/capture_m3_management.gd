@@ -84,7 +84,11 @@ func _apply_fixture(main: Control, profile: Dictionary, entry: Dictionary) -> vo
 			main.m3_deck_loaded_slot_id = ""
 		if bool(inputs.get("dirty", false)): main.m3_pending_deck_slot_id = str(inputs.get("pending_slot", "deck-slot-2"))
 		if bool(inputs.get("in_flight", false)): main.m3_action_in_flight = true
-		if inputs.has("preprints"): main.unified_preprint_draft = (inputs.get("preprints", []) as Array).duplicate()
+		if inputs.has("preprints"):
+			# This is persisted fixture input, not a post-render injection. The real
+			# deck loader owns the draft and therefore retains all three seats.
+			profile.preprints = (inputs.get("preprints", []) as Array).duplicate()
+			main.unified_preprint_draft = (profile.get("preprints", []) as Array).duplicate()
 		if inputs.has("preprint_slots"):
 			var requested_slots := int(inputs.get("preprint_slots", 1))
 			profile.workshop_upgrades = []
@@ -206,6 +210,15 @@ func _ready() -> void:
 	GameManager.profile = profile
 	var main := MAIN.instantiate(); add_child(main)
 	_apply_fixture(main, GameManager.profile, entry)
+	# The M7 evidence pass reuses the canonical populated-clamp DK-06 fixture and
+	# changes only its native accessibility setting.  The legal saved deck and all
+	# three persisted selections remain the route's real presentation inputs.
+	if "--m7-text150" in args:
+		GameManager.profile.settings.text_scale_bps = 15000
+		if mode != "M3-DK-06":
+			push_error("M7 text capture must use M3-DK-06's populated Pre-Print fixture.")
+			get_tree().quit(1)
+			return
 	if mode == "M3-DK-01":
 		var saved_cards: Array = []
 		for deck_variant in profile.get("decks", []):
@@ -220,6 +233,26 @@ func _ready() -> void:
 	main.render()
 	await get_tree().process_frame
 	await get_tree().process_frame
+	if mode == "M3-DK-06":
+		for index in 3:
+			var expected_preprint: String = ["Cinderpaw", "Aquafin", "Voltwig"][index]
+			var clamp_label := main.find_child("PrePrintClampLabel%d" % (index + 1), true, false) as Label
+			var clamp_art := main.find_child("PrePrintClampArt%d" % (index + 1), true, false) as TextureRect
+			if not is_instance_valid(clamp_label) or not clamp_label.text.contains(expected_preprint) or not is_instance_valid(clamp_art) or clamp_art.texture == null:
+				push_error("M3-DK-06 requires the persisted populated clamp %d for %s." % [index + 1, expected_preprint])
+				get_tree().quit(1)
+				return
+			if "--m7-text150" in args:
+				if not clamp_label.text.begins_with("Clamp %d\n" % (index + 1)) or clamp_label.get_global_rect().size.y < 48.0:
+					push_error("M7 150%% Deck fixture requires the fully visible two-line caption for clamp %d." % (index + 1))
+					get_tree().quit(1)
+					return
+		for action_name in ["UnifiedFoundryWorkshopReturn", "SaveActiveDeck", "SavePrePrintLoadout"]:
+			var action_button := main.find_child(action_name, true, false) as Button
+			if not is_instance_valid(action_button) or action_button.get_global_rect().size.x < 48.0 or action_button.get_global_rect().size.y < 48.0:
+				push_error("M7 150%% Deck fixture requires a visible >=48px %s keycap." % action_name)
+				get_tree().quit(1)
+				return
 	if mode == "M3-NV-03":
 		var new_maker := main.find_child("TitleNewMaker", true, false) as Button
 		if not is_instance_valid(new_maker):
