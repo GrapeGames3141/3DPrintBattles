@@ -2,6 +2,22 @@
   "version": 1,
   "purpose": "Runtime-only assets referenced dynamically by PrintForge Legends v3.",
   "m1_physical_ui": {
+    "title_backplate_v2": {
+      "runtime_path": "res://assets/ui/physical_ui/title-backplate-text-free-v2.png",
+      "source_path": "res://docs/art/printforge-physical-ui-spike-20260830/title-revision-r1/title-backplate-text-free-v2-941x1672.png",
+      "dimensions": [941, 1672],
+      "bytes": 2135203,
+      "sha256": "394BE19B67CBDF54125C1700BDEB5FB9CCB94C926E976D6CBA371BD88E7C0282",
+      "alpha_expected": false,
+      "runtime_role": "Portrait Title static backplate; all brand, status, mascot, and actions remain native.",
+      "provenance": {
+        "path": "res://docs/art/printforge-physical-ui-spike-20260830/title-revision-r1/provenance.json",
+        "generator": "OpenAI ImageGen",
+        "generation_execution": "exec-fba7b5b6-69eb-48db-8a92-9baabf98e2b3",
+        "approval_date": "2026-08-31",
+        "approval_source": "Title revision r1 UI-review approval"
+      }
+    },
     "blueprint_cartridge": {
       "runtime_path": "res://assets/ui/physical_ui/m1-r2/blueprint-cartridge-text-free-v1.png",
       "source_path": "res://docs/art/printforge-physical-ui-spike-20260830/runtime-masters/blueprint-cartridge-text-free-v1.png",
@@ -38,6 +54,16 @@
       },
       "rejected_alternatives": ["battle foreground RGB attempts", "baked dynamic text or units"]
     }
+  },
+  "m3_physical_ui": {
+    "archive_grid": {"runtime_path":"res://assets/ui/physical_ui/m3/CO-01-archive-folio-grid-text-free-v4.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/CO-01-archive-folio-grid-text-free-v4.png","dimensions":[941,1672],"bytes":2534630,"sha256":"CB86C63DAB77D6F6CF028426CC0A98F6B74B01ED926A98A35A4C1EBD301D2B16","alpha_expected":false,"runtime_role":"Collection folio static material plate; all cards and labels are native.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "archive_detail": {"runtime_path":"res://assets/ui/physical_ui/m3/CO-02-archive-folio-detail-text-free-v3.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/CO-02-archive-folio-detail-text-free-v3.png","dimensions":[941,1672],"bytes":2492522,"sha256":"F89CB8F9CAF84B292BE12E2422A66F0464A3CEC1EE2A0E7A9A7B12786D3E2CBC","alpha_expected":false,"runtime_role":"Archive inspector composition source.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "deck_workbench": {"runtime_path":"res://assets/ui/physical_ui/m3/DK-01-deck-workbench-text-free-v2.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/DK-01-deck-workbench-text-free-v2.png","dimensions":[941,1672],"bytes":2370308,"sha256":"886F548F6CDF87FEA7BBCFC38FDAAF80A216430D7AF7345B50DD6FF6005B27CD","alpha_expected":false,"runtime_role":"Deck and Pre-Print workbench static plate.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "supply_cabinet": {"runtime_path":"res://assets/ui/physical_ui/m3/MK-01-supply-cabinet-text-free-v2.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/MK-01-supply-cabinet-text-free-v2.png","dimensions":[941,1672],"bytes":2286953,"sha256":"FCD4B0A045DEEF2C701C5EF07D5E376E47CB570A9F9CB9A96735EC5D4E15D8B2","alpha_expected":false,"runtime_role":"Market cabinet static plate.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "pack_machine": {"runtime_path":"res://assets/ui/physical_ui/m3/RW-02-pack-opening-v3.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/RW-02-pack-opening-v3.png","dimensions":[941,1672],"bytes":2294573,"sha256":"88100CB06C41E3E9C7996757EC118A4BAE56CF35DD65E633EDCD3FB42F103C25","alpha_expected":false,"runtime_role":"Five-dock pack reveal static plate.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "result_receipt": {"runtime_path":"res://assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/BA-05-result-receipt-v4.png","dimensions":[941,1672],"bytes":2524092,"sha256":"9E436AAF7780EE93EFD62F9B142793BD169E340E02D3F8B4D8789A8EEEDB9D4F","alpha_expected":false,"runtime_role":"Battle settlement receipt static plate.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "settings": {"runtime_path":"res://assets/ui/physical_ui/m3/ST-01-settings-instrument-text-free-v3.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/ST-01-settings-instrument-text-free-v3.png","dimensions":[941,1672],"bytes":2335660,"sha256":"AA10B51A1DF930BC8032EA4D2A4AF3766E1EF0FDDF55926D61C16AD25CACFE2B","alpha_expected":false,"runtime_role":"Accessibility and audio instrument static plate.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
+    "recovery": {"runtime_path":"res://assets/ui/physical_ui/m3/SY-02-recovery-ledger-text-free-v2.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/SY-02-recovery-ledger-text-free-v2.png","dimensions":[941,1672],"bytes":2293126,"sha256":"9D3673D3D8328B40A7746E9EA5C746E9B25FC30BFEF6D366A0CEECC2ED724F0E","alpha_expected":false,"runtime_role":"Save recovery static ledger plate.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}}
   },
   "groups": {
     "battle_backgrounds": [

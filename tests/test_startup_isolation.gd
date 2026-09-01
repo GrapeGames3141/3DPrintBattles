@@ -8,6 +8,11 @@ const OPTIONAL_PATHS := [
 	"res://scripts/ui/tiered_armor_palette_preview.gd",
 	"res://scripts/ui/battle_sprite_stage.gd"
 ]
+const RULES := preload("res://scripts/core/unified_rules.gd")
+const WORKSHOP_HOTSPOTS := [
+	"WorkshopHotspotPrinter", "WorkshopHotspotBattleArena", "WorkshopHotspotCardArchive",
+	"WorkshopHotspotDeck", "WorkshopHotspotSupplies", "WorkshopHotspotSettings"
+]
 
 var failures: Array[String] = []
 
@@ -17,8 +22,8 @@ func require(value: bool, message: String) -> void:
 		push_error(message)
 
 func _ready() -> void:
-	# The 0.6.4 launch boundary must reach its first workshop frame without
-	# loading daily-opponent, battle, Forge, or equipment presentation modules.
+	# The current launch boundary reaches physical Title first.  Keep a completed
+	# profile so the real primary action is truthful CONTINUE, not New Maker.
 	for path in OPTIONAL_PATHS:
 		require(not ResourceLoader.has_cached(path), "optional startup resource is not cached before Main: " + path)
 	var shell_source := FileAccess.get_file_as_string("res://scripts/ui/main.gd")
@@ -28,13 +33,31 @@ func _ready() -> void:
 	if packed == null:
 		call_deferred("finish")
 		return
+	var completed: Dictionary = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
+	completed = RULES.print_starter(completed).profile
+	GameManager.profile = completed
+	GameManager.save_compatibility = {"compatible":true, "state":"ready", "message":""}
 	var main = packed.instantiate()
 	add_child(main)
 	await get_tree().process_frame
-	require(main.screen in ["workshop", "onboarding"], "startup renders a player-facing workshop/onboarding screen")
-	require(main._unified_battle_screen_component == null and main._forge_screen_component == null, "first frame does not instantiate Battle or Forge screen components")
+	var title_continue := main.find_child("TitleContinue", true, false) as Button
+	require(main.screen == "title" and title_continue != null and title_continue.text == "CONTINUE", "real Main first renders physical Title with truthful Continue for a completed profile")
+	require(main._unified_battle_screen_component == null and main._forge_screen_component == null, "physical Title does not instantiate Battle or Forge screen components")
 	for path in OPTIONAL_PATHS:
-		require(not ResourceLoader.has_cached(path), "optional startup resource is not cached by the first workshop frame: " + path)
+		require(not ResourceLoader.has_cached(path), "optional startup resource is not cached by the physical Title frame: " + path)
+	if title_continue != null:
+		title_continue.emit_signal("pressed")
+		await get_tree().process_frame
+	var workshop_buttons: Array = []
+	for node_name in WORKSHOP_HOTSPOTS:
+		var hotspot := main.find_child(node_name, true, false) as Button
+		require(hotspot != null, "%s is a real physical Workshop hotspot after Continue." % node_name)
+		if hotspot != null: workshop_buttons.append(hotspot)
+	var all_hotspots: Array = main.find_children("WorkshopHotspot*", "Button", true, false)
+	require(main.screen == "workshop" and workshop_buttons.size() == 6 and all_hotspots.size() == 6, "real Continue callback opens the redesigned Workshop hub with exactly six canonical physical Button hotspots")
+	require(main._unified_battle_screen_component == null and main._forge_screen_component == null, "Workshop hub still does not instantiate Battle or Forge screen components")
+	for path in OPTIONAL_PATHS:
+		require(not ResourceLoader.has_cached(path), "optional startup resource is not cached by Title→Workshop navigation: " + path)
 	# Opening the Proving Door is the intended lazy boundary for daily opponents.
 	main.navigate_to("proving")
 	await get_tree().process_frame

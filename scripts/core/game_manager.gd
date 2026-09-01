@@ -20,6 +20,14 @@ func _ready() -> void:
 ## Kept narrow and callable by isolated save-compatibility tests. It is the only
 ## bootstrap path that is allowed to migrate or persist a loaded profile.
 func _initialize_loaded_profile(loaded: Dictionary) -> void:
+	if SaveService.recovery_status in ["corrupt_primary", "corrupt_backup"]:
+		profile = {}
+		save_compatibility = {"compatible":false, "state":SaveService.recovery_status, "message":"No valid save snapshot could be read. Your recoverable files have not been changed."}
+		return
+	if SaveService.recovery_status == "backup_recovered":
+		profile = loaded.duplicate(true)
+		save_compatibility = {"compatible":false, "state":"backup_recovered", "message":"A validated backup was recovered. Acknowledge it before this session writes a new primary snapshot."}
+		return
 	save_compatibility = ProfileRules.compatibility(loaded)
 	if not bool(save_compatibility.get("compatible", true)):
 		profile = loaded.duplicate(true)
@@ -48,9 +56,7 @@ func apply_android_review_coin_floor(review_enabled: bool) -> bool:
 	var result := ReviewBuildRules.apply_coin_floor(profile, review_enabled)
 	if not bool(result.get("ok", false)):
 		return false
-	profile = result.profile
-	mutated("android_review_coin_floor", result.payload)
-	return true
+	return bool(_commit_rule_result(result, "android_review_coin_floor").get("ok", false))
 
 func default_profile() -> Dictionary:
 	return UNIFIED_RULES.new_profile()
@@ -64,8 +70,8 @@ func choose_starter(creature_id: String) -> bool:
 	if not bool(result.ok):
 		toast_requested.emit(str(result.error))
 		return false
-	profile = result.profile
-	mutated("choose_starter", result.get("payload", {"creature_id":creature_id}))
+	if not bool(_commit_rule_result(result, "choose_starter").get("ok", false)):
+		return false
 	toast_requested.emit("Starter blueprint unlocked. Print your first Workshop model free.")
 	return true
 
@@ -73,18 +79,15 @@ func print_selected_starter() -> bool:
 	return apply_transition(UNIFIED_RULES.print_starter(profile), "starter_free_print")
 func print_workshop_model_v3(blueprint_id: String, receipt_id := "") -> Dictionary:
 	var result := UNIFIED_RULES.print_workshop_model(profile, blueprint_id, receipt_id)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_workshop_print", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_workshop_print")
 
 func buy_card_pack(pack_id: String) -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.buy_pack(profile, pack_id, PackedByteArray(), int(Time.get_unix_time_from_system()))
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Pack unavailable."))); return result
-	profile = result.profile
 	# Persist result before a reveal may animate; a reload simply resumes it.
-	mutated("buy_card_pack", result.payload)
-	return result
+	return _commit_rule_result(result, "buy_card_pack")
 
 func claim_next_starter_pack() -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
@@ -92,82 +95,98 @@ func claim_next_starter_pack() -> Dictionary:
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "No starter pack available.")))
 		return result
-	profile = result.profile
-	mutated("starter_basic_pack", result.payload)
-	return result
+	return _commit_rule_result(result, "starter_basic_pack")
 
 ## Local v3 commerce/reward facades. All use the same journaled mutation path;
 ## a hosted authority may later replace their clock/entropy provider.
 func market_snapshot(unix_time := 0, local_date_key := "") -> Dictionary:
+	var prepared := prepare_market_v3(unix_time, local_date_key)
+	# Compatibility callers may browse deterministic stock even when a sandbox or
+	# offline disk blocks the one-time epoch preparation. They receive no success
+	# receipt and cannot purchase until persistence is restored.
+	if bool(prepared.get("ok", false)): return prepared.get("snapshot", {})
+	return market_snapshot_readonly(unix_time)
+
+func prepare_market_v3(unix_time := 0, local_date_key := "") -> Dictionary:
+	if _reject_read_only(): return {"ok":false, "error":save_recovery_message(), "snapshot":{}}
 	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
 	var begun := UNIFIED_RULES.begin_newcomer(profile, stamp)
 	if bool(begun.get("ok", false)) and begun.profile != profile:
-		profile = begun.profile
-		mutated("v3_newcomer_started", begun.payload)
+		var committed_begin := _commit_rule_result(begun, "v3_newcomer_started")
+		if not bool(committed_begin.get("ok", false)): return {"ok":false, "error":str(committed_begin.get("error", "Market setup could not be saved.")), "snapshot":{}}
 	var epochs := UNIFIED_RULES.advance_market_epochs(profile, stamp, local_date_key)
 	if bool(epochs.get("ok", false)) and epochs.profile != profile:
-		profile = epochs.profile
-		mutated("v3_market_epochs", epochs.payload)
+		var committed_epochs := _commit_rule_result(epochs, "v3_market_epochs")
+		if not bool(committed_epochs.get("ok", false)): return {"ok":false, "error":str(committed_epochs.get("error", "Market setup could not be saved.")), "snapshot":{}}
+	var quest_key := local_date_key if not local_date_key.is_empty() else Time.get_date_string_from_unix_time(stamp)
+	var quests := UNIFIED_RULES.daily_quests(profile, quest_key)
+	if bool(quests.get("ok", false)) and quests.profile != profile:
+		var committed_quests := _commit_rule_result(quests, "v3_daily_quests")
+		if not bool(committed_quests.get("ok", false)): return {"ok":false, "error":str(committed_quests.get("error", "Daily quest setup could not be saved.")), "snapshot":{}}
+	return {"ok":true, "snapshot":UNIFIED_RULES.market_snapshot(profile, stamp), "day_key":quest_key, "revision":int(profile.get("revision", 0))}
+
+func market_snapshot_readonly(unix_time := 0) -> Dictionary:
+	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
 	return UNIFIED_RULES.market_snapshot(profile, stamp)
 func buy_blueprint_v3(id: String, unix_time := 0) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
 	var result := UNIFIED_RULES.buy_blueprint(profile, id, stamp)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_blueprint", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_buy_blueprint")
 func buy_market_card_v3(id: String, unix_time := 0) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var stamp := unix_time if unix_time > 0 else int(Time.get_unix_time_from_system())
 	var result := UNIFIED_RULES.buy_market_card_at(profile, id, stamp)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_market_card", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_buy_market_card")
 func buy_workshop_upgrade_v3(id: String) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.buy_workshop_upgrade(profile, id, int(Time.get_unix_time_from_system()))
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_workshop_upgrade", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_buy_workshop_upgrade")
 func buy_upgrade_card_v3(id: String) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.buy_upgrade_card(profile, id, 0, int(Time.get_unix_time_from_system()))
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_upgrade_card", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_buy_upgrade_card")
 func buy_cosmetic_v3(id: String, currency := "forge_coins") -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.buy_cosmetic(profile, id, currency, int(Time.get_unix_time_from_system()))
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_buy_cosmetic", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_buy_cosmetic")
 func fake_store_purchase_v3(purchase_id: String, product_id: String) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.fake_store_purchase_at(profile, purchase_id, product_id, int(Time.get_unix_time_from_system()))
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_fake_store_purchase", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_fake_store_purchase")
 func buy_paid_season_v3() -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.buy_paid_season(profile)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_paid_season", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_paid_season")
 func set_wishlist_v3(id: String, wanted: bool) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.set_wishlist(profile, id, wanted)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_wishlist", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_wishlist")
 func daily_quests_v3(day_key := "") -> Dictionary:
 	var key := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
 	var result := UNIFIED_RULES.daily_quests(profile, key)
-	if bool(result.get("ok", false)) and result.profile != profile: profile = result.profile; mutated("v3_daily_quests", result.payload)
+	if bool(result.get("ok", false)) and result.profile != profile: return _commit_rule_result(result, "v3_daily_quests")
 	return result
 func reroll_daily_quest_v3(day_key: String, index: int) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.reroll_daily_quest(profile, day_key, index)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_quest_reroll", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_quest_reroll")
 func claim_daily_quest_v3(day_key: String, id: String) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.claim_daily_quest(profile, day_key, id)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_quest_claim", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_quest_claim")
 func record_quest_progress_v3(day_key: String, event_name: String, amount := 1) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.record_quest_progress(profile, day_key, event_name, amount)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_quest_progress", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_quest_progress")
 func academy_three_star_v3(receipt_id: String) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.academy_three_star_reward(profile, receipt_id)
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_academy_reward", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_academy_reward")
 func claim_season_level_v3(level: int, paid := false) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var result := UNIFIED_RULES.claim_season_level(profile, level, paid, int(Time.get_unix_time_from_system()))
-	if bool(result.get("ok", false)): profile = result.profile; mutated("v3_season_claim", result.payload)
-	return result
+	return _commit_rule_result(result, "v3_season_claim")
 
 func current_market_offers(day_key: String = "") -> Array:
 	var resolved := day_key if not day_key.is_empty() else Time.get_date_string_from_system()
@@ -178,13 +197,18 @@ func buy_market_card(card_id: String, day_key: String = "") -> Dictionary:
 	return buy_market_card_v3(card_id, 0)
 
 func claim_pending_pack_reveal() -> Array:
-	if _reject_read_only(): return []
-	var cards: Array = profile.get("pending_pack_reveal", {}).get("cards", []) if profile.get("pending_pack_reveal", {}) is Dictionary else []
-	var bonus: Array = profile.get("pending_pack_reveal", {}).get("bonus_cards", []) if profile.get("pending_pack_reveal", {}) is Dictionary else []
+	var result := claim_pending_pack_reveal_result()
+	return result.get("cards", []).duplicate() if bool(result.get("ok", false)) else []
+
+func claim_pending_pack_reveal_result() -> Dictionary:
+	if _reject_read_only(): return {"ok":false, "error":save_recovery_message(), "cards":[]}
+	var cards: Array = (profile.get("pending_pack_reveal", {}).get("cards", []) as Array).duplicate() if profile.get("pending_pack_reveal", {}) is Dictionary else []
+	var bonus: Array = (profile.get("pending_pack_reveal", {}).get("bonus_cards", []) as Array).duplicate() if profile.get("pending_pack_reveal", {}) is Dictionary else []
 	cards.append_array(bonus)
-	if cards.is_empty(): return []
-	var result := UNIFIED_RULES.clear_pack_reveal(profile); profile = result.profile; mutated("pack_reveal_seen", result.payload)
-	return cards
+	if cards.is_empty(): return {"ok":false, "error":"There are no pack cards waiting to keep.", "cards":[]}
+	var result := _commit_rule_result(UNIFIED_RULES.clear_pack_reveal(profile), "pack_reveal_seen")
+	if not bool(result.get("ok", false)): return {"ok":false, "error":str(result.get("error", "Pack receipt could not be saved.")), "cards":[]}
+	return {"ok":true, "cards":cards, "payload":result.get("payload", {})}
 
 func save_unified_deck(cards: Array, deck_id := "starter-deck") -> bool:
 	return apply_transition(UNIFIED_RULES.save_deck(profile, cards, deck_id), "save_unified_deck")
@@ -232,16 +256,17 @@ func create_unified_battle(mode: String, opponent_setup: Dictionary = {}, seed: 
 	# Workshop upgrades and pre-prints are launch data; in-battle hardware starts
 	# uninstalled and must be played as Upgrade Cards.
 	var rival_preprints := _unified_rival_preprints(setup, rival_deck)
-	var state := UNIFIED_BATTLE_STATE.create(deck, rival_deck, match_seed, [], [], profile.get("preprints", []), rival_preprints, profile, {})
-	var rival := state.player(1)
-	rival.filament = clampi(int(setup.get("rival_starting_filament", 200)), 0, int(rival.filament_max))
 	var resolved_mode := str(resolved.get("mode", mode))
 	var result_id := str(opponent_setup.get("result_id", ""))
 	if result_id.is_empty() and resolved_mode in ["daily", "trial"]:
-		profile = UNIFIED_RULES.ensure(profile)
-		profile.unified_launch_sequence = int(profile.get("unified_launch_sequence", 0)) + 1
-		result_id = "unified:%s:%s:%d" % [resolved_mode, str(resolved.get("reward_id", resolved.get("source_id", ""))), int(profile.unified_launch_sequence)]
-		mutated("unified_battle_launch", {"mode":resolved_mode,"result_id":result_id,"reward_id":str(resolved.get("reward_id", ""))})
+		var candidate := UNIFIED_RULES.ensure(profile)
+		candidate.unified_launch_sequence = int(candidate.get("unified_launch_sequence", 0)) + 1
+		result_id = "unified:%s:%s:%d" % [resolved_mode, str(resolved.get("reward_id", resolved.get("source_id", ""))), int(candidate.unified_launch_sequence)]
+		if not _commit_candidate(candidate, "unified_battle_launch", {"mode":resolved_mode,"result_id":result_id,"reward_id":str(resolved.get("reward_id", ""))}):
+			return {"ok":false,"error":SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Battle launch could not be saved."}
+	var state := UNIFIED_BATTLE_STATE.create(deck, rival_deck, match_seed, [], [], profile.get("preprints", []), rival_preprints, profile, {})
+	var rival := state.player(1)
+	rival.filament = clampi(int(setup.get("rival_starting_filament", 200)), 0, int(rival.filament_max))
 	var context := {"mode":resolved_mode,"source_id":str(resolved.get("source_id", "")),"day_key":str(resolved.get("day_key", "")),"reward_id":str(resolved.get("reward_id", "")),"result_id":result_id,"reward":resolved.get("reward", {}).duplicate(true) if resolved.get("reward", {}) is Dictionary else {}}
 	return {"ok":true,"battle":state,"mode":context.mode,"source_id":context.source_id,"seed":match_seed,"settlement_context":context}
 
@@ -326,9 +351,7 @@ func settle_unified_battle(result_id: String, battle, victory: bool, coins: int 
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var mine: Dictionary = battle.player(0) if battle != null else {}
 	var result := UNIFIED_RULES.settle_unified_battle(profile, result_id, mine.get("played", []), victory, int(mine.get("collector", 0)) + int(mine.get("melted", 0)), coins)
-	if bool(result.get("ok", false)) and not bool(result.get("payload", {}).get("duplicate", false)):
-		profile = result.profile; mutated("unified_battle_settlement", result.payload)
-	return result
+	return _commit_rule_result(result, "unified_battle_settlement")
 
 func settle_unified_mode_battle(context: Dictionary, battle, victory: bool, coins: int = 0) -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
@@ -353,12 +376,13 @@ func settle_unified_mode_battle(context: Dictionary, battle, victory: bool, coin
 	var mine: Dictionary = battle.player(0) if battle != null else {}
 	var settled := UNIFIED_RULES.settle_unified_battle(working, result_id, mine.get("played", []), victory, int(mine.get("collector", 0)) + int(mine.get("melted", 0)), coins)
 	if not bool(settled.get("ok", false)): return settled
-	profile = settled.profile
 	var payload: Dictionary = settled.get("payload", {}).duplicate(true)
 	payload["mode"] = mode
 	payload["source_id"] = str(context.get("source_id", ""))
 	payload["reward_claim"] = reward_payload
-	mutated("unified_%s_settlement" % mode, payload)
+	settled["payload"] = payload
+	var committed := _commit_rule_result(settled, "unified_%s_settlement" % mode)
+	if not bool(committed.get("ok", false)): return committed
 	return {"ok":true,"profile":profile,"payload":payload}
 
 ## Unified modes retain the authored Trial and Training encounters, but their
@@ -430,8 +454,10 @@ func daily_shop(day_key: String) -> Array:
 	if _reject_read_only(): return []
 	var result := ProgressionRules.daily_shop(profile, day_key)
 	if not bool(result.ok): toast_requested.emit(str(result.error)); return []
-	profile = result.profile
-	SaveService.commit_snapshot(profile)
+	var candidate: Dictionary = result.get("profile", profile) if result.get("profile", profile) is Dictionary else profile
+	# Rotation cache updates intentionally retain their existing revision and omit
+	# a journal row, but the snapshot must be durable before it becomes live.
+	if candidate != profile and not _commit_cache_candidate(candidate): return []
 	return result.offers
 
 func buy_shop_offer(day_key: String, offer_id: String) -> bool:
@@ -458,34 +484,44 @@ func filament_cap() -> int:
 func earn_coins(amount: int, reason: String) -> void:
 	if _reject_read_only(): return
 	if amount <= 0: return
-	profile.coins = int(profile.coins) + amount
-	mutated("earn_coins", {"amount":amount,"reason":reason})
+	var candidate := profile.duplicate(true)
+	candidate.coins = int(candidate.coins) + amount
+	_commit_candidate(candidate, "earn_coins", {"amount":amount,"reason":reason})
 
 func spend_coins(amount: int, reason: String) -> bool:
 	if _reject_read_only(): return false
 	if amount <= 0 or int(profile.coins) < amount:
 		toast_requested.emit("Not enough Forge Coins.")
 		return false
-	profile.coins = int(profile.coins) - amount
-	mutated("spend_coins", {"amount":amount,"reason":reason})
-	return true
+	var candidate := profile.duplicate(true)
+	candidate.coins = int(candidate.coins) - amount
+	return _commit_candidate(candidate, "spend_coins", {"amount":amount,"reason":reason})
 
 func award_battle(win: bool) -> void:
-	if _reject_read_only(): return
+	_award_battle_result(win)
+
+func _award_battle_result(win: bool) -> Dictionary:
+	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
 	var coins: int = 20 if win else 8
 	var xp: int = 30 if win else 10
-	profile.coins = int(profile.coins) + coins
-	var xp_result := ProgressionRules.grant_xp(profile, xp)
-	profile = xp_result.profile
+	var candidate := profile.duplicate(true)
+	candidate.coins = int(candidate.coins) + coins
+	var xp_result := ProgressionRules.grant_xp(candidate, xp)
+	if not bool(xp_result.get("ok", false)): return xp_result
+	candidate = xp_result.profile
+	var payload := {"win":win,"coins":coins,"xp":xp}
+	if not _commit_candidate(candidate, "battle_reward", payload):
+		return {"ok":false,"error":SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Battle reward could not be saved."}
 	if int(xp_result.payload.spool_gained) > 0:
 		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
-	mutated("battle_reward", {"win":win,"coins":coins,"xp":xp})
+	return {"ok":true,"payload":payload,"profile":profile.duplicate(true)}
 
 func claim_battle_reward(state: BattleState) -> bool:
 	if _reject_read_only(): return false
 	if not state.finished or state.reward_claimed: return false
+	var awarded := _award_battle_result(state.winner == 0)
+	if not bool(awarded.get("ok", false)): return false
 	state.reward_claimed = true
-	award_battle(state.winner == 0)
 	return true
 
 func complete_workshop_job(performance: int, day_key: String = "") -> int:
@@ -497,8 +533,8 @@ func complete_workshop_job(performance: int, day_key: String = "") -> int:
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Calibration is unavailable.")))
 		return 0
-	profile = result.profile
-	mutated("calibration_job", result.payload)
+	var committed := _commit_rule_result(result, "calibration_job")
+	if not bool(committed.get("ok", false)): return 0
 	return int(result.payload.reward)
 
 func visit_print_yard(day_key: String = "", drill_id: String = "field_practice") -> int:
@@ -508,10 +544,10 @@ func visit_print_yard(day_key: String = "", drill_id: String = "field_practice")
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "The Print Yard is unavailable.")))
 		return 0
-	profile = result.profile
+	var committed := _commit_rule_result(result, "print_yard_visit")
+	if not bool(committed.get("ok", false)): return 0
 	if int(result.payload.get("spool_gained", 0)) > 0:
 		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
-	mutated("print_yard_visit", result.payload)
 	return int(result.payload.get("xp", 0))
 
 func consume_solo_spool_warmup() -> int:
@@ -520,9 +556,7 @@ func consume_solo_spool_warmup() -> int:
 	if not bool(result.get("ok", false)): return 0
 	var bonus := int(result.get("payload", {}).get("bonus", 0))
 	if bonus <= 0: return 0
-	profile = result.profile
-	mutated("consume_spool_warmup", result.payload)
-	return bonus
+	return bonus if bool(_commit_rule_result(result, "consume_spool_warmup").get("ok", false)) else 0
 
 func pending_solo_spool_warmup() -> int:
 	return clampi(int(profile.get("pending_spool_warmup", 0)), 0, 1)
@@ -578,8 +612,10 @@ func prepare_daily_training(day_key: String) -> Array:
 		toast_requested.emit(str(result.get("error", "Daily Training is unavailable.")))
 		return []
 	var changed: bool = result.get("profile", {}) != profile
-	profile = result["profile"]
-	if changed: mutated("prepare_daily_training", {"day_key":day_key,"contracts":profile.get("daily_training", {}).get("contracts", [])})
+	if changed:
+		var prepared := result.duplicate(true)
+		prepared["payload"] = {"day_key":day_key,"contracts":result.get("profile", {}).get("daily_training", {}).get("contracts", [])}
+		if not bool(_commit_rule_result(prepared, "prepare_daily_training").get("ok", false)): return []
 	return result.get("contracts", [])
 
 func daily_training_contracts() -> Array:
@@ -594,13 +630,12 @@ func claim_training_victory(contract_id: String, day_key: String) -> Dictionary:
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Training reward is unavailable.")))
 		return result
-	profile = result["profile"]
 	var payload: Dictionary = result.get("payload", {})
-	if bool(payload.get("first_clear", false)):
+	if result.get("profile", {}) != profile:
+		var committed := _commit_rule_result(result, "daily_training_victory")
+		if not bool(committed.get("ok", false)): return committed
 		if int(payload.get("spool_gained", 0)) > 0: toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
-		mutated("daily_training_victory", payload)
-	else:
-		profile_changed.emit()
+		return committed
 	return result
 
 func campaign_encounter_state(encounter_id: String) -> Dictionary:
@@ -622,18 +657,17 @@ func claim_campaign_victory(encounter_id: String, turns: int) -> bool:
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Workshop Trial reward is unavailable.")))
 		return false
-	profile = result.profile
 	var payload: Dictionary = result.payload
 	if not bool(payload.get("first_clear", false)) and not bool(payload.get("best_improved", false)):
 		# A completed replay with an equal/worse turn count is a true no-op: it
 		# neither journals nor bumps revision, but the result screen may return.
-		profile_changed.emit()
 		return true
+	var committed := _commit_rule_result(result, "workshop_trial_victory" if bool(payload.get("first_clear", false)) else "workshop_trial_best_turn")
+	if not bool(committed.get("ok", false)): return false
 	if not bool(payload.get("first_clear", false)):
 		toast_requested.emit("New Workshop Trial best: %d turns. No additional rewards were granted." % int(payload.get("turns", 0)))
 	if int(payload.get("spool_gained", 0)) > 0:
 		toast_requested.emit("Your filament spool grew to %d!" % filament_cap())
-	mutated("workshop_trial_victory" if bool(payload.get("first_clear", false)) else "workshop_trial_best_turn", payload)
 	return true
 
 func creature_mastery(instance_id: String) -> int:
@@ -644,26 +678,106 @@ func apply_transition(result: Dictionary, kind: String) -> bool:
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "That action is unavailable.")))
 		return false
-	profile = result.profile
-	mutated(kind, result.get("payload", {}))
-	return true
+	return bool(_commit_rule_result(result, kind).get("ok", false))
 
 func settle_local_trade(new_profile: Dictionary, audit: Dictionary) -> void:
 	if _reject_read_only(): return
 	# The guildmate profile is deliberately session-only; only this local profile persists.
-	profile = new_profile.duplicate(true)
-	mutated("local_trade_settled", audit)
+	_commit_candidate(new_profile.duplicate(true), "local_trade_settled", audit)
 
 func _creature_instance(instance_id: String) -> Dictionary:
 	for creature in profile.creatures:
 		if str(creature.instance_id) == instance_id: return creature
 	return {}
 
-func mutated(kind: String, payload: Dictionary) -> void:
-	if is_save_read_only(): return
-	profile.revision = int(profile.revision) + 1
-	SaveService.commit_mutation(profile, kind, payload, int(profile.revision))
+func _commit_rule_result(result: Dictionary, kind: String) -> Dictionary:
+	if not bool(result.get("ok", false)): return result
+	var payload: Dictionary = result.get("payload", {}) if result.get("payload", {}) is Dictionary else {}
+	# Authoritative duplicate receipts already exist in the persisted profile. Do
+	# not bump revision or journal them again, but retain their public receipt.
+	if bool(payload.get("duplicate", false)):
+		var duplicate := result.duplicate(true); duplicate["profile"] = profile.duplicate(true); duplicate["revision"] = int(profile.get("revision", 0)); return duplicate
+	var candidate: Dictionary = result.get("profile", profile).duplicate(true) if result.get("profile", profile) is Dictionary else profile.duplicate(true)
+	if not _commit_candidate(candidate, kind, payload):
+		var failed := result.duplicate(true)
+		failed["ok"] = false
+		failed["profile"] = profile.duplicate(true)
+		failed["error"] = SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Could not save this change. Try again from the recovery ledger."
+		return failed
+	var committed := result.duplicate(true)
+	committed["profile"] = profile.duplicate(true)
+	committed["revision"] = int(profile.get("revision", 0))
+	return committed
+
+func confirm_new_maker_after_recovery() -> Dictionary:
+	var expected_state := str(save_compatibility.get("state", ""))
+	if expected_state not in ["corrupt_primary", "corrupt_backup"]: return {"ok":false, "error":"New Maker recovery is not required."}
+	var reread := SaveService.load_profile()
+	if SaveService.recovery_status == "primary" and not reread.is_empty():
+		profile = reread.duplicate(true); save_compatibility = {"compatible":true, "state":"ready", "message":""}; profile_changed.emit()
+		return {"ok":true, "profile":profile.duplicate(true), "resumed_primary":true}
+	if SaveService.recovery_status != expected_state: return {"ok":false, "error":"Recovery state changed to %s; no files were changed." % SaveService.recovery_status}
+	if not SaveService.preserve_corrupt_recovery_evidence(): return {"ok":false, "error":SaveService.last_commit_error}
+	var candidate := UNIFIED_RULES.new_profile()
+	save_compatibility = {"compatible":true, "state":"ready", "message":""}
+	if not _commit_candidate(candidate, "new_maker_after_corrupt_recovery", {"preserved_corrupt_primary":true}):
+		save_compatibility = {"compatible":false, "state":expected_state, "message":"The corrupt save was preserved, but the new profile could not be written."}
+		return {"ok":false, "error":SaveService.last_commit_error}
+	return {"ok":true, "profile":profile.duplicate(true)}
+
+func acknowledge_backup_recovery() -> Dictionary:
+	if str(save_compatibility.get("state", "")) != "backup_recovered": return {"ok":false, "error":"There is no recovered backup to acknowledge."}
+	var reread := SaveService.load_profile()
+	if SaveService.recovery_status == "primary" and not reread.is_empty():
+		profile = reread.duplicate(true); save_compatibility = {"compatible":true, "state":"ready", "message":""}; profile_changed.emit()
+		return {"ok":true, "profile":profile.duplicate(true), "resumed_primary":true}
+	if SaveService.recovery_status != "backup_recovered": return {"ok":false, "error":"Recovery state changed to %s; no files were changed." % SaveService.recovery_status}
+	# The invalid primary is preserved before promoting the validated recovered
+	# profile. This acknowledgement changes no game rule, reward, or revision.
+	if not SaveService.preserve_invalid_save(SaveService.profile_path): return {"ok":false, "error":SaveService.last_commit_error}
+	if not SaveService.commit_snapshot(profile): return {"ok":false, "error":SaveService.last_commit_error}
+	save_compatibility = {"compatible":true, "state":"ready", "message":""}
 	profile_changed.emit()
+	return {"ok":true, "profile":profile.duplicate(true), "revision":int(profile.get("revision", 0))}
+
+func create_new_maker_profile() -> Dictionary:
+	# Title's destructive choice is a real transaction: the old session remains
+	# authoritative until the empty choose-starter snapshot has been persisted.
+	if _reject_read_only(): return {"ok":false, "error":save_recovery_message()}
+	var candidate := UNIFIED_RULES.new_profile()
+	if not _commit_candidate(candidate, "title_new_maker", {"entry":"title"}):
+		return {"ok":false, "error":SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Could not save the new maker profile."}
+	return {"ok":true, "profile":profile.duplicate(true), "revision":int(profile.get("revision", 0))}
+
+func _commit_candidate(candidate: Dictionary, kind: String, payload: Dictionary) -> bool:
+	if is_save_read_only(): return false
+	var persisted := candidate.duplicate(true)
+	persisted.revision = int(profile.get("revision", 0)) + 1
+	if not SaveService.commit_mutation(persisted, kind, payload, int(persisted.revision)):
+		toast_requested.emit(SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Could not save this change.")
+		return false
+	profile = persisted
+	profile_changed.emit()
+	return true
+
+func _commit_cache_candidate(candidate: Dictionary) -> bool:
+	# Shop rotation is a deterministic cache, so it keeps the current revision and
+	# does not create a replay event. It is nevertheless atomic with the snapshot.
+	if is_save_read_only(): return false
+	var persisted := candidate.duplicate(true)
+	if not SaveService.commit_snapshot(persisted):
+		toast_requested.emit(SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Could not save this change.")
+		return false
+	profile = persisted
+	profile_changed.emit()
+	return true
+
+func mutated(kind: String, payload: Dictionary) -> bool:
+	# Compatibility path for old flows that mutate profile in place. New M3
+	# transitions should use _commit_rule_result so assignment occurs post-save.
+	if is_save_read_only(): return false
+	var candidate := profile.duplicate(true)
+	return _commit_candidate(candidate, kind, payload)
 
 func _reject_read_only() -> bool:
 	if not is_save_read_only(): return false

@@ -31,6 +31,7 @@ const CREATURE_SPRITE_CACHE := preload("res://scripts/ui/creature_sprite_cache.g
 const BATTLE_MOVE_VFX := preload("res://scripts/ui/battle_move_vfx.gd")
 const PHYSICAL_PORTRAIT_PLATE := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
 const M1_PHYSICAL_UI := preload("res://scripts/ui/m1_physical_ui_component.gd")
+const M3_PHYSICAL_UI := preload("res://scripts/ui/m3_physical_ui_component.gd")
 const REVIEW_BUILD_LABEL := "physical-ui-spike-r10"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
@@ -98,6 +99,25 @@ var unified_inspector_tab := "card"
 var unified_reveal_page := 0
 var unified_market_tab := "blueprints"
 var unified_archive_filter := "all"
+var m3_archive_owned_only := false
+var m3_archive_printable_only := false
+var m3_deck_edit_slot_id := "starter-deck"
+var m3_pending_deck_slot_id := ""
+var m3_deck_loaded_slot_id := ""
+var m3_market_snapshot: Dictionary = {}
+var m3_market_revision := -1
+var m3_market_day_key := ""
+var m3_action_in_flight := false
+var m3_market_confirmation: Dictionary = {}
+var m3_settings_draft: Dictionary = {}
+var m3_settings_draft_initialized := false
+var m3_result_state := "idle"
+var m3_result_receipt: Dictionary = {}
+var m3_recovery_new_maker_confirm := false
+var m3_saved_preprint_draft: Array = []
+var title_new_maker_confirmation := false
+var title_new_maker_in_flight := false
+var title_new_maker_error := ""
 var body: VBoxContainer
 var status: Label
 var battle_mode := "training"
@@ -138,6 +158,7 @@ var _blueprint_tray_view := BLUEPRINT_TRAY_VIEW.new()
 var _unified_battle_screen_component = null
 var _forge_screen_component = null
 var _audio_director := AudioDirector.new()
+var _m3_physical_ui := M3_PHYSICAL_UI.new()
 
 func settings() -> Dictionary:
 	return GameManager.profile.get("settings", AccessibilityRules.defaults())
@@ -291,6 +312,10 @@ func navigate_to(target: String) -> void:
 	if unified_targets.has(target): target = str(unified_targets[target])
 	if target == "unified_deck" and screen != "unified_deck":
 		feedback_deck_draft_initialized = false
+		m3_deck_loaded_slot_id = ""
+	if target == "unified_market" and screen != "unified_market":
+		m3_market_snapshot.clear()
+		m3_market_revision = -1
 	if target == "settings" and screen != "settings":
 		# Settings is inspection-only until an explicit setting action. Preserve the
 		# exact presentation origin so Title never silently becomes Workshop.
@@ -309,6 +334,10 @@ func navigate_to(target: String) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE): return
 	_focus_after_render = true
+	if screen == "title" and title_new_maker_confirmation:
+		_title_cancel_new_maker()
+		get_viewport().set_input_as_handled()
+		return
 	# Modal dismissal takes precedence over route navigation.  The image-led
 	# routes are full-screen, so leaving their inspector first is especially
 	# important for keyboard and controller players.
@@ -334,6 +363,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen == "printer":
 		if printer_sequence != null and printer_sequence.phase == ArcaneForgeSequence.IDLE:
 			cancel_printer_preview()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen == "unified_deck":
+		_m3_request_deck_exit()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen == "settings":
+		_m3_cancel_settings()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and screen != "onboarding" and screen != "workshop":
@@ -1064,6 +1101,135 @@ func _owned_card_total() -> int:
 	for count in GameManager.profile.get("owned_cards", {}).values(): total += int(count)
 	return total
 
+func _title_action(name_value: String, text_value: String, action: Callable, rect: Rect2, minimum: Vector2, description: String, default_focus := false) -> Button:
+	var button := _visual_button(name_value, text_value, action, Color("f1be69"), true)
+	button.custom_minimum_size = minimum
+	button.tooltip_text = description
+	button.accessibility_name = description
+	M1_PHYSICAL_UI.apply_cream_action(button)
+	M1_PHYSICAL_UI.add_complete_focus_ring(button, name_value, bool(settings().get("high_contrast", false)), _visual_style)
+	M1_PHYSICAL_UI.place_design(button, rect)
+	if default_focus: button.set_meta("title_default_focus", true)
+	return button
+
+func _title_continue() -> void:
+	if title_new_maker_confirmation or title_new_maker_in_flight: return
+	var onboarding: Dictionary = GameManager.profile.get("onboarding", {})
+	if str(onboarding.get("state", "choose_starter")) == "starter_selected":
+		# Resume exactly at the saved free first-print setup, never through a
+		# generic Workshop redirect that loses the selected artifact.
+		open_printer(str(onboarding.get("starter_id", "")))
+		return
+	navigate_to(OnboardingState.screen_for_profile(GameManager.profile))
+
+func _title_request_new_maker() -> void:
+	if title_new_maker_in_flight: return
+	title_new_maker_confirmation = true
+	title_new_maker_error = ""
+	render()
+
+func _title_cancel_new_maker() -> void:
+	if title_new_maker_in_flight: return
+	title_new_maker_confirmation = false
+	title_new_maker_error = ""
+	render()
+
+func _title_confirm_new_maker() -> void:
+	if not title_new_maker_confirmation or title_new_maker_in_flight: return
+	title_new_maker_in_flight = true
+	title_new_maker_error = ""
+	render()
+	var result := GameManager.create_new_maker_profile()
+	if not bool(result.get("ok", false)):
+		title_new_maker_in_flight = false
+		title_new_maker_error = str(result.get("error", "Could not create the new maker profile."))
+		render()
+		return
+	title_new_maker_confirmation = false
+	title_new_maker_in_flight = false
+	title_new_maker_error = ""
+	screen = "onboarding"
+	render()
+
+func _render_physical_title() -> void:
+	var title_plate := PHYSICAL_PORTRAIT_PLATE.new()
+	title_plate.name = "TitlePortraitPlate"
+	title_plate.configure(M1_PHYSICAL_UI.texture_for("title"))
+	title_plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(title_plate)
+	_apply_synthetic_overlay_stress(title_plate)
+	var surface := Control.new()
+	surface.name = "PrintForgeTitleScreen"
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_plate.content_layer().add_child(surface)
+	# The title parchment is a light material in every accessibility mode. Keep
+	# native ink dark there; only the separate action focus ring turns white in
+	# high contrast. At 150% the brand deliberately steps down one native size so
+	# the complete word stays within the paper inset rather than touching brass.
+	var brand_size := 24 if int(settings().get("text_scale_bps", 10000)) >= 15000 else 34
+	var brand := label("PRINTFORGE", brand_size, Color("47331f"))
+	brand.name = "TitleNativeBrand"
+	brand.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	brand.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	brand.autowrap_mode = TextServer.AUTOWRAP_OFF
+	brand.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	brand.clip_text = true
+	brand.add_theme_color_override("font_color", Color("47331f"))
+	brand.add_theme_color_override("font_outline_color", Color("fff1c8"))
+	M1_PHYSICAL_UI.place_design(brand, Rect2(195, 165, 551, 78))
+	surface.add_child(brand)
+	var status_copy := "Choose a blueprint and bring a living print to the workshop."
+	# A rejected persistence transaction remains actionable: keep its exact native
+	# failure/retry feedback visible above the still-present confirmation controls.
+	if not title_new_maker_error.is_empty():
+		status_copy = title_new_maker_error
+	elif title_new_maker_confirmation:
+		status_copy = "Starting a new maker replaces this device's saved progress after you confirm."
+	var status_label := label(status_copy, 14, Color("47331f"))
+	status_label.name = "TitleNativeStatus"
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.add_theme_color_override("font_color", Color("47331f"))
+	M1_PHYSICAL_UI.place_design(status_label, Rect2(205, 242, 531, 92))
+	surface.add_child(status_label)
+	var hero := TextureRect.new(); hero.name = "TitleCinderpawHero"; hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hero_atlas := AtlasTexture.new(); hero_atlas.atlas = CREATURE_SPRITE_CACHE.texture_for_creature("cinderpaw"); hero_atlas.region = CREATURE_SPRITE_CACHE.safe_source_region(0)
+	hero.texture = hero_atlas; hero.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; hero.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	hero.tooltip_text = "Cinderpaw, a living printed companion"
+	M1_PHYSICAL_UI.place_design(hero, Rect2(215, 500, 515, 540))
+	surface.add_child(hero)
+	var version := label("PrintForge · %s" % REVIEW_BUILD_LABEL, 12, Color("fff0bb"))
+	version.name = "TitleStatusVersion"
+	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	version.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	version.autowrap_mode = TextServer.AUTOWRAP_OFF
+	M1_PHYSICAL_UI.place_design(version, Rect2(165, 1518, 611, 47))
+	surface.add_child(version)
+	var onboarding: Dictionary = GameManager.profile.get("onboarding", {})
+	var starter_selected := str(onboarding.get("state", "choose_starter")) == "starter_selected"
+	var fresh := str(onboarding.get("state", "choose_starter")) == "choose_starter"
+	if title_new_maker_confirmation:
+		var confirm_text := "WRITING…" if title_new_maker_in_flight else "CONFIRM NEW MAKER"
+		var confirm := _title_action("TitleConfirmNewMaker", confirm_text, _title_confirm_new_maker, Rect2(170, 1180, 600, 140), Vector2(56, 56), "Confirm replacing this saved maker profile")
+		confirm.disabled = title_new_maker_in_flight
+		surface.add_child(confirm)
+		var cancel := _title_action("TitleCancelNewMaker", "CANCEL", _title_cancel_new_maker, Rect2(70, 1405, 375, 95), Vector2(48, 48), "Cancel New Maker confirmation", true)
+		cancel.disabled = title_new_maker_in_flight
+		surface.add_child(cancel)
+		call_deferred("_deferred_focus_if_ready", cancel.get_instance_id())
+		return
+	var primary_text := "NEW MAKER" if fresh else "CONTINUE"
+	var primary_description := "Start a new maker profile" if fresh else "Continue the current maker profile"
+	var primary := _title_action("TitleContinue", primary_text, _title_continue, Rect2(170, 1180, 600, 140), Vector2(56, 56), primary_description, true)
+	surface.add_child(primary)
+	call_deferred("_deferred_focus_if_ready", primary.get_instance_id())
+	if not fresh:
+		var new_maker := _title_action("TitleNewMaker", "NEW MAKER", _title_request_new_maker, Rect2(70, 1405, 375, 95), Vector2(48, 48), "Start a different maker profile")
+		surface.add_child(new_maker)
+	var settings_action := _title_action("TitleSettings", "SETTINGS", navigate_to.bind("settings"), Rect2(495, 1405, 375, 95), Vector2(48, 48), "Open Title settings")
+	surface.add_child(settings_action)
+
 func _deck_creature_count() -> int:
 	var total := 0
 	for card_id in unified_deck_draft:
@@ -1075,50 +1241,21 @@ func render() -> void:
 	_audio_director.route("battle" if screen == "unified_battle" else ("forge" if screen == "printer" else "workshop"))
 	_detach_persistent_screen_components()
 	clear_children(self)
+	# Recovery is deliberately the only title surface while persistence is unsafe.
+	# It prevents a reset/navigation action from bypassing the M3 ledger decisions.
+	if GameManager.is_save_read_only():
+		_m3_physical_ui.render(self)
+		_finish_visual_route()
+		return
 	if screen == "title":
-		var title_plate := PHYSICAL_PORTRAIT_PLATE.new()
-		title_plate.name = "TitlePortraitPlate"
-		title_plate.configure(M1_PHYSICAL_UI.texture_for("title"))
-		title_plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		add_child(title_plate)
-		_apply_synthetic_overlay_stress(title_plate)
-		var title_surface := Control.new()
-		title_surface.name = "PrintForgeTitleScreen"
-		title_surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		title_plate.content_layer().add_child(title_surface)
-		var title := label("PRINTFORGE", 32, Color("fff0bb"))
-		title.name = "TitleNativeBrand"
-		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title.set_anchors_preset(Control.PRESET_TOP_WIDE)
-		title.offset_top = 76; title.offset_bottom = 124
-		title_surface.add_child(title)
-		var hero := TextureRect.new(); hero.name = "TitleCinderpawHero"; hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var hero_atlas := AtlasTexture.new(); hero_atlas.atlas = CREATURE_SPRITE_CACHE.texture_for_creature("cinderpaw"); hero_atlas.region = CREATURE_SPRITE_CACHE.safe_source_region(0)
-		hero.texture = hero_atlas; hero.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; hero.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		hero.anchor_left = 0.22; hero.anchor_right = 0.78; hero.anchor_top = 0.22; hero.anchor_bottom = 0.61
-		hero.offset_left = 0; hero.offset_right = 0; hero.offset_top = 0; hero.offset_bottom = 0
-		hero.tooltip_text = "Cinderpaw, a living printed companion"
-		title_surface.add_child(hero)
-		var title_destination := OnboardingState.screen_for_profile(GameManager.profile)
-		var fresh_maker := title_destination == "onboarding"
-		var enter := _visual_button("TitleContinue", "NEW MAKER" if fresh_maker else "CONTINUE", navigate_to.bind(title_destination), Color("f1be69"), true)
-		enter.tooltip_text = "Start a new maker profile" if fresh_maker else "Continue the current maker profile"
-		enter.accessibility_name = enter.tooltip_text
-		enter.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		enter.anchor_left = 0.17; enter.anchor_right = 0.83
-		enter.offset_top = -150; enter.offset_bottom = -90
-		title_surface.add_child(enter)
-		var settings_action := _visual_button("TitleSettings", "SETTINGS", navigate_to.bind("settings"), Color("78dded"))
-		settings_action.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		settings_action.anchor_left = 0.17; settings_action.anchor_right = 0.83
-		settings_action.offset_top = -84; settings_action.offset_bottom = -32
-		title_surface.add_child(settings_action)
-		var title_status := label("PrintForge Legends · %s" % REVIEW_BUILD_LABEL, 12, Color("d7f6ff"))
-		title_status.name = "TitleStatusVersion"
-		title_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_status.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		title_status.offset_top = -24; title_status.offset_bottom = -4
-		title_surface.add_child(title_status)
+		_render_physical_title()
+		_finish_visual_route()
+		return
+	# M3 owns the portrait management routes as physical plates. The generated
+	# masters supply static material and sockets only; state and controls remain
+	# native controls above them.
+	if screen in ["unified_market", "unified_library", "unified_deck", "settings", "m3_result"]:
+		_m3_physical_ui.render(self)
 		_finish_visual_route()
 		return
 	# These review routes are deliberately image-led compositions rather than
@@ -1134,10 +1271,6 @@ func render() -> void:
 		return
 	if not GameManager.is_save_read_only() and screen == "printer" and not printer_is_armor:
 		render_feedback_printer()
-		_finish_visual_route()
-		return
-	if not GameManager.is_save_read_only() and screen in ["unified_library", "unified_deck"]:
-		render_feedback_archive_book()
 		_finish_visual_route()
 		return
 	# M2 battle routes own the whole safe game surface.  They must be entered
@@ -2562,6 +2695,182 @@ func _return_from_settings() -> void:
 		workshop_view = workshop_return_view
 	render()
 
+func _m3_ensure_deck_draft() -> void:
+	if m3_deck_edit_slot_id.is_empty(): m3_deck_edit_slot_id = str(GameManager.profile.get("active_deck_id", "starter-deck"))
+	if m3_deck_loaded_slot_id == m3_deck_edit_slot_id: return
+	for deck in GameManager.profile.get("decks", []):
+		if deck is Dictionary and str(deck.get("id", "")) == m3_deck_edit_slot_id:
+			unified_deck_draft = (deck.get("cards", []) as Array).duplicate()
+			break
+	unified_preprint_draft = (GameManager.profile.get("preprints", []) as Array).duplicate()
+	m3_saved_preprint_draft = unified_preprint_draft.duplicate()
+	m3_deck_loaded_slot_id = m3_deck_edit_slot_id
+
+func _m3_deck_is_dirty() -> bool:
+	var saved: Array = []
+	for deck in GameManager.profile.get("decks", []):
+		if deck is Dictionary and str(deck.get("id", "")) == m3_deck_edit_slot_id:
+			saved = (deck.get("cards", []) as Array).duplicate(); break
+	return unified_deck_draft != saved or unified_preprint_draft != m3_saved_preprint_draft
+
+func _m3_change_deck_occurrence(card_id: String, add: bool) -> void:
+	if add:
+		if unified_deck_draft.count(card_id) < int(GameManager.profile.get("owned_cards", {}).get(card_id, 0)): unified_deck_draft.append(card_id)
+	else:
+		unified_deck_draft.erase(card_id)
+	render()
+
+func _m3_request_deck_slot(slot_id: String) -> void:
+	if slot_id == m3_deck_edit_slot_id: return
+	if _m3_deck_is_dirty():
+		m3_pending_deck_slot_id = slot_id
+		render()
+		return
+	m3_deck_edit_slot_id = slot_id; m3_deck_loaded_slot_id = ""; render()
+
+func _m3_resolve_dirty_deck(choice: String) -> void:
+	if choice == "cancel": m3_pending_deck_slot_id = ""; render(); return
+	if choice == "save" and (not _m3_save_deck(false) or not _m3_save_preprints(false)): return
+	if choice == "discard":
+		m3_deck_loaded_slot_id = ""
+		m3_saved_preprint_draft = []
+	if m3_pending_deck_slot_id == "__back__":
+		m3_pending_deck_slot_id = ""
+		m3_deck_loaded_slot_id = ""
+		navigate_to("workshop")
+		return
+	m3_deck_edit_slot_id = m3_pending_deck_slot_id
+	m3_pending_deck_slot_id = ""
+	m3_deck_loaded_slot_id = ""
+	render()
+
+func _m3_request_deck_exit() -> void:
+	if _m3_deck_is_dirty():
+		m3_pending_deck_slot_id = "__back__"
+		render()
+		return
+	navigate_to("workshop")
+
+func _m3_save_deck(should_render := true) -> bool:
+	var result := GameManager.save_unified_deck(unified_deck_draft, m3_deck_edit_slot_id)
+	if result:
+		m3_deck_loaded_slot_id = m3_deck_edit_slot_id
+		_toast("%s saved and active." % m3_deck_edit_slot_id.replace("-", " ").capitalize())
+	else: _toast(UNIFIED_RULES.deck_reason(GameManager.profile, unified_deck_draft))
+	if should_render: render()
+	return result
+
+func _m3_add_preprint(card_id: String) -> void:
+	var slots := UNIFIED_RULES.preprint_slots(GameManager.profile)
+	if unified_preprint_draft.size() < slots and unified_preprint_draft.count(card_id) < unified_deck_draft.count(card_id): unified_preprint_draft.append(card_id)
+	render()
+
+func _m3_remove_preprint(index: int) -> void:
+	if index >= 0 and index < unified_preprint_draft.size(): unified_preprint_draft.remove_at(index)
+	render()
+
+func _m3_save_preprints(should_render := true) -> bool:
+	var saved := GameManager.save_preprints_v3(unified_preprint_draft)
+	_toast("Pre-Print rack saved." if saved else "Pre-Prints must be creature copies in the active legal deck.")
+	if saved: m3_saved_preprint_draft = unified_preprint_draft.duplicate()
+	if should_render: render()
+	return saved
+
+func _m3_prepare_market_once() -> void:
+	var key := Time.get_date_string_from_system()
+	if not m3_market_snapshot.is_empty() and m3_market_day_key == key: return
+	var prepared := GameManager.prepare_market_v3(0, key)
+	if not bool(prepared.get("ok", false)):
+		_toast(str(prepared.get("error", "Market preparation is unavailable.")))
+		return
+	m3_market_snapshot = (prepared.get("snapshot", {}) as Dictionary).duplicate(true)
+	m3_market_revision = int(prepared.get("revision", GameManager.profile.get("revision", 0)))
+	m3_market_day_key = key
+
+func _m3_with_latch(action: Callable) -> void:
+	if m3_action_in_flight: return
+	m3_action_in_flight = true
+	action.call()
+	m3_action_in_flight = false
+
+func _m3_request_market_purchase(category: String, id: String, price: int, consequence: String) -> void:
+	if m3_action_in_flight: return
+	m3_market_confirmation = {"category":category, "id":id, "price":price, "consequence":consequence}
+	render()
+
+func _m3_cancel_market_purchase() -> void:
+	m3_market_confirmation.clear(); render()
+
+func _m3_confirm_market_purchase() -> void:
+	if m3_action_in_flight or m3_market_confirmation.is_empty(): return
+	var request := m3_market_confirmation.duplicate(true)
+	m3_action_in_flight = true
+	render()
+	call_deferred("_m3_execute_market_purchase", request)
+
+func _m3_execute_market_purchase(request: Dictionary) -> void:
+	var category := str(request.get("category", "")); var id := str(request.get("id", ""))
+	var result: Dictionary = {}
+	match category:
+		"packs": result = GameManager.buy_card_pack(id)
+		"blueprints": result = GameManager.buy_blueprint_v3(id)
+		"cards": result = GameManager.buy_market_card_v3(id)
+		"upgrades": result = GameManager.buy_workshop_upgrade_v3(id)
+		"cosmetics": result = GameManager.buy_cosmetic_v3(id)
+		_: result = {"ok":false, "error":"That cabinet drawer is unavailable."}
+	if bool(result.get("ok", false)): m3_market_snapshot.clear(); _toast("Purchase recorded.")
+	else: _toast(str(result.get("error", "Purchase could not be recorded.")))
+	m3_market_confirmation.clear(); m3_action_in_flight = false; render()
+
+func _m3_ensure_settings_draft() -> void:
+	if m3_settings_draft_initialized: return
+	m3_settings_draft = settings().duplicate(true)
+	m3_settings_draft_initialized = true
+
+func _m3_set_setting(key: String, value) -> void:
+	_m3_ensure_settings_draft(); m3_settings_draft[key] = value; render()
+
+func _m3_adjust_setting(key: String, direction: int) -> void:
+	_m3_ensure_settings_draft()
+	var levels: Array[int] = AudioSettings.LEVELS
+	var index := levels.find(int(m3_settings_draft.get(key, 5000)))
+	if index < 0: index = levels.find(5000)
+	m3_settings_draft[key] = levels[clampi(index + direction, 0, levels.size() - 1)]
+	render()
+
+func _m3_apply_settings() -> void:
+	var saved := GameManager.save_settings(m3_settings_draft)
+	if saved:
+		m3_settings_draft_initialized = false
+		_audio_director.configure(settings(), false)
+		_toast("Settings applied.")
+	else: _toast("Settings could not be saved.")
+	render()
+
+func _m3_cancel_settings() -> void:
+	m3_settings_draft.clear(); m3_settings_draft_initialized = false; _return_from_settings()
+
+func _m3_request_new_maker_recovery() -> void:
+	m3_recovery_new_maker_confirm = true; render()
+
+func _m3_confirm_new_maker_recovery() -> void:
+	var result := GameManager.confirm_new_maker_after_recovery()
+	if bool(result.get("ok", false)):
+		m3_recovery_new_maker_confirm = false; navigate_to("title")
+	else: _toast(str(result.get("error", "New Maker could not be created."))); render()
+
+func _m3_acknowledge_backup_recovery() -> void:
+	var result := GameManager.acknowledge_backup_recovery()
+	if bool(result.get("ok", false)): navigate_to("title")
+	else: _toast(str(result.get("error", "Recovered backup could not be promoted."))); render()
+
+func _m3_retry_result() -> void:
+	m3_result_state = "idle"; _settle_finished_unified_battle()
+
+func _m3_continue_result() -> void:
+	if m3_result_state not in ["committed", "duplicate"] or battle_mode == "local": return
+	_leave_unified_battle()
+
 func _restore_settings_scroll_origin() -> void:
 	await get_tree().process_frame
 	if screen != "settings": return
@@ -3775,8 +4084,10 @@ func _render_unified_pack_reveal() -> void:
 func _keep_unified_pack_cards() -> void:
 	var pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {})
 	var starter_reward := bool(pending.get("starter_reward", false))
-	var kept := GameManager.claim_pending_pack_reveal()
-	if kept.is_empty(): _toast("There are no pack cards waiting to keep.")
+	var keep_result := GameManager.claim_pending_pack_reveal_result()
+	var kept: Array = keep_result.get("cards", []) if keep_result.get("cards", []) is Array else []
+	if not bool(keep_result.get("ok", false)):
+		_toast(str(keep_result.get("error", "There are no pack cards waiting to keep.")))
 	else:
 		var rewards: Dictionary = GameManager.profile.get("starter_pack_rewards", {})
 		if starter_reward and int(rewards.get("opened", 0)) < int(rewards.get("entitled", 0)):
@@ -3784,7 +4095,7 @@ func _keep_unified_pack_cards() -> void:
 			if bool(next.get("ok", false)): _toast("Starter pack %d / 3" % int(next.get("payload", {}).get("starter_opened", 0)))
 			else: _toast("Kept %d cards in your Library." % kept.size())
 		else: _toast("Kept %d cards in your Library." % kept.size())
-	if starter_reward: screen = "unified_library"
+	if starter_reward and bool(keep_result.get("ok", false)): screen = "unified_library"
 	render()
 
 func _submit_unified_intent(intent: Dictionary) -> void:
@@ -3893,10 +4204,19 @@ func _run_unified_ai(token := -1) -> void:
 	render()
 
 func _settle_finished_unified_battle() -> void:
-	if battle == null or battle_settlement_context.is_empty() or battle_settlement_finished: return
-	battle_settlement_finished = true
+	if battle == null or battle_settlement_context.is_empty() or m3_result_state == "pending" or m3_result_state in ["committed", "duplicate"]: return
+	m3_result_state = "pending"
 	var settled: Dictionary = GameManager.settle_unified_mode_battle(battle_settlement_context, battle, int(battle.winner) == 0)
-	_toast("Result saved." if bool(settled.get("ok", false)) else str(settled.get("error", "Result could not be saved.")))
+	m3_result_receipt = settled.get("payload", {}).duplicate(true) if settled.get("payload", {}) is Dictionary else {}
+	if bool(settled.get("ok", false)):
+		m3_result_state = "duplicate" if bool(m3_result_receipt.get("duplicate", false)) else "committed"
+		battle_settlement_finished = true
+		_toast("Result saved.")
+		screen = "m3_result"
+	else:
+		m3_result_state = "error"
+		_toast(str(settled.get("error", "Result could not be saved.")))
+		screen = "m3_result"
 	render()
 
 func _unified_card_button(card_id: String) -> Button:

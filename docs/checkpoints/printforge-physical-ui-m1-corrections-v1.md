@@ -1,7 +1,7 @@
 # PrintForge physical UI M1 correction checkpoint v1
 
-Status: M1 runtime and visual correction gate PASS; M2 authorized under the
-screen-first production workflow
+Status: M1 R10 gate PASS at `ecb0c0a`; M3 physical Title/navigation addendum PASS;
+complete front-door gallery admitted under the screen-first production workflow
 
 Date: 2026-08-31
 
@@ -29,29 +29,52 @@ orientation changes.
 
 ## Title / resume / New Maker / Settings
 
-- **Entry:** Launch after platform and usable portrait safe area are known. The title
-  reads the valid-clean-v3 save state without creating, advancing, or overwriting a
-  profile.
-- **Player decision:** Choose Continue when a valid resumable profile exists, choose
-  New Maker to enter fresh onboarding, or open Settings and return.
-- **Result:** Continue restores the saved stable route. New Maker enters the first
-  Workshop-arrival/onboarding route through the existing confirmed-new-profile flow.
-  Settings opened from Title retains Title as its return destination; returning from
-  Settings restores the same title/onboarding eligibility state and never opens
-  Workshop directly.
-- **Failure:** Missing, invalid, stale, or unsupported saves enter the existing
-  recovery presentation. Failed settings load/apply leaves the title route and
-  progression unchanged and reports the failure.
-- **Disabled:** Continue is disabled without a valid resumable save. New Maker is
-  disabled while overwrite confirmation or a profile transaction is pending.
+- **Entry:** Launch after platform and usable portrait safe area are known. The Title
+  reads and classifies the valid clean-v3 save as completed, resumable onboarding,
+  fresh/no persisted progress, or recovery/read-only without creating, advancing,
+  resetting, or overwriting a profile.
+- **Player decision:** With a completed profile, choose central primary Continue,
+  lower secondary New Maker, or lower secondary Settings. The first New Maker
+  activation opens a separate consequence confirmation only; the player must then
+  explicitly Confirm New Maker or Cancel. With a fresh/no-progress profile, choose
+  the truthful central primary New Maker to begin onboarding or open Settings. A
+  resumable incomplete onboarding profile may Continue its exact saved onboarding
+  step.
+- **Result:** Completed-profile Continue performs zero profile/save mutation and
+  enters the physical Workshop with printer, battle dais, archive folio, deck
+  clipboard, supply cabinet, and settings instrument all present as six canonical
+  hotspots. Confirm New Maker, and only that second explicit activation, performs one
+  existing confirmed-new-profile transaction and enters starter/onboarding with no
+  completed print or reward. Fresh New Maker creates/accepts the initial v3 profile
+  exactly once and enters the same onboarding route without destructive-reset copy.
+  Settings retains Title as caller; returning restores the same save classification,
+  action availability, and onboarding eligibility and never opens Workshop directly.
+- **Failure:** Missing, malformed, stale, unsupported, or read-only saves enter the
+  existing recovery presentation. A failed New Maker persistence/promotion leaves the
+  prior primary/backup profile and revision authoritative, remains on Title/Recovery,
+  and does not enter onboarding. Failed settings load/apply leaves Title, profile,
+  progression, and the caller unchanged and reports the exact failure.
+- **Disabled:** Continue is absent or disabled without a valid resumable save. On a
+  completed profile, New Maker can only open confirmation; background Continue,
+  New Maker, and Settings are disabled while that confirmation or its transaction is
+  active. Confirm New Maker is disabled while persistence is in flight and cannot be
+  submitted twice. The destructive confirmation is never initial/default focus.
   Settings return is disabled only while an existing settings transaction requires a
   decision.
-- **Feedback:** Native title, version, loading, recovery, disabled reason, focus, and
-  return-state text remain readable at 150%. Every title target shows the complete
-  four-edge focus ring.
-- **Progression:** Title inspection and Settings are zero-mutation. Only the existing
-  confirmed New Maker transaction may create/reset onboarding state; Settings return
-  cannot mark onboarding complete or bypass starter selection/first print.
+- **Feedback:** On a completed profile, Continue owns the central activation plaque
+  and New Maker and Settings own two separate lower physical actions; neither lower
+  action overlaps, masquerades as, or shares Continue's target. On a fresh profile,
+  the central plaque truthfully reads New Maker rather than a false Continue. All
+  labels, consequence/confirmation copy, version, loading/recovery status, disabled
+  reasons, accessibility names, and focus are native and readable at 150%. Continue
+  is at least 56 logical pixels; New Maker and Settings are at least 48; every target
+  has a complete four-edge focus ring. Reading/focus order is central action, lower
+  New Maker when present, then lower Settings.
+- **Progression:** Title inspection, Continue, Settings, first-step New Maker,
+  confirmation Cancel, failed persistence, and Settings return are zero-mutation.
+  Only one accepted fresh-profile creation or second-step Confirm New Maker may write
+  the v3 profile/reset onboarding. It cannot mark onboarding complete, create a
+  printed model, grant a pack/reward, or bypass starter selection/first print.
 
 ## Workshop physical navigation
 
@@ -176,9 +199,13 @@ changing deterministic authority or save schema:
 1. Automated input presses all six Workshop controls through their physical control
    nodes and observes the six canonical destinations, including deck, supplies, and
    settings. Unavailable-route coverage observes a native reason and zero mutation.
-2. Title Settings opens and returns to Title with onboarding eligibility unchanged;
-   no path lands directly in Workshop. Continue-disabled and confirmed-New-Maker
-   states remain distinct.
+2. Completed-profile Title exposes central Continue plus separate lower New Maker and
+   Settings actions. Continue enters the six-hotspot Workshop without mutation.
+   First-step New Maker and Cancel preserve the exact serialized profile/revision;
+   only second-step Confirm writes once. Persistence failure preserves the existing
+   profile. Fresh Title truthfully starts onboarding. Title Settings returns to Title
+   with its prior classification/onboarding eligibility unchanged and never lands
+   directly in Workshop.
 3. Starter swipe/previous/next, focused inspection, separate confirm, duplicate/stale
    rejection, exactly-once grant, and test-local SaveService isolation pass. Evidence
    identifies the isolated save root and proves the player save is unchanged.
@@ -240,3 +267,87 @@ items do not reopen M1. M2 is authorized under the existing designer → Sol →
 runtime writer → read-only UI reviewer → Sol audit workflow. This checkpoint makes no
 gameplay-rule or save-schema change and does not authorize an Android build, native
 AdMob completion claim, or Drive delivery.
+
+## M3 real-launch Title navigation addendum
+
+### R1 evidence disposition
+
+- Evidence root: `build/evidence/m3-navigation-r1`.
+- `M3-NV-02-576x1024.png` and `M3-NV-02-720x1280.png` pass the physical Workshop
+  launch composition: all six canonical hotspots are present and physically owned.
+- `M3-NV-01-576x1024.png` and `M3-NV-01-720x1280.png` are held for correction. They
+  prove a readable central Continue and lower Settings action, but omit the required
+  completed-profile New Maker action and therefore do not satisfy the authoritative
+  front-door decision.
+- Read-only UI review reported no unresolved P0. The hold is a bounded title
+  hierarchy/navigation contract correction; it does not invalidate the approved
+  Workshop proof or authorize any gameplay/save-schema change.
+
+### Deterministic correction acceptance
+
+1. At `576x1024` and `720x1280`, a completed-profile Title contains exactly one
+   central 56-pixel-or-larger Continue action and two distinct lower 48-pixel-or-larger
+   actions: New Maker and Settings. All three are physically seated, nonoverlapping,
+   natively labeled, accessibility named, reachable, and four-edge focused.
+2. Activating Continue once dispatches one canonical Title→Workshop route, changes no
+   profile field/revision/journal/save byte, and exposes the six live Workshop targets:
+   printer, battle dais, archive folio, deck clipboard, supply cabinet, and settings.
+   Repeated activation while routing cannot dispatch a second transition.
+3. On a completed profile, one New Maker activation changes no profile/save state and
+   opens an explicit confirmation with native consequence copy, 56-pixel Confirm New
+   Maker, and Cancel. Cancel, Back, focus movement, outside dismissal where supported,
+   and route rebuild preserve the exact serialized profile and revision.
+4. Confirm New Maker is a separate second activation. One accepted confirmation uses
+   the existing confirmed-new-profile path exactly once, invalidates late callbacks,
+   and enters starter/onboarding without completed state, model, deck reward, pending
+   pack, or battle reward. Double tap cannot produce a second write/reset.
+5. A forced snapshot/journal/promotion failure during Confirm preserves the prior
+   valid primary/backup and in-memory profile, does not enter onboarding, and gives a
+   native retry/recovery result. Retry first rereads current storage; it never blindly
+   replays an ambiguous destructive transition.
+6. With no compatible persisted progress, Title does not offer a misleading Continue.
+   The central primary is truthful New Maker; one accepted initial-profile creation
+   enters the first onboarding/starter decision and no later progression state.
+   Recovery/read-only saves retain their existing recovery route and cannot be reset
+   by an unconfirmed title activation.
+7. Title Settings opens without mutation and returns to the same Title classification,
+   same completed/fresh/incomplete actions, same onboarding eligibility, and same
+   profile revision. It never routes directly to Workshop or starter selection.
+8. Reduced motion removes only finite plaque/confirmation movement. High contrast and
+   150% text preserve all three completed-profile actions, confirmation consequences,
+   focus edges, safe-area clearance, and bottom production reserve zero. Pointer mode
+   remains visible and unrestricted.
+
+The R1 hold required a deterministic completed Title, New Maker confirmation, fresh
+Title, Settings return, and Continue→six-hotspot Workshop at both portrait sizes,
+plus the existing profile-before/after acceptance for first activation, Cancel,
+persistence failure, accepted Confirm, Settings return, and Continue. The physical
+replacement gallery requirement is satisfied by the R2/R3 closeout below. Rendered
+captures establish the visible route outcomes and geometry; the deterministic
+mutation criteria above remain the rule/test authority and are not inferred from
+pixels alone.
+
+### R2/R3 physical Title gallery closeout
+
+- Evidence roots: `build/evidence/m3-title-navigation-r2` and
+  `build/evidence/m3-title-navigation-r3`.
+- Read-only original-resolution UI review: **PASS**, P0 none, P1 none, across
+  `M3-NV-01` through `M3-NV-05` from R2 and `M3-AX-03` from R3 at both
+  `576x1024` and `720x1280`.
+- `M3-NV-01` admits the corrected completed-profile Title: central Continue plus
+  separate lower New Maker and Settings physical actions.
+- `M3-NV-02` admits Continue's six-hotspot Workshop outcome: printer, battle dais,
+  archive folio, deck clipboard, supply cabinet, and settings instrument.
+- `M3-NV-03` admits the explicit second-step Confirm New Maker/Cancel state and its
+  native consequence copy; no one-tap destructive action is visually exposed.
+- `M3-NV-04` admits the truthful fresh-profile Title with central New Maker and
+  Settings, without a misleading Continue.
+- `M3-NV-05` admits the Settings caller-safe round trip back to the completed-profile
+  Title hierarchy.
+- `M3-AX-03` admits the accessibility stress presentation at both portrait sizes,
+  preserving the three completed-profile actions, native labels, physical seating,
+  safe bounds, and complete focus treatment.
+
+The completed Title/navigation gallery is admitted and the R1 visual hold is closed.
+This closeout does not claim Android/device behavior, native AdMob geometry, build or
+signing acceptance, Google Drive delivery, or cloud synchronization; those remain M4.

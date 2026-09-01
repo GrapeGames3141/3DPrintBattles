@@ -7,6 +7,7 @@ const PROFILE_BACKUP_TEMP_PATH := "user://printforge_profile.backup.tmp.json"
 const JOURNAL_PATH := "user://printforge_offline_journal.jsonl"
 var session_events: Array = []
 var recovery_status := "primary"
+var last_commit_error := ""
 var profile_path := PROFILE_PATH
 var profile_temp_path := PROFILE_TEMP_PATH
 var profile_backup_path := PROFILE_BACKUP_PATH
@@ -39,37 +40,53 @@ func load_profile() -> Dictionary:
 	if not primary.is_empty(): recovery_status = "primary"; return primary
 	var backup := _read_profile(profile_backup_path)
 	if not backup.is_empty(): recovery_status = "backup_recovered"; return backup
-	recovery_status = "new_profile"; return {}
+	# A missing profile is a normal clean-install state.  A present but invalid
+	# profile is evidence and must never be silently replaced by a new maker.
+	if FileAccess.file_exists(profile_path): recovery_status = "corrupt_primary"
+	elif FileAccess.file_exists(profile_backup_path): recovery_status = "corrupt_backup"
+	else: recovery_status = "new_profile"
+	return {}
 
-func commit_snapshot(profile: Dictionary) -> void:
+func commit_snapshot(profile: Dictionary) -> bool:
+	last_commit_error = ""
 	var file := FileAccess.open(profile_temp_path, FileAccess.WRITE)
 	if file == null:
+		last_commit_error = "Profile storage is unavailable."
 		push_warning("Profile storage is unavailable; running without local persistence.")
-		return
+		return false
 	file.store_string(JSON.stringify(profile))
 	file.flush(); file.close()
 	if _read_profile(profile_temp_path).is_empty():
+		last_commit_error = "Profile temp snapshot failed validation."
 		push_warning("Profile temp snapshot failed validation; previous snapshot remains intact.")
-		return
+		return false
 	var directory := DirAccess.open(profile_path.get_base_dir())
-	if directory == null: return
+	if directory == null:
+		last_commit_error = "Profile directory is unavailable."
+		return false
 	if FileAccess.file_exists(profile_path):
 		if directory.copy(profile_path, profile_backup_temp_path) != OK or _read_profile(profile_backup_temp_path).is_empty():
+			last_commit_error = "Profile backup could not be validated."
 			push_warning("Profile backup could not be validated; primary snapshot remains intact.")
-			return
+			return false
 		if FileAccess.file_exists(profile_backup_path): directory.remove(profile_backup_path)
 		if directory.rename(profile_backup_temp_path, profile_backup_path) != OK:
+			last_commit_error = "Profile backup could not be promoted."
 			push_warning("Profile backup could not be promoted; primary snapshot remains intact.")
-			return
+			return false
 		if directory.remove(profile_path) != OK:
+			last_commit_error = "Primary snapshot could not be replaced."
 			push_warning("Primary snapshot could not be replaced; backup is preserved.")
-			return
+			return false
 	if directory.rename(profile_temp_path, profile_path) != OK:
+		last_commit_error = "Profile snapshot was not promoted."
 		# Keep the temp and backup intact rather than overwriting the last valid snapshot.
 		push_warning("Profile snapshot was not promoted; the previous backup is preserved.")
-	else: recovery_status = "primary"
+		return false
+	recovery_status = "primary"
+	return true
 
-func append_event(kind: String, payload: Dictionary, revision: int) -> void:
+func append_event(kind: String, payload: Dictionary, revision: int) -> bool:
 	var operation_id := "%s-%s-%s" % [revision, kind, Time.get_ticks_msec()]
 	var row := {"operation_id":operation_id,"kind":kind,"payload":payload,"revision":revision,"timestamp":Time.get_unix_time_from_system(),"schema_version":Catalog.SCHEMA_VERSION}
 	# READ_WRITE will not create a first journal on Godot desktop builds; WRITE_READ does.
@@ -78,14 +95,45 @@ func append_event(kind: String, payload: Dictionary, revision: int) -> void:
 	if file == null:
 		session_events.append(row)
 		push_warning("Offline journal storage is unavailable; event was not persisted.")
-		return
+		# Snapshot persistence is already confirmed by commit_mutation. Retaining a
+		# session journal is an intentional offline fallback, not a failed action.
+		return true
 	file.seek_end()
 	file.store_line(JSON.stringify(row))
+	file.flush()
+	var write_error := file.get_error()
+	file.close()
+	if write_error != OK:
+		# The validated snapshot is already durable. Keep the replay row in memory
+		# rather than reporting a false rollback after a journal-only failure.
+		session_events.append(row)
+		last_commit_error = ""
+		push_warning("Offline journal could not be written; this session retained the replay event.")
+		return true
+	return true
 
-func commit_mutation(profile: Dictionary, kind: String, payload: Dictionary, revision: int) -> void:
-	# One public mutation path keeps journal and snapshot ordering together.
-	append_event(kind, payload, revision)
-	commit_snapshot(profile)
+func preserve_corrupt_primary() -> bool:
+	return preserve_invalid_save(profile_path)
+
+func preserve_invalid_save(path: String) -> bool:
+	if not FileAccess.file_exists(path): return true
+	var evidence := "%s.corrupt-%d.json" % [path.get_basename(), Time.get_unix_time_from_system()]
+	var directory := DirAccess.open(path.get_base_dir())
+	if directory == null or directory.rename(path, evidence) != OK:
+		last_commit_error = "The corrupt save could not be preserved."
+		return false
+	return FileAccess.file_exists(evidence)
+
+func preserve_corrupt_recovery_evidence() -> bool:
+	# Only use this after an explicit New Maker confirmation. A valid backup is
+	# never moved by this path.
+	return preserve_invalid_save(profile_path) and preserve_invalid_save(profile_backup_path)
+
+func commit_mutation(profile: Dictionary, kind: String, payload: Dictionary, revision: int) -> bool:
+	# Promote and validate the authority snapshot before writing the optional
+	# replay journal. UI callers may only acknowledge a transition after this.
+	if not commit_snapshot(profile): return false
+	return append_event(kind, payload, revision)
 
 func pending_events() -> Array:
 	if not FileAccess.file_exists(journal_path): return session_events.duplicate(true)

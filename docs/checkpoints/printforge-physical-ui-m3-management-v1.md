@@ -1,8 +1,8 @@
 # PrintForge physical UI M3 management checkpoint v1
 
-Status: decision-complete; M3 atlas gate PASS; implementation authorized under the
-approved portrait physical-Workshop and Plan → Run Cycle direction; runtime-art
-integration and runtime capture review remain pending
+Status: decision-complete; M3 atlas PASS; full 104-image runtime matrix complete;
+physical management and Title/navigation gallery admitted; M4 platform/delivery
+evidence remains pending
 
 Date: 2026-08-31
 
@@ -27,11 +27,12 @@ The eight text-free `m3-atlas-r2` masters passed the required original-resolutio
 read-only composition review with no P0/P1 finding. Together with the user's already
 approved portrait physical-Workshop and simplified battle-loop direction, that gate
 authorizes one bounded M3 implementation. The eight masters are the only M3 physical
-owner sources authorized for integration; their presence here does not claim that
-runtime integration, responsive layout, or capture review has occurred. Runtime
-integration must record source, prompt/provenance, dimensions, hash,
-crop/derivation, intended role, and approval. Names, values, counters, rules, focus,
-disabled states, receipts, and accessibility text remain native Godot controls.
+owner sources authorized for integration. Their atlas presence alone was not runtime
+evidence; the later 104-image closeout below separately records the integrated visible
+states and dimensions. Runtime integration retains source, prompt/provenance,
+dimensions, hash, crop/derivation, intended role, and approval. Names, values,
+counters, rules, focus, disabled states, receipts, and accessibility text remain
+native Godot controls.
 
 This checkpoint does not claim Android, native AdMob, physical-device, build, signing,
 Google Drive, or cloud-synchronization validation. Those remain later delivery gates.
@@ -55,9 +56,10 @@ none. The durable candidates and identity hashes are:
 
 The source ledger, generation briefs, normalization note, byte sizes, and rejected
 sources remain in `docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/README.md`.
-This gate proves composition suitability of those original masters only. Runtime-art
-integration, target-resolution captures, responsive/accessibility behavior, package
-inclusion, runtime visual review, and any device/native-ad claim remain pending.
+This atlas gate proves composition suitability of those original masters only. The
+later full-matrix closeout separately records target-resolution integrated captures
+and the final Title/accessibility visual admission. Package inclusion and every
+device/native-ad claim remain outside this evidence.
 
 ## Locked domain and presentation boundaries
 
@@ -552,6 +554,11 @@ profile revision, expected mutation count, source concept, and output file.
 
 | Capture ID | Required state | Composition target |
 | --- | --- | --- |
+| M3-NV-01 | Completed-profile Title with Continue, New Maker, and Settings | M1 physical Title owner |
+| M3-NV-02 | Continue outcome with all six Workshop hotspots | M1 physical Workshop owner |
+| M3-NV-03 | Explicit Confirm New Maker and Cancel consequence state | M1 physical Title owner |
+| M3-NV-04 | Fresh-profile Title with truthful central New Maker | M1 physical Title owner |
+| M3-NV-05 | Settings caller-safe round trip to completed-profile Title | M1 physical Title owner |
 | M3-CO-01 | Archive populated, All tab, mixed owned/unowned creature/support cards | M3 atlas CO-01 folio-grid v4 |
 | M3-CO-02 | Owned + printable filters and a truthful empty-filter state | M3 atlas CO-01 folio-grid v4 |
 | M3-CO-03 | Owned creature inspector: card copies, license, models, native catalog facts | M3 atlas CO-02 folio-detail v3 |
@@ -597,6 +604,7 @@ profile revision, expected mutation count, source concept, and output file.
 | M3-SY-04 | Persistence failure with prior valid snapshot preserved | M3 atlas SY-02 recovery ledger v2 |
 | M3-AX-01 | 150% text, four-edge focus, and 56-pixel primary action on Workbench | M3 atlas DK-01 v2 / ST-01 v3 |
 | M3-AX-02 | High contrast + reduced motion on pack receipt/result | M3 atlas RW-02 v3 / BA-05 v4 / ST-01 v3 |
+| M3-AX-03 | Accessibility-stress completed Title with all three physical actions | M1 physical Title owner |
 
 Only these tall fixtures are required; do not duplicate the whole matrix at a third
 size:
@@ -652,11 +660,53 @@ support 150% native text and 48/56-pixel targets.
 
 ## Completion gate
 
-The atlas approval gate is complete and authorizes implementation. M3 can be marked
-complete only after one bounded sole-writer implementation, deterministic
-management/save tests, all named original-resolution
-captures, read-only UI review with no P0/P1, Sol's maintainability audit and any
-bounded refactor, focused regression across M1/M2/M3, and a requirement-to-evidence
-audit. The evidence record must distinguish domain-test, rendered-capture, human
-approval, and unavailable device/native-ad claims. Until then, this document is the
-decision-complete implementation brief, not evidence that M3 is built or validated.
+### Full runtime matrix closeout
+
+- Evidence root:
+  `E:\AI Projects\games\3d print battler\build\evidence\m3-full-matrix-r1`.
+- Inventory: 51 named standard states at both `576x1024` and `720x1280` (102
+  original-resolution images) plus `M3-TALL-01` and `M3-TALL-02` at `1080x2400`, for
+  **104 images total**.
+- Exact filename/fixture dimension audit: **104/104 PASS**. Every standard image
+  matches its named portrait dimensions and both tall fixtures are exactly
+  `1080x2400`.
+- The matrix includes the corrected completed Title, fresh Title, New Maker
+  confirmation, Settings round trip, six-hotspot Workshop, and accessibility Title
+  states admitted under the M1 R2/R3 addendum.
+- Final Title/navigation read-only UI review: **PASS**, P0 none, P1 none, for R2
+  `M3-NV-01` through `M3-NV-05` plus R3 `M3-AX-03` at both portrait sizes. This closes
+  the final physical front-door gallery hold.
+- The first `M3-RW-10` `720x1280` process reached cleanup timeout only after saving
+  its image. It was not treated as a clean process result. A fresh isolated retry ran
+  as PID `44792`, exited `0`, and supplied the accepted proof. No task-owned Godot
+  process remained after cleanup.
+
+The atlas, runtime matrix inventory/dimensions, and final physical Title/navigation
+visual gate are closed. The Entry/Player decision/Result/Failure/Disabled/Feedback/
+Progression contracts in this checkpoint remain the deterministic implementation and
+test authority; rendered images establish only the visible states they show.
+
+### Pre-commit deterministic regression closeout
+
+- Authoritative ledger:
+  `build/task-state/precommit-regression-20260831-200813/summary.json`.
+- Godot source/integration regression: **52/52** `tests/test_*.tscn` completed with
+  exit code `0`.
+- Backend regression: `npm test`, PID `48412`, completed with exit code `0`.
+- The verified run recorded no timeout and no crash.
+- Coverage includes and passes GameManager persist-before-assign atomicity: a failed
+  persistence step cannot publish the candidate in-memory assignment or leave a
+  partially accepted management transaction.
+- Coverage includes and passes campaign success-feedback ordering: accepted campaign
+  progression is persisted before success feedback is emitted, so feedback cannot
+  claim an uncommitted result.
+
+This supersedes any earlier partial-regression claim for the M3 pre-commit gate. The
+regression result comes from the named ledger, not from the visual gallery. Final
+maintainability review, staging, and commit ownership remain with Sol and are not
+claimed by this checkpoint.
+
+No Android or physical-device behavior, native AdMob load/failure/geometry, signing,
+APK/AAB, Google Drive transfer, or cloud synchronization is claimed here. Production
+Godot reserve remains zero; the positive bottom fixture remains labeled synthetic.
+All Android/native AdMob/build/Drive validation and delivery remain pending M4.

@@ -1,0 +1,20 @@
+{
+  "raw_source": {
+    "path": "title-backplate-text-free-v2.png",
+    "dimensions": [941, 1671],
+    "bytes": 2160792,
+    "sha256": "C900850A66C0DAC93306E89549AA26FA08D947BB6CD8A3C5C10580C7DF53C55B"
+  },
+  "normalized_source": {
+    "path": "title-backplate-text-free-v2-941x1672.png",
+    "dimensions": [941, 1672],
+    "bytes": 2135203,
+    "sha256": "394BE19B67CBDF54125C1700BDEB5FB9CCB94C926E976D6CBA371BD88E7C0282",
+    "transform": "Decoded source rows 0..1670 copied byte-for-pixel; destination row 1671 duplicates decoded source row 1670. No rescale, interpolation, crop, shift, or repaint."
+  },
+  "generator": "OpenAI ImageGen",
+  "generation_execution": "exec-fba7b5b6-69eb-48db-8a92-9baabf98e2b3",
+  "prompt_summary": "text-free portrait PrintForge workshop title backplate; warm walnut, worn brass, navy pegboard and printer, restrained cyan; one large central action plaque, two separate lower plaques, native-title parchment, no baked text/characters/logos/watermark",
+  "approval_date": "2026-08-31",
+  "approval_source": "Title revision r1 UI-review approval"
+}

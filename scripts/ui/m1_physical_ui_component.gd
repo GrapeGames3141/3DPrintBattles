@@ -10,7 +10,7 @@ const BLUEPRINT_CARTRIDGE_PATH := "res://assets/ui/physical_ui/m1-r2/blueprint-c
 const BLUEPRINT_CARTRIDGE_CROP := Rect2i(96, 0, 584, 2172)
 
 const ASSET_PATHS := {
-	"title":"res://assets/ui/physical_ui/title-backplate-text-free-v1.png",
+	"title":"res://assets/ui/physical_ui/title-backplate-text-free-v2.png",
 	"workshop":"res://assets/ui/physical_ui/workshop-backplate-text-free-v1.png",
 	"starter_desk":"res://assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png",
 	"starter_inspector":"res://assets/ui/physical_ui/m1-r2/starter-inspection-folio-v2.png",
@@ -85,6 +85,7 @@ static func apply_cream_action(button: Button) -> void:
 	button.add_theme_color_override("font_hover_color", Color("000000"))
 	button.add_theme_color_override("font_pressed_color", Color("000000"))
 	button.add_theme_color_override("font_focus_color", navy)
+	button.add_theme_color_override("font_hover_pressed_color", Color("000000"))
 	button.add_theme_stylebox_override("normal", transparent_plate_style(Color(0, 0, 0, 0), 0))
 	button.add_theme_stylebox_override("hover", transparent_plate_style(Color("234c5e"), 2))
 	button.add_theme_stylebox_override("pressed", transparent_plate_style(Color("10283a"), 3))

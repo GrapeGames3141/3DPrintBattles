@@ -19,6 +19,15 @@ static func validation_errors() -> Array[String]:
 		return failures
 	var groups: Dictionary = manifest.get("groups", {}) if manifest.get("groups", {}) is Dictionary else {}
 	var m1: Dictionary = manifest.get("m1_physical_ui", {}) if manifest.get("m1_physical_ui", {}) is Dictionary else {}
+	var title_v2: Dictionary = m1.get("title_backplate_v2", {}) if m1.get("title_backplate_v2", {}) is Dictionary else {}
+	for field in ["runtime_path", "source_path", "dimensions", "bytes", "sha256", "alpha_expected", "runtime_role", "provenance"]:
+		if not title_v2.has(field): failures.append("M1 title v2 manifest is missing %s." % field)
+	if not title_v2.is_empty():
+		var title_dimensions: Array = title_v2.get("dimensions", []) if title_v2.get("dimensions", []) is Array else []
+		var title_provenance: Dictionary = title_v2.get("provenance", {}) if title_v2.get("provenance", {}) is Dictionary else {}
+		if not FileAccess.file_exists(str(title_v2.get("runtime_path", ""))) or not FileAccess.file_exists(str(title_v2.get("source_path", ""))): failures.append("Missing promoted M1 title v2 backplate.")
+		if title_dimensions.size() != 2 or int(title_dimensions[0]) != 941 or int(title_dimensions[1]) != 1672 or int(title_v2.get("bytes", 0)) != 2135203 or str(title_v2.get("sha256", "")) != "394BE19B67CBDF54125C1700BDEB5FB9CCB94C926E976D6CBA371BD88E7C0282": failures.append("M1 title v2 identity is invalid.")
+		if str(title_provenance.get("generator", "")) != "OpenAI ImageGen" or str(title_provenance.get("generation_execution", "")) != "exec-fba7b5b6-69eb-48db-8a92-9baabf98e2b3": failures.append("M1 title v2 provenance is invalid.")
 	var cartridge: Dictionary = m1.get("blueprint_cartridge", {}) if m1.get("blueprint_cartridge", {}) is Dictionary else {}
 	for field in ["runtime_path", "source_path", "dimensions", "bytes", "sha256", "alpha_expected", "approved_crop", "runtime_role", "provenance", "rejected_alternatives"]:
 		if not cartridge.has(field): failures.append("M1 blueprint cartridge manifest is missing %s." % field)
@@ -35,6 +44,30 @@ static func validation_errors() -> Array[String]:
 		if not dimensions_match or not crop_match or int(cartridge.get("bytes", 0)) != 2161030: failures.append("M1 blueprint cartridge dimensions, crop, or byte identity is invalid.")
 		if str(cartridge.get("sha256", "")) != "66F50A5B85B45762C602556FF32A847D2BE72D03D59443845460C0DEA5AF4367": failures.append("M1 blueprint cartridge SHA-256 identity is invalid.")
 		if str(provenance.get("prompt_status", "")) != "reconstructed-from-approved-brief": failures.append("M1 cartridge provenance must disclose reconstructed prompt status.")
+	var m3: Dictionary = manifest.get("m3_physical_ui", {}) if manifest.get("m3_physical_ui", {}) is Dictionary else {}
+	var m3_identity := {
+		"archive_grid":[2534630,"CB86C63DAB77D6F6CF028426CC0A98F6B74B01ED926A98A35A4C1EBD301D2B16"],
+		"archive_detail":[2492522,"F89CB8F9CAF84B292BE12E2422A66F0464A3CEC1EE2A0E7A9A7B12786D3E2CBC"],
+		"deck_workbench":[2370308,"886F548F6CDF87FEA7BBCFC38FDAAF80A216430D7AF7345B50DD6FF6005B27CD"],
+		"supply_cabinet":[2286953,"FCD4B0A045DEEF2C701C5EF07D5E376E47CB570A9F9CB9A96735EC5D4E15D8B2"],
+		"pack_machine":[2294573,"88100CB06C41E3E9C7996757EC118A4BAE56CF35DD65E633EDCD3FB42F103C25"],
+		"result_receipt":[2524092,"9E436AAF7780EE93EFD62F9B142793BD169E340E02D3F8B4D8789A8EEEDB9D4F"],
+		"settings":[2335660,"AA10B51A1DF930BC8032EA4D2A4AF3766E1EF0FDDF55926D61C16AD25CACFE2B"],
+		"recovery":[2293126,"9D3673D3D8328B40A7746E9EA5C746E9B25FC30BFEF6D366A0CEECC2ED724F0E"]
+	}
+	for key in m3_identity:
+		var entry: Dictionary = m3.get(str(key), {}) if m3.get(str(key), {}) is Dictionary else {}
+		if entry.is_empty(): failures.append("M3 manifest is missing %s." % str(key)); continue
+		for field in ["runtime_path", "source_path", "dimensions", "bytes", "sha256", "alpha_expected", "runtime_role", "provenance"]:
+			if not entry.has(field): failures.append("M3 %s is missing %s." % [str(key), field])
+		# Masters are opaque source PNGs. File identity is the package contract;
+		# ResourceLoader availability follows Godot's import cache and is checked
+		# by the normal runtime presenter once the project has been imported.
+		if not FileAccess.file_exists(str(entry.get("runtime_path", ""))): failures.append("Missing promoted M3 master: %s" % str(entry.get("runtime_path", "")))
+		if not FileAccess.file_exists(str(entry.get("source_path", ""))): failures.append("Missing approved M3 master source: %s" % str(entry.get("source_path", "")))
+		var dimensions: Array = entry.get("dimensions", []) if entry.get("dimensions", []) is Array else []
+		var expected: Array = m3_identity[key]
+		if dimensions.size() != 2 or int(dimensions[0]) != 941 or int(dimensions[1]) != 1672 or int(entry.get("bytes", 0)) != int(expected[0]) or str(entry.get("sha256", "")) != str(expected[1]): failures.append("M3 %s identity is invalid." % str(key))
 	for key in ["battle_backgrounds", "printer_frames", "card_atlases", "card_fronts"]:
 		var paths: Array = groups.get(key, []) if groups.get(key, []) is Array else []
 		if paths.is_empty(): failures.append("Manifest group %s is empty." % key)
