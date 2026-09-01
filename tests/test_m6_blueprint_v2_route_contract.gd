@@ -21,7 +21,7 @@ func _ready() -> void:
 		var id := str((creature as Dictionary).get("id", ""))
 		var catalog_card := Catalog.creature(id)
 		var unified_card := RULES.card(id)
-		require(str(catalog_card.get("blueprint_art", "")).is_empty() and IMPRINT.blueprint_texture(catalog_card) == placeholder and IMPRINT.blueprint_texture(unified_card) == placeholder, "Catalog and unified pre-print route inputs use the same approval-gated placeholder for %s." % id)
+		require(str(catalog_card.get("blueprint_art", "")).is_empty() and IMPRINT.blueprint_texture(catalog_card) != placeholder and IMPRINT.blueprint_texture(unified_card) != placeholder, "Catalog and unified pre-print route inputs use approved M7 manifest artwork for %s." % id)
 	for rejected in [
 		"res://assets/creatures/2d/blueprints/cinderpaw_blueprint_card_v1.png",
 		"res://assets/creatures/2d/blueprints/cinderpaw_blueprint_card_v3.png",
@@ -35,7 +35,7 @@ func _ready() -> void:
 	require(IMPRINT.blueprint_path_for(future_v2).is_empty() and IMPRINT.blueprint_texture(future_v2) == placeholder, "Missing future v2 art remains a neutral placeholder rather than a substitute creature.")
 	var creature_view := CARD_VIEW.new(); creature_view.configure(RULES.card("cinderpaw"), 1); add_child(creature_view); await get_tree().process_frame
 	var creature_art := creature_view.find_child("UnifiedCardArt", true, false) as TextureRect
-	require(creature_art != null and creature_art.texture == placeholder and creature_view.accessibility_name.contains("blueprint illustration unavailable"), "UnifiedCardView uses central placeholder art and native unavailable accessibility copy.")
+	require(creature_art != null and creature_art.texture != placeholder and not creature_view.accessibility_name.contains("blueprint illustration unavailable"), "UnifiedCardView uses central approved M7 artwork and does not report a missing illustration.")
 	var support := RULES.card("raw_filament")
 	var support_view := CARD_VIEW.new(); support_view.configure(support, 1); add_child(support_view); await get_tree().process_frame
 	var support_art := support_view.find_child("UnifiedCardArt", true, false) as TextureRect
@@ -47,5 +47,5 @@ func _ready() -> void:
 		var source := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://" + path))
 		require(source.contains("blueprint_texture") or source.contains("add_catalog_art"), "Known pre-print presentation seam routes through PhysicalCatalogImprint: %s." % path)
 	require(var_to_str(GameManager.profile) == profile_before, "Blueprint resolution/inspection is presentation-only and does not mutate profile state.")
-	if failures.is_empty(): print("PASS: M6 blueprint v2 route contract and rejection guardrail")
+	if failures.is_empty(): print("PASS: M7-approved blueprint route contract retains legacy rejection guardrail")
 	get_tree().quit(0 if failures.is_empty() else 1)
