@@ -1,0 +1,177 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "aquafin",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.11.9",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\sources\\aquafin-imagegen-rgb-v1.png",
+    "bytes": 1536832,
+    "sha256": "19A7BB74731B9F9C199A0E4EB5CE3B92302BAD956429D7AD0A8E44FCEDE73481",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "Direct Aquafin ImageGen RGB source with opaque neutral checkerboard, durably copied unchanged before calibration."
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "one detected full-width cyan datum band is clipped outside the derived illustration width and subdued"
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\aquafin_blueprint_ink_v2-paper-through-v2-calibration.png",
+      "bytes": 1889779,
+      "sha256": "83EBE0175F4ACB612F70173DACD93A11E85C94E0A8657FD8F69C8A2229F7BA54",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\aquafin_blueprint_ink_v2-paper-through-v2-light-parchment.png",
+      "bytes": 701641,
+      "sha256": "72F20071756F3F7B90C6E8F32F53DE862ED38E60B4812A3CBCEE88C1D558257E",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\aquafin_blueprint_ink_v2-paper-through-v2-dark-parchment.png",
+      "bytes": 752259,
+      "sha256": "6386CBA8E94EF68430A78E7B224C8A5C4D3CFD1205B86DB82A159A580534B191",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\aquafin_blueprint_ink_v2-paper-through-v2-proof-160px.png",
+      "bytes": 14417,
+      "sha256": "6DAD240FC459F44E1A06436269CC62A25B94FCDC54D0C340FCB856D5FD69C1F2",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1305610,
+      "partial": 115660,
+      "opaque": 151246
+    },
+    "initial_counts_before_datum": {
+      "zero": 1305424,
+      "partial": 113415,
+      "opaque": 153677
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "row_band": [
+      671,
+      672
+    ],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      45,
+      1205
+    ],
+    "outside_cyan_suppressed": 186,
+    "inside_cyan_subdued": 2245,
+    "non_datum_cyan_preserved": 2
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}

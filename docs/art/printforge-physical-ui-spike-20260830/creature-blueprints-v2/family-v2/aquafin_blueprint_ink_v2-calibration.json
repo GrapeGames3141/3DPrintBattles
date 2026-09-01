@@ -1,0 +1,122 @@
+{
+  "approval_state": "preproduction_alpha_calibration_pending_ui_review",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.10",
+    "standard_library_only": true
+  },
+  "algorithm": {
+    "name": "border_connected_high_luminance_neutral_flood_mask",
+    "connectivity": 4,
+    "parameters": {
+      "neutral_min": 232,
+      "neutral_chroma": 20,
+      "edge_feather": true,
+      "edge_feather_alpha": 184
+    },
+    "guarantees": [
+      "only alpha/mask changes; retained RGB triplets are byte-identical to source",
+      "only background candidates reachable from an outer image edge are fully transparent",
+      "enclosed near-neutral creature fills are retained",
+      "sepia/cyan ink is excluded from neutral background removal"
+    ]
+  },
+  "source": {
+    "path": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-5f0f5d8d-0dcf-4b68-a67b-a98ce1b5e007.png",
+    "bytes": 1536832,
+    "sha256": "19A7BB74731B9F9C199A0E4EB5CE3B92302BAD956429D7AD0A8E44FCEDE73481",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "Direct Aquafin ImageGen generation; opaque neutral checkerboard background. Alpha is calibrated by this deterministic border-connected mask only."
+  },
+  "output": {
+    "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\aquafin_blueprint_ink_v2.png",
+    "bytes": 1817592,
+    "sha256": "0C2E6987A41F888346F4A851C1B666065E8215358E107690F7E7C6A590E77032",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA"
+  },
+  "parchment_calibration_composite": {
+    "path": "docs\\art\\printforge-physical-ui-spike-20260830\\creature-blueprints-v2\\family-v2\\aquafin_blueprint_ink_v2-parchment-calibration.png",
+    "bytes": 1177068,
+    "sha256": "369D481D797A32A59CE4811166711B6B1B67F43B3072E9D81210A9E566DBDEF6",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "background_rgb": [
+      224,
+      205,
+      159
+    ]
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1081406,
+      "partial": 1492,
+      "opaque": 489618
+    },
+    "background_pixels": 1081406,
+    "feathered_retained_pixels": 1492,
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1251,
+          "alpha_partial": 1,
+          "alpha_opaque": 2,
+          "min_alpha": 0,
+          "max_alpha": 255
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1251,
+          "alpha_partial": 1,
+          "alpha_opaque": 2,
+          "min_alpha": 0,
+          "max_alpha": 255
+        }
+      }
+    }
+  },
+  "retained_pixel_rgb_byte_identical": true,
+  "synthetic_border_connected_fixture": {
+    "passed": true,
+    "enclosed_neutral_alpha": 255,
+    "outer_background_alpha": 0
+  },
+  "manual_painting_or_redraw": false
+}
