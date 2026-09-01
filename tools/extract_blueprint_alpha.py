@@ -195,7 +195,13 @@ def extract_paper_through_ink(rgb: bytearray, width: int, height: int, neutral_b
                 inside_subdued += 1
     support_cyan = sum(1 for pixel, value in enumerate(alpha) if value > 0 and pixel // width not in row_set and is_cyan_ink(rgb[pixel * 3], rgb[pixel * 3 + 1], rgb[pixel * 3 + 2], cyan_delta))
     final = {"zero": sum(value == 0 for value in alpha), "partial": sum(0 < value < 255 for value in alpha), "opaque": sum(value == 255 for value in alpha)}
-    return alpha, {"initial_alpha_counts": initial, "final_alpha_counts": final, "datum": {"row_band": rows, "row_cyan_threshold": row_threshold, "working_x": [working_min, working_max], "outside_cyan_suppressed": outside_suppressed, "inside_cyan_subdued": inside_subdued, "non_datum_cyan_preserved": support_cyan}}
+    normalization_applied = bool(rows)
+    normalization_statement = (
+        "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued."
+        if normalization_applied
+        else "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    )
+    return alpha, {"initial_alpha_counts": initial, "final_alpha_counts": final, "datum": {"normalization_applied": normalization_applied, "normalization_statement": normalization_statement, "row_band": rows, "row_cyan_threshold": row_threshold, "working_x": [working_min, working_max], "outside_cyan_suppressed": outside_suppressed, "inside_cyan_subdued": inside_subdued, "non_datum_cyan_preserved": support_cyan}}
 
 
 def rgba_from_rgb_alpha(rgb: bytearray, alpha: bytearray) -> bytearray:
@@ -307,12 +313,13 @@ def main() -> int:
     if not all_rgba_rgb:
         raise AssertionError("output RGBA source RGB changed")
     outputs = {"rgba": args.output, "light_parchment_composite": args.light_composite, "dark_parchment_composite": args.dark_composite, "proof_160_light_parchment": args.proof_160}
+    datum_statement = mask["datum"]["normalization_statement"]
     provenance = {
         "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
         "creature_id": args.creature_id,
         "tool": {"path": "tools/extract_blueprint_alpha.py", "python": sys.version.split()[0], "standard_library_only": True},
         "source": {"path": str(args.source), "bytes": args.source.stat().st_size, "sha256": sha256(args.source), "dimensions": [width, height], "mode": "RGB", "description": args.source_description},
-        "algorithm": {"mode": args.mode, "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum", "parameters": {"neutral_brightness_min": 224, "neutral_chroma_max": 36, "taper_brightness_min": 184, "taper_chroma_max": 62, "cyan_delta_min": 50, "datum_alpha": 112}, "guarantees": ["alpha only; RGB source bytes are untouched for every output RGBA pixel", "bright low-chroma paper is transparent even when enclosed", "sepia contours/hatching and cyan ink survive by darkness/chroma", "one detected full-width cyan datum band is clipped outside the derived illustration width and subdued"]},
+        "algorithm": {"mode": args.mode, "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum", "parameters": {"neutral_brightness_min": 224, "neutral_chroma_max": 36, "taper_brightness_min": 184, "taper_chroma_max": 62, "cyan_delta_min": 50, "datum_alpha": 112}, "guarantees": ["alpha only; RGB source bytes are untouched for every output RGBA pixel", "bright low-chroma paper is transparent even when enclosed", "sepia contours/hatching and cyan ink survive by darkness/chroma", datum_statement]},
         "outputs": {name: {"path": str(path), "bytes": path.stat().st_size, "sha256": sha256(path), "dimensions": [width, height] if name != "proof_160_light_parchment" else [160, 160], "mode": "RGBA" if name == "rgba" else "RGB"} for name, path in outputs.items()},
         "alpha": {"range": [min(alpha), max(alpha)], "counts": mask["final_alpha_counts"], "initial_counts_before_datum": mask["initial_alpha_counts"], "edge_and_corner_checks": edge_audit(alpha, width, height)},
         "cyan_datum": mask["datum"],
