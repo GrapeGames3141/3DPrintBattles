@@ -4,6 +4,14 @@ Status: approved preproduction authority for the portrait physical-Workshop UI s
 Date: 2026-08-30
 Related authority: docs/design/printforge-legends-mechanics-v3.1.md (document title mechanics v3.2).
 
+Supersession note (2026-08-31): the later approved M5 goal requires a completely
+no-AdMob Android review build. The Bottom AdMob region and AdMob geometry ownership
+sections below remain the historical record of the earlier review-banner direction,
+but they are no longer implementation or delivery authority. Current authority is
+`docs/checkpoints/printforge-physical-ui-m5-no-ad-delivery-v1.md`: no AdMob SDK,
+plugin, identifiers, permissions/metadata, request path, native banner, or reserved ad
+strip is permitted, and the portrait Godot surface uses the full available host area.
+
 ## Product promise
 
 PrintForge is a portrait game about choosing whimsical animal/fantasy-creature blueprints, printing visible layered objects, watching them awaken, and sending their living animated print sprites into a small battlefield. The interface is a maker’s Workshop made of physical instruments, drawers, printer chambers, ceramic field plates, cards, folios and clipboards—not a generic app, tavern, or manual trading-card phase simulator.

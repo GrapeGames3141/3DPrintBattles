@@ -17,25 +17,11 @@ boot_splash/bg_color=Color(0.027, 0.075, 0.14, 1)
 boot_splash/image="res://assets/ui/workshop/workshop_overview_landscape_v4.png"
 config/icon="res://assets/ui/branding/android/branding-app-icon-v1.png"
 
-[admob_review]
-
-# Google samples are review-only. Production identifiers are intentionally empty.
-enabled=true
-review_app_id="ca-app-pub-3940256099942544~3347511713"
-review_banner_unit_id="ca-app-pub-3940256099942544/9214589741"
-production_app_id=""
-production_banner_unit_id=""
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/admob_banner/plugin.cfg")
-
 [autoload]
 
 Catalog="*res://scripts/core/catalog.gd"
 GameManager="*res://scripts/core/game_manager.gd"
 SaveService="*res://scripts/core/save_service.gd"
-ReviewAdMobBanner="*res://scripts/android/review_admob_banner_adapter.gd"
 
 [display]
 

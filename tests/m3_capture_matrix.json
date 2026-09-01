@@ -56,6 +56,6 @@
   ],
   "synthetic_tall":[
     {"id":"M3-TALL-01","size":[1080,2400],"route":"unified_library","fixture_inputs":{"safe_top":96,"safe_bottom":96,"production_game_reserve":0},"expected_profile_revision":21,"expected_mutation_count":0,"source_concept":"CO-01","output_pattern":"{id}-1080x2400.png","label":"Synthetic layout evidence only; not physical-device evidence."},
-    {"id":"M3-TALL-02","size":[1080,2400],"route":"unified_deck","fixture_inputs":{"synthetic_overlay":true,"primary_above_overlay":true},"expected_profile_revision":21,"expected_mutation_count":0,"source_concept":"DK-01","output_pattern":"{id}-1080x2400.png","label":"SYNTHETIC AD OVERLAY STRESS; not native banner, SDK, or AdMob validation."}
+    {"id":"M3-TALL-02","size":[1080,2400],"route":"unified_deck","fixture_inputs":{"synthetic_host_inset_stress":true,"primary_above_inset":true},"expected_profile_revision":21,"expected_mutation_count":0,"source_concept":"DK-01","output_pattern":"{id}-1080x2400.png","label":"SYNTHETIC HOST-INSET STRESS; capture-only geometry validation."}
   ]
 }

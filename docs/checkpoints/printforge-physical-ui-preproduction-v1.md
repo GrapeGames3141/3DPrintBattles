@@ -20,6 +20,15 @@ Branch at preparation: spike/printforge-physical-ui
 
 Approval result: full portrait atlas APPROVED; simplified Plan → Run Cycle APPROVED; portrait-only APPROVED; bottom AdMob review space APPROVED.
 
+Supersession record (2026-08-31): the later active M5 goal explicitly returns
+PrintForge to a completely no-AdMob delivery. The approval bullets and AdMob review
+sections below are preserved as history, but their banner authorization, native
+integration gate, review identifiers, and reserved-region validation are superseded
+by `docs/checkpoints/printforge-physical-ui-m5-no-ad-delivery-v1.md`. Current delivery
+authority permits no AdMob SDK/plugin/identifier/permission/metadata/request path and
+no reserved ad strip; M1–M3 gameplay and portrait UI authority otherwise remains
+unchanged.
+
 ## Approved atlas authority
 
 Tracked masters in docs/art/printforge-physical-ui-spike-20260830 are composition targets. Every portrait master is 941x1672 and icon masters are 1254x1254. Untracked older versions, rejected variants, and landscape experiments are not approval targets.

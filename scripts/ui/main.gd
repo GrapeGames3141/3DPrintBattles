@@ -33,7 +33,7 @@ const PHYSICAL_PORTRAIT_PLATE := preload("res://scripts/ui/physical_portrait_pla
 const M1_PHYSICAL_UI := preload("res://scripts/ui/m1_physical_ui_component.gd")
 const M3_PHYSICAL_UI := preload("res://scripts/ui/m3_physical_ui_component.gd")
 const PHYSICAL_CATALOG_IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
-const REVIEW_BUILD_LABEL := "0.8.4-physical-ui-review"
+const REVIEW_BUILD_LABEL := "0.8.5-physical-ui-no-ad-review"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -639,7 +639,7 @@ func render_feedback_workshop() -> void:
 	workshop_plate.configure(M1_PHYSICAL_UI.texture_for("workshop"))
 	workshop_plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(workshop_plate)
-	_apply_synthetic_overlay_stress(workshop_plate)
+	_apply_synthetic_host_inset_stress(workshop_plate)
 	var surface := Control.new()
 	surface.name = "WorkshopFullBleed"
 	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -666,22 +666,22 @@ func render_feedback_workshop() -> void:
 		surface.add_child(button)
 	_visual_toast(surface)
 
-func _apply_synthetic_overlay_stress(plate: Control) -> void:
+func _apply_synthetic_host_inset_stress(plate: Control) -> void:
 	_apply_presentation_safe_area(plate)
-	var enabled := bool(get_meta("synthetic_admob_overlay_stress", false))
-	_portrait_presentation_boundary.set_synthetic_overlay_stress(enabled)
+	var enabled := bool(get_meta("synthetic_host_inset_stress", false))
+	_portrait_presentation_boundary.set_synthetic_host_inset_stress(enabled)
 	if not enabled:
 		return
 	var reserve := _portrait_presentation_boundary.effective_visual_stress_reserve(get_viewport().get_visible_rect().size.x)
 	plate.offset_bottom = -reserve
 	var band := ColorRect.new()
-	band.name = "SyntheticAdMobOverlayStress"
+	band.name = "SyntheticHostInsetStress"
 	band.color = Color("432019")
 	band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	band.offset_top = -reserve; band.offset_bottom = 0
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var fixture_label := label(_portrait_presentation_boundary.synthetic_fixture_label(), 14, Color("fff0bb"))
-	fixture_label.name = "SyntheticAdMobOverlayStressLabel"
+	fixture_label.name = "SyntheticHostInsetStressLabel"
 	fixture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	fixture_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	fixture_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1181,7 +1181,7 @@ func _render_physical_title() -> void:
 	title_plate.configure(M1_PHYSICAL_UI.texture_for("title"))
 	title_plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(title_plate)
-	_apply_synthetic_overlay_stress(title_plate)
+	_apply_synthetic_host_inset_stress(title_plate)
 	var surface := Control.new()
 	surface.name = "PrintForgeTitleScreen"
 	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

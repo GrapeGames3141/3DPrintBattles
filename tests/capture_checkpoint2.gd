@@ -219,7 +219,7 @@ func _prepare_capture() -> void:
 			if capture_mode == "m2_battle_synthetic":
 				pass
 		workshop.screen = "unified_battle"
-		if capture_mode == "m2_battle_synthetic": workshop.set_meta("synthetic_admob_overlay_stress", true)
+		if capture_mode == "m2_battle_synthetic": workshop.set_meta("synthetic_host_inset_stress", true)
 	elif capture_mode == "unified_pack_reveal": workshop.screen = "unified_market"
 	elif capture_mode == "unified_forgedex": workshop.screen = "unified_forgedex"
 	elif capture_mode == "feedback_starter": workshop.screen = "onboarding"
@@ -254,7 +254,7 @@ func _prepare_capture() -> void:
 		workshop.printer_sequence = ArcaneForgeSequence.create(false)
 	elif capture_mode.begins_with("m1_workshop"):
 		workshop.screen = "workshop"
-		if capture_mode == "m1_workshop_synthetic": workshop.set_meta("synthetic_admob_overlay_stress", true)
+		if capture_mode == "m1_workshop_synthetic": workshop.set_meta("synthetic_host_inset_stress", true)
 	elif capture_mode != "onboarding": workshop.screen = capture_mode
 	if capture_mode == "m1_tall_safe_top": workshop.set_meta("presentation_safe_top_inset", 84.0)
 	if capture_mode == "proving":
@@ -682,7 +682,7 @@ func validate_m1_capture() -> bool:
 			var focus_ring := focused_hotspot.find_child("WorkshopHotspotTightFocusRing", true, false) as Panel if focused_hotspot != null else null
 			ok = m1_require(focused_hotspot != null and focused_hotspot.has_focus() and focus_ring != null and focus_ring.is_visible_in_tree() and focus_ring.get_global_rect().size.x > 0.0 and focus_ring.get_global_rect().size.y > 0.0, "M1 focused Workshop capture has a visible, nonzero tight keyboard-focus ring on the printer hotspot.") and ok
 		if capture_mode == "m1_workshop_synthetic":
-			var band := workshop.find_child("SyntheticAdMobOverlayStress", true, false) as ColorRect
-			var stress_label := workshop.find_child("SyntheticAdMobOverlayStressLabel", true, false) as Label
-			ok = m1_require(band != null and stress_label != null and "Synthetic overlay stress" in stress_label.text and is_equal_approx(band.get_global_rect().size.y, get_viewport().get_visible_rect().size.y - bottom), "M1 synthetic fixture is visibly labeled and owns the exact bottom stress reserve.") and ok
+			var band := workshop.find_child("SyntheticHostInsetStress", true, false) as ColorRect
+			var stress_label := workshop.find_child("SyntheticHostInsetStressLabel", true, false) as Label
+			ok = m1_require(band != null and stress_label != null and "host-inset" in stress_label.text and is_equal_approx(band.get_global_rect().size.y, get_viewport().get_visible_rect().size.y - bottom), "M1 synthetic fixture is visibly labeled and owns the exact bottom stress reserve.") and ok
 	return ok

@@ -136,11 +136,11 @@ func _add_status(shell: Control, copy: String) -> void:
 			var ai_retry: Button = shell.make_button("Retry", func(): shell.toast = ""; shell._queue_unified_ai_if_needed(); shell.render(), Color("a86b2e")); ai_retry.name = "PhysicalBattleRetryAI"; ai_retry.custom_minimum_size = Vector2(48,48); ai_retry.anchor_left = .77; ai_retry.anchor_right = .91; ai_retry.anchor_top = .585; ai_retry.anchor_bottom = .63; shell.add_child(ai_retry)
 
 func _add_synthetic_bottom_overlay(shell: Control) -> void:
-	if not bool(shell.get_meta("synthetic_admob_overlay_stress", false)): return
+	if not bool(shell.get_meta("synthetic_host_inset_stress", false)): return
 	# Capture-only host boundary. Production reserve remains zero; its top stays
 	# below the tray/lever so it can never obscure a gameplay rect.
-	var band := ColorRect.new(); band.name = "SyntheticAdMobOverlayStress"; band.color = Color("432019"); band.anchor_left = 0; band.anchor_right = 1; band.anchor_top = .97; band.anchor_bottom = 1; band.mouse_filter = Control.MOUSE_FILTER_IGNORE; band.z_index = 60; shell.add_child(band)
-	var caption: Label = shell.label("SYNTHETIC HOST OVERLAY · OUTSIDE GAMEPLAY", 10, Color("fff0bb")); caption.name = "SyntheticAdMobOverlayStressLabel"; caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); band.add_child(caption)
+	var band := ColorRect.new(); band.name = "SyntheticHostInsetStress"; band.color = Color("432019"); band.anchor_left = 0; band.anchor_right = 1; band.anchor_top = .97; band.anchor_bottom = 1; band.mouse_filter = Control.MOUSE_FILTER_IGNORE; band.z_index = 60; shell.add_child(band)
+	var caption: Label = shell.label("SYNTHETIC HOST INSET · OUTSIDE GAMEPLAY", 10, Color("fff0bb")); caption.name = "SyntheticHostInsetStressLabel"; caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); band.add_child(caption)
 
 func _add_anchor_controls(shell: Control, public_view: Dictionary) -> void:
 	var source := _stage.anchors()

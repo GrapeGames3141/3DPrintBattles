@@ -36,7 +36,7 @@ func _mount(viewport: Vector2, stress: bool) -> Dictionary:
 	subviewport.add_child(canvas)
 	var main := MAIN.instantiate()
 	main.screen = "title"
-	if stress: main.set_meta("synthetic_admob_overlay_stress", true)
+	if stress: main.set_meta("synthetic_host_inset_stress", true)
 	canvas.add_child(main)
 	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await get_tree().process_frame
@@ -62,11 +62,11 @@ func _test_viewport(viewport: Vector2, stress: bool) -> void:
 	if title_plate != null and title_content != null:
 		require(title_content.size.is_equal_approx(title_plate.fit_rect().size), "Title native layer matches fitted plate geometry at %s." % viewport)
 	if stress:
-		var band := main.find_child("SyntheticAdMobOverlayStress", true, false) as ColorRect
-		var stress_label := main.find_child("SyntheticAdMobOverlayStressLabel", true, false) as Label
-		require(band != null and stress_label != null and "Synthetic overlay stress" in stress_label.text, "Opt-in stress fixture mounts its explicit native label at %s." % viewport)
+		var band := main.find_child("SyntheticHostInsetStress", true, false) as ColorRect
+		var stress_label := main.find_child("SyntheticHostInsetStressLabel", true, false) as Label
+		require(band != null and stress_label != null and "host-inset" in stress_label.text, "Opt-in stress fixture mounts its explicit native label at %s." % viewport)
 	else:
-		require(main.find_child("SyntheticAdMobOverlayStress", true, false) == null, "Production title has no synthetic banner band at %s." % viewport)
+		require(main.find_child("SyntheticHostInsetStress", true, false) == null, "Production title has no synthetic host-inset band at %s." % viewport)
 	GameManager.profile = _complete_profile()
 	main.screen = "workshop"
 	main.workshop_view = "overview"
@@ -91,11 +91,11 @@ func _test_viewport(viewport: Vector2, stress: bool) -> void:
 					require(stroke != null and stroke.mouse_filter == Control.MOUSE_FILTER_IGNORE and stroke.get_rect().size.x > 0.0 and stroke.get_rect().size.y > 0.0, "%s focus %s stroke is attached, passive, and nonzero at %s." % [hotspot_name, edge, viewport])
 	require(main.find_child("WorkshopR2PropHotspotSheet", true, false) == null, "Rejected workshop hotspot sheet is absent at %s." % viewport)
 	if stress:
-		var band := main.find_child("SyntheticAdMobOverlayStress", true, false) as ColorRect
-		var stress_label := main.find_child("SyntheticAdMobOverlayStressLabel", true, false) as Label
+		var band := main.find_child("SyntheticHostInsetStress", true, false) as ColorRect
+		var stress_label := main.find_child("SyntheticHostInsetStressLabel", true, false) as Label
 		require(band != null and stress_label != null, "Workshop keeps the opt-in labeled stress fixture at %s." % viewport)
 	else:
-		require(main.find_child("SyntheticAdMobOverlayStress", true, false) == null, "Production Workshop has no synthetic banner band at %s." % viewport)
+		require(main.find_child("SyntheticHostInsetStress", true, false) == null, "Production Workshop has no synthetic host-inset band at %s." % viewport)
 	main.queue_free()
 	await get_tree().process_frame
 	subviewport.queue_free()

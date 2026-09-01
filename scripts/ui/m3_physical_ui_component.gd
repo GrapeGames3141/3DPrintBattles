@@ -28,7 +28,7 @@ func render(main: Control) -> void:
 	if key == "m3_result": key = "result"
 	if not MASTER_PATHS.has(key): key = "unified_library"
 	var plate := PLATE.new(); plate.name = "M3Physical%sPlate" % key.capitalize()
-	var path := str(MASTER_PATHS[key]); plate.configure(ResourceLoader.load(path) as Texture2D if ResourceLoader.exists(path) else null); plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); main.add_child(plate); main._apply_synthetic_overlay_stress(plate)
+	var path := str(MASTER_PATHS[key]); plate.configure(ResourceLoader.load(path) as Texture2D if ResourceLoader.exists(path) else null); plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); main.add_child(plate); main._apply_synthetic_host_inset_stress(plate)
 	var surface := plate.content_layer(); surface.name = "M3Physical%sSurface" % key.capitalize()
 	var margin := Callable(self, "_margin"); var heading := Callable(self, "_heading"); var scroll := Callable(self, "_scroll")
 	match key:

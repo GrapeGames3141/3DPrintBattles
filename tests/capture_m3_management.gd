@@ -216,7 +216,7 @@ func _ready() -> void:
 			push_error("M3-DK-01 fixture requires the saved active deck to be legal with at least 40 cards.")
 			get_tree().quit(1)
 			return
-	if mode == "M3-TALL-02": main.set_meta("synthetic_admob_overlay_stress", true)
+	if mode == "M3-TALL-02": main.set_meta("synthetic_host_inset_stress", true)
 	main.render()
 	await get_tree().process_frame
 	await get_tree().process_frame
