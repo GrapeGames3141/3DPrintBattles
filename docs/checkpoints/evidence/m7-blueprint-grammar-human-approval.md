@@ -56,3 +56,40 @@ Drive after all later gates. It is not evidence that the 24 assets exist, that t
 have passed human/UI review, that runtime integration is complete, that an APK has
 been exported or audited, that a device was available, that DriveFS contains a
 verified copy, or that Google Drive cloud synchronization is complete.
+
+## Deterministic alpha-extraction fallback permission
+
+Permission date: 2026-09-01
+
+The user explicitly answered `Approved` to the request `approve deterministic alpha
+extraction`.
+
+- **Entry:** A built-in ImageGen family candidate satisfies the approved intact-
+  creature content grammar but contains an opaque, baked-checkerboard, or otherwise
+  nontransparent background that prevents paper integration.
+- **Player decision:** **Approve deterministic alpha extraction** as a bounded tool
+  fallback for that generated output.
+- **Result:** Deterministic post-processing may change only background alpha/mask
+  values. It preserves the generated creature pixels, linework, supports, scan datum,
+  build plane, silhouette, anatomy, pose, and content. The ledger records the source
+  and output filenames, byte sizes, SHA-256 hashes, exact algorithm/tool version and
+  parameters, and machine verification of RGBA format, transparent outer corners,
+  and parchment visibility through and around the ink.
+- **Failure:** Any changed creature/content pixel, lost linework, cut extremity,
+  halo/fringe that changes the intended silhouette, nondeterministic output, missing
+  hash/algorithm record, opaque corner, or failed parchment composite rejects the
+  processed candidate and returns it to generation/review.
+- **Disabled:** This permission does not authorize manual redraw, painting, anatomy or
+  pose changes, support redesign, content-aware creature reconstruction, runtime
+  promotion, approval of unseen family assets, APK/device claims, DriveFS delivery,
+  or cloud-sync claims.
+- **Feedback:** Original-resolution alpha-edge inspection, machine corner/format
+  checks, source/output hash comparison, and a parchment composite make the bounded
+  background-only change reviewable and reproducible.
+- **Progression:** Alpha extraction changes art-production evidence only. It grants no
+  gameplay value, player asset, profile/save revision, runtime qualification, build
+  qualification, delivery state, or cloud state.
+
+This fallback permission does not replace the per-asset identity, 160-pixel,
+original-resolution, complete-family UI, and human approval gates in the M7
+checkpoint.
