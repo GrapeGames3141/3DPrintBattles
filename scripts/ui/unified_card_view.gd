@@ -5,6 +5,7 @@ extends Button
 ## legacy support-card surfaces; this companion accepts every unified card type.
 
 const SUPPORT_CARD_VIEW := preload("res://scripts/ui/support_card_view.gd")
+const CATALOG_IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
 const FULL_SIZE := Vector2(166, 249)
 const COMPACT_SIZE := Vector2(142, 213)
 var _focus_ring: Panel
@@ -17,7 +18,8 @@ func configure(definition: Dictionary, copies := 0, market_price := -1, status_t
 	focus_mode = Control.FOCUS_ALL if interactive else Control.FOCUS_NONE
 	mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
 	disabled = not interactive
-	var summary := "Undiscovered creature card" if unknown else "%s · %s · %d filament · %s" % [str(definition.get("name", "Card")), str(definition.get("type", "card")).capitalize(), int(definition.get("cost", 0)), _detail_text(definition).replace("\n", ", ")]
+	var unavailable_illustration := not unknown and str(definition.get("type", "")) == "creature" and CATALOG_IMPRINT.is_neutral_placeholder(CATALOG_IMPRINT.blueprint_texture(definition))
+	var summary := "Undiscovered creature card" if unknown else "%s · %s · %d filament · %s%s" % [str(definition.get("name", "Card")), str(definition.get("type", "card")).capitalize(), int(definition.get("cost", 0)), _detail_text(definition).replace("\n", ", "), " · blueprint illustration unavailable" if unavailable_illustration else ""]
 	tooltip_text = summary
 	accessibility_name = summary
 	add_theme_stylebox_override("normal", _frame(false))
@@ -50,26 +52,10 @@ func _build_unknown_back(compact: bool) -> void:
 	rail.add_child(caption)
 
 static func art_for_definition(definition: Dictionary) -> Texture2D:
-	var card_id := str(definition.get("id", ""))
 	if str(definition.get("type", "")) == "creature":
-		var blueprint_path := str(Catalog.creature(card_id).get("blueprint_art", ""))
-		if not blueprint_path.is_empty() and FileAccess.file_exists(blueprint_path):
-			var blueprint := ResourceLoader.load(blueprint_path) as Texture2D if ResourceLoader.exists(blueprint_path) else _png_texture(blueprint_path)
-			if blueprint != null: return blueprint
-		if not Catalog.creature(card_id).is_empty():
-			var atlas := AtlasTexture.new()
-			atlas.atlas = CreatureSpriteCache.texture_for_creature(card_id)
-			atlas.region = CreatureSpriteCache.safe_source_region(0)
-			return atlas
-		var bespoke := load("res://assets/cards/creatures/%s_v1.png" % card_id) as Texture2D
-		if bespoke != null: return bespoke
+		return CATALOG_IMPRINT.blueprint_texture(definition)
 	if definition.has("art"): return SUPPORT_CARD_VIEW.atlas_region(definition)
 	return SUPPORT_CARD_VIEW.card_back_for_test()
-
-static func _png_texture(path: String) -> Texture2D:
-	var image := Image.new()
-	if image.load(path) != OK: return null
-	return ImageTexture.create_from_image(image)
 
 func _build_front(definition: Dictionary, copies: int, market_price: int, status_text: String, compact: bool) -> void:
 	var inset := PanelContainer.new()
