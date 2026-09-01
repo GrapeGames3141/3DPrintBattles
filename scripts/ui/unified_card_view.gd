@@ -50,6 +50,10 @@ func _build_unknown_back(compact: bool) -> void:
 static func art_for_definition(definition: Dictionary) -> Texture2D:
 	var card_id := str(definition.get("id", ""))
 	if str(definition.get("type", "")) == "creature":
+		var blueprint_path := str(Catalog.creature(card_id).get("blueprint_art", ""))
+		if not blueprint_path.is_empty() and FileAccess.file_exists(blueprint_path):
+			var blueprint := ResourceLoader.load(blueprint_path) as Texture2D if ResourceLoader.exists(blueprint_path) else _png_texture(blueprint_path)
+			if blueprint != null: return blueprint
 		if not Catalog.creature(card_id).is_empty():
 			var atlas := AtlasTexture.new()
 			atlas.atlas = CreatureSpriteCache.texture_for_creature(card_id)
@@ -59,6 +63,11 @@ static func art_for_definition(definition: Dictionary) -> Texture2D:
 		if bespoke != null: return bespoke
 	if definition.has("art"): return SUPPORT_CARD_VIEW.atlas_region(definition)
 	return SUPPORT_CARD_VIEW.card_back_for_test()
+
+static func _png_texture(path: String) -> Texture2D:
+	var image := Image.new()
+	if image.load(path) != OK: return null
+	return ImageTexture.create_from_image(image)
 
 func _build_front(definition: Dictionary, copies: int, market_price: int, status_text: String, compact: bool) -> void:
 	var inset := PanelContainer.new()

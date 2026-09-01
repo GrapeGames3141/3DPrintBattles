@@ -1,0 +1,32 @@
+{
+  "approval_status": "reference-only inputs; runtime slices derived deterministically",
+  "sources": [
+    {
+      "file": "CO-01-archive-natural-material-concept-v1.png",
+      "bytes": 3063638,
+      "sha256": "901F39C0B2297198852C7F0C330053EDDD74E1F1299A6B2AD841B442EFE2B5B4"
+    },
+    {
+      "file": "DK-01-deck-natural-material-concept-v1.png",
+      "bytes": 2946588,
+      "sha256": "B806FA21A1C38D2FB899ADFF257C681CF2266714D05F68EBD70009B8AAB50779"
+    },
+    {
+      "file": "physical-control-state-atlas-v1.png",
+      "bytes": 1912924,
+      "sha256": "9F073648E5A490588F7C0C807AE2BED9F8C48F65BDDA7569650052E0B79F67C9",
+      "dimensions": "1254x1254 RGB",
+      "shipping": "never shipped directly; baked neutral checkerboard removed"
+    },
+    {
+      "file": "CO-01-runtime-correction-direction-v2.png",
+      "bytes": 2927251,
+      "sha256": "6558D40A8FE66BE5EEA5A344030A89928EC0068CB68BE461E9F0FA80493EA1D1",
+      "shipping": "reference-only/non-shipping; native text and approved raw-print blueprint silhouettes remain runtime-owned"
+    }
+  ],
+  "derived_runtime_root": "assets/ui/physical_ui/live-correction-r1/controls",
+  "processor": "tools/process_live_control_atlas.gd",
+  "transform": "6 rows x 4 states; remove high-luminance near-neutral checkerboard; feather alpha; retain only center-connected component per cell to exclude uneven-row neighbor leakage",
+  "runtime_text": "all labels, focus, accessibility, values, receipts and state remain native Godot"
+}

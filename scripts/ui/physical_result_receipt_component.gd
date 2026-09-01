@@ -4,6 +4,7 @@ extends RefCounted
 
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
+const IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
 const BAYS := [Rect2(0.105, 0.502, 0.255, 0.110), Rect2(0.380, 0.502, 0.245, 0.110), Rect2(0.645, 0.502, 0.245, 0.110), Rect2(0.222, 0.630, 0.250, 0.110), Rect2(0.530, 0.630, 0.250, 0.110)]
 
 func render(main: Control, surface: Control, margin: Callable, heading: Callable) -> void:
@@ -26,7 +27,7 @@ func render(main: Control, surface: Control, margin: Callable, heading: Callable
 
 func _render_hud(main: Control, surface: Control, state: String) -> void:
 	var hud := Control.new(); hud.name = "ResultCompactHud"; hud.anchor_left = 0.120; hud.anchor_top = 0.010; hud.anchor_right = 0.880; hud.anchor_bottom = 0.055; surface.add_child(hud)
-	var back := _button("ResultReceiptBack", "Back", main._m3_continue_result); back.anchor_top = 0.12; back.anchor_right = 0.145; back.anchor_bottom = 0.88; back.custom_minimum_size = Vector2(54, 48); back.tooltip_text = "Continue to Workshop"; back.accessibility_name = back.tooltip_text; back.disabled = state not in ["committed", "duplicate"] or main.battle_mode == "local"; hud.add_child(back)
+	# Continue is the sole physical exit owner; no competing generic HUD Back.
 	var level := _label("Level %d" % int(GameManager.profile.get("level", 1)), 12, Color("f3e5c9")); level.name = "ResultHudLevel"; _set_rect(level, Rect2(0.180, 0.0, 0.220, 1.0)); hud.add_child(level)
 	var xp := _label("XP %d" % int(GameManager.profile.get("spool_xp", 0)), 12, Color("f3e5c9")); xp.name = "ResultHudXp"; _set_rect(xp, Rect2(0.410, 0.0, 0.220, 1.0)); hud.add_child(xp)
 	var coins := _label("Coin %d" % int(GameManager.profile.get("forge_coins", 0)), 12, Color("f3e5c9")); coins.name = "ResultHudCoins"; _set_rect(coins, Rect2(0.690, 0.0, 0.290, 1.0)); hud.add_child(coins)
@@ -74,8 +75,23 @@ func _claim_reward(receipt: Dictionary) -> Dictionary:
 
 func _drop_fact(drop: Variant) -> Dictionary:
 	if drop is Dictionary:
-		var data: Dictionary = drop; var id := str(data.get("id", data.get("card_id", ""))); return {"label":"DROP", "value":str(data.get("name", id if not id.is_empty() else "—")), "drop_id":id}
-	return {"label":"DROP", "value":str(drop), "drop_id":str(drop)}
+		var data: Dictionary = drop; var id := str(data.get("id", data.get("card_id", ""))); return _drop_fact_for_id(str(data.get("name", id if not id.is_empty() else "—")), id)
+	return _drop_fact_for_id(str(drop), str(drop))
+
+func _drop_fact_for_id(value: String, id: String) -> Dictionary:
+	var fact := {"label":"DROP", "value":value, "drop_id":id}
+	var card := RULES.card(id)
+	if str(card.get("type", "")) == "creature":
+		fact["owned_copies"] = int(GameManager.profile.get("owned_cards", {}).get(id, 0))
+		fact["blueprint_license"] = RULES.has_printable_blueprint(GameManager.profile, id)
+		fact["printed_models"] = _printed_model_count(id)
+	return fact
+
+func _printed_model_count(creature_id: String) -> int:
+	var count := 0
+	for raw_model in GameManager.profile.get("printed_models", {}).values():
+		if raw_model is Dictionary and str((raw_model as Dictionary).get("blueprint_id", "")) == creature_id: count += 1
+	return count
 
 func _simple_value(value: Variant) -> String:
 	if value is Dictionary:
@@ -93,8 +109,14 @@ func _render_fact(bay: Control, fact: Dictionary) -> void:
 	var label := _label(str(fact.get("label", "REWARD")), 10, Color("65472b")); label.name = "M3ResultBayLabel"; label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_rect(label, Rect2(0.06, 0.08, 0.88, 0.22)); bay.add_child(label)
 	var drop_id := str(fact.get("drop_id", ""))
 	if not drop_id.is_empty() and not RULES.card(drop_id).is_empty():
-		var art := TextureRect.new(); art.name = "M3ResultDropArt"; art.texture = UNIFIED_CARD_VIEW.art_for_definition(RULES.card(drop_id)); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_rect(art, Rect2(0.26, 0.30, 0.48, 0.46)); bay.add_child(art)
-	var value := _label(str(fact.get("value", "—")), 16 if drop_id.is_empty() else 11, Color("3b2b1c")); value.name = "M3ResultBayValue"; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_rect(value, Rect2(0.06, 0.68 if not drop_id.is_empty() else 0.34, 0.88, 0.26)); bay.add_child(value)
+		var card := RULES.card(drop_id)
+		if str(card.get("type", "")) == "creature":
+			IMPRINT.add_blueprint_card(bay, "M3ResultDropBlueprintCard", IMPRINT.blueprint_texture(card), Rect2(0.26, 0.30, 0.48, 0.40))
+		else:
+			var art := TextureRect.new(); art.name = "M3ResultDropArt"; art.texture = UNIFIED_CARD_VIEW.art_for_definition(card); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_rect(art, Rect2(0.26, 0.30, 0.48, 0.46)); bay.add_child(art)
+		if fact.has("owned_copies"):
+			var ownership := _label("Copies %d · License %s · Models %d" % [int(fact.get("owned_copies", 0)), "permanent" if bool(fact.get("blueprint_license", false)) else "none", int(fact.get("printed_models", 0))], 8, Color("3b2b1c")); ownership.name = "M3ResultDropOwnershipFacts"; ownership.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ownership.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _set_rect(ownership, Rect2(0.04, 0.69, 0.92, 0.28)); bay.add_child(ownership)
+	var value := _label(str(fact.get("value", "—")), 16 if drop_id.is_empty() else 11, Color("3b2b1c")); value.name = "M3ResultBayValue"; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_rect(value, Rect2(0.06, 0.68 if not drop_id.is_empty() else 0.34, 0.88, 0.16)); bay.add_child(value)
 
 func _set_rect(node: Control, rect: Rect2) -> void:
 	node.anchor_left = rect.position.x; node.anchor_top = rect.position.y; node.anchor_right = rect.end.x; node.anchor_bottom = rect.end.y

@@ -1,5 +1,6 @@
 class_name PhysicalSettingsRecoveryComponent
 extends RefCounted
+const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
 ## Owns Settings drafts and Recovery ledger controls over the shared M3 plate.
 
 func render_settings(main: Control, surface: Control, margin: Callable, heading: Callable) -> void:
@@ -64,12 +65,12 @@ func _settings_plate(main: Control, node_name: String, rect: Rect2) -> PanelCont
 	var plate := PanelContainer.new(); plate.name = node_name; _settings_rect(plate, rect); plate.add_theme_stylebox_override("panel", _settings_style(Color("ead9b7"), Color("79582f"), 2)); return plate
 
 func _settings_button(node_name: String, value: String, action: Callable, active := false) -> Button:
-	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 12); button.add_theme_color_override("font_color", Color("f4e6c8")); button.add_theme_color_override("font_disabled_color", Color("b9ad95")); button.add_theme_stylebox_override("normal", _settings_style(Color("1e2b35"), Color("9f7540"), 2)); button.add_theme_stylebox_override("hover", _settings_style(Color("30414a"), Color("d5ad67"), 2)); button.add_theme_stylebox_override("pressed", _settings_style(Color("493d2d"), Color("f0ca7a"), 2)); button.add_theme_stylebox_override("focus", _settings_style(Color("1e2b35"), Color("75d8dd"), 3)); if active: button.add_theme_stylebox_override("normal", _settings_style(Color("5a482f"), Color("e0b45f"), 3))
+	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "binding", active)
 	if action.is_valid(): button.pressed.connect(action)
 	return button
 
 func _settings_transparent_button(node_name: String, value: String, action: Callable, active := false) -> Button:
-	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.flat = true; button.add_theme_font_size_override("font_size", 12); button.add_theme_color_override("font_color", Color("f3d995") if active else Color("f4e6c8")); button.add_theme_stylebox_override("normal", StyleBoxEmpty.new()); button.add_theme_stylebox_override("hover", StyleBoxEmpty.new()); button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new()); button.add_theme_stylebox_override("focus", _settings_style(Color(0, 0, 0, 0), Color("75d8dd"), 3)); button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.flat = true; button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "lever", active, true)
 	if action.is_valid(): button.pressed.connect(action)
 	return button
 
@@ -122,12 +123,8 @@ func _recovery_preservation_receipt(main: Control, host: Control, state: String)
 	var label: Label = main.label(text, 11, Color("47331f")); label.name = "RecoveryPreservationCopy"; label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _settings_rect(label, Rect2(0.04, 0.08, 0.92, 0.84)); receipt.add_child(label)
 
 func _recovery_actions(main: Control, host: Control, state: String) -> void:
-	var back := _settings_transparent_button("RecoveryBack", "BACK TO TITLE", func(): main.screen = "title"; main.render()); _settings_rect(back, Rect2(0.163, 0.762, 0.305, 0.096)); back.custom_minimum_size = Vector2(56, 56)
-	# The physical button rests on parchment: every interactive text state stays
-	# dark while the separate focus StyleBox keeps its complete cyan ring.
-	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
-		back.add_theme_color_override(color_name, Color("47331f"))
-	back.tooltip_text = "Return safely to Title"; back.accessibility_name = back.tooltip_text; host.add_child(back)
+	# No RecoveryBack is rendered: the read-only route guard would reject that
+	# promise. Only state-specific safe actions remain reachable.
 	if state == "backup_recovered":
 		var acknowledge := _settings_transparent_button("RecoveryAcknowledgeBackup", "ACKNOWLEDGE", main._m3_acknowledge_backup_recovery, true); _settings_rect(acknowledge, Rect2(0.500, 0.830, 0.245, 0.125)); acknowledge.custom_minimum_size = Vector2(56, 56); acknowledge.tooltip_text = "Acknowledge recovered backup and safely resume"; acknowledge.accessibility_name = acknowledge.tooltip_text; host.add_child(acknowledge)
 	elif state in ["corrupt_primary", "corrupt_backup"]:

@@ -1,0 +1,49 @@
+{
+  "family": "PrintForge intact-creature blueprint cards v3",
+  "generator": "OpenAI ImageGen",
+  "generated_date": "2026-08-31",
+  "approval_status": "approved for runtime promotion; full-family UI review PASS with no P0/P1 findings",
+  "approval_date": "2026-08-31",
+  "approval_source": "PrintForge UI reviewer full-family blueprint review",
+  "master_dimensions": [1254, 1254],
+  "master_format": "PNG RGB",
+  "style_source": "cinderpaw-blueprint-master-v3.png",
+  "identity_sources": {
+    "sprite": "assets/creatures/2d/<creature_id>_sprite_sheet.png",
+    "raw_print": "assets/creatures/2d/raw/<creature_id>_raw_print.png"
+  },
+  "prompt_contract": "One intact, fully assembled canonical creature in one natural three-quarter pose. Deep navy grid drafting paper; warm cream technical linework; restrained cyan print-layer accents; worn rounded physical-card edge and quiet cream perimeter. No exploded parts, detached components, alternate views, duplicates, labels, text, UI, full-color render, or unrelated redesign. Preserve the supplied sprite and raw print identity and remain readable at 160x160.",
+  "runtime_contract": "Use the complete authored blue-paper card beneath a route-owned recess mask or brass clips. Do not crop to the creature alone and do not place a second card behind it. Native Godot owns all names, stats, focus, accessibility and dynamic values. Animated sprite sheets remain the battlefield representation.",
+  "rejected_predecessors": {
+    "v1": "Rejected by user: exploded assemblies mixed detached random parts with an assembled creature.",
+    "cinderpaw_v2": "Rejected as family template: borderless paper, excessive drafting density, and mechanical reinterpretation risk.",
+    "discarded_generations": "Full-color Aquafin, based Galehopper and Cinderpaw-like Glassdrake outputs were not copied into the v3 family."
+  },
+  "masters": [
+    {"id":"aquafin","execution":"exec-bbb0499a-f6d0-4643-a669-f6cc2f6a6051","file":"aquafin-blueprint-master-v3.png"},
+    {"id":"aurorawing","execution":"exec-0c03af4b-3667-4a1c-b955-4efd90b27351","file":"aurorawing-blueprint-master-v3.png"},
+    {"id":"brambleowl","execution":"exec-436e4871-df23-4fbe-a242-0d4d649359ee","file":"brambleowl-blueprint-master-v3.png"},
+    {"id":"cinderpaw","execution":"exec-88273d32-e643-4227-ab8d-0f36034ed51a","file":"cinderpaw-blueprint-master-v3.png"},
+    {"id":"coalgriffin","execution":"exec-b57710ff-aac0-41e7-beb3-2ac65ea158f2","file":"coalgriffin-blueprint-master-v3.png"},
+    {"id":"coralisk","execution":"exec-60ba4d86-86cd-4075-b933-a7f75f114d51","file":"coralisk-blueprint-master-v3.png"},
+    {"id":"frostling","execution":"exec-09478127-4dd8-4386-b1b4-c99e0b340719","file":"frostling-blueprint-master-v3.png"},
+    {"id":"galehopper","execution":"exec-c5a6546e-9667-4c4b-972d-c8314864dc0d","file":"galehopper-blueprint-master-v3.png"},
+    {"id":"glassdrake","execution":"exec-a2c64abb-538c-4363-9218-32ae3dec800e","file":"glassdrake-blueprint-master-v3.png"},
+    {"id":"ironmaw","execution":"exec-63e723e3-5979-4ca5-9736-39d694940985","file":"ironmaw-blueprint-master-v3.png"},
+    {"id":"miragefox","execution":"exec-d4716d86-c3d9-4812-be6b-a4dfda64ab36","file":"miragefox-blueprint-master-v3.png"},
+    {"id":"mossmunk","execution":"exec-5c51f7d4-e745-4cd6-a32b-acee794f6209","file":"mossmunk-blueprint-master-v3.png"},
+    {"id":"pyraxis","execution":"exec-5d4aff97-fdf9-4489-b994-49bd9b244861","file":"pyraxis-blueprint-master-v3.png"},
+    {"id":"runestag","execution":"exec-823cb53e-952d-49d1-acf6-595fc8510683","file":"runestag-blueprint-master-v3.png"},
+    {"id":"skyforge","execution":"exec-0b510d83-aced-44e1-a4e5-b6d047ee3d9b","file":"skyforge-blueprint-master-v3.png"},
+    {"id":"sparkotter","execution":"exec-aff79ab6-9a01-47c7-ac35-9ad4101ac010","file":"sparkotter-blueprint-master-v3.png"},
+    {"id":"starloom","execution":"exec-fb7d8956-7fa0-49bf-9199-8849a3aa2b14","file":"starloom-blueprint-master-v3.png"},
+    {"id":"stoneback","execution":"exec-278257a9-e238-4990-a4e9-1aa35aa25906","file":"stoneback-blueprint-master-v3.png"},
+    {"id":"thunderelk","execution":"exec-1f71f988-febb-42ce-bd54-42c4ec54ae7a","file":"thunderelk-blueprint-master-v3.png"},
+    {"id":"tidewhale","execution":"exec-3350c897-2848-4754-9d90-a2a7dfa23725","file":"tidewhale-blueprint-master-v3.png"},
+    {"id":"verdantitan","execution":"exec-46acb15f-b283-4d00-b476-84464b392e5c","file":"verdantitan-blueprint-master-v3.png"},
+    {"id":"voidmanta","execution":"exec-153f64b8-bd36-4bf2-b6ff-73279bffa630","file":"voidmanta-blueprint-master-v3.png"},
+    {"id":"voltwig","execution":"exec-ca0e02b4-7032-4fe9-889e-a7aa5368da87","file":"voltwig-blueprint-master-v3.png"},
+    {"id":"worldcoil","execution":"exec-7e43bd69-a4a7-4d0c-8943-000b1fe5d9df","file":"worldcoil-blueprint-master-v3.png"}
+  ],
+  "review_artifact": "blueprint-family-contact-sheet-v3.jpg"
+}

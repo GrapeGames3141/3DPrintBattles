@@ -32,7 +32,8 @@ const BATTLE_MOVE_VFX := preload("res://scripts/ui/battle_move_vfx.gd")
 const PHYSICAL_PORTRAIT_PLATE := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
 const M1_PHYSICAL_UI := preload("res://scripts/ui/m1_physical_ui_component.gd")
 const M3_PHYSICAL_UI := preload("res://scripts/ui/m3_physical_ui_component.gd")
-const REVIEW_BUILD_LABEL := "physical-ui-spike-r10"
+const PHYSICAL_CATALOG_IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
+const REVIEW_BUILD_LABEL := "0.8.4-physical-ui-review"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -115,6 +116,7 @@ var m3_result_state := "idle"
 var m3_result_receipt: Dictionary = {}
 var m3_recovery_new_maker_confirm := false
 var m3_saved_preprint_draft: Array = []
+var m3_pack_inspector_id := ""
 var title_new_maker_confirmation := false
 var title_new_maker_in_flight := false
 var title_new_maker_error := ""
@@ -536,11 +538,14 @@ func _deferred_focus_if_ready(instance_id: int) -> void:
 func _visual_toast(surface: Control) -> void:
 	if toast.is_empty(): return
 	var notice := _visual_panel("VisualRouteToast", Color("17241ee8"), Color("f1be69"), 8)
+	# Toasts are feedback, not a modal glass pane.  They must never consume a
+	# centre tap intended for physical hardware below them.
+	notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	notice.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	notice.anchor_left = 0.18; notice.anchor_right = 0.82
 	notice.offset_left = 0; notice.offset_right = 0; notice.offset_top = -64; notice.offset_bottom = -20
 	surface.add_child(notice)
-	var copy := label(toast, 13, Color("fff0c4")); copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; notice.add_child(copy)
+	var copy := label(toast, 13, Color("fff0c4")); copy.mouse_filter = Control.MOUSE_FILTER_IGNORE; copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; notice.add_child(copy)
 
 func _feedback_backdrop(texture: Texture2D, dim := 0.38) -> void:
 	var background := TextureRect.new()
@@ -700,6 +705,9 @@ func _apply_presentation_safe_area(plate: Control) -> void:
 func _physical_workshop_hotspots() -> Array:
 	return M1_PHYSICAL_UI.physical_workshop_hotspots()
 
+func _blueprint_card_texture(definition: Dictionary) -> Texture2D:
+	return PHYSICAL_CATALOG_IMPRINT.blueprint_texture(definition)
+
 func _starter_schematic_card(starter_id: String) -> Control:
 	var creature := Catalog.creature(starter_id)
 	var element_color := Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff"))
@@ -708,7 +716,7 @@ func _starter_schematic_card(starter_id: String) -> Control:
 	card.custom_minimum_size = Vector2(260 if is_portrait_layout() else 370, 390 if is_portrait_layout() else 330)
 	var content := VBoxContainer.new(); content.add_theme_constant_override("separation", 4); card.add_child(content)
 	var art_frame := Control.new(); art_frame.custom_minimum_size = Vector2(0, 172 if is_portrait_layout() else 190); art_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL; content.add_child(art_frame)
-	var art := TextureRect.new(); art.name = "StarterBlueprintSchematic"; art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D; art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _apply_blueprint_ink(art); art_frame.add_child(art)
+	var art := TextureRect.new(); art.name = "StarterBlueprintCard"; art.texture = _blueprint_card_texture(creature); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); art.mouse_filter = Control.MOUSE_FILTER_IGNORE; art_frame.add_child(art)
 	var drafting := BLUEPRINT_SCHEMATIC_OVERLAY.new(); drafting.name = "StarterSchematicDraftGrid"; drafting.configure(Color("72ecff"), 1.0); drafting.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); drafting.mouse_filter = Control.MOUSE_FILTER_IGNORE; art_frame.add_child(drafting)
 	var inspect := _visual_button("StarterInspect%s" % starter_id.capitalize(), "INSPECT BLUEPRINT", show_starter_inspector.bind(starter_id), Color("64dff0"))
 	inspect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); inspect.tooltip_text = "Inspect %s blueprint schematic" % str(creature.get("name", starter_id)); art_frame.add_child(inspect)
@@ -744,16 +752,18 @@ func _render_m1_r4_empty_first_print_setup(definition: Dictionary) -> void:
 	surface.add_child(empty_bed)
 	var docked := TextureRect.new()
 	docked.name = "FirstPrintDockedBlueprint"
-	var cartridge_source := ResourceLoader.load(M1_PHYSICAL_UI.BLUEPRINT_CARTRIDGE_PATH) as Texture2D
-	if cartridge_source != null:
-		docked.texture = M1_PHYSICAL_UI.atlas_texture(cartridge_source, M1_PHYSICAL_UI.BLUEPRINT_CARTRIDGE_CROP)
-	else:
-		_toast("The docked blueprint art is unavailable. Printing has not started.")
+	# Before extrusion the dock carries the exact intact creature blueprint card,
+	# not a generic cartridge/speckled placeholder.  The bed remains empty until
+	# the real Forge sequence begins, when ArcaneForgeStage owns raw/wireframe.
+	docked.texture = _blueprint_card_texture(definition)
 	docked.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	docked.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	docked.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	docked.accessibility_name = "Docked blueprint: %s" % str(definition.get("name", "Cinderpaw"))
-	M1_PHYSICAL_UI.place_design(docked, M1_PHYSICAL_UI.FIRST_PRINT_CARTRIDGE)
+	# The cartridge has a narrow ivory aperture.  Preserve the full square card,
+	# but fit it inside that aperture rather than letting its navy perimeter cross
+	# the pictured brass cartridge boundary.
+	M1_PHYSICAL_UI.place_design(docked, Rect2(792, 402, 82, 145))
 	surface.add_child(docked)
 	var cycle_seconds := roundi(ArcaneForgeSequence.PRINT_COMPLETE_BPS / ArcaneForgeSequence.presentation_step_bps(bool(settings().get("reduced_motion", false))) * ArcaneForgeSequence.presentation_interval_seconds(bool(settings().get("reduced_motion", false))))
 	# The 150% accessibility size must still fit inside the three physical dials.
@@ -779,13 +789,31 @@ func _render_m1_r4_empty_first_print_setup(definition: Dictionary) -> void:
 	M1_PHYSICAL_UI.apply_cream_action(begin)
 	M1_PHYSICAL_UI.place_design(begin, Rect2(356, 1360, 236, 160))
 	surface.add_child(begin)
-	var bed_status := label("BED EMPTY\nNO MODEL YET", 11, Color("10283a"))
+	# This is a read-only build-bed instrument, not a third primary action.  Its
+	# muted recessed face deliberately covers the master art's active cyan glint.
+	var bed_recess := Panel.new()
+	bed_recess.name = "FirstPrintBedStatusRecess"
+	bed_recess.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bed_recess.add_theme_stylebox_override("panel", _visual_style(Color("17201de8"), Color("716655"), 8, 2))
+	M1_PHYSICAL_UI.place_design(bed_recess, Rect2(618, 1360, 236, 160))
+	surface.add_child(bed_recess)
+	# The master includes three cyan indicator lamps above these wells.  The empty
+	# build bed is disabled instrumentation, so only its own lamp is masked/dimmed;
+	# Back and Start retain their live physical feedback.
+	var bed_inactive_light := ColorRect.new()
+	bed_inactive_light.name = "FirstPrintBedInactiveLightMask"
+	bed_inactive_light.color = Color("0b151be0")
+	bed_inactive_light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	M1_PHYSICAL_UI.place_design(bed_inactive_light, Rect2(666, 1307, 184, 28))
+	surface.add_child(bed_inactive_light)
+	var bed_status := label("BED EMPTY\nNO MODEL YET", 10, Color("d8c9aa"))
 	bed_status.name = "FirstPrintBedStatus"
 	bed_status.accessibility_name = "Build bed is empty; no model has been printed yet"
 	bed_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bed_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bed_status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	bed_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bed_status.z_index = 1
 	M1_PHYSICAL_UI.place_design(bed_status, Rect2(618, 1360, 236, 160))
 	surface.add_child(bed_status)
 
@@ -951,12 +979,8 @@ func _archive_blueprint_card(definition: Dictionary) -> Button:
 	var content := VBoxContainer.new(); content.mouse_filter = Control.MOUSE_FILTER_IGNORE; content.add_theme_constant_override("separation", 2); content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 5); card.add_child(content)
 	var title := label(str(definition.get("name", card_id)), 12, Color("bdf7ff") if is_creature else Color("fff0ce")); title.autowrap_mode = TextServer.AUTOWRAP_OFF; title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(title)
 	var art_shell := Control.new(); art_shell.custom_minimum_size = Vector2(0, 66 if portrait else 45); art_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL; art_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE; content.add_child(art_shell)
-	var art := TextureRect.new(); art.name = "ArchiveBlueprintSchematicArt" if is_creature else "ArchiveSupportArt"; art.texture = ResourceLoader.load(str(Catalog.creature(card_id).get("raw_print", ""))) as Texture2D if is_creature else UNIFIED_CARD_VIEW.art_for_definition(definition); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if is_creature:
-		_apply_blueprint_ink(art)
+	var art := TextureRect.new(); art.name = "ArchiveBlueprintCardArt" if is_creature else "ArchiveSupportArt"; art.texture = _blueprint_card_texture(Catalog.creature(card_id)) if is_creature else UNIFIED_CARD_VIEW.art_for_definition(definition); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_shell.add_child(art)
-	if is_creature:
-		var overlay := BLUEPRINT_SCHEMATIC_OVERLAY.new(); overlay.name = "ArchiveBlueprintDraftGrid"; overlay.configure(Color("72ecff"), 0.75); overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE; art_shell.add_child(overlay)
 	var real_line := "HP %d · BEND %d" % [int(definition.get("hp", 0)), int(definition.get("bend", 0))] if is_creature else "%s · %d F" % [str(definition.get("type", "support")).capitalize(), int(definition.get("cost", 0))]
 	var detail := label(real_line, 11, Color("d9f8fa") if is_creature else Color("f3dfb5")); detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; detail.autowrap_mode = TextServer.AUTOWRAP_OFF; detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; content.add_child(detail)
 	var count_text := "x%d deck · owned x%d" % [unified_deck_draft.count(card_id), int(GameManager.profile.get("owned_cards", {}).get(card_id, 0))] if screen == "unified_deck" else "Owned x%d" % int(GameManager.profile.get("owned_cards", {}).get(card_id, 0))
@@ -1535,7 +1559,7 @@ func render_m1_r2_starter_page() -> void:
 	content.add_child(heading)
 	var art := TextureRect.new()
 	art.name = "StarterBlueprintSchematic"
-	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
+	art.texture = _blueprint_card_texture(creature)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1598,7 +1622,7 @@ func render_m1_r2_starter_page() -> void:
 	for index in 3:
 		var socket := TextureRect.new()
 		socket.name = "StarterInnerSocket%d" % index
-		socket.texture = ResourceLoader.load(str(Catalog.creature(str(choices[index])).get("raw_print", ""))) as Texture2D
+		socket.texture = _blueprint_card_texture(Catalog.creature(str(choices[index])))
 		socket.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		socket.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		socket.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1618,7 +1642,7 @@ func _render_portrait_starter_carousel(host: Container) -> void:
 	var card := _visual_panel("StarterCarouselCard", Color("071a25e8"), Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff")), 12); card.custom_minimum_size = Vector2(0, 420); ceremony.add_child(card)
 	card.set_meta("starter_id", starter_id)
 	var content := VBoxContainer.new(); content.add_theme_constant_override("separation", 6); card.add_child(content)
-	var art := TextureRect.new(); art.name = "StarterBlueprintSchematic"; art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D; art.custom_minimum_size = Vector2(0,240); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; content.add_child(art)
+	var art := TextureRect.new(); art.name = "StarterBlueprintCard"; art.texture = _blueprint_card_texture(creature); art.custom_minimum_size = Vector2(0,240); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; content.add_child(art)
 	var element_color := Color(ELEMENT_COLORS.get(str(creature.get("element", "")), "76ddff")); var name_label := label(str(creature.get("name", starter_id)), 24, element_color); name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(name_label)
 	var stats := label("%s · HP %d · BEND %d · FIRST PRINT FREE" % [str(creature.get("element", "")), int(creature.get("hp", 0)), int(creature.get("bend", 0))], 14, Color("d8edf4")); stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; content.add_child(stats)
 	var actions := HBoxContainer.new(); actions.add_theme_constant_override("separation", 8); ceremony.add_child(actions)
@@ -1644,7 +1668,7 @@ func render_onboarding() -> void:
 		cards.add_child(card.get_parent())
 		var portrait := TextureRect.new()
 		portrait.name = "StarterBlueprintSchematic"
-		portrait.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
+		portrait.texture = _blueprint_card_texture(creature)
 		portrait.custom_minimum_size = Vector2(190, 150)
 		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -1689,7 +1713,7 @@ func render_m1_r2_starter_inspector_folio(creature: Dictionary) -> void:
 	plate.content_layer().add_child(surface)
 	var art := TextureRect.new()
 	art.name = "StarterInspectorBlueprintSchematic"
-	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
+	art.texture = _blueprint_card_texture(creature)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1751,7 +1775,7 @@ func render_starter_inspector() -> void:
 	content.add_child(art_frame)
 	var art := TextureRect.new()
 	art.name = "StarterInspectorBlueprintSchematic"
-	art.texture = ResourceLoader.load(str(creature.get("raw_print", ""))) as Texture2D
+	art.texture = _blueprint_card_texture(creature)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2762,7 +2786,16 @@ func _m3_save_deck(should_render := true) -> bool:
 
 func _m3_add_preprint(card_id: String) -> void:
 	var slots := UNIFIED_RULES.preprint_slots(GameManager.profile)
-	if unified_preprint_draft.size() < slots and unified_preprint_draft.count(card_id) < unified_deck_draft.count(card_id): unified_preprint_draft.append(card_id)
+	var card: Dictionary = UNIFIED_RULES.card(card_id)
+	if str(card.get("type", "")) != "creature":
+		_toast("Select a creature already in this deck for Pre-Print.")
+		render()
+		return
+	if unified_preprint_draft.size() < slots and unified_preprint_draft.count(card_id) < unified_deck_draft.count(card_id):
+		unified_preprint_draft.append(card_id)
+		_toast("%s placed in the next Pre-Print clamp." % str(card.get("name", card_id)))
+	else:
+		_toast("That creature has no remaining eligible Pre-Print copy.")
 	render()
 
 func _m3_remove_preprint(index: int) -> void:
@@ -2777,6 +2810,10 @@ func _m3_save_preprints(should_render := true) -> bool:
 	return saved
 
 func _m3_prepare_market_once() -> void:
+	# Deterministic visual fixtures seed a fully authoritative copied snapshot.  A
+	# render must never replace it from wall-clock preparation (which would also
+	# turn a browse-only capture into a persistence mutation).
+	if bool(get_meta("m3_capture_frozen_market", false)) and not m3_market_snapshot.is_empty(): return
 	var key := Time.get_date_string_from_system()
 	if not m3_market_snapshot.is_empty() and m3_market_day_key == key: return
 	var prepared := GameManager.prepare_market_v3(0, key)
@@ -4222,7 +4259,9 @@ func _settle_finished_unified_battle() -> void:
 func _unified_card_button(card_id: String) -> Button:
 	var card := UNIFIED_RULES.card(card_id)
 	var filament_cost := int(card.get("filament_cost", card.get("cost", 0)))
-	var button := make_button(("✓ " if card_id == unified_selected_card_id else "") + str(card.get("name", card_id)) + " · %dF" % filament_cost, func(): unified_selected_card_id = card_id; unified_selected_slot = -2; unified_selected_target = -2; render(), Color("588d73") if card_id == unified_selected_card_id else Color("2f93a8"))
+	# Selection is communicated by the physical focus/active treatment; a leading
+	# tick made the first glyph sit under its cyan ring on the narrow hand rail.
+	var button := make_button(str(card.get("name", card_id)) + " · %dF" % filament_cost, func(): unified_selected_card_id = card_id; unified_selected_slot = -2; unified_selected_target = -2; render(), Color("588d73") if card_id == unified_selected_card_id else Color("2f93a8"))
 	button.custom_minimum_size = Vector2(0, 58)
 	button.name = "UnifiedHand%s" % card_id.capitalize()
 	var can_play := battle != null and str(battle.phase) == "main" and (battle_mode == "local" or int(battle.active_seat) == 0) and not unified_ai_pending
@@ -4235,12 +4274,32 @@ func _unified_card_button(card_id: String) -> Button:
 		button.tooltip_text = "Select %s for a legal Main Phase action" % str(card.get("name", card_id))
 		button.accessibility_name = "Select %s, %d filament" % [str(card.get("name", card_id)), filament_cost]
 	button.focus_mode = Control.FOCUS_ALL
+	button.add_theme_stylebox_override("focus", _unified_hand_focus_style())
 	var art := _unified_card_thumbnail(card)
 	if art != null:
 		button.icon = art
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width", 42)
 	return button
+
+func _unified_hand_focus_style() -> StyleBoxFlat:
+	# Keep the complete focus outline outside the hand label's content box.  The
+	# rail has a real gap to Queue/Run; expanded margins use that gap rather than
+	# painting across the first/last glyphs.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("28404ae8")
+	style.border_color = Color.WHITE if bool(settings().get("high_contrast", false)) else Color("75d8dd")
+	style.set_border_width_all(3)
+	style.expand_margin_left = 4
+	style.expand_margin_right = 4
+	style.expand_margin_top = 3
+	style.expand_margin_bottom = 3
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	style.corner_radius_top_left = 7; style.corner_radius_top_right = 7; style.corner_radius_bottom_left = 7; style.corner_radius_bottom_right = 7
+	return style
 
 func _render_unified_play_picker(host: Container, active: Dictionary) -> void:
 	if battle == null or str(battle.phase) != "main" or unified_selected_card_id.is_empty() or unified_selected_card_id not in active.get("hand", []): return

@@ -26,6 +26,36 @@ const ELEMENT_CHART := {
 	"Arcane":{"Fire":100,"Water":100,"Lightning":100,"Nature":100,"Ice":100,"Stone":100,"Wind":100,"Arcane":150}
 }
 
+## Presentation-only companion assets.  Creature records remain mechanics-only in
+## storage; `creature()` injects this stable path into every returned definition.
+## The source images are approved intact blueprint cards, never battle sprites.
+const CREATURE_BLUEPRINT_ART := {
+	"aquafin": "res://assets/creatures/2d/blueprints/aquafin_blueprint_card_v1.png",
+	"aurorawing": "res://assets/creatures/2d/blueprints/aurorawing_blueprint_card_v1.png",
+	"brambleowl": "res://assets/creatures/2d/blueprints/brambleowl_blueprint_card_v1.png",
+	"cinderpaw": "res://assets/creatures/2d/blueprints/cinderpaw_blueprint_card_v1.png",
+	"coalgriffin": "res://assets/creatures/2d/blueprints/coalgriffin_blueprint_card_v1.png",
+	"coralisk": "res://assets/creatures/2d/blueprints/coralisk_blueprint_card_v1.png",
+	"frostling": "res://assets/creatures/2d/blueprints/frostling_blueprint_card_v1.png",
+	"galehopper": "res://assets/creatures/2d/blueprints/galehopper_blueprint_card_v1.png",
+	"glassdrake": "res://assets/creatures/2d/blueprints/glassdrake_blueprint_card_v1.png",
+	"ironmaw": "res://assets/creatures/2d/blueprints/ironmaw_blueprint_card_v1.png",
+	"miragefox": "res://assets/creatures/2d/blueprints/miragefox_blueprint_card_v1.png",
+	"mossmunk": "res://assets/creatures/2d/blueprints/mossmunk_blueprint_card_v1.png",
+	"pyraxis": "res://assets/creatures/2d/blueprints/pyraxis_blueprint_card_v1.png",
+	"runestag": "res://assets/creatures/2d/blueprints/runestag_blueprint_card_v1.png",
+	"skyforge": "res://assets/creatures/2d/blueprints/skyforge_blueprint_card_v1.png",
+	"sparkotter": "res://assets/creatures/2d/blueprints/sparkotter_blueprint_card_v1.png",
+	"starloom": "res://assets/creatures/2d/blueprints/starloom_blueprint_card_v1.png",
+	"stoneback": "res://assets/creatures/2d/blueprints/stoneback_blueprint_card_v1.png",
+	"thunderelk": "res://assets/creatures/2d/blueprints/thunderelk_blueprint_card_v1.png",
+	"tidewhale": "res://assets/creatures/2d/blueprints/tidewhale_blueprint_card_v1.png",
+	"verdantitan": "res://assets/creatures/2d/blueprints/verdantitan_blueprint_card_v1.png",
+	"voidmanta": "res://assets/creatures/2d/blueprints/voidmanta_blueprint_card_v1.png",
+	"voltwig": "res://assets/creatures/2d/blueprints/voltwig_blueprint_card_v1.png",
+	"worldcoil": "res://assets/creatures/2d/blueprints/worldcoil_blueprint_card_v1.png"
+}
+
 const CREATURES := [
 	{"id":"cinderpaw","name":"Cinderpaw","rarity":"common","element":"Fire","bend":18,"hp":34,"attack":9,"speed":7,"cost":2,"ability":"Ember Pounce","ability_cost":2,"cooldown":2,"starter":true,"signature":{"damage_bonus":5,"effects":[{"effect":"debuff","target":"foe","amount":1}]},"sprite_sheet":"res://assets/creatures/2d/cinderpaw_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/cinderpaw_raw_print.png"},
 	{"id":"aquafin","name":"Aquafin","rarity":"common","element":"Water","bend":17,"hp":36,"attack":8,"speed":6,"cost":2,"ability":"Tidal Patch","ability_cost":2,"cooldown":3,"starter":true,"signature":{"damage_bonus":1,"effects":[{"effect":"heal","target":"self","amount":8}]},"sprite_sheet":"res://assets/creatures/2d/aquafin_sprite_sheet.png","raw_print":"res://assets/creatures/2d/raw/aquafin_raw_print.png"},
@@ -140,7 +170,10 @@ const WORKSHOP_TRIAL_TIERS := [
 
 func creature(id: String) -> Dictionary:
 	for item in CREATURES:
-		if item.id == id: return item.duplicate(true)
+		if item.id == id:
+			var definition: Dictionary = item.duplicate(true)
+			definition["blueprint_art"] = str(CREATURE_BLUEPRINT_ART.get(id, ""))
+			return definition
 	return {}
 
 func workshop_trial_tier(tier_number: int) -> Dictionary:

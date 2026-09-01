@@ -34,20 +34,13 @@ func owned_count(profile: Dictionary, creature_id: String) -> int:
 	return count
 
 func _idle_texture(definition: Dictionary) -> Texture2D:
-	var path := str(definition.get("sprite_sheet", ""))
-	var sheet := ResourceLoader.load(path) as Texture2D if not path.is_empty() else null
-	if sheet != null:
-		var atlas := AtlasTexture.new()
-		atlas.atlas = sheet
-		# Stay inside the idle cell so compact thumbnails cannot leak animation frames.
-		atlas.region = Rect2(2, 2, 380, 508)
-		return atlas
-	var raw_path := str(definition.get("raw_print", ""))
-	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
+	# Every cartridge is a plan until the existing Start transaction moves the
+	# correct printer bed into raw/wireframe presentation.  Do not preview a living
+	# sprite or raw model inside a pre-extrusion selection surface.
+	return _schematic_texture(definition)
 
 func _schematic_texture(definition: Dictionary) -> Texture2D:
-	var raw_path := str(definition.get("raw_print", ""))
-	return ResourceLoader.load(raw_path) as Texture2D if not raw_path.is_empty() else null
+	return PhysicalCatalogImprint.blueprint_texture(definition)
 
 func _card(creature_id: String, selected: bool, context: Dictionary) -> Control:
 	var definition := Catalog.creature(creature_id)

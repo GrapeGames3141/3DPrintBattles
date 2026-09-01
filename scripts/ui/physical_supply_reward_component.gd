@@ -4,6 +4,8 @@ extends RefCounted
 
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
+const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
+const IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
 
 func render_market(main: Control, surface: Control, margin: Callable, heading: Callable, scroll: Callable) -> void:
 	# MK-01 is a cabinet with six physical cubbies.  Browsing and selecting are
@@ -86,7 +88,7 @@ func _market_detail_bays(main: Control, host: Control, offer: Dictionary) -> voi
 	var id := str(offer.get("id", "")); var card := RULES.card(id)
 	var name: Label = main.label(str(offer.get("name", id)), 12, Color("f3e5c9")); name.name = "MarketSelectedOfferName"; name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; _set_normalized_rect(name, Rect2(0.05, 0.05, 0.90, 0.18)); detail.add_child(name)
 	if not card.is_empty():
-		var art := TextureRect.new(); art.name = "MarketSelectedCatalogArt"; art.texture = UNIFIED_CARD_VIEW.art_for_definition(card); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(art, Rect2(0.18, 0.27, 0.64, 0.52)); detail.add_child(art)
+		IMPRINT.add_catalog_art(detail, "MarketSelectedCatalogArt", card, Rect2(0.18, 0.27, 0.64, 0.52), UNIFIED_CARD_VIEW.art_for_definition(card))
 	var cue: Label = main.label(_market_offer_cue(id), 10, Color("b9e2d4")); cue.name = "MarketOfferOwnershipCue"; cue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cue.autowrap_mode = TextServer.AUTOWRAP_OFF; cue.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; _set_normalized_rect(cue, Rect2(0.04, 0.82, 0.92, 0.14)); detail.add_child(cue)
 	var confirmation: Dictionary = main.m3_market_confirmation if main.m3_market_confirmation is Dictionary else {}
 	if not confirmation.is_empty():
@@ -111,16 +113,17 @@ func _market_receipt(main: Control, host: Control, tab: String, page: int, pages
 
 func _market_offer_tile(offer: Dictionary, active: bool) -> Button:
 	var tile := _market_button("MarketOfferTile", "", Callable(), active); tile.tooltip_text = "%s · %d Forge Coins" % [str(offer.get("name", "Offer")), int(offer.get("price", 0))]; tile.accessibility_name = tile.tooltip_text
-	var name := Label.new(); name.name = "MarketOfferName"; name.text = str(offer.get("name", "Offer")); name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; name.add_theme_font_size_override("font_size", 10); name.add_theme_color_override("font_color", Color("f4e6c8")); name.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(name, Rect2(0.06, 0.04, 0.88, 0.16)); tile.add_child(name)
+	var name := Label.new(); name.name = "MarketOfferName"; name.text = str(offer.get("name", "Offer")); name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; name.add_theme_font_size_override("font_size", 10); name.add_theme_color_override("font_color", Color("47331f")); name.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(name, Rect2(0.06, 0.04, 0.88, 0.16)); tile.add_child(name)
 	var card := RULES.card(str(offer.get("id", "")))
 	if not card.is_empty():
-		var art := TextureRect.new(); art.name = "MarketOfferCatalogArt"; art.texture = UNIFIED_CARD_VIEW.art_for_definition(card); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(art, Rect2(0.17, 0.23, 0.66, 0.48)); tile.add_child(art)
-	var price := Label.new(); price.name = "MarketOfferPrice"; price.text = "%d" % int(offer.get("price", 0)); price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; price.add_theme_font_size_override("font_size", 10); price.add_theme_color_override("font_color", Color("f3d995")); price.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(price, Rect2(0.10, 0.76, 0.38, 0.16)); tile.add_child(price)
+		IMPRINT.add_catalog_art(tile, "MarketOfferCatalogArt", card, Rect2(0.17, 0.23, 0.66, 0.48), UNIFIED_CARD_VIEW.art_for_definition(card))
+	var price := Label.new(); price.name = "MarketOfferPrice"; price.text = "%d" % int(offer.get("price", 0)); price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; price.add_theme_font_size_override("font_size", 10); price.add_theme_color_override("font_color", Color("47331f")); price.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(price, Rect2(0.10, 0.76, 0.38, 0.16)); tile.add_child(price)
 	var cue := Label.new(); cue.name = "MarketOfferCue"; cue.text = _market_offer_cue(str(offer.get("id", ""))); cue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cue.autowrap_mode = TextServer.AUTOWRAP_OFF; cue.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; cue.add_theme_font_size_override("font_size", 8); cue.add_theme_color_override("font_color", Color("b9e2d4")); cue.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(cue, Rect2(0.50, 0.76, 0.42, 0.16)); tile.add_child(cue)
 	return tile
 
 func _market_offer_cue(id: String) -> String:
 	var card := RULES.card(id)
+	if id in GameManager.profile.get("wishlist", []): return "PINNED"
 	if not card.is_empty() and int(GameManager.profile.get("owned_cards", {}).get(id, 0)) > 0: return "OWNED ×%d" % int(GameManager.profile.get("owned_cards", {}).get(id, 0))
 	if bool(GameManager.profile.get("owned_blueprints", {}).get(id, false)): return "LICENSED"
 	if id in GameManager.profile.get("workshop_upgrades", []): return "INSTALLED"
@@ -135,12 +138,12 @@ func _market_find_offer_key(offers: Array, key: String) -> Dictionary:
 	return {}
 
 func _market_button(node_name: String, value: String, action: Callable, active := false) -> Button:
-	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 11); button.add_theme_color_override("font_color", Color("f4e6c8")); button.add_theme_color_override("font_disabled_color", Color("b9ad95")); button.add_theme_stylebox_override("normal", _pack_style(Color("1e2b35"), Color("9f7540"), 2)); button.add_theme_stylebox_override("hover", _pack_style(Color("30414a"), Color("d5ad67"), 2)); button.add_theme_stylebox_override("pressed", _pack_style(Color("493d2d"), Color("f0ca7a"), 2)); button.add_theme_stylebox_override("focus", _pack_style(Color("1e2b35"), Color("75d8dd"), 3)); button.add_theme_stylebox_override("disabled", _pack_style(Color("18232b"), Color("66553b"), 2)); if active: button.add_theme_stylebox_override("normal", _pack_style(Color("5a482f"), Color("e0b45f"), 3))
+	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 11); CONTROLS.apply(button, "binding", active)
 	if action.is_valid(): button.pressed.connect(action)
 	return button
 
 func _market_transparent_button(node_name: String, value: String, action: Callable, active := false) -> Button:
-	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.flat = true; button.add_theme_font_size_override("font_size", 12); button.add_theme_color_override("font_color", Color("f3d995") if active else Color("f4e6c8")); button.add_theme_stylebox_override("normal", StyleBoxEmpty.new()); button.add_theme_stylebox_override("hover", StyleBoxEmpty.new()); button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new()); button.add_theme_stylebox_override("disabled", StyleBoxEmpty.new()); button.add_theme_stylebox_override("focus", _pack_style(Color(0, 0, 0, 0), Color("75d8dd"), 3))
+	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.flat = true; button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "lever", active, true)
 	if action.is_valid(): button.pressed.connect(action)
 	return button
 
@@ -157,7 +160,12 @@ func render_pack(main: Control, surface: Control, margin: Callable, heading: Cal
 	var dock_rects := [Rect2(0.085, 0.275, 0.255, 0.164), Rect2(0.372, 0.275, 0.255, 0.164), Rect2(0.660, 0.275, 0.255, 0.164), Rect2(0.180, 0.464, 0.255, 0.164), Rect2(0.565, 0.464, 0.255, 0.164)]
 	for index in mini(5, cards.size()):
 		var id := str(cards[index]); var card: Dictionary = RULES.card(id); var dock := Control.new(); dock.name = "PackReceiptDock%02d" % (index + 1); dock.clip_contents = true; _set_normalized_rect(dock, dock_rects[index]); docks.add_child(dock)
-		var tile := _pack_tile(card); tile.name = "UnifiedPackCardView" + id.capitalize(); tile.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); tile.offset_left = 8; tile.offset_top = 8; tile.offset_right = -8; tile.offset_bottom = -8; dock.add_child(tile)
+		var tile := _pack_tile(main, card); tile.name = "UnifiedPackCardView" + id.capitalize(); tile.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); tile.offset_left = 8; tile.offset_top = 8; tile.offset_right = -8; tile.offset_bottom = -8; dock.add_child(tile)
+	if not main.m3_pack_inspector_id.is_empty():
+		var inspected: Dictionary = RULES.card(main.m3_pack_inspector_id)
+		if not inspected.is_empty():
+			status.text = _pack_inspector_facts(inspected)
+			status.tooltip_text = "%s · %s" % [status.text, str(inspected.get("rules_text", inspected.get("description", "")))]
 	# The square lower-right plate carries the native label; the circular hardware
 	# remains visible and is the transparent hit target below.
 	var keep_label: Label = main.label("KEEP RECEIPT", 13, Color("f3d995")); keep_label.name = "PackKeepLabel"; keep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; keep_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; keep_label.mouse_filter = Control.MOUSE_FILTER_IGNORE; keep_label.anchor_left = 0.650; keep_label.anchor_top = 0.804; keep_label.anchor_right = 0.890; keep_label.anchor_bottom = 0.845; surface.add_child(keep_label)
@@ -192,10 +200,33 @@ func _pack_physical_action(node_name: String, action: Callable) -> Button:
 func _pack_style(fill: Color, edge: Color, width := 2) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new(); style.bg_color = fill; style.border_color = edge; style.set_border_width_all(width); style.corner_radius_top_left = 8; style.corner_radius_top_right = 8; style.corner_radius_bottom_left = 8; style.corner_radius_bottom_right = 8; style.content_margin_left = 4; style.content_margin_right = 4; style.content_margin_top = 2; style.content_margin_bottom = 2; return style
 
-func _pack_tile(card: Dictionary) -> Button:
-	var tile := _pack_button("PackReceiptTile", "", Callable()); tile.tooltip_text = "%s · committed pack receipt" % str(card.get("name", "Card")); tile.accessibility_name = tile.tooltip_text; tile.focus_mode = Control.FOCUS_NONE; tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var name := Label.new(); name.name = "PackTileName"; name.text = str(card.get("name", "Card")); name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; name.add_theme_font_size_override("font_size", 11); name.add_theme_color_override("font_color", Color("f4e6c8")); name.mouse_filter = Control.MOUSE_FILTER_IGNORE; name.anchor_left = 0.06; name.anchor_top = 0.03; name.anchor_right = 0.76; name.anchor_bottom = 0.18; tile.add_child(name)
-	var cost := Label.new(); cost.name = "PackTileCost"; cost.text = "%dF" % int(card.get("cost", 0)); cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; cost.add_theme_font_size_override("font_size", 9); cost.add_theme_color_override("font_color", Color("f3d995")); cost.mouse_filter = Control.MOUSE_FILTER_IGNORE; cost.anchor_left = 0.77; cost.anchor_top = 0.04; cost.anchor_right = 0.95; cost.anchor_bottom = 0.18; tile.add_child(cost)
-	var art := TextureRect.new(); art.name = "PackTileCatalogArt"; art.texture = UNIFIED_CARD_VIEW.art_for_definition(card); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; art.anchor_left = 0.12; art.anchor_top = 0.20; art.anchor_right = 0.88; art.anchor_bottom = 0.75; tile.add_child(art)
-	var cue := Label.new(); cue.name = "PackTileCue"; cue.text = "PERSISTED"; cue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cue.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; cue.autowrap_mode = TextServer.AUTOWRAP_OFF; cue.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; cue.add_theme_font_size_override("font_size", 8); cue.add_theme_color_override("font_color", Color("b9e2d4")); cue.add_theme_stylebox_override("normal", _pack_style(Color("223339"), Color("587e77"), 1)); cue.mouse_filter = Control.MOUSE_FILTER_IGNORE; cue.anchor_left = 0.07; cue.anchor_top = 0.80; cue.anchor_right = 0.93; cue.anchor_bottom = 0.95; tile.add_child(cue)
+func _pack_tile(main: Control, card: Dictionary) -> Button:
+	var tile := _pack_button("PackReceiptTile", "", func(): main.m3_pack_inspector_id = str(card.get("id", "")); main.render()); tile.tooltip_text = "%s · inspect committed pack card" % str(card.get("name", "Card")); tile.accessibility_name = tile.tooltip_text
+	var creature := str(card.get("type", "")) == "creature"
+	# Complete blueprint cards are navy; use cream native labels there. Support
+	# faces retain dark ink on parchment.  This avoids the unreadable dark-on-blue
+	# name/cost regression while keeping all facts as native labels.
+	var ink := Color("f3e5c9") if creature else Color("47331f")
+	var name := Label.new(); name.name = "PackTileName"; name.text = str(card.get("name", "Card")); name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; name.add_theme_font_size_override("font_size", 11); name.add_theme_color_override("font_color", ink); name.mouse_filter = Control.MOUSE_FILTER_IGNORE; name.z_index = 2; name.anchor_left = 0.06; name.anchor_top = 0.03; name.anchor_right = 0.76; name.anchor_bottom = 0.18; tile.add_child(name)
+	var cost := Label.new(); cost.name = "PackTileCost"; cost.text = "%dF" % int(card.get("cost", 0)); cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; cost.add_theme_font_size_override("font_size", 9); cost.add_theme_color_override("font_color", ink); cost.mouse_filter = Control.MOUSE_FILTER_IGNORE; cost.z_index = 2; cost.anchor_left = 0.77; cost.anchor_top = 0.04; cost.anchor_right = 0.95; cost.anchor_bottom = 0.18; tile.add_child(cost)
+	IMPRINT.add_catalog_art(tile, "PackTileCatalogArt", card, Rect2(0.12, 0.20, 0.76, 0.36), UNIFIED_CARD_VIEW.art_for_definition(card))
+	var cue := Label.new(); cue.name = "PackTileOwnershipFacts"; cue.text = _pack_tile_facts(card); cue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cue.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; cue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; cue.clip_text = true; cue.add_theme_font_size_override("font_size", 7); cue.add_theme_color_override("font_color", Color("b9e2d4")); cue.add_theme_stylebox_override("normal", _pack_style(Color("223339"), Color("587e77"), 1)); cue.mouse_filter = Control.MOUSE_FILTER_IGNORE; cue.anchor_left = 0.07; cue.anchor_top = 0.59; cue.anchor_right = 0.93; cue.anchor_bottom = 0.985; tile.add_child(cue)
 	return tile
+
+func _pack_tile_facts(card: Dictionary) -> String:
+	var id := str(card.get("id", ""))
+	if str(card.get("type", "")) != "creature": return "PERSISTED"
+	# Keep these three persisted truths separate.  A rendered blueprint image is
+	# never evidence of ownership, a permanent license, or a printed model.
+	return "Cards %d\nLicense %s\nModels %d" % [int(GameManager.profile.get("owned_cards", {}).get(id, 0)), "permanent" if RULES.has_printable_blueprint(GameManager.profile, id) else "none", _printed_model_count(id)]
+
+func _pack_inspector_facts(card: Dictionary) -> String:
+	var id := str(card.get("id", ""))
+	if str(card.get("type", "")) != "creature": return "%s · %d filament · persisted receipt" % [str(card.get("name", id)), int(card.get("cost", 0))]
+	return "%s · Cards %d · License %s · Models %d" % [str(card.get("name", id)), int(GameManager.profile.get("owned_cards", {}).get(id, 0)), "permanent" if RULES.has_printable_blueprint(GameManager.profile, id) else "none", _printed_model_count(id)]
+
+func _printed_model_count(creature_id: String) -> int:
+	var count := 0
+	for raw_model in GameManager.profile.get("printed_models", {}).values():
+		if raw_model is Dictionary and str((raw_model as Dictionary).get("blueprint_id", "")) == creature_id: count += 1
+	return count

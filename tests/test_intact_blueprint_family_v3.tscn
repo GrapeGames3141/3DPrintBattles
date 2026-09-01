@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://tests/test_intact_blueprint_family_v3.gd" type="Script" id="1"]
+
+[node name="IntactBlueprintFamilyV3" type="Node"]
+script = ExtResource("1")

@@ -95,7 +95,7 @@ func _ready() -> void:
 	require(queue_hud != null and queue_hud.text == "130/400 filament · Queue 1\nHead: Cinderpaw · 1 turn left" and label_lines_fit(queue_hud, 6.0), "Player printer resource face exposes an explicit two-line FIFO head and remaining-turn readout without clipping.")
 	hotseat.player(1).hand = ["cinderpaw"]; shell.unified_selected_card_id = "cinderpaw"; shell.unified_battle_coordinator.set_transient_focus(-1); shell.render(); await get_tree().process_frame
 	var selected_blueprint := shell.find_child("UnifiedSelectedCreatureBlueprint", true, false) as PanelContainer
-	var selected_art := shell.find_child("UnifiedSelectedCreatureArt", true, false) as TextureRect
+	var selected_art := shell.find_child("UnifiedSelectedCreatureBlueprintCard", true, false) as TextureRect
 	var selected_copy := shell.find_child("UnifiedSelectedCreatureBlueprintCopy", true, false) as Label
 	var selected_status := shell.find_child("PhysicalBattleStatus", true, false) as Label
 	require(selected_blueprint != null and selected_art != null and selected_art.texture != null and selected_copy != null and selected_copy.text.contains(str(RULES.card("cinderpaw").get("name", ""))) and selected_copy.text.contains("%dF" % int(RULES.card("cinderpaw").get("filament_cost", RULES.card("cinderpaw").get("cost", 0)))) and selected_status != null and not selected_status.visible and selected_status.text.is_empty() and (shell.find_child("PhysicalBattleAnchor1_0", true, false) as Button).disabled, "Selected creature uses the central native-art blueprint instrument, clears duplicate status copy, and does not target rival anchors.")
@@ -107,12 +107,13 @@ func _ready() -> void:
 	for size in [Vector2(576, 1024), Vector2(720, 1280)]:
 		shell.size = size; shell.render(); await get_tree().process_frame
 		selected_blueprint = shell.find_child("UnifiedSelectedCreatureBlueprint", true, false) as PanelContainer
-		selected_art = shell.find_child("UnifiedSelectedCreatureArt", true, false) as TextureRect
+		selected_art = shell.find_child("UnifiedSelectedCreatureBlueprintCard", true, false) as TextureRect
 		selected_copy = shell.find_child("UnifiedSelectedCreatureBlueprintCopy", true, false) as Label
 		var status_instrument := shell.find_child("PhysicalBattleStatus", true, false) as Label
 		var resource_hud := shell.find_child("PhysicalBattleHud0Resources", true, false) as Label
 		var hand_rail := shell.find_child("PhysicalBattleHandScroll", true, false) as ScrollContainer
 		var queue_print := shell.find_child("UnifiedPlayQueueCreature", true, false) as Button
+		var hand_card := shell.find_child("UnifiedHandCinderpaw", true, false) as Button
 		var selected_rect := selected_blueprint.get_global_rect() if selected_blueprint != null else Rect2()
 		var selected_complete := selected_blueprint != null and selected_blueprint.clip_contents and selected_art != null and selected_art.texture != null and selected_copy != null and not selected_copy.text.is_empty() and selected_copy.get_global_rect().size.x > 0.0 and Rect2(Vector2.ZERO, size).encloses(selected_copy.get_global_rect())
 		var instruments_present := status_instrument != null and resource_hud != null and hand_rail != null and queue_print != null
@@ -121,7 +122,9 @@ func _ready() -> void:
 		var contained := Rect2(Vector2.ZERO, size).encloses(selected_rect)
 		var in_status_instrument := status_instrument != null and status_instrument.get_global_rect().encloses(selected_rect) and not status_instrument.visible and status_instrument.text.is_empty()
 		var clear_of_hud_hand_gap := resource_hud != null and selected_rect.end.y <= resource_hud.get_global_rect().position.y and hand_rail != null and selected_rect.end.y <= hand_rail.get_global_rect().position.y
-		require(selected_complete and instruments_present and queue_touch_ok and hud_copy_ok and contained and in_status_instrument and clear_of_hud_hand_gap, "Selected native-art blueprint is contained by the central status instrument with no painted HUD-to-hand detail surface at %dx%d (complete=%s instruments=%s queue48=%s hud_copy=%s contained=%s central=%s clear_gap=%s rect=%s)." % [int(size.x), int(size.y), str(selected_complete), str(instruments_present), str(queue_touch_ok), str(hud_copy_ok), str(contained), str(in_status_instrument), str(clear_of_hud_hand_gap), str(selected_rect)])
+		var hand_focus := hand_card.get_theme_stylebox("focus") as StyleBoxFlat if hand_card != null else null
+		var separated_hand_focus := hand_focus != null and hand_focus.expand_margin_left >= 4.0 and hand_focus.expand_margin_right >= 4.0 and hand_focus.content_margin_left >= 10.0 and hand_focus.content_margin_right >= 10.0 and hand_rail != null and queue_print != null and hand_rail.get_global_rect().end.y < queue_print.get_global_rect().position.y
+		require(selected_complete and instruments_present and queue_touch_ok and hud_copy_ok and contained and in_status_instrument and clear_of_hud_hand_gap and separated_hand_focus, "Selected native-art blueprint is contained by the central status instrument with a padded hand focus ring and separate Queue rail at %dx%d (complete=%s instruments=%s queue48=%s hud_copy=%s contained=%s central=%s clear_gap=%s focus_gap=%s rect=%s)." % [int(size.x), int(size.y), str(selected_complete), str(instruments_present), str(queue_touch_ok), str(hud_copy_ok), str(contained), str(in_status_instrument), str(clear_of_hud_hand_gap), str(separated_hand_focus), str(selected_rect)])
 	shell.size = Vector2(1024, 1024); shell.render(); await get_tree().process_frame
 	hotseat.player(1).hand = ["aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin"]
 	hotseat.pending = {"kind":"place","seat":1,"unit":UnifiedBattleState._unit(RULES.card("aquafin"))}; hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]; shell.render(); await get_tree().process_frame

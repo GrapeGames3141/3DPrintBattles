@@ -92,10 +92,10 @@ func _run() -> void:
 	var begin := main.find_child("BeginCreaturePrint", true, false) as Button
 	var back := main.find_child("ArcaneForgeBack", true, false) as Button
 	var bed_status := main.find_child("FirstPrintBedStatus", true, false) as Label
-	var cartridge_atlas := cartridge.texture as AtlasTexture if cartridge != null else null
+	var bed_light_mask := main.find_child("FirstPrintBedInactiveLightMask", true, false) as ColorRect
 	require(bed != null and cartridge != null and begin != null and main.find_child("FeedbackForgeStage", true, false) == null and main.find_child("ArcaneForgeStage", true, false) == null, "First Print setup keeps the bed empty before Start.")
-	require(cartridge_atlas != null and cartridge_atlas.region == Rect2(96, 0, 584, 2172) and cartridge.mouse_filter == Control.MOUSE_FILTER_IGNORE and cartridge.accessibility_name == "Docked blueprint: Cinderpaw" and not cartridge.get_global_rect().intersects(bed.get_global_rect()), "Docked cartridge uses the approved AtlasTexture crop, native name, passive input, and external chamber bounds.")
-	require(_has_dark_cream_font(back) and _has_dark_cream_font(begin) and bed_status != null and bed_status.mouse_filter == Control.MOUSE_FILTER_IGNORE and "BED EMPTY" in bed_status.text, "First Print cream actions use dark normal copy and the third lower plaque is passive empty-bed status.")
+	require(cartridge.texture != null and cartridge.texture.resource_path.ends_with("cinderpaw_blueprint_card_v1.png") and cartridge.mouse_filter == Control.MOUSE_FILTER_IGNORE and cartridge.accessibility_name == "Docked blueprint: Cinderpaw" and not cartridge.get_global_rect().intersects(bed.get_global_rect()), "Docked pre-print review uses the intact Cinderpaw blueprint card, native name, passive input, and external chamber bounds.")
+	require(_has_dark_cream_font(back) and _has_dark_cream_font(begin) and bed_status != null and bed_status.mouse_filter == Control.MOUSE_FILTER_IGNORE and "BED EMPTY" in bed_status.text and bed_light_mask != null and bed_light_mask.color.a >= 0.80 and bed_light_mask.mouse_filter == Control.MOUSE_FILTER_IGNORE, "First Print cream actions stay live while the third lower plaque is passive empty-bed status with its own dimmed indicator lamp.")
 	var pre_start := var_to_str(GameManager.profile)
 	require(begin != null and var_to_str(GameManager.profile) == pre_start, "First Print setup introduces zero mutation before Start.")
 	GameManager.profile = RULES.new_profile()

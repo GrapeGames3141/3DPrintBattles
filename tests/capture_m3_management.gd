@@ -58,12 +58,17 @@ func _apply_fixture(main: Control, profile: Dictionary, entry: Dictionary) -> vo
 	if bool(inputs.get("high_contrast", false)): profile.settings.high_contrast = true
 	if bool(inputs.get("reduced_motion", false)): profile.settings.reduced_motion = true
 	main.screen = str(entry.get("route", "unified_library"))
-	if inputs.has("filter"): main.unified_archive_filter = str(inputs.get("filter", "all"))
+	if inputs.has("filter"):
+		# The physical folio owns the category rail through this state key; the
+		# legacy `unified_archive_filter` is not a presentation input on M3.
+		main.set_meta("m3_archive_category", str(inputs.get("filter", "all")))
 	if bool(inputs.get("owned", false)): main.m3_archive_owned_only = true
 	if bool(inputs.get("printable", false)): main.m3_archive_printable_only = true
 	if bool(inputs.get("empty_state", false)):
 		profile.owned_cards = {}
-		profile.blueprints = []
+		profile.owned_blueprints = {}
+		main.m3_archive_owned_only = true
+		main.m3_archive_printable_only = true
 	if inputs.has("inspector"): main.unified_inspector_id = str(inputs.get("inspector", ""))
 	if inputs.has("support_inspector"): main.unified_inspector_id = str(inputs.get("support_inspector", ""))
 	if bool(inputs.get("fallback", false)): main.unified_inspector_id = "missing-catalog-id"
@@ -80,11 +85,29 @@ func _apply_fixture(main: Control, profile: Dictionary, entry: Dictionary) -> vo
 		if bool(inputs.get("dirty", false)): main.m3_pending_deck_slot_id = str(inputs.get("pending_slot", "deck-slot-2"))
 		if bool(inputs.get("in_flight", false)): main.m3_action_in_flight = true
 		if inputs.has("preprints"): main.unified_preprint_draft = (inputs.get("preprints", []) as Array).duplicate()
+		if inputs.has("preprint_slots"):
+			var requested_slots := int(inputs.get("preprint_slots", 1))
+			profile.workshop_upgrades = []
+			if requested_slots >= 2: profile.workshop_upgrades.append("preprint_slot_i")
+			if requested_slots >= 3: profile.workshop_upgrades.append("preprint_slot_ii")
+		if inputs.has("stale_preprint"):
+			main.unified_preprint_draft = [str(inputs.get("stale_preprint", ""))]
+			main.m3_deck_loaded_slot_id = main.m3_deck_edit_slot_id
+		if inputs.has("ownership_overage"):
+			var saved := RULES.active_deck(profile)
+			saved.append(str(inputs.get("ownership_overage", "")))
+			main.unified_deck_draft = saved
+			main.m3_deck_loaded_slot_id = main.m3_deck_edit_slot_id
 	if main.screen == "unified_market":
 		main.unified_market_tab = str(inputs.get("tab", "blueprints"))
+		if bool(inputs.get("newcomer", false)): profile.newcomer_started_at = 1700000000
+		if bool(inputs.get("wishlist", false)): profile.wishlist = ["cinderpaw"]
+		if inputs.has("pity"): profile.pack_pity["basic"] = int(inputs.get("pity", 0))
+		if bool(inputs.get("owned_unique", false)): profile.workshop_upgrades.append("preprint_slot_i")
 		main.m3_market_snapshot = RULES.market_snapshot(profile, 1700000000).duplicate(true)
 		main.m3_market_revision = int(entry.get("expected_profile_revision", 0))
-		main.m3_market_day_key = Time.get_date_string_from_system()
+		main.m3_market_day_key = "fixture-2023-11-14"
+		main.set_meta("m3_capture_frozen_market", true)
 		if bool(inputs.get("confirmation", false)): main.m3_market_confirmation = {"id":"cinderpaw", "price":20, "consequence":"Add the offered blueprint license."}
 		if inputs.has("failure"): main.m3_market_confirmation = {"id":"cinderpaw", "price":20, "consequence":"Purchase failed: %s." % str(inputs.get("failure"))}
 	if main.screen == "m3_result":
@@ -93,7 +116,12 @@ func _apply_fixture(main: Control, profile: Dictionary, entry: Dictionary) -> vo
 	if inputs.has("starter_claimed"):
 		profile.starter_pack_rewards = {"entitled":3, "opened":int(inputs.get("starter_claimed", 0))}
 		if bool(inputs.get("pending_pack", false)):
-			profile.pending_pack_reveal = {"pack_id":"basic", "starter_reward":true, "cards":(inputs.get("cards", ["cinderpaw", "aquafin", "voltwig", "mossmunk", "raw_filament"]) as Array).duplicate(), "receipt":"m3-capture"}
+			profile.pending_pack_reveal = {"pack_id":"basic", "starter_reward":true, "starter_opened":int(inputs.get("starter_claimed", 0)) + 1, "cards":(inputs.get("cards", ["cinderpaw", "aquafin", "voltwig", "mossmunk", "raw_filament"]) as Array).duplicate(), "receipt":"m3-capture"}
+		elif main.screen == "unified_library":
+			# The post-Keep receipt is a real native route state rather than a capture
+			# annotation.  It makes the authoritative opened/entitled progression
+			# visible after the pack machine has released navigation.
+			main.toast = "Starter packs filed · %d / 3 opened" % int(inputs.get("starter_claimed", 0))
 	if main.screen == "settings":
 		main.settings_return_screen = str(inputs.get("caller", "workshop"))
 		main.m3_settings_draft = profile.settings.duplicate(true); main.m3_settings_draft_initialized = true
@@ -136,6 +164,20 @@ func _validate_navigation_fixture(main: Control, capture_id: String) -> bool:
 	if capture_id == "M3-AX-03":
 		var new_maker := main.find_child("TitleNewMaker", true, false) as Button
 		return main.screen == "title" and is_instance_valid(new_maker) and new_maker.has_focus() and new_maker.find_child("WorkshopHotspotTightFocusStrokeTop", true, false) != null
+	return true
+
+func _capture_pointer_activate(target: Button) -> bool:
+	if not is_instance_valid(target) or target.disabled or not target.is_visible_in_tree(): return false
+	var point := target.get_global_rect().get_center()
+	var move := InputEventMouseMotion.new(); move.position = point; move.global_position = point; get_viewport().push_input(move)
+	await get_tree().process_frame
+	if get_viewport().gui_get_hovered_control() != target:
+		push_error("Capture target is obscured: %s at %s" % [target.name, point])
+		return false
+	var down := InputEventMouseButton.new(); down.position = point; down.global_position = point; down.button_index = MOUSE_BUTTON_LEFT; down.pressed = true; get_viewport().push_input(down)
+	await get_tree().process_frame
+	var up := InputEventMouseButton.new(); up.position = point; up.global_position = point; up.button_index = MOUSE_BUTTON_LEFT; up.pressed = false; get_viewport().push_input(up)
+	await get_tree().process_frame
 	return true
 
 func _ready() -> void:
@@ -184,23 +226,26 @@ func _ready() -> void:
 			push_error("M3-NV-03 requires the real completed Title New Maker action.")
 			get_tree().quit(1)
 			return
-		new_maker.emit_signal("pressed")
-		await get_tree().process_frame
+		if not await _capture_pointer_activate(new_maker):
+			get_tree().quit(1)
+			return
 	if mode == "M3-NV-05":
 		var settings := main.find_child("TitleSettings", true, false) as Button
 		if not is_instance_valid(settings):
 			push_error("M3-NV-05 requires the real Title Settings action.")
 			get_tree().quit(1)
 			return
-		settings.emit_signal("pressed")
-		await get_tree().process_frame
+		if not await _capture_pointer_activate(settings):
+			get_tree().quit(1)
+			return
 		var back := main.find_child("UnifiedFoundryWorkshopReturn", true, false) as Button
 		if not is_instance_valid(back):
 			push_error("M3-NV-05 requires the physical Settings return control.")
 			get_tree().quit(1)
 			return
-		back.emit_signal("pressed")
-		await get_tree().process_frame
+		if not await _capture_pointer_activate(back):
+			get_tree().quit(1)
+			return
 	if mode == "M3-AX-03":
 		var focus_new_maker := main.find_child("TitleNewMaker", true, false) as Button
 		if is_instance_valid(focus_new_maker): focus_new_maker.grab_focus()

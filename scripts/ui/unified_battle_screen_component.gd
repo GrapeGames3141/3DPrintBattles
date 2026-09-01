@@ -175,14 +175,17 @@ func _add_anchor_controls(shell: Control, public_view: Dictionary) -> void:
 func _add_plan_overlay(shell: Control, active: Dictionary) -> void:
 	# The pictured bottom tray is a horizontal hand rail, never a three-card slice.
 	var large_text := int(shell.settings().get("text_scale_bps", 10000)) >= 15000
-	var hand_scroll := ScrollContainer.new(); hand_scroll.name = "PhysicalBattleHandScroll"; hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; hand_scroll.anchor_left = .23; hand_scroll.anchor_right = .72; hand_scroll.anchor_top = .875 if large_text else .885; hand_scroll.anchor_bottom = .935; shell.add_child(hand_scroll)
+	# The selected hand, queued action, and Run Cycle are three separate physical
+	# hit regions.  Leave a real gap between their focus edges; a 46px action rail
+	# used to clip the Queue label and let its ring cross the hand glyphs.
+	var hand_scroll := ScrollContainer.new(); hand_scroll.name = "PhysicalBattleHandScroll"; hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; hand_scroll.anchor_left = .23; hand_scroll.anchor_right = .72; hand_scroll.anchor_top = .845 if large_text else .850; hand_scroll.anchor_bottom = .905; shell.add_child(hand_scroll)
 	var hand_row := HBoxContainer.new(); hand_row.name = "PhysicalBattleHand"; hand_row.add_theme_constant_override("separation", 4); hand_scroll.add_child(hand_row)
 	var hand_width := maxi(48, floori(shell.size.x * (hand_scroll.anchor_right - hand_scroll.anchor_left))) if large_text else 132
 	for id in active.get("hand", []) as Array:
 		var card: Button = shell._unified_card_button(str(id)); card.custom_minimum_size = Vector2(hand_width,48); hand_row.add_child(card)
 	# Secondary actions may scroll, but the cycle lever has a fixed physical recess
 	# and never competes with them at large accessibility text sizes.
-	var action_scroll := ScrollContainer.new(); action_scroll.name = "PhysicalBattlePlanActionScroll"; action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; action_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; action_scroll.anchor_left = .23; action_scroll.anchor_right = .72; action_scroll.anchor_top = .94; action_scroll.anchor_bottom = .985; shell.add_child(action_scroll)
+	var action_scroll := ScrollContainer.new(); action_scroll.name = "PhysicalBattlePlanActionScroll"; action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; action_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; action_scroll.anchor_left = .23; action_scroll.anchor_right = .72; action_scroll.anchor_top = .920; action_scroll.anchor_bottom = .990; shell.add_child(action_scroll)
 	var row := HBoxContainer.new(); row.name = "PhysicalBattlePlanActions"; row.add_theme_constant_override("separation", 4); action_scroll.add_child(row)
 	# Rival physical anchors own focus; no hard-wired fallback button can claim a
 	# target the player did not touch.
@@ -196,7 +199,7 @@ func _add_plan_overlay(shell: Control, active: Dictionary) -> void:
 		var reprint: Button = shell.make_button("Emergency Reprint", shell._submit_unified_intent.bind({"type":"upgrade_reprint","graveyard_index":0}), Color("526e93")); reprint.custom_minimum_size = Vector2(48,48); row.add_child(reprint)
 	# Leave a real 8px inset in the pictured brass mount even when the minimum
 	# touch height wins over anchors at a small portrait viewport.
-	var lever: Button = shell.make_button("Run\nCycle" if large_text else "Run Cycle", shell._start_unified_run_cycle, Color("a86b2e")); lever.name = "UnifiedRunCycleLever"; lever.custom_minimum_size = Vector2(0, 56); lever.accessibility_name = "Run Cycle. Resolve printing, attacks, and collection."; lever.focus_mode = Control.FOCUS_ALL; lever.anchor_left = .76; lever.anchor_right = .96; lever.anchor_top = .885 if large_text else .90; lever.anchor_bottom = .96; lever.add_theme_font_size_override("font_size", shell.scaled_font(10) if large_text else shell.scaled_font(15)); shell.add_child(lever)
+	var lever: Button = shell.make_button("Run\nCycle" if large_text else "Run Cycle", shell._start_unified_run_cycle, Color("a86b2e")); lever.name = "UnifiedRunCycleLever"; lever.custom_minimum_size = Vector2(0, 56); lever.accessibility_name = "Run Cycle. Resolve printing, attacks, and collection."; lever.focus_mode = Control.FOCUS_ALL; lever.anchor_left = .76; lever.anchor_right = .96; lever.anchor_top = .870 if large_text else .875; lever.anchor_bottom = .970; lever.add_theme_font_size_override("font_size", shell.scaled_font(10) if large_text else shell.scaled_font(15)); shell.add_child(lever)
 	if not str(shell.unified_selected_card_id).is_empty() and str(shell.unified_selected_card_id) in (active.get("hand", []) as Array):
 		_add_selected_card_controls(shell, active)
 
@@ -219,7 +222,7 @@ func _add_selected_card_controls(shell: Control, active: Dictionary) -> void:
 			status.visible = false
 		var card_plate := PanelContainer.new(); card_plate.name = "UnifiedSelectedCreatureBlueprint"; card_plate.anchor_left = .23; card_plate.anchor_right = .77; card_plate.anchor_top = .635; card_plate.anchor_bottom = .685; card_plate.clip_contents = true; card_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE; card_plate.add_theme_stylebox_override("panel", StyleBoxEmpty.new()); shell.add_child(card_plate)
 		var blueprint_row := HBoxContainer.new(); blueprint_row.clip_contents = true; blueprint_row.alignment = BoxContainer.ALIGNMENT_CENTER; blueprint_row.add_theme_constant_override("separation", 6); card_plate.add_child(blueprint_row)
-		var art := TextureRect.new(); art.name = "UnifiedSelectedCreatureArt"; art.texture = ResourceLoader.load(str((card.get("presentation", {}) as Dictionary).get("raw_print", ""))) as Texture2D; art.custom_minimum_size = Vector2(28, 28); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; blueprint_row.add_child(art)
+		var art := TextureRect.new(); art.name = "UnifiedSelectedCreatureBlueprintCard"; art.texture = PhysicalCatalogImprint.blueprint_texture(card); art.custom_minimum_size = Vector2(28, 28); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; blueprint_row.add_child(art)
 		var type_copy := str(card.get("type", "blueprint")).capitalize()
 		var card_copy: Label = shell.label("%s · %dF · %s · Queue print" % [str(card.get("name", card_id)), filament_cost, type_copy], 9, Color("fff0bb")); card_copy.name = "UnifiedSelectedCreatureBlueprintCopy"; card_copy.add_theme_font_size_override("font_size", 10); card_copy.autowrap_mode = TextServer.AUTOWRAP_OFF; card_copy.clip_text = true; card_copy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; card_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL; blueprint_row.add_child(card_copy)
 		var queue: Button = shell.make_button("Queue Print", shell._submit_unified_intent.bind({"type":"play_card","card_id":card_id}), Color("a86b2e")); queue.name = "UnifiedPlayQueueCreature"; queue.custom_minimum_size = Vector2(116,48); row.add_child(queue)
