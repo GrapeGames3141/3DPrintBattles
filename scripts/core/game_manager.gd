@@ -212,6 +212,20 @@ func claim_pending_pack_reveal_result() -> Dictionary:
 
 func save_unified_deck(cards: Array, deck_id := "starter-deck") -> bool:
 	return apply_transition(UNIFIED_RULES.save_deck(profile, cards, deck_id), "save_unified_deck")
+func save_unified_deck_and_preprints(cards: Array, card_ids: Array, deck_id := "starter-deck") -> bool:
+	# Dirty-exit Save is one user transaction. Validate both transitions against a
+	# candidate first, then publish one snapshot; deck-only persistence is forbidden.
+	if _reject_read_only(): return false
+	var deck_result := UNIFIED_RULES.save_deck(profile, cards, deck_id)
+	if not bool(deck_result.get("ok", false)):
+		toast_requested.emit(str(deck_result.get("error", "That deck is not legal.")))
+		return false
+	var candidate: Dictionary = deck_result.get("profile", profile) if deck_result.get("profile", profile) is Dictionary else profile
+	var preprint_result := UNIFIED_RULES.save_preprints(candidate, card_ids)
+	if not bool(preprint_result.get("ok", false)):
+		toast_requested.emit(str(preprint_result.get("error", "Those Pre-Prints are not legal.")))
+		return false
+	return bool(_commit_rule_result(preprint_result, "save_unified_deck_and_preprints").get("ok", false))
 func select_unified_deck(deck_id: String) -> bool:
 	return apply_transition(UNIFIED_RULES.select_active_deck(profile, deck_id), "select_v3_deck")
 func save_preprints_v3(card_ids: Array) -> bool:

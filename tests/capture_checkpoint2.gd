@@ -21,6 +21,8 @@ const M6_FORGE_MODES := ["m6_active_print60"]
 const M6_WORKSHOP_MODES := ["m6_tall_zero_reserve"]
 const M7_FORGE_MODES := ["m7_active_print60_text150", "m7_active_print60_contrast"]
 const M7_BATTLE_MODES := ["m7_battle_reduced_contrast"]
+const M8_FORGE_MODES := ["m8_print_idle", "m8_print_idle_focus", "m8_print_idle_text150_focus", "m8_print_01", "m8_print_10", "m8_print_10_reduced", "m8_print_25", "m8_print_60", "m8_print_60_reduced", "m8_print_60_text150_contrast", "m8_print_99", "m8_print_99_reduced", "m8_print_raw_complete", "m8_print_raw_hold", "m8_print_awakening", "m8_print_awakening_reduced", "m8_print_departing", "m8_print_departing_reduced", "m8_print_complete"]
+const M8_BACK_MODES := ["m8_back_firstprint_workshop", "m8_back_firstprint_title", "m8_back_archive_detail", "m8_back_deck_dirty", "m8_back_market_confirm", "m8_back_settings_title", "m8_back_settings_workshop", "m8_back_proving_preflight", "m8_back_proving_challenge", "m8_back_live_battle", "m8_back_result_committed"]
 var workshop: Control
 var capture_size := ""
 var capture_mode := "onboarding"
@@ -81,13 +83,20 @@ func _prepare_capture() -> void:
 		if "text150" in capture_mode: GameManager.profile.settings.text_scale_bps = 15000
 		if capture_mode == "m1_workshop_contrast": GameManager.profile.settings.high_contrast = true
 		if capture_mode == "m1_workshop_reduced": GameManager.profile.settings.reduced_motion = true
-	if capture_mode.begins_with("m6_") or capture_mode.begins_with("m7_"):
+	if capture_mode.begins_with("m6_") or capture_mode.begins_with("m7_") or capture_mode.begins_with("m8_"):
 		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
 		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
-		GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
+		# Empty-bed First Print is the only M8 frame before the starter print has
+		# been accepted. Every later M8 phase uses the existing printed fixture.
+		if capture_mode not in ["m8_print_idle", "m8_print_idle_focus", "m8_print_idle_text150_focus", "m8_back_firstprint_workshop", "m8_back_firstprint_title"]: GameManager.profile = UNIFIED_RULES.print_starter(GameManager.profile).profile
 		if capture_mode == "m6_tall_printer_hud_text150": GameManager.profile.settings.text_scale_bps = 15000
 		if capture_mode == "m7_active_print60_text150": GameManager.profile.settings.text_scale_bps = 15000
+		if capture_mode == "m8_print_idle_text150_focus": GameManager.profile.settings.text_scale_bps = 15000
 		if capture_mode == "m7_active_print60_contrast": GameManager.profile.settings.high_contrast = true
+		if capture_mode == "m8_print_60_text150_contrast":
+			GameManager.profile.settings.text_scale_bps = 15000
+			GameManager.profile.settings.high_contrast = true
+		if capture_mode.contains("_reduced"): GameManager.profile.settings.reduced_motion = true
 	if capture_mode in M2_MATRIX_MODES or capture_mode in M6_BATTLE_MODES or capture_mode in M7_BATTLE_MODES:
 		GameManager.profile = UNIFIED_RULES.ensure(ProfileRules.new_profile())
 		GameManager.profile = UNIFIED_RULES.choose_starter(GameManager.profile, "cinderpaw").profile
@@ -246,14 +255,65 @@ func _prepare_capture() -> void:
 		workshop.printer_blueprint_selected_id = "cinderpaw"
 		workshop.printer_price = 0
 		workshop.printer_sequence = ArcaneForgeSequence.create(false)
-	elif capture_mode == "feedback_mid_print" or capture_mode == "m6_active_print60" or capture_mode in M7_FORGE_MODES:
+	elif capture_mode in M8_BACK_MODES:
+		match capture_mode:
+			"m8_back_firstprint_workshop", "m8_back_firstprint_title":
+				workshop.screen = "printer"
+				workshop.printer_return_screen = "title" if capture_mode == "m8_back_firstprint_title" else "workshop"
+				workshop.workshop_return_view = "overview"
+				workshop.printer_creature_id = "cinderpaw"
+				workshop.printer_blueprint_selected_id = "cinderpaw"
+				workshop.printer_price = 0
+				workshop.printer_sequence = ArcaneForgeSequence.create(false)
+			"m8_back_archive_detail":
+				workshop.screen = "unified_library"; workshop.unified_inspector_id = "cinderpaw"
+			"m8_back_deck_dirty":
+				workshop.screen = "unified_deck"; workshop.m3_deck_edit_slot_id = str(GameManager.profile.get("active_deck_id", "starter-deck")); workshop.m3_deck_loaded_slot_id = workshop.m3_deck_edit_slot_id; workshop.unified_deck_draft = ["cinderpaw"]; workshop.unified_preprint_draft = []; workshop.m3_pending_deck_slot_id = "__back__"
+			"m8_back_market_confirm":
+				workshop.screen = "unified_market"; workshop.m3_market_confirmation = {"category":"blueprints", "id":"mossmunk", "price":20, "consequence":"Add the offered blueprint license."}
+			"m8_back_settings_title", "m8_back_settings_workshop":
+				workshop.screen = "settings"; workshop.settings_return_screen = "title" if capture_mode == "m8_back_settings_title" else "workshop"; workshop.m3_settings_draft = GameManager.profile.get("settings", {}).duplicate(true); workshop.m3_settings_draft_initialized = true
+			"m8_back_proving_preflight":
+				workshop.screen = "proving"; workshop.set_meta("battle_preflight", true)
+			"m8_back_proving_challenge":
+				workshop.screen = "proving"
+			"m8_back_live_battle":
+				var live_setup: Dictionary = GameManager.create_unified_battle("trial_first_layers", {}, 61); workshop.battle = live_setup.get("battle", null); workshop.battle_mode = "trial_first_layers"; workshop.battle_settlement_context = live_setup.get("settlement_context", {}); workshop.screen = "unified_battle"
+			"m8_back_result_committed":
+				workshop.screen = "m3_result"; workshop.battle_mode = "training"; workshop.m3_result_state = "committed"; workshop.m3_result_receipt = {"outcome":"Victory", "settlement":"committed"}
+	elif capture_mode == "feedback_mid_print" or capture_mode == "m6_active_print60" or capture_mode in M7_FORGE_MODES or capture_mode in M8_FORGE_MODES:
 		workshop.screen = "printer"
+		if capture_mode in M8_FORGE_MODES:
+			# M8 Back evidence represents the ordinary Workshop-owned Forge entry.
+			# The fixture keeps that caller explicit instead of inheriting the legacy
+			# collection default from an unmounted Main.
+			workshop.printer_return_screen = "workshop"
+			workshop.workshop_return_view = "overview"
 		workshop.printer_creature_id = "cinderpaw"
 		workshop.printer_blueprint_selected_id = "cinderpaw"
 		workshop.printer_price = 0
-		workshop.printer_sequence = ArcaneForgeSequence.create(false)
-		workshop.printer_sequence.begin()
-		workshop.printer_sequence.advance(4200)
+		workshop.printer_sequence = ArcaneForgeSequence.create(bool(GameManager.profile.get("settings", {}).get("reduced_motion", false)))
+		if capture_mode not in ["m8_print_idle", "m8_print_idle_focus", "m8_print_idle_text150_focus"]:
+			workshop.printer_sequence.begin()
+			var m8_progress: int = int({"m8_print_01":1, "m8_print_10":700, "m8_print_10_reduced":700, "m8_print_25":1750, "m8_print_60":4200, "m8_print_60_reduced":4200, "m8_print_60_text150_contrast":4200, "m8_print_99":6930, "m8_print_99_reduced":6930}.get(capture_mode, 4200))
+			workshop.printer_sequence.advance(int(m8_progress))
+			if capture_mode == "m8_print_raw_complete":
+				workshop.printer_sequence.phase = ArcaneForgeSequence.RAW_COMPLETE
+				workshop.printer_sequence.progress_bps = ArcaneForgeSequence.PRINT_COMPLETE_BPS
+			elif capture_mode == "m8_print_raw_hold":
+				workshop.printer_sequence.phase = ArcaneForgeSequence.RAW_HOLD
+				workshop.printer_sequence.progress_bps = ArcaneForgeSequence.PRINT_COMPLETE_BPS
+			elif capture_mode in ["m8_print_awakening", "m8_print_awakening_reduced"]:
+				workshop.printer_sequence.phase = ArcaneForgeSequence.AWAKENING
+				workshop.printer_sequence.progress_bps = ArcaneForgeSequence.PRINT_COMPLETE_BPS
+				workshop.printer_sequence.phase_elapsed_bps = ArcaneForgeSequence.AWAKEN_BPS / 2
+			elif capture_mode in ["m8_print_departing", "m8_print_departing_reduced"]:
+				workshop.printer_sequence.phase = ArcaneForgeSequence.DEPARTING
+				workshop.printer_sequence.progress_bps = ArcaneForgeSequence.PRINT_COMPLETE_BPS
+				workshop.printer_sequence.phase_elapsed_bps = ArcaneForgeSequence.DEPART_BPS / 2
+			elif capture_mode == "m8_print_complete":
+				workshop.printer_sequence.phase = ArcaneForgeSequence.AWAKENED
+				workshop.printer_sequence.progress_bps = ArcaneForgeSequence.PRINT_COMPLETE_BPS
 	elif capture_mode == "feedback_workshop" or capture_mode == "m6_tall_zero_reserve": workshop.screen = "workshop"
 	elif capture_mode == "feedback_collection": workshop.screen = "unified_library"
 	elif capture_mode == "feedback_deck_builder": workshop.screen = "unified_deck"
@@ -341,6 +401,11 @@ func capture() -> void:
 		workshop._audio_director.cue("impact")
 		workshop.render()
 	await wait_for_stable_header()
+	if capture_mode == "m8_back_live_battle":
+		# Capture the actual shared dispatcher feedback; this is not a fabricated
+		# toast and leaves the live coordinator/route intact for the raster proof.
+		workshop.dispatch_back()
+		await wait_frames(2)
 	if capture_layout_failed:
 		# A proof with a missing native title is invalid evidence. Do not save a PNG
 		# merely because the process otherwise exits cleanly.
@@ -361,12 +426,22 @@ func capture() -> void:
 			physical_stage.set_process(false)
 			await wait_frames(1)
 	var requested_focus := m1_requested_focus_button()
+	if capture_mode in ["m8_print_idle_focus", "m8_print_idle_text150_focus"]: requested_focus = "ArcaneForgeBack"
 	if capture_mode == "m2_challenge": requested_focus = "ChallengeReturnWorkshop"
 	elif capture_mode == "m2_preflight": requested_focus = "ChallengeBeginBattle"
 	elif capture_mode == "m2_battle_contrast": requested_focus = "PhysicalBattleAnchor1_1"
 	# Dummy headless renderers do not emit post-draw focus frames. Keep preflight
 	# as a fixture/compile check there; real Windows capture retains the focus.
 	if DisplayServer.get_name() == "headless": requested_focus = ""
+	# Normal-state evidence must not inherit Main's deferred default focus from a
+	# prior render. Focus variants below intentionally restore it on their named
+	# physical owner, so the two capture states remain semantically and visually
+	# distinct without inventing a capture-only overlay.
+	if requested_focus.is_empty():
+		var inherited_focus := get_viewport().gui_get_focus_owner()
+		if inherited_focus != null:
+			inherited_focus.release_focus()
+			await wait_frames(1)
 	if not requested_focus.is_empty():
 		var focus_hotspot := workshop.find_child(requested_focus, true, false) as Button
 		if focus_hotspot == null or not focus_hotspot.is_visible_in_tree():
@@ -445,13 +520,23 @@ func capture() -> void:
 			get_tree().quit(1)
 			return
 		raster_focus_hotspot.grab_focus()
+		if not raster_focus_hotspot.has_focus():
+			push_error("Focus capture did not retain keyboard focus on %s before rasterization." % requested_focus)
+			get_tree().quit(1)
+			return
+		# Focus must be the production child ring, never a capture-only overlay. The
+		# Forge's compact Back plaque uses the same physical inset family as Title,
+		# while Workshop owners use their tight object ring.
 		var raster_focus_ring := raster_focus_hotspot.find_child("WorkshopHotspotTightFocusRing", true, false) as Panel
+		if raster_focus_ring == null:
+			raster_focus_ring = raster_focus_hotspot.find_child("PhysicalInsetFocusRing", true, false) as Panel
 		if raster_focus_ring != null:
 			raster_focus_ring.show()
+			var edge_prefix := "WorkshopHotspotTightFocusStroke" if raster_focus_ring.name == "WorkshopHotspotTightFocusRing" else "PhysicalInsetFocus"
 			for edge in ["Top", "Right", "Bottom", "Left"]:
-				var stroke := raster_focus_ring.find_child("WorkshopHotspotTightFocusStroke%s" % edge, true, false) as Control
+				var stroke := raster_focus_ring.find_child(edge_prefix + edge, true, false) as Control
 				if stroke == null or stroke.get_global_rect().get_area() <= 0.0:
-					push_error("M1 focus capture lost %s edge on %s." % [edge, requested_focus])
+					push_error("Focus capture lost %s edge on %s." % [edge, requested_focus])
 					get_tree().quit(1)
 					return
 		await wait_frames(2)
@@ -522,6 +607,24 @@ func wait_for_stable_header() -> void:
 			if _frame in [8, 24, 40]: workshop.render()
 			await get_tree().process_frame
 			continue
+		if capture_mode in M8_BACK_MODES:
+			var back_anchor_name := ""
+			match capture_mode:
+				"m8_back_firstprint_workshop", "m8_back_firstprint_title": back_anchor_name = "ArcaneForgeBack"
+				"m8_back_archive_detail": back_anchor_name = "M3ArchiveDetailApertures"
+				"m8_back_deck_dirty": back_anchor_name = "M3DeckDirtyPrompt"
+				"m8_back_market_confirm": back_anchor_name = "M3MarketConfirm"
+				"m8_back_settings_title", "m8_back_settings_workshop": back_anchor_name = "SettingsCancel"
+				"m8_back_proving_preflight": back_anchor_name = "PhysicalBattlePreflight"
+				"m8_back_proving_challenge": back_anchor_name = "PhysicalChallengeBoard"
+				"m8_back_live_battle": back_anchor_name = "PhysicalBattlefieldStage"
+				"m8_back_result_committed": back_anchor_name = "ResultContinue"
+			var back_anchor := workshop.find_child(back_anchor_name, true, false) as Control
+			if back_anchor != null and back_anchor.is_visible_in_tree() and back_anchor.get_global_rect().get_area() > 0.0:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
 		if capture_mode.begins_with("m1_"):
 			var anchor_name := "TitleContinue" if capture_mode in M1_TITLE_MODES else "StarterCarouselCard" if capture_mode in M1_STARTER_MODES else "FirstPrintEmptyBedProof" if capture_mode in M1_FIRST_PRINT_MODES else "WorkshopProgressInstrument"
 			var m1_anchor := workshop.find_child(anchor_name, true, false) as Control
@@ -590,6 +693,16 @@ func wait_for_stable_header() -> void:
 				return
 			await get_tree().process_frame
 			continue
+		if capture_mode in M8_FORGE_MODES:
+			var m8_stage := workshop.find_child("FeedbackForgeStage", true, false) as Control
+			var m8_idle_dock := workshop.find_child("FirstPrintBlueprintPaperAperture", true, false) as Control
+			var m8_active_rail := workshop.find_child("ForgeActiveRail", true, false) as Control
+			var m8_ready: bool = (m8_idle_dock != null and m8_idle_dock.is_visible_in_tree()) if capture_mode in ["m8_print_idle", "m8_print_idle_focus", "m8_print_idle_text150_focus"] else (m8_stage != null and m8_active_rail != null and m8_stage.is_visible_in_tree() and m8_active_rail.is_visible_in_tree())
+			if m8_ready:
+				await wait_frames(6)
+				return
+			await get_tree().process_frame
+			continue
 		var header := workshop.find_child("WorkshopHeader", true, false) as Control
 		var workshop_progress := workshop.find_child("WorkshopHudProgress", true, false) as Control
 		var bottom_safe := true
@@ -622,7 +735,7 @@ func requested_mode() -> String:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--capture-mode="):
 			var mode := arg.trim_prefix("--capture-mode=")
-			if mode in M2_MATRIX_MODES or mode in M6_BATTLE_MODES or mode in M6_FORGE_MODES or mode in M6_WORKSHOP_MODES or mode in M7_FORGE_MODES or mode in M7_BATTLE_MODES: return mode
+			if mode in M2_MATRIX_MODES or mode in M6_BATTLE_MODES or mode in M6_FORGE_MODES or mode in M6_WORKSHOP_MODES or mode in M7_FORGE_MODES or mode in M7_BATTLE_MODES or mode in M8_FORGE_MODES or mode in M8_BACK_MODES: return mode
 			if mode in ["unified_library_inspector", "unified_battle", "unified_pack_reveal", "unified_forgedex", "feedback_starter", "feedback_first_print", "feedback_mid_print", "feedback_workshop", "feedback_collection", "feedback_deck_builder"]: return mode
 			if mode in ["future_save_recovery", "workshop", "station_live_printer_start", "station_live_printer_mid", "station_live_printer_hold", "station_live_printer_awakening", "station_live_printer_departing", "station_live_maker_team", "station_live_reduced", "station_live_review", "workshop_printer", "workshop_maker", "workshop_terminal", "workshop_terminal_offers", "workshop_terminal_forgedex", "workshop_terminal_trade", "workshop_proving", "workshop_yard", "workshop_maker_drawer", "workshop_proving_drawer", "workshop_printer_picker", "printer_picker_preview_mossmunk", "integrated_forge", "integrated_forge_mossmunk", "shop", "collection", "team", "armor", "deck", "codex", "yard", "calibration", "settings", "proving", "trials", "trials_scrolled", "trials_legacy", "trials_teamlaunch", "battle", "battle_review", "battle_secondary", "battle_hand", "battle_impact", "battle_voidmanta", "training_result", "battle_vfx_idle", "battle_vfx_basic", "battle_vfx_fire", "battle_vfx_water", "battle_vfx_lightning", "battle_vfx_nature", "battle_vfx_ice", "battle_vfx_stone", "battle_vfx_wind", "battle_vfx_arcane", "battle_vfx_contact_sheet", "tiered_armor_palette_showcase", "core_power_showcase", "core_power_timeline", "helmet_gem_closeup", "helmet_gem_static_closeup", "trial_battle", "trial_battle_legacy", "trial_battle_teamlaunch", "high_contrast_battle", "reduced_motion_battle", "local_vs", "local_vs_ready", "trade", "trade_draft", "printer_preview", "printer_printing", "printer_raw_complete", "printer_raw_hold", "printer_awakening", "printer_departing", "printer_awakened", "printer_reduced", "printer_mossmunk_raw_complete", "suit_preview", "suit_printing", "suit_raw_hold", "suit_awakened", "suit_legendary_raw_hold", "suit_legendary_awakened", "art_gallery_page1", "art_gallery_page2", "card_archive", "card_detail", "deck_cards", "shop_cards", "battle_hand_cards", "battle_hand_cards_focus", "local_card_handoff", "local_card_revealed", "high_contrast_cards", "unified_market", "unified_library", "unified_deck", "unified_upgrades"]: return mode
 			if mode in ["m1_title", "m1_title_text150", "m1_tall_safe_top", "m1_starter_focused", "m1_starter_inspector", "m1_starter_text150", "m1_starter_inspector_text150", "m1_starter_inspector_focus_select", "m1_starter_inspector_focus_close", "m1_first_print_setup", "m1_first_print_text150", "m1_workshop", "m1_workshop_focus", "m1_workshop_focus_printer", "m1_workshop_focus_battle_arena", "m1_workshop_focus_card_archive", "m1_workshop_focus_deck", "m1_workshop_focus_supplies", "m1_workshop_focus_settings", "m1_workshop_text150", "m1_workshop_contrast", "m1_workshop_reduced", "m1_workshop_synthetic"]: return mode

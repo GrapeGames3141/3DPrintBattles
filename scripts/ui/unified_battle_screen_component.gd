@@ -22,13 +22,16 @@ func render_preflight(shell: Control) -> void:
 	var preflight := bool(shell.get_meta("battle_preflight", false))
 	var legality_copy := "Legal deck %d/40" % deck.size() if legal else legality_reason
 	var copy := "Battle Preflight\n%s · Preprints %d/3\nYour printer: 2,000 HP · Rival: 2,000 HP" % [legality_copy, preprints.size()] if preflight else "Challenge Board\nFirst Layers training\nPublic rival printer: 2,000 HP\nInspect the battle setup"
-	var title := _add_plate(shell, Rect2(.23, .34, .54, .22), copy, Callable(), "", Color("f1be69")); title.name = "PhysicalBattlePreflight" if preflight else "PhysicalChallengeBoard"
+	# Challenge copy and its physical decision keys occupy deliberately separate
+	# material bands.  The prior short plate allowed multi-line facts to cross the
+	# button texture at phone scale.
+	var title := _add_plate(shell, Rect2(.205, .305, .590, .310), copy, Callable(), "", Color("f1be69")); title.name = "PhysicalBattlePreflight" if preflight else "PhysicalChallengeBoard"
 	var body := title.get_child(0) as VBoxContainer
 	if not preflight:
 		var continue_button: Button = shell.make_button("Review Preflight", func(): shell.set_meta("battle_preflight", true); shell.render(), Color("a86b2e")); continue_button.name = "ChallengeContinuePreflight"; continue_button.custom_minimum_size = Vector2(0,56); body.add_child(continue_button)
-		var browse_return: Button = shell.make_button("Return to Workshop", shell.navigate_to.bind("workshop"), Color("526e93")); browse_return.name = "ChallengeReturnWorkshop"; browse_return.custom_minimum_size = Vector2(0,48); body.add_child(browse_return); return
+		var browse_return: Button = shell.make_button("Return to Workshop", shell.dispatch_back, Color("526e93")); browse_return.name = "ChallengeReturnWorkshop"; browse_return.custom_minimum_size = Vector2(0,48); body.add_child(browse_return); return
 	var begin: Button = shell.make_button("Begin Battle" if legal else "Deck is not legal", shell.start_mode.bind("trial_first_layers"), Color("a86b2e")); begin.name = "ChallengeBeginBattle"; begin.disabled = not legal; begin.tooltip_text = "Begin validates the active deck and legal pre-prints." if legal else legality_reason; begin.custom_minimum_size = Vector2(0,56); body.add_child(begin)
-	var return_button: Button = shell.make_button("Return to Workshop", shell.navigate_to.bind("workshop"), Color("526e93")); return_button.name = "ChallengeReturnWorkshop"; return_button.custom_minimum_size = Vector2(0,48); body.add_child(return_button)
+	var return_button: Button = shell.make_button("BACK TO CHALLENGE BOARD", shell.dispatch_back, Color("526e93")); return_button.name = "ChallengeReturnWorkshop"; return_button.custom_minimum_size = Vector2(0,48); body.add_child(return_button)
 
 func render_fullscreen(shell: Control) -> void:
 	var battle = shell.battle
@@ -53,7 +56,7 @@ func render_fullscreen(shell: Control) -> void:
 	_add_synthetic_bottom_overlay(shell)
 	if bool(battle.finished):
 		if not shell.battle_settlement_context.is_empty() and not bool(shell.battle_settlement_finished): shell.call_deferred("_settle_finished_unified_battle")
-		_add_plate(shell, Rect2(.28, .49, .44, .18), "%s printer broke." % ("Rival" if int(battle.winner) == viewer_seat else "Your"), shell._leave_unified_battle, "Return to Workshop", Color("a86b2e")); return
+		_add_plate(shell, Rect2(.28, .49, .44, .18), "%s printer broke." % ("Rival" if int(battle.winner) == viewer_seat else "Your"), shell.dispatch_back, "Return to Workshop", Color("a86b2e")); return
 	if str(shell.battle_mode) == "local" and bool(shell.unified_local_handoff):
 		_add_plate(shell, Rect2(.23, .49, .54, .18), "Pass the device · hands stay hidden", func(): shell.unified_local_handoff = false; shell.render(), "Ready Player %d" % (int(battle.active_seat) + 1), Color("a86b2e")); return
 	var seat := int(battle.active_seat)
@@ -286,8 +289,12 @@ func _toggle_overflow(index: int, shell: Control) -> void:
 	shell.render()
 
 func _add_plate(shell: Control, rect: Rect2, caption: String, action: Callable, button_caption: String, color: Color) -> PanelContainer:
-	var plate := PanelContainer.new(); plate.anchor_left = rect.position.x; plate.anchor_top = rect.position.y; plate.anchor_right = rect.end.x; plate.anchor_bottom = rect.end.y; plate.add_theme_stylebox_override("panel", shell.panel_style(Color("102940e8"), color)); shell.add_child(plate)
-	var box := VBoxContainer.new(); plate.add_child(box); var text: Label = shell.label(caption, 13, Color("fff0bb")); text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; box.add_child(text)
+	var plate := PanelContainer.new(); plate.anchor_left = rect.position.x; plate.anchor_top = rect.position.y; plate.anchor_right = rect.end.x; plate.anchor_bottom = rect.end.y; plate.z_index = 20; plate.clip_contents = true
+	var plate_style: StyleBox = shell.panel_style(Color("102940e8"), color)
+	plate_style.content_margin_left = 14.0; plate_style.content_margin_right = 14.0; plate_style.content_margin_top = 12.0; plate_style.content_margin_bottom = 12.0
+	plate.add_theme_stylebox_override("panel", plate_style); shell.add_child(plate)
+	var box := VBoxContainer.new(); box.name = "ChallengePlateContent"; box.add_theme_constant_override("separation", 10); plate.add_child(box)
+	var text: Label = shell.label(caption, 13, Color("fff0bb")); text.name = "ChallengePlateCaption"; text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; text.custom_minimum_size = Vector2(0, 72); box.add_child(text)
 	if not button_caption.is_empty(): var button: Button = shell.make_button(button_caption, action, color); button.custom_minimum_size = Vector2(0,48); box.add_child(button)
 	return plate
 

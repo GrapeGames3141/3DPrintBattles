@@ -26,7 +26,7 @@ func _ready() -> void:
 	forge.set_preview_phase(ArcaneForgeSequence.PRINTING, 4200)
 	await get_tree().process_frame
 	var wire_clip := forge.find_child("ForgePrintWireframeClip", true, false) as Control
-	require(wire_clip != null and wire_clip.visible and forge._last_scan_count == 1 and forge._last_solid_rect.size.y > 0.0 and forge._last_wireframe_rect.size.y > 0.0 and is_equal_approx(forge._last_solid_rect.position.y, forge._last_wireframe_rect.end.y), "M6-PR-60 renders one shared scan boundary with solid below and technical wireframe above.")
+	require(wire_clip != null and wire_clip.visible and forge._last_scan_count == 1 and forge._last_solid_rect.size.y > 0.0 and forge._last_wireframe_rect.size.y > 0.0 and is_equal_approx(forge._last_solid_rect.position.y - forge._last_wireframe_rect.end.y, 1.0) and forge._last_wireframe_rect.size.y <= forge._last_printable_rect.size.y * 0.0801, "M6/M8-PR-60 renders one scan datum with solid strictly below it and a local <=8% technical preview immediately above.")
 	forge.set_preview_phase(ArcaneForgeSequence.PRINTING, 4200)
 	forge.configure("cinderpaw", true, false)
 	await get_tree().process_frame
@@ -45,12 +45,15 @@ func _ready() -> void:
 	stage.size = Vector2(576, 1024)
 	add_child(stage)
 	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}],"hand":["cinderpaw"],"printer":{"hp":2000,"max_hp":2000}},{"slots":[null,{"card_id":"aquafin","name":"Aquafin","hp":100}],"hand_count":3,"printer":{"hp":1900,"max_hp":2000}}]}, {"kind":"attack","actor":0,"source_slot":0,"target_slot":1,"presentation_progress_bps":5000,"generation":6})
+	# A deterministic receipt names its exact semantic sample. Freeze only this
+	# test fixture after configure; production stage animations must keep ticking.
+	stage.set_process(false)
 	await get_tree().process_frame
 	var contact := stage.find_child("BattleContactPeakOverlay", true, false) as TextureRect
 	var home := stage.find_child("LivingPrintSlot0", true, false) as TextureRect
 	var target := stage.find_child("LivingPrintSlot4", true, false) as TextureRect
 	var target_caption := stage.find_child("LivingPrintCaption4", true, false) as Label
-	require(contact != null and contact.visible and home != null and not home.visible and target != null and target.visible and target_caption != null and not contact.get_global_rect().intersects(target_caption.get_global_rect()) and contact.get_global_rect().get_center().distance_to(target.get_global_rect().get_center()) < target.get_global_rect().size.length(), "M6-BA-CT-01 transfers the attacker to an unclipped target-contact overlay while preserving the target name/HP strip.")
+	require(contact != null and contact.visible and home != null and not home.visible and target != null and target.visible and target_caption != null and not contact.get_global_rect().intersects(target_caption.get_global_rect()) and contact.get_global_rect().get_center().distance_to(target.get_global_rect().get_center()) < target.get_global_rect().size.length(), "M6-BA-CT-01 transfers the attacker to an unclipped target-contact overlay while preserving the target name/HP strip (contact=%s visible=%s home=%s target=%s visible=%s caption=%s visible=%s)." % [str(contact.get_global_rect() if contact != null else Rect2()), str(contact.visible if contact != null else false), str(home.visible if home != null else false), str(target.get_global_rect() if target != null else Rect2()), str(target.visible if target != null else false), str(target_caption.get_global_rect() if target_caption != null else Rect2()), str(target_caption.visible if target_caption != null else false)])
 	stage.configure(stage.snapshot, {"kind":"attack","actor":0,"source_slot":0,"target_slot":1,"reduced_motion":true,"generation":7})
 	await get_tree().process_frame
 	require(not contact.visible and home.visible and target.visible and target_caption.visible, "M7 reduced motion holds the resolved readable battle end frame at home without a contact overlay.")

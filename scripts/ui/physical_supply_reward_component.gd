@@ -37,7 +37,7 @@ func render_market(main: Control, surface: Control, margin: Callable, heading: C
 
 func _market_hud(main: Control, host: Control) -> void:
 	var rail := Control.new(); rail.name = "MarketCompactHud"; rail.anchor_left = 0.100; rail.anchor_top = 0.015; rail.anchor_right = 0.900; rail.anchor_bottom = 0.073; host.add_child(rail)
-	var back := _market_button("UnifiedFoundryWorkshopReturn", "Back", main.navigate_to.bind("workshop")); _set_normalized_rect(back, Rect2(0.0, 0.08, 0.14, 0.84)); back.custom_minimum_size = Vector2(54, 48); back.tooltip_text = "Return to Workshop"; back.accessibility_name = back.tooltip_text; rail.add_child(back)
+	var back := _market_button("UnifiedFoundryWorkshopReturn", "Back", main.dispatch_back); _set_normalized_rect(back, Rect2(0.0, 0.08, 0.14, 0.84)); back.custom_minimum_size = Vector2(54, 48); back.tooltip_text = "Return to Workshop"; back.accessibility_name = back.tooltip_text; rail.add_child(back)
 	for entry in [["MarketHudLevel", "Level %d" % int(GameManager.profile.get("level", 1)), Rect2(0.19, 0.08, 0.20, 0.84)], ["MarketHudXp", "XP %d" % int(GameManager.profile.get("spool_xp", 0)), Rect2(0.43, 0.08, 0.21, 0.84)], ["MarketHudCoins", "Coin %d" % int(GameManager.profile.get("forge_coins", 0)), Rect2(0.68, 0.08, 0.30, 0.84)]]:
 		var label: Label = main.label(str(entry[1]), 12, Color("f3e5c9")); label.name = str(entry[0]); label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; label.custom_minimum_size = Vector2(112, 48) if str(entry[0]) == "MarketHudCoins" else Vector2(64, 48); _set_normalized_rect(label, entry[2]); rail.add_child(label)
 
@@ -82,7 +82,7 @@ func _market_selector_bank(main: Control, host: Control, tab: String) -> void:
 
 func _market_detail_bays(main: Control, host: Control, offer: Dictionary) -> void:
 	var detail := Control.new(); detail.name = "MarketSelectedOfferBay"; detail.clip_contents = true; _set_normalized_rect(detail, Rect2(0.032, 0.652, 0.260, 0.190)); host.add_child(detail)
-	var purchase := Control.new(); purchase.name = "MarketPurchaseBay"; purchase.clip_contents = true; _set_normalized_rect(purchase, Rect2(0.742, 0.652, 0.225, 0.190)); host.add_child(purchase)
+	var purchase := Control.new(); purchase.name = "MarketPurchaseBay"; purchase.clip_contents = true; _set_normalized_rect(purchase, Rect2(0.690, 0.610, 0.275, 0.280)); host.add_child(purchase)
 	if offer.is_empty():
 		var empty: Label = main.label("No cabinet offer", 12, Color("f3e5c9")); empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_normalized_rect(empty, Rect2(0.05, 0.35, 0.90, 0.25)); detail.add_child(empty); return
 	var id := str(offer.get("id", "")); var card := RULES.card(id)
@@ -95,8 +95,8 @@ func _market_detail_bays(main: Control, host: Control, offer: Dictionary) -> voi
 		var confirm := Control.new(); confirm.name = "M3MarketConfirm"; confirm.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); purchase.add_child(confirm)
 		var title: Label = main.label("CONFIRM ORDER", 11, Color("f3e5c9")); title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_normalized_rect(title, Rect2(0.05, 0.04, 0.90, 0.17)); confirm.add_child(title)
 		var copy: Label = main.label("%d coins\n%s" % [int(confirmation.get("price", 0)), str(confirmation.get("consequence", ""))], 9, Color("f3e5c9")); copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _set_normalized_rect(copy, Rect2(0.06, 0.22, 0.88, 0.35)); confirm.add_child(copy)
-		var submit := _market_button("M3MarketConfirmPurchase", "Submitting…" if main.m3_action_in_flight else "Confirm", main._m3_confirm_market_purchase, true); _set_normalized_rect(submit, Rect2(0.06, 0.62, 0.88, 0.22)); submit.custom_minimum_size = Vector2(56, 56); submit.disabled = main.m3_action_in_flight; confirm.add_child(submit)
-		var cancel := _market_button("M3MarketCancelPurchase", "Cancel", main._m3_cancel_market_purchase); _set_normalized_rect(cancel, Rect2(0.06, 0.84, 0.88, 0.16)); cancel.custom_minimum_size = Vector2(48, 48); cancel.disabled = main.m3_action_in_flight; confirm.add_child(cancel)
+		var submit := _market_button("M3MarketConfirmPurchase", "CONFIRM", main._m3_confirm_market_purchase, true); _set_normalized_rect(submit, Rect2(0.05, 0.54, 0.90, 0.25)); submit.custom_minimum_size = Vector2(56, 56); submit.disabled = main.m3_action_in_flight; submit.tooltip_text = "Confirm this exact market order"; submit.accessibility_name = submit.tooltip_text; _market_decision_ink(submit); confirm.add_child(submit)
+		var cancel := _market_button("M3MarketCancelPurchase", "CANCEL ORDER", main.dispatch_back); _set_normalized_rect(cancel, Rect2(0.05, 0.80, 0.90, 0.20)); cancel.custom_minimum_size = Vector2(48, 48); cancel.disabled = main.m3_action_in_flight; cancel.tooltip_text = "Order is being recorded. Please wait for this receipt." if main.m3_action_in_flight else "Cancel this order and remain in Market"; cancel.accessibility_name = cancel.tooltip_text; _market_decision_ink(cancel); confirm.add_child(cancel)
 	else:
 		var price: Label = main.label("%d COINS" % int(offer.get("price", 0)), 12, Color("f3d995")); price.name = "MarketExactPrice"; price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_normalized_rect(price, Rect2(0.06, 0.15, 0.88, 0.20)); purchase.add_child(price)
 		var status: Label = main.label(_market_offer_cue(id), 10, Color("b9e2d4")); status.name = "MarketPurchaseStatus"; status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; status.autowrap_mode = TextServer.AUTOWRAP_OFF; status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; _set_normalized_rect(status, Rect2(0.06, 0.38, 0.88, 0.16)); purchase.add_child(status)
@@ -141,6 +141,15 @@ func _market_button(node_name: String, value: String, action: Callable, active :
 	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 11); CONTROLS.apply(button, "binding", active)
 	if action.is_valid(): button.pressed.connect(action)
 	return button
+
+func _market_decision_ink(button: Button) -> void:
+	# Confirm/Cancel sit in dark cabinet hardware.  Explicit state colors avoid
+	# inheriting parchment-dark ink from the shared control family at phone scale.
+	button.add_theme_color_override("font_color", Color("f3e5c9"))
+	button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	button.add_theme_color_override("font_pressed_color", Color("fff0bb"))
+	button.add_theme_color_override("font_focus_color", Color("ffffff"))
+	button.add_theme_color_override("font_disabled_color", Color("aaa69c"))
 
 func _market_transparent_button(node_name: String, value: String, action: Callable, active := false) -> Button:
 	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.flat = true; button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "lever", active, true)

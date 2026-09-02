@@ -33,6 +33,16 @@ var _wireframe: TextureRect
 var _last_solid_rect := Rect2()
 var _last_wireframe_rect := Rect2()
 var _last_scan_count := 0
+var _last_printable_rect := Rect2()
+var _last_preview_band_limit := 0.0
+var _raw_alpha_bounds := Rect2()
+var _raw_alpha_bounds_ready := false
+# M8 test-visible alpha-mask facts. These describe real retained source rows,
+# not merely the enclosing destination rectangle (which may have transparent
+# padding above the creature silhouette).
+var _last_opaque_source_bounds := Rect2()
+var _last_revealed_opaque_rows := 0
+var _last_unrevealed_opaque_rows := 0
 
 func _ready() -> void:
 	# The portrait caller deliberately gives the forge more vertical room.
@@ -106,12 +116,47 @@ func _load_assets() -> void:
 	var raw_path := str(raw_definition.get("raw_print", "")) if not armor_id.is_empty() else str(definition.get("raw_print", ""))
 	if raw_path.is_empty() or not ResourceLoader.exists(raw_path): raw_path = str(Catalog.creature("mossmunk").get("raw_print", ""))
 	raw = CreatureSpriteCache.texture_for_path(raw_path)
+	_raw_alpha_bounds_ready = false
+	_raw_alpha_bounds = Rect2()
+	_refresh_raw_alpha_bounds()
 	living = CreatureSpriteCache.texture_for_creature(creature_id)
+
+func _refresh_raw_alpha_bounds() -> void:
+	if raw == null:
+		_raw_alpha_bounds_ready = true
+		return
+	var image := raw.get_image()
+	if image == null or image.is_empty():
+		_raw_alpha_bounds = Rect2(0, 0, raw.get_width(), raw.get_height())
+		_raw_alpha_bounds_ready = true
+		return
+	var min_x := image.get_width()
+	var min_y := image.get_height()
+	var max_x := -1
+	var max_y := -1
+	for y in image.get_height():
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.01:
+				min_x = mini(min_x, x); min_y = mini(min_y, y)
+				max_x = maxi(max_x, x); max_y = maxi(max_y, y)
+	if max_x < min_x or max_y < min_y:
+		_raw_alpha_bounds = Rect2(0, 0, raw.get_width(), raw.get_height())
+	else:
+		_raw_alpha_bounds = Rect2(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+	_raw_alpha_bounds_ready = true
 
 func _draw() -> void:
 	# This is a transparent stage compositor.  The authored Workshop plate owns
 	# the surrounding material; drawing a full canvas wash here made the printer
 	# read as a generic black/glass card instead of a machine in that workshop.
+	# These rects are test-visible presentation facts, never gameplay state. Clear
+	# them before each draw so departure/completion cannot retain a prior raw mask.
+	_last_solid_rect = Rect2()
+	_last_wireframe_rect = Rect2()
+	_last_scan_count = 0
+	_last_opaque_source_bounds = Rect2()
+	_last_revealed_opaque_rows = 0
+	_last_unrevealed_opaque_rows = 0
 	var printer := printer_frames[mini(printer_frame_index(), printer_frames.size() - 1)] if not printer_frames.is_empty() else null
 	# Center a deliberately dominant printer chassis. The active forge has no
 	# separate glass void: the machine fills roughly 86% of the stage width and
@@ -127,10 +172,19 @@ func _draw() -> void:
 	var printer_rect := _fit_rect(printer, printer_bounds)
 	if printer != null: draw_texture_rect(printer, printer_rect, false)
 	var plate := Rect2(printer_rect.position.x + printer_rect.size.x * 0.28, printer_rect.position.y + printer_rect.size.y * 0.57, printer_rect.size.x * 0.50, printer_rect.size.y * 0.13)
-	# A selected blueprint is visibly loaded even before printing begins. It stays
-	# translucent/raw, never borrowing the living animation before awakening.
-	if phase in [ArcaneForgeSequence.IDLE, ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase == ArcaneForgeSequence.AWAKENED):
-		_draw_raw(plate, 0.48 if phase == ArcaneForgeSequence.IDLE else 1.0)
+	# The dock, not the bed, owns the complete pre-print identity.  Before Start
+	# the build plate is empty; a small local footprint is the only permitted cue.
+	# During PRINTING the raw source is progressively revealed below one datum.
+	if phase == ArcaneForgeSequence.IDLE:
+		_last_solid_rect = Rect2()
+		_last_wireframe_rect = Rect2()
+		_last_scan_count = 0
+		_last_printable_rect = Rect2()
+		_last_preview_band_limit = 0.0
+		_set_wireframe_split(Rect2(), Rect2(), false)
+		_draw_seed(plate)
+	elif phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase == ArcaneForgeSequence.AWAKENED):
+		_draw_raw(plate)
 	if armor_id.is_empty() and phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
 	if phase == ArcaneForgeSequence.AWAKENING and not reduced_motion: _draw_sparks(plate)
@@ -154,31 +208,63 @@ func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 	if raw == null: return
 	# The raw source has a small raft at its bottom. Align that raft to the actual
 	# plate surface and keep the physical print at about one fifth of printer height.
-	var raw_height := plate.size.y * (2.90 if phase == ArcaneForgeSequence.PRINTING else 1.70)
+	# The raw form must not shrink/pop when PRINTING reaches RAW_COMPLETE.  Every
+	# raw-owning phase shares this one canonical printable rect; only its reveal
+	# mask/alpha changes through the finite raw-hold and awakening handoff.
+	var raw_height := plate.size.y * 2.90
 	var rect := Rect2(Vector2(plate.get_center().x - raw_height * 0.5, _plate_surface_y(plate) - raw_height), Vector2(raw_height, raw_height))
+	if not _raw_alpha_bounds_ready: _refresh_raw_alpha_bounds()
+	var alpha_source := _raw_alpha_bounds if _raw_alpha_bounds.size.x > 0.5 and _raw_alpha_bounds.size.y > 0.5 else Rect2(0, 0, raw.get_width(), raw.get_height())
+	var scale := Vector2(rect.size.x / float(raw.get_width()), rect.size.y / float(raw.get_height()))
+	var opaque_rect := Rect2(rect.position + alpha_source.position * scale, alpha_source.size * scale)
+	_last_printable_rect = opaque_rect
+	_last_opaque_source_bounds = alpha_source
 	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
-	var shown := rect.size.y * float(reveal) / 10000.0
+	var opaque_rows := maxi(1, int(alpha_source.size.y))
+	var revealed_rows := opaque_rows if reveal >= 10000 else clampi(int(floor(float(opaque_rows) * float(reveal) / 10000.0)), 0, opaque_rows - 1)
+	_last_revealed_opaque_rows = revealed_rows
+	_last_unrevealed_opaque_rows = opaque_rows - revealed_rows
 	_last_solid_rect = Rect2()
 	_last_wireframe_rect = Rect2()
 	_last_scan_count = 0
-	if shown <= 0.5:
+	# The contractual band is measured against visible printable alpha, not the
+	# transparent canvas/padding surrounding it.
+	_last_preview_band_limit = opaque_rect.size.y * 0.08
+	if phase == ArcaneForgeSequence.PRINTING and progress_bps <= 70:
+		_draw_seed(plate)
+		# The footprint's local cyan datum is the single scan indication at the
+		# first authoritative layer; there is no detached creature preview yet.
+		_last_scan_count = 1
 		_set_wireframe_split(Rect2(), Rect2(), false)
 		return
-	var source_height := raw.get_height() * float(reveal) / 10000.0
-	var source := Rect2(0, raw.get_height() - source_height, raw.get_width(), source_height)
-	var destination := Rect2(rect.position + Vector2(0, rect.size.y - shown), Vector2(rect.size.x, shown))
-	_last_solid_rect = destination
+	if revealed_rows <= 0:
+		_set_wireframe_split(Rect2(), Rect2(), false)
+		return
+	# Map the reveal against the true alpha silhouette, not the source canvas.
+	# Cropping keeps source/destination scale identical, so the 99%->raw-complete
+	# handoff cannot resize or pop even when the PNG has transparent top padding.
+	var source_y := alpha_source.end.y - float(revealed_rows)
+	var source := Rect2(0, source_y, raw.get_width(), raw.get_height() - source_y)
+	# Preserve one transparent pixel at the scan datum.  The solid print begins
+	# strictly below it; shader preview is limited to a narrow band above it.
+	var destination := Rect2(rect.position + Vector2(0, source_y * scale.y), Vector2(rect.size.x, (raw.get_height() - source_y) * scale.y))
+	if destination.size.y <= 0.5:
+		_draw_seed(plate)
+		_set_wireframe_split(Rect2(), Rect2(), false)
+		return
+	_last_solid_rect = Rect2(opaque_rect.position + Vector2(0, opaque_rect.size.y - float(revealed_rows) * scale.y + 1.0), Vector2(opaque_rect.size.x, maxf(0.0, float(revealed_rows) * scale.y - 1.0)))
 	var raw_alpha := 1.0
 	if phase == ArcaneForgeSequence.AWAKENING:
 		raw_alpha = 1.0 - clampf(float(phase_progress_bps) / 10000.0, 0.0, 1.0)
 	draw_texture_rect_region(raw, destination, source, Color(1, 1, 1, raw_alpha * preview_alpha))
 	if phase == ArcaneForgeSequence.PRINTING:
-		var scan_y := destination.position.y
-		# The complementary, clipped upper region is the exact same raw creature
-		# rendered through the technical schematic shader.  It never introduces the
-		# living sprite before the existing awakening phase.
-		_set_wireframe_split(Rect2(rect.position, Vector2(rect.size.x, maxf(0.0, scan_y - rect.position.y))), rect, true)
-		_last_wireframe_rect = Rect2(rect.position, Vector2(rect.size.x, maxf(0.0, scan_y - rect.position.y)))
+		var scan_y := _last_solid_rect.position.y - 1.0
+		# Never project the entire unrevealed creature. The technical preview is one
+		# contiguous, scan-adjacent band capped at 8% of printable height.
+		var preview_height := minf(_last_preview_band_limit, maxf(0.0, scan_y - opaque_rect.position.y))
+		var preview := Rect2(opaque_rect.position.x, scan_y - preview_height, opaque_rect.size.x, preview_height)
+		_set_wireframe_split(preview, rect, preview_height > 0.5)
+		_last_wireframe_rect = preview
 		_last_scan_count = 1
 		# One explicit, high-value cyan datum owns the complementary material split.
 		# One unequivocal cyan datum separates raw filament below from technical
@@ -186,6 +272,16 @@ func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 		draw_line(Vector2(destination.position.x, scan_y), Vector2(destination.end.x, scan_y), Color("b4fbff"), 4.0)
 	else:
 		_set_wireframe_split(Rect2(), Rect2(), false)
+
+func _draw_seed(plate: Rect2) -> void:
+	# A local footprint is deliberately not a creature silhouette. It appears at
+	# the build plane only, communicates dormant/first-layer state, and vanishes
+	# under the progressive raw extrusion once enough filament exists.
+	var y := _plate_surface_y(plate) - 2.0
+	var width := maxf(14.0, plate.size.x * 0.16)
+	var seed := Rect2(plate.get_center().x - width * 0.5, y - 2.0, width, 4.0)
+	draw_rect(seed, Color("6defff"), false, 1.5)
+	draw_line(Vector2(seed.position.x + width * 0.25, y), Vector2(seed.position.x + width * 0.75, y), Color("b4fbff"), 1.5)
 
 func _set_wireframe_split(upper: Rect2, full_rect: Rect2, visible: bool) -> void:
 	if _wireframe_clip == null or _wireframe == null: return

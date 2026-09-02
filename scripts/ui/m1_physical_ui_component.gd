@@ -91,6 +91,35 @@ static func apply_cream_action(button: Button) -> void:
 	button.add_theme_stylebox_override("pressed", transparent_plate_style(Color("10283a"), 3))
 	button.add_theme_stylebox_override("focus", transparent_plate_style(Color("10283a"), 3))
 
+static func add_inset_button_focus_ring(button: Button, high_contrast: bool) -> Panel:
+	# Compact authored plaques need a complete focus affordance of their own. The
+	# ring remains inside the transparent hit owner, so it neither covers the
+	# baked hardware nor turns a Back key into a generic full-screen rectangle.
+	var ring := Panel.new()
+	ring.name = "PhysicalInsetFocusRing"
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ring.offset_left = 4; ring.offset_top = 4; ring.offset_right = -4; ring.offset_bottom = -4
+	ring.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var width := 4 if high_contrast else 3
+	var ink := Color("ffffff") if high_contrast else Color("6defff")
+	for edge in ["Top", "Right", "Bottom", "Left"]:
+		var line := ColorRect.new()
+		line.name = "PhysicalInsetFocus%s" % edge
+		line.color = ink
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		match edge:
+			"Top": line.anchor_right = 1.0; line.offset_bottom = width
+			"Right": line.anchor_left = 1.0; line.anchor_bottom = 1.0; line.offset_left = -width
+			"Bottom": line.anchor_top = 1.0; line.anchor_right = 1.0; line.anchor_bottom = 1.0; line.offset_top = -width
+			"Left": line.anchor_bottom = 1.0; line.offset_right = width
+		ring.add_child(line)
+	ring.hide()
+	button.add_child(ring)
+	button.focus_entered.connect(ring.show)
+	button.focus_exited.connect(ring.hide)
+	return ring
+
 static func workshop_focus_rect(hotspot_id: String) -> Rect2:
 	# Hit regions intentionally span the full authored object. Focus instead marks
 	# a small physical latch/medallion inside it, so keyboard focus never reads as
