@@ -1,0 +1,178 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "standard_full_suit",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.14",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "docs\\art\\m9-equipment-20260904\\standard-barding-completed-concept-v2.png",
+    "bytes": 1723113,
+    "sha256": "8A6DE969B4950E24F7480B2F2D9C32D35E20C54C1DFB9EDA5CE2E095AAAC82B8",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "Human-approved v2 animal barding navy/brass completed concept; alpha-only calibration removes generator checkerboard"
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m9-equipment-20260904\\standard-barding-completed-alpha-v2.png",
+      "bytes": 2211305,
+      "sha256": "EFDA51186238B7F551AF72FCB28C881A82F98219163BC271BF9163BED835B5CA",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "docs\\art\\m9-equipment-20260904\\standard-barding-completed-light-v2.png",
+      "bytes": 1311706,
+      "sha256": "9E06F2A1235F38B85D0A8C0D291B686865D5BD376EB6D5A22EA2C635B65E22AA",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "docs\\art\\m9-equipment-20260904\\standard-barding-completed-dark-v2.png",
+      "bytes": 1309348,
+      "sha256": "B467D8F2C36DD59B2F51565C0FEDA2488DA7F7C9ACD67CA7F13AE8F5F677F84D",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "docs\\art\\m9-equipment-20260904\\standard-barding-completed-160-v2.png",
+      "bytes": 23856,
+      "sha256": "5EB986AFB855FE6F270D23503731692B2A9AC269F4EB7526B1892F1E7F228B47",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1050770,
+      "partial": 4911,
+      "opaque": 516835
+    },
+    "initial_counts_before_datum": {
+      "zero": 1050770,
+      "partial": 4911,
+      "opaque": 516835
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "normalization_applied": false,
+    "normalization_statement": "No automated full-width cyan datum band was detected; source cyan was preserved for visual review.",
+    "row_band": [],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      95,
+      1171
+    ],
+    "outside_cyan_suppressed": 0,
+    "inside_cyan_subdued": 0,
+    "non_datum_cyan_preserved": 0
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "normalization_applied": true,
+      "normalization_statement": "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued.",
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}

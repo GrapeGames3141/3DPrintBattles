@@ -1,0 +1,11 @@
+{
+  "prompt": "Create one completed-material equipment illustration for PrintForge, derived from the supplied human-approved Standard animal-barding reference, NOT a new silhouette family. One intact low saddle/back protective shell, short open neck collar, broad connected hexagonal flank structure, EXACTLY TWO visibly attached underbelly straps and ONE EMPTY ROUND gem socket. Match reference camera, near-orthographic three-quarter view facing right, generous10percent margins,1254square. Whimsical arcane maker workshop fused-filament craft. No wearer, no animals, no humans or humanoid armor, no legs/hands/helmet/boots, no robot parts, no detached plates, no extra assemblies, no title/text/runes/labels/UI/frame/pedestal, no opaque checkerboard. Pure flat WHITE background and pure white negative-space holes, no cast shadow or vignette, for the approved alpha-only calibration pipeline. Keep strong structural identity readable at160pixels. ARCANE TIER: same intact animal-fitting shell envelope, elegant blue-violet fused-filament inset panels, broad hexagon relief, aged-brass edging, and shallow restrained cyan geometric channels molded INTO the connected flanks. The channels are geometric craftsmanship, not letters or floating magic. Preserve two attached straps, open collar and EMPTY round gem socket. Distinctive broad curved flank reinforcement arches give a refined magical tier without loose ornaments.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-completed-concept-v2.png"
+  ],
+  "catalog_id": "arcane_full_suit",
+  "generated_source": "C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-9e2a462c-557e-4a4e-99a0-078a3859959c.png",
+  "durable_source": "docs/art/m9-equipment-20260904/family/arcane_full_suit-completed-source-v1.png",
+  "status": "derived_candidate_pending_ui_review",
+  "date": "2026-09-04"
+}

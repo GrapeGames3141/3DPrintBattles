@@ -1,0 +1,11 @@
+{
+  "prompt": "Create one completed-material equipment illustration for PrintForge, derived from the supplied human-approved Standard animal-barding reference, NOT a new silhouette family. One intact low saddle/back protective shell, short open neck collar, broad connected hexagonal flank structure, EXACTLY TWO visibly attached underbelly straps and ONE EMPTY ROUND gem socket. Match reference camera, near-orthographic three-quarter view facing right, generous10percent margins,1254square. Whimsical arcane maker workshop fused-filament craft. No wearer, no animals, no humans or humanoid armor, no legs/hands/helmet/boots, no robot parts, no detached plates, no extra assemblies, no title/text/runes/labels/UI/frame/pedestal, no opaque checkerboard. Pure flat WHITE background and pure white negative-space holes, no cast shadow or vignette, for the approved alpha-only calibration pipeline. Keep strong structural identity readable at160pixels. REINFORCED TIER: retain the animal-fitting shell envelope but show visibly heavier doubled protective perimeter rails and two broad overlapping joined flank ribs over the honeycomb panel. The shell is dark blue-gray filament; broad iron reinforcement bands with aged-brass fasteners. Ribs are structurally joined into the shell, not floating or exploded. Collar remains open and the round gem socket is EMPTY. This must read as added protection rather than only a color swap.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-completed-concept-v2.png"
+  ],
+  "catalog_id": "reinforced_full_suit",
+  "generated_source": "C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-467454a6-9c45-4c93-80a5-7e1e618e4fc0.png",
+  "durable_source": "docs/art/m9-equipment-20260904/family/reinforced_full_suit-completed-source-v1.png",
+  "status": "derived_candidate_pending_ui_review",
+  "date": "2026-09-04"
+}

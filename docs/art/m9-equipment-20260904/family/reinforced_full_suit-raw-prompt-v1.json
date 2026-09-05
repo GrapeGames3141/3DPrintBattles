@@ -1,0 +1,10 @@
+{
+  "prompt": "Use the provided completed Reinforced animal-barding image as an exact geometry and camera lock. Generate ONE matching raw 3D-printed version: the entire intact object including frame, shell, broad doubled perimeter, connected protective flank ribs, neck collar, empty round gem socket, two connected underbelly straps, fasteners and all surface recesses are ONE UNIFORM ORANGE fused-filament plastic material. No brass, blue, leather, gems or color accents. Preserve outer silhouette, all openings, structural connections, proportions, pose and exact three-quarter view; do not add or remove parts. Visible subtle horizontal print layers, no heavy lighting cast shadow. Center object same framing,1254 square, flat pure WHITE background and WHITE open holes, generous margins. No checkerboard, text, labels, exploded pieces, other views, creatures, mannequins, humans, UI, border or pedestal. The raw form must visibly be the same assembled artifact before its color awakening.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/reinforced_full_suit-completed-source-v1.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-093e11e0-304a-4fc3-8366-bccac8819a42.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/reinforced_full_suit-raw-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Controlled source candidate; not runtime promoted"
+}

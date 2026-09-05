@@ -1,0 +1,10 @@
+{
+  "prompt": "Create a text-free BLUEPRINT INK illustration of ONE intact PrintForge equipment artifact. The FIRST reference is the exact rotated-square diamond-outline crystal cartridge, four main diamond corners, close-fitting diamond rim and shallow round rear plug behind the right edge. Preserve its geometry, silhouette, proportions and three-quarter camera exactly. The plug is behind the gem and projects along its face normal, never downward as a pedestal. The SECOND reference supplies only sepia/cyan technical-ink style, NOT its animal-barding shape. Draw confident dark sepia outer contours and major facet/rim boundaries, sparse layer curves and restrained cyan construction traces on the object. Broad readable forms at 160 pixels, no dense crosshatching. Every background and blank interior face is pure flat WHITE: no solid colored fill, cream body paint, gray wash, paper texture, shadow or gradient. Do not draw a paper sheet. One assembled object only. No detached/exploded parts, duplicate views, dimensions, text, numbers, labels, diagrams, grid, frame, UI, animals, people, tools or stands. Square 1254 pixels, centered with generous margins. A coherent technical ink plan of this exact assembled socket-mounted equipment.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/frost_gem-completed-source-v2.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-blueprint-source-v1.png"
+  ],
+  "tool": "image_gen.imagegen",
+  "status": "source candidate; alpha and visual review pending",
+  "durable_source": "frost_gem-blueprint-source-v1.png"
+}

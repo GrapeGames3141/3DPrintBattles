@@ -1,0 +1,12 @@
+{
+  "prompt": "Edit the FIRST Arcane Gem reference. Keep the compact flattened purple/cyan multifaceted crown crystal identity; CORRECT its assembly camera and attachment to match SECOND Iron Gem and THIRD Ember Gem. The crystal is mounted as a wearable socketed artifact, not resting on a platform. A near-frontal three-quarter jewel face with the socket axis running rearward toward image-right. A small shallow cylindrical brass barrel/plug is visibly tucked BEHIND the jewel on the right. Plug centerline stays behind the jewel, NEVER underneath it. NO floor-facing base, pedestal, stand or plinth. One complete crown crystal in attached narrow brass frame, broad pentagonal/triangular facets with a short flat apex and contained amethyst/teal internal patterns; no orbits, glyphs or external magic. Square1254px isolated center70percent, generous margins, pure flat white background and no floor shadow, text, UI, hands, animals or duplicates. Retain blue-purple highlights not white.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/arcane_gem-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/iron_gem-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/ember_gem-completed-source-v1.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-46e65223-d1d1-423d-8a8c-1cfa8a920eef.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/arcane_gem-completed-source-v2.png",
+  "created": "2026-09-04",
+  "status": "Controlled source candidate; not runtime promoted"
+}

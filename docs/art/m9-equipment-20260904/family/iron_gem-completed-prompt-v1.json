@@ -1,0 +1,10 @@
+{
+  "prompt": "Create ONE isolated equipment GEM for PrintForge. The supplied image is ONLY a material and empty circular socket compatibility reference: DO NOT draw the barding, harness or any creature. The gem item is one compact substantial faceted mineral print permanently seated in a simple circular aged-BRASS socket foot, with a shallow cylindrical rear fitting; gem and foot are one intact assembled item, no detached parts. Shared socket envelope must fit the reference's small round empty equipment socket. Friendly whimsical arcane maker craft, real fused-filament print layers subtly visible across facets. A near-orthographic three-quarter object view reveals the jewel face and its circular fitting depth. Square1254px, center object occupies70percent with generous margins. Pure flat WHITE background and blank white negative spaces, NO checkerboard, gradient, floor shadow, pedestal, labels, text, UI, floating magic, extraneous tools, wearer, fingers or humans. Strong silhouette and broad forms legible at160px. IRON GEM: low broad graphite/steel HEXAGONAL dome with six strong angular facets and a small flattened crown face. Dark blue-gray iron-filament material with subtle cool highlights, simple heavy brass socket rim. Sturdy squat protective hardware, not a sphere, ring jewelry or a tall spire. All highlights stay visibly gray/blue rather than pure white.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-completed-concept-v2.png"
+  ],
+  "source": "C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-e6778f6d-cfe2-4f15-8d47-b55478a23aa6.png",
+  "durable_path": "docs/art/m9-equipment-20260904/family/iron_gem-completed-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Candidate within user-approved animal-barding v2 family; awaiting source UI review; not runtime-promoted"
+}

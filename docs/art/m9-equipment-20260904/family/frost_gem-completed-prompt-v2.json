@@ -1,0 +1,12 @@
+{
+  "prompt": "Edit the FIRST image, Frost Gem. Keep its blue ice-filament facets and aged brass, but correct its silhouette into a visibly angular blunt DIAMOND-shaped crown. The common circular rear plug stays round; the crystal FRONT outline is a compact broad angular diamond that projects beyond the small round rear fitting on several sides, like a faceted blue protective brooch. The SECOND (Iron) and THIRD (Ember) references lock the rear socket connection and tilt: forward-facing jewel plane tilted toward viewer-left, short cylindrical plug projecting BEHIND the jewel toward lower-right, never a base beneath it. Broad joined facets, single intact closed volume, no spikes or loose parts. Distinctive asymmetrical truncated diamond tip and broad lower facets. Do NOT just recolor Iron's circular outline. One object with clear margins,1254 square. Pure flat white background, no floor, cast shadow, pedestal, text, frame, UI, extra views, animals or hands. Blue highlights not white.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/frost_gem-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/iron_gem-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/ember_gem-completed-source-v1.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-a8c4dac9-7558-4eeb-8d7b-5db7647a92e9.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/frost_gem-completed-source-v2.png",
+  "created": "2026-09-04",
+  "status": "Corrective source candidate following read-only UI review; not runtime promoted"
+}

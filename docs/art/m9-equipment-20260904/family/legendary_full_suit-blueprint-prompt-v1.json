@@ -1,0 +1,10 @@
+{
+  "prompt": "Create a text-free BLUEPRINT INK illustration of ONE intact PrintForge equipment artifact. The FIRST reference is the exact Legendary animal-barding geometry and camera. Preserve its connected crest-like upper reinforcement, large sculpted hex flank construction, collar, empty circular socket, perimeter framing, fasteners and two attached underbelly straps, all openings and proportions. The SECOND reference supplies only the sepia/cyan technical-ink style, NOT its barding shape. Keep the first object's exact outline and connections. Draw confident dark sepia outer contours and major structural boundaries, sparse secondary layer curves and restrained cyan construction traces on the object. Use broad readable forms at 160 px, not dense crosshatching. Every background and blank interior face is pure flat WHITE with no solid colored fill, cream body paint, gray wash, paper texture, shadow or gradient. Do not draw a paper sheet. One assembled object only, no detached or exploded parts, other views, duplicate assembly, dimensions, text, numbers, labels, diagrams, grid, frame, border, UI, animals, humans or tools. Square 1254 px, same centered framing and generous margins as the source. A coherent technical ink plan of this exact assembled artifact.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/legendary_full_suit-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-blueprint-source-v1.png"
+  ],
+  "tool": "image_gen.imagegen",
+  "status": "source candidate; alpha and visual review pending",
+  "durable_source": "legendary_full_suit-blueprint-source-v1.png"
+}

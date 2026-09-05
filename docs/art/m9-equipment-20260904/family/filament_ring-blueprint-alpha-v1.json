@@ -1,0 +1,178 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "filament_ring",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.14",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-blueprint-source-v1.png",
+    "bytes": 1699286,
+    "sha256": "525CBED35B9448A17F8DE8EBF1EBDBE97A93433C5BEDF008DCC95BFF6A37AE05",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "Exact completed equipment geometry; generated coherent assembled sepia/cyan blueprint."
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-blueprint-alpha-v1.png",
+      "bytes": 1772744,
+      "sha256": "1F277938D007BD61C1148C7EC46603AB01F8FB0EB347E71C875F829879B5719E",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-blueprint-light-v1.png",
+      "bytes": 590008,
+      "sha256": "970CEDF4DD8E85E184AAC22127D6CBDC71604988BB9C03F0711B969A8A1391A3",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-blueprint-dark-v1.png",
+      "bytes": 598597,
+      "sha256": "7AA3B6E4AC9D490E22825D6817EE769297988ED7842E53FFCCC5971C582D32C5",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-blueprint-160-v1.png",
+      "bytes": 15326,
+      "sha256": "C996D2815554856F8CFCDA1CCA67C79E216173AD25507E587E5EE6B22B78C2E5",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1403593,
+      "partial": 43281,
+      "opaque": 125642
+    },
+    "initial_counts_before_datum": {
+      "zero": 1403593,
+      "partial": 43281,
+      "opaque": 125642
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "normalization_applied": false,
+    "normalization_statement": "No automated full-width cyan datum band was detected; source cyan was preserved for visual review.",
+    "row_band": [],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      116,
+      1146
+    ],
+    "outside_cyan_suppressed": 0,
+    "inside_cyan_subdued": 0,
+    "non_datum_cyan_preserved": 46570
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "normalization_applied": true,
+      "normalization_statement": "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued.",
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}

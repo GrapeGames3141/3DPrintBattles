@@ -1,0 +1,10 @@
+{
+  "prompt": "Create one RAW PRINT material derivative of the exact supplied frost gem equipment source. Retain exact angular diamond-shaped outline and large joined icy facet planes, surrounding narrow frame, and cylindrical rear plug toward image-right, same near-frontal three-quarter camera. Replace EVERY material (including all metal and mineral) with SAME uniform opaque warm ORANGE fused-filament plastic. No brass, blue, violet, metal, transparency, gemstone shine, internal glow, external magic or accents. Subtle horizontal layer texture, with sufficient natural volume shading to read facets. Preserve all geometry as ONE intact closed attachable item, never a gem balanced on a base. Same framing/margins1254 square, flat pure white background, no checkerboard, floor, cast shadow, pedestal, detached parts, text, diagram, duplicate view, UI, animals or hands.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/frost_gem-completed-source-v2.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-940e4eb9-ebe0-431d-bef4-56a13b246e0d.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/frost_gem-raw-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Raw source candidate; must match approved completed source; not runtime promoted"
+}

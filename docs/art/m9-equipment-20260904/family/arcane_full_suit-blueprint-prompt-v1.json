@@ -1,0 +1,11 @@
+{
+  "prompt": "Create a text-free BLUEPRINT INK illustration of ONE intact arcane full suit animal-barding object. FIRST reference locks exact geometry, connections, proportions and three-quarter camera; SECOND reference gives only sepia/cyan technical-ink style. Preserve connected broad hex flank panels and geometric channeled upper shell, low saddle, collar, empty round equipment socket, perimeter frame, fasteners and TWO attached underbelly straps with all openings. NOTHING detached; no extra pieces, no duplicate assembled view. Confident DARK SEPIA outer contours and major structural boundaries; sparse secondary hatching/printed layer curves, restrained small cyan construction traces ON the artifact. Make the major outer silhouette and tier forms legible at160px, do not bury in fine hatch noise. ALL background AND blank INTERIOR faces are pure flat WHITE, not cream-filled material, no solid colored body fill, gradient, gray wash or paper texture. Sameframing1254 square, onewholeobject. No labels, text, dimensions, numbers, grid, border, frames, UI, explodedparts, otherobjects, animalwearer, humans or hands. A coherent maker's ink plan of the exact first artifact.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/arcane_full_suit-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-blueprint-source-v1.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-750021e0-7151-4387-9199-e33a0567209b.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/arcane_full_suit-blueprint-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Controlled ink derivative candidate; must match approved completed source; not runtime promoted"
+}

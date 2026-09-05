@@ -1,0 +1,178 @@
+{
+  "approval_state": "preproduction_alpha_calibration_v2_pending_ui_review",
+  "creature_id": "iron_gem",
+  "tool": {
+    "path": "tools/extract_blueprint_alpha.py",
+    "python": "3.12.14",
+    "standard_library_only": true
+  },
+  "source": {
+    "path": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-blueprint-source-v1.png",
+    "bytes": 1123930,
+    "sha256": "BF775323EA9F4C5240E5D89BB3F9A1FEA2C784194964E0E8CF8244A42ED78E44",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "description": "Exact completed equipment geometry; generated coherent assembled sepia/cyan blueprint."
+  },
+  "algorithm": {
+    "mode": "paper-through-ink",
+    "name": "paper_through_ink_alpha_mask_with_subordinate_cyan_datum",
+    "parameters": {
+      "neutral_brightness_min": 224,
+      "neutral_chroma_max": 36,
+      "taper_brightness_min": 184,
+      "taper_chroma_max": 62,
+      "cyan_delta_min": 50,
+      "datum_alpha": 112
+    },
+    "guarantees": [
+      "alpha only; RGB source bytes are untouched for every output RGBA pixel",
+      "bright low-chroma paper is transparent even when enclosed",
+      "sepia contours/hatching and cyan ink survive by darkness/chroma",
+      "No automated full-width cyan datum band was detected; source cyan was preserved for visual review."
+    ]
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-blueprint-alpha-v1.png",
+      "bytes": 1132632,
+      "sha256": "B977A9E15626161E9AAAE36B823EDD388565521BE73F8ACD07B99FAB1950140F",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "light_parchment_composite": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-blueprint-light-v1.png",
+      "bytes": 248823,
+      "sha256": "1B83BC14E7BE9930F1B073720D856600BCF3AAF9FDD62B565A7538D0527CCCF7",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "dark_parchment_composite": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-blueprint-dark-v1.png",
+      "bytes": 246626,
+      "sha256": "76F8333A880EA4DA59D6D8B51376F5D4841014EB4C55FC55E57A6E8AE246A485",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    "proof_160_light_parchment": {
+      "path": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-blueprint-160-v1.png",
+      "bytes": 7147,
+      "sha256": "B81D8A15522C054A26DD7D4097D9BF4C9D7725B5AD54590E7F2BE3FC0DE72AD3",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGB"
+    }
+  },
+  "alpha": {
+    "range": [
+      0,
+      255
+    ],
+    "counts": {
+      "zero": 1505065,
+      "partial": 12371,
+      "opaque": 55080
+    },
+    "initial_counts_before_datum": {
+      "zero": 1505065,
+      "partial": 12371,
+      "opaque": 55080
+    },
+    "edge_and_corner_checks": {
+      "corners": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "edges": {
+        "top": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "bottom": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "left": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        },
+        "right": {
+          "pixels": 1254,
+          "alpha_zero": 1254,
+          "alpha_partial": 0,
+          "alpha_opaque": 0,
+          "min_alpha": 0,
+          "max_alpha": 0
+        }
+      }
+    }
+  },
+  "cyan_datum": {
+    "normalization_applied": false,
+    "normalization_statement": "No automated full-width cyan datum band was detected; source cyan was preserved for visual review.",
+    "row_band": [],
+    "row_cyan_threshold": 902,
+    "working_x": [
+      140,
+      1147
+    ],
+    "outside_cyan_suppressed": 0,
+    "inside_cyan_subdued": 0,
+    "non_datum_cyan_preserved": 4505
+  },
+  "rgba_all_pixel_rgb_byte_identical_to_source": true,
+  "synthetic_calibration_fixture": {
+    "passed": true,
+    "enclosed_bright_neutral_alpha": 0,
+    "sepia_alpha": 255,
+    "cyan_support_alpha": 255,
+    "outside_datum_alpha": 0,
+    "inside_datum_alpha": 112,
+    "rgba_all_pixel_rgb_byte_identical_to_source": true,
+    "resize_corners_exact_no_extrapolation": true,
+    "datum": {
+      "normalization_applied": true,
+      "normalization_statement": "Detected full-width cyan datum band was clipped outside the derived illustration width and subdued.",
+      "row_band": [
+        5
+      ],
+      "row_cyan_threshold": 12,
+      "working_x": [
+        4,
+        12
+      ],
+      "outside_cyan_suppressed": 8,
+      "inside_cyan_subdued": 9,
+      "non_datum_cyan_preserved": 1
+    }
+  },
+  "manual_painting_or_redraw": false
+}

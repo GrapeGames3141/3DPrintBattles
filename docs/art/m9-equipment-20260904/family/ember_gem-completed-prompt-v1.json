@@ -1,0 +1,10 @@
+{
+  "prompt": "Create ONE isolated equipment GEM for PrintForge. The supplied image is ONLY a material and empty circular socket compatibility reference: DO NOT draw the barding, harness or any creature. The gem item is one compact substantial faceted mineral print permanently seated in a simple circular aged-BRASS socket foot, with a shallow cylindrical rear fitting; gem and foot are one intact assembled item, no detached parts. Shared socket envelope must fit the reference's small round empty equipment socket. Friendly whimsical arcane maker craft, real fused-filament print layers subtly visible across facets. A near-orthographic three-quarter object view reveals the jewel face and its circular fitting depth. Square1254px, center object occupies70percent with generous margins. Pure flat WHITE background and blank white negative spaces, NO checkerboard, gradient, floor shadow, pedestal, labels, text, UI, floating magic, extraneous tools, wearer, fingers or humans. Strong silhouette and broad forms legible at160px. EMBER GEM: compact amber-orange FLAME/TEARDROP-cut faceted crystal, one asymmetric rounded-point apex and broad stable base inside a simple aged-brass circular socket foot. Facets contain warm ember-red inner color but no fire outside the geometry, no sparks or smoke. It is a complete closed solid volume, not a flat flame icon. Shape fits the same common round socket envelope.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-completed-concept-v2.png"
+  ],
+  "source": "C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-61fc007b-c36e-4abf-b3f9-567fe82083f1.png",
+  "durable_path": "docs/art/m9-equipment-20260904/family/ember_gem-completed-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Candidate within user-approved animal-barding v2 family; awaiting source UI review; not runtime-promoted"
+}

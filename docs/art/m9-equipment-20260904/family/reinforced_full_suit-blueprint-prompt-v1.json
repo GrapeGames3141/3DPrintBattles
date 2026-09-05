@@ -1,0 +1,11 @@
+{
+  "prompt": "Create a text-free BLUEPRINT INK illustration of ONE intact Reinforced animal-barding object. FIRSTreference locks exact geometry/proportions/connections/three-quarter camera; SECONDreference gives only sepia/cyan technical-ink STYLE. Preserve the firstobject's heavier doubled perimeter, connected protective ribs, honeycomb flank insets, collar, emptyroundsocket, twoconnectedbellystraps, allopenings. Notanexplodedview: nothingdetached, no extraobjects or duplicateassembledcopy. Drawconfident DARKSEPIA outercontours andmajor structuralboundaries; sparse secondaryhachures/printedlayercurves andsmall cyanconstructiontraces integratedonobject. Avoidfinelineoverload. ALL background AND INTERIOR blankareas are pureflatWHITE—notcreamfilledplastic, no solidnavy/orangebodyfill, graywash, papertexture, shadows, border, grid, labels, dimensions, numbers or words. Onewholeobjectcentered, sameframing1254square, fullformreadableat160px. No humans, animalwearer, limbs, toolprops, floatingparts or UI. It should look like the same assembled artifact drafted in ink on a page, not an illustration of unrelated components.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/reinforced_full_suit-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-blueprint-source-v1.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-20864f62-af34-4c66-a803-900114c8c595.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/reinforced_full_suit-blueprint-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Controlled derivative candidate; must match approved completed source; not runtime promoted"
+}

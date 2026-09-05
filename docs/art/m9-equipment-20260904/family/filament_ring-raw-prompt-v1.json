@@ -1,0 +1,10 @@
+{
+  "prompt": "Generate the exact supplied intact Filament Ring artifact as one UNIFORM ORANGE raw fused-filament print. All geometry, circular inner opening, broad band width, attached inner and outer edging, ribs, inset round upper-right regulator, attached gear-like regulator detail and THREE-QUARTER tilted camera must stay identical. Replace all cyan, dark blue, brass and glowing material with the SAME opaque orange filament plastic, subtle visible printed layer lines, no transparency inside the actual band, no light emitting parts. It is one joined printer fixture, no detached bits. Preserve the original margins/square1254 framing. Pure flat WHITE background INCLUDING the whole large inner hole. No checkerboard, floor/cast shadow, stand, pedestal, cables, spool, creatures, hands, diagrams, text, UI or new symbols.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/filament_ring-completed-source-v1.png"
+  ],
+  "source": "C:\\Users\\Tak\\.codex\\generated_images\\01a040b4-1af1-7930-a96f-92db5d0339b3\\exec-2a36106a-9338-420d-9864-04438e35d2f9.png",
+  "durable_path": "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/filament_ring-raw-source-v1.png",
+  "created": "2026-09-04",
+  "status": "Raw source candidate; must match approved completed source; not runtime promoted"
+}

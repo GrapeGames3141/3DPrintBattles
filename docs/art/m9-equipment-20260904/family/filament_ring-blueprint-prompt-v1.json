@@ -1,0 +1,10 @@
+{
+  "prompt": "Create a text-free BLUEPRINT INK illustration of ONE intact PrintForge equipment artifact. The FIRST reference is the exact Filament Ring fixture geometry and camera. Preserve its one broad annular band, large empty central hole, joined inner and outer rims, ribs and one attached round regulator on the upper-right rim. The regulator's existing integral gear shape is geometry, not an added icon. Keep its tilted three-quarter orientation and band thickness. The SECOND reference supplies only the sepia/cyan technical-ink style, NOT its barding shape. Keep the first object's exact outline and connections. Draw confident dark sepia outer contours and major structural boundaries, sparse secondary layer curves and restrained cyan construction traces on the object. Use broad readable forms at 160 px, not dense crosshatching. Every background and blank interior face is pure flat WHITE with no solid colored fill, cream body paint, gray wash, paper texture, shadow or gradient. Do not draw a paper sheet. One assembled object only, no detached or exploded parts, other views, duplicate assembly, dimensions, text, numbers, labels, diagrams, grid, frame, border, UI, animals, humans or tools. Square 1254 px, same centered framing and generous margins as the source. A coherent technical ink plan of this exact assembled artifact.",
+  "references": [
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/family/filament_ring-completed-source-v1.png",
+    "E:/AI Projects/games/3d print battler/docs/art/m9-equipment-20260904/standard-barding-blueprint-source-v1.png"
+  ],
+  "tool": "image_gen.imagegen",
+  "status": "source candidate; alpha and visual review pending",
+  "durable_source": "filament_ring-blueprint-source-v1.png"
+}
