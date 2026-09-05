@@ -1,0 +1,40 @@
+{
+  "created": "2026-09-04",
+  "tool": "built-in ImageGen",
+  "classification": "INFERRED depth studies; not measured orthographic views, not meshes or runtime art",
+  "approval": "Useful blockout hypotheses only. Approved original creature blueprints remain visible-silhouette authority. Human actual-pilot approval pending.",
+  "images": [
+    {
+      "creature_id": "aurorawing",
+      "reference": "E:/AI Projects/games/3d print battler/assets/creatures/2d/blueprints/v2/aurorawing_blueprint_ink_v2.png",
+      "file": "aurorawing-inferred-turnaround-v1.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "bytes": 1505605,
+      "sha256": "C92246EC5AC4233ED5626113DBCCCC64AFE2C5BBF52729466BBFFA89B701E1FB",
+      "warnings": [
+        "Side view shortens the approved long fan tail and makes the torso too upright/compact.",
+        "Keep original beak-to-tail length, low horizontal torso, longer beak and four distinct ground contacts."
+      ],
+      "literal_prompt": "Create a careful character volume-inference study for a Blender artist modeling the exact whimsical animal Aurorawing shown in the supplied approved PrintForge blueprint. This is an INFERRED depth study, not a measured engineering plan. Wide clean white sheet, four evenly separated full-body views of the SAME creature: front, left side, rear, and top. Neutral softly lit warm-gray clay volumes, no textures, no text, no labels, no dimensions, no arrows, no paper decoration. Lock the supplied silhouette: oversized friendly round-eyed feathered griffin head with short curved beak, tall swept chunky feather crest, layered neck ruff, compact torso, FOUR grounded chunky animal legs with broad three-toed paws, TWO large folded swept FEATHER wings attached above the shoulder, and a short tied-looking fan-feather tail behind. Four actual legs plus two wings in every consistent view, not a bird biped. Feather tiers are thick integrated overlapping volumes, never flat paper cards or membrane wings. Folded wing tips descend alongside the body but do not intersect paws or hide impossible extra legs. Maintain large head, broad paws and compact friendly toy proportions; no fierce realistic eagle, no humanoid, no mech, no armor or equipment. The cyan datum, support pillars and ground lines in the reference are drawing aids and must NOT become anatomy or objects. Preserve rounded softness and coherent connected body volume; supply plausible inferred depth only, never redesign identity. Four views same scale, ample white margins, all tips and feet fully inside sheet."
+    },
+    {
+      "creature_id": "worldcoil",
+      "reference": "E:/AI Projects/games/3d print battler/assets/creatures/2d/blueprints/v2/worldcoil_blueprint_ink_v2.png",
+      "file": "worldcoil-inferred-turnaround-v1.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "bytes": 1587752,
+      "sha256": "78595A5B515AEC06DF85F0B4FB86A0C9245B41F49BE0433E444C6D50E08D76B0",
+      "warnings": [
+        "Symmetric bull-horn pair and generic baby-dragon face are inferred, not established by approved visible silhouette.",
+        "Coil can read as a closed donut. A real model must use one continuous neck-to-coil-to-tail centerline without self-intersection."
+      ],
+      "literal_prompt": "Create a careful character volume-inference study for a Blender artist modeling the exact whimsical Worldcoil creature in the supplied approved PrintForge blueprint. This is an INFERRED depth study, not measured geometry. Wide white sheet with four evenly separated full-body views of the SAME creature: front, left side, rear, and top. Neutral softly lit warm-gray clay volumes, no textures, no text, no labels, no dimensions, no arrows or decoration. Lock this approved identity: oversized friendly round-eyed dragon head, short broad muzzle and tiny smile, layered organic chunky cranial scales and backward curved horns/cheek plates, upright neck/chest, exactly TWO short forearms ending in broad three-claw paws, no hind legs and no wings. Lower body is ONE continuous broad snake body curled into a low oval coil with a visible interior opening; neck rises naturally from the coil, tapering tail terminus is physically traceable and never an amputated/disconnected torus. Build a connected continuous thick body with gently overlapping scale volumes, no floating armor plates, no self-intersecting coil and no flat spiral card. Chest scale rhythm and head/coil proportions follow the reference. Keep friendly printed-toy proportions and rounded edges, not an aggressive realistic dragon, not a human or mech. Cyan supports and datum lines in the reference are drawing aids, NOT anatomy, so remove them. In front/back/top, infer plausible hidden volume without changing the visible identity. Show enough top/underside logic to understand coil continuity, but do not explode or disconnect any body part. Same scale across front/side/rear, top adjusted only to fit; complete silhouettes and generous margins."
+    }
+  ]
+}

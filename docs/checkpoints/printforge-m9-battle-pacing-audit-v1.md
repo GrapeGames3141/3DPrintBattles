@@ -115,34 +115,133 @@ stack a second rule.
 - **Progression:** Only an exactly-once completed result grants the locked M9 coins/XP.
   Damage presentation, retry, Back, replay, and a failed/aborted audit grant nothing.
 
-## Required decision evidence
+## Unified full-match fixture contract
 
-Before implementation acceptance, run a new unified-authority full-match matrix through the same
-one-intent coordinator used by the UI:
+This contract prevents a legacy-engine match, an unused accessibility difficulty
+label, or a harness timeout from being reported as M9 pacing evidence.
 
-1. Use each of Cinderpaw, Aquafin, and Voltwig as fresh founder starter, the exact
-   legal founder 40-card deck, all fixed bot difficulties exposed by M9, both opening
-   seats, and at least five fixed seeds per starter/difficulty/opening combination.
-2. Drive player and rival with deterministic legal-intent policies; exercise required
-   place, attach, and overflow decisions rather than modifying state directly.
-3. Require every match to finish at printer zero or an explicit test-authored Concede;
-   no guard expiry, empty intent, illegal intent, pending-decision stall, duplicate
-   result, or fabricated timeout winner.
-4. Require every non-Concede match to finish within 30 complete rounds, with median
-   length between 12 and 22 complete rounds. Report min/median/p95/max round count,
-   accepted intents, attack count, defender hits, printer hits, damage by target,
-   opening seat, winner, and final printer HP.
-5. Repeat the matrix and require byte-equivalent aggregate results and per-seed winner/
-   revision traces. Presentation on/off and reduced motion produce identical authority.
-6. Real coordinate pointer/touch and keyboard focus smoke tests start one match, play
-   one Plan action, pull Run Cycle, resolve one required placement, and reach one
-   direct printer hit. Direct callback/emitted-signal invocation is not interaction
-   acceptance.
+### Authority and exact matrix
 
-The approval already authorizes the x10-only bounded M9 pacing rule. If its matrix
-fails the 30-round maximum or produces a stall, implementation acceptance is blocked
-and the change is not broadened: Sol returns the traces to design for one separately
-approved fatigue/overtime contract.
+1. Build the player deck by taking a new profile through the public Founder v1
+   choice, starter print, three ordered pack claims, and three Keep acknowledgements.
+   Assert the resulting active deck is legal and has exactly 40 cards. Do not inject
+   a hand, queue, field, printer HP, upgrade, or reward directly.
+2. Launch the actual first playable bot route, Workshop Trial `first_layers_1`
+   (`Warm Nozzle`), through `GameManager.create_unified_battle`. Supply a unique
+   fixture-only `result_id` so launch does not consume a live launch sequence, and
+   never call settlement. Assert the source active deck is the fresh-Founder deck and
+   the player's opening hand plus remaining deck preserve its exact 40-card multiset.
+   Assert the rival's opening hand, remaining deck, and preprinted slot preserve the
+   route-generated encounter multiset; do not substitute a mirror or legacy opponent.
+   The player has a base printer, no preprint, and no workshop mod.
+3. Drive both seats for simulation through the current coordinator
+   `next_ai_intent(active_seat)` -> `submit_checked(...)` path, which delegates to
+   `UnifiedAIOpponent.next_legal_intent(state, seat)`. The current unified AI has one
+   policy and accepts no difficulty argument;
+   `AccessibilityRules.ai_difficulty` and legacy `BattleRules`/`SoloBattleFactory`
+   results are not matrix dimensions or qualifying evidence.
+4. Use the exact launcher seed inputs `[11, 23, 37, 53, 71]`. The launch route hashes
+   mode/source/day/input into the authoritative battle seed, so report both the
+   launcher input and returned `state.seed`; do not label the input as the battle
+   seed. For each input, launch a fresh state, then force the opening pair before the
+   first intent by setting both `starting_seat` and `active_seat` to `0`, and repeat
+   from another fresh launch with both set to `1`. Do not swap them after play begins.
+5. The required matrix is therefore exactly 30 full matches (`3 * 2 * 5`):
+   Cinderpaw, Aquafin, and Voltwig; opener 0 and opener 1; and the five seeds above.
+   Any future genuinely distinct unified AI policy requires a new
+   named matrix dimension, but it is not invented for this M9 gate.
+6. Apply every action through the checked unified rules/coordinator path used by the
+   battle UI. Placement, attachment, overflow, and other pending choices must be
+   resolved through legal intents. Calling legacy rules, mutating a queue/slot/HP to
+   advance play, or invoking a UI callback directly invalidates the run. When a
+   checked intent returns a presentation receipt, acknowledge that receipt exactly
+   once before requesting the next intent; never disable the coordinator guard by
+   editing `presentation_active`.
+
+### Round and seat-turn accounting
+
+`UnifiedBattleState.turn` is a **round number**, despite its name. It begins at 1 and
+increments only after the second seat accepts Collect -> Draw and control returns to
+`starting_seat`. A printer can reach zero during Attack before that round completes.
+Record these separate counters:
+
+- `rounds_started`: the maximum authoritative `state.turn` observed, including the
+  terminal snapshot. The 30-round maximum and 12-22 median use this counter.
+- `rounds_completed`: increment only on an accepted Collect -> Draw transition whose
+  resulting active seat is `starting_seat`; for an unmodified match it equals
+  `state.turn - 1` at the terminal snapshot.
+- `seat_turns_started[seat]`: increment once when that seat's Draw phase is first
+  advanced for a `(state.turn, seat)` pair.
+- `seat_turns_completed[seat]`: increment once when that seat legally advances from
+  Collect and passes control. An overflow discard in Collect does not complete the
+  seat-turn; the later accepted advance does.
+- `accepted_intents`: increment after each successful authoritative intent. Rejected
+  intents are failures, not turns. Also record terminal revision so the repeated-run
+  trace can detect duplicate or missing transitions. With a new revision-zero state,
+  final revision must equal `accepted_intents`.
+- `accepted_intents_this_seat_turn`: reset only when accepted Collect passes control;
+  retain its maximum per seat. The current real rival loop allows 48 accepted checked
+  actions during one continuous seat ownership. If seat 1 still owns priority after
+  accepted action 48, classify the next required action as a UI step-budget failure;
+  do not let the headless fixture silently continue as though the route could.
+
+A match ending during the opener's Attack in round 30 has `rounds_started = 30` and
+may have only 29 completed rounds; it passes the maximum. Calling this “30 complete
+rounds” would undercount that terminal round and is forbidden in reports.
+
+### Termination, overrun, and stalemate reporting
+
+- The 30 matrix cases do not author Concede. A qualifying terminal has
+  `state.finished == true`; the harness classifies `terminal_reason` as
+  `printer_zero` only when exactly one printer is at or below zero and `winner` is
+  the opposite seat. No further authority transition may be accepted. The state does
+  not currently store a terminal-reason field, so the harness must not claim that it
+  read one. A test/harness guard is never a game terminal.
+- Crossing into `rounds_started == 31` while unfinished records
+  `pacing_overrun_at_31`. Continue diagnostic simulation only up to the fixed
+  `4096 accepted_intents` guard. A later printer-zero terminal is reported
+  `terminated_late`; exhaustion while unfinished is reported
+  `stalemate_or_guard_exhausted`. Both fail M9 pacing acceptance.
+- An empty AI intent while its seat owns priority is `no_legal_intent`; a rejected
+  intent is `rejected_intent`; an unresolved pending choice is `pending_stall`.
+  Report the starter, launcher seed, authority seed, opener, last authoritative
+  snapshot/revision, proposed intent, counters, and recent accepted-intent trace.
+  None becomes a draw, win, loss, Result, reward, or profile settlement.
+- `ui_step_budget_exhausted` means seat 1 remains active and unfinished after its
+  48th accepted checked action in one seat-turn. It is a recoverable route pause in
+  current UI behavior but fails this unattended playable-bot acceptance; it is not a
+  match timeout or authority terminal.
+- Separately create an isolated unified-rules state with empty decks through
+  `UnifiedBattleState.create([], [], 11)`; do not empty a live matrix deck by
+  mutation. Accept its legal Draw advance and assert that the empty draw changes
+  neither printer HP nor `finished`/`winner`. Repeat through at least one later empty
+  draw. This is the explicit no-fatigue regression; a timeout, guard, or deck
+  exhaustion must never synthesize damage.
+
+### Required evidence
+
+1. Every one of the 30 non-Concede cases terminates at printer zero with
+   `rounds_started <= 30`; the median `rounds_started` across the 30 is 12-22.
+2. Report min/median/p95/max for `rounds_started`, `rounds_completed`, seat-turns,
+   accepted intents, maximum accepted intents per seat-turn, attacks, defender hits,
+   printer hits, and damage by target, plus each case's starter, launcher/authority
+   seeds, opener, winner, terminal revision, and final HP.
+   Sort each 30-value sample ascending: median is the arithmetic mean of zero-based
+   indexes 14 and 15, and p95 is nearest-rank zero-based index 28.
+3. Repeat all 30 cases and require byte-equivalent per-case authority traces and
+   aggregate results. Presentation enabled/disabled and reduced motion produce the
+   same authority traces.
+4. In a separate route smoke, actual coordinate pointer/touch and keyboard-focus
+   controls start a real offline bot match, play one Plan action, pull Run Cycle,
+   resolve one required placement, and reach one direct printer hit. Direct callback
+   or emitted-signal invocation is not interaction acceptance. This smoke confirms
+   routing and input; it does not replace the 30-case unified pacing matrix.
+
+The approval already authorizes the x10-only bounded M9 pacing rule. If any case
+fails the 30-round maximum, the matrix median falls outside 12-22, or any case
+produces a stall, implementation acceptance is blocked and the change is not
+broadened: Sol returns the traces to design for one new human decision. Fatigue,
+overtime, HP, AI policy, or another multiplier must not be selected automatically.
 
 ## Non-goals
 

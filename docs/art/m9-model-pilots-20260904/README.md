@@ -4,6 +4,32 @@ Date: 2026-09-04. These are modeling-reference studies, not completed meshes or
 runtime replacements for the existing approved creature art.
 
 - [Cinderpaw inferred turnaround v1](cinderpaw-inferred-turnaround-v1.png)
+- [Aurorawing inferred turnaround v1](aurorawing-inferred-turnaround-v1.png)
+- [Worldcoil inferred turnaround v1](worldcoil-inferred-turnaround-v1.png)
+
+All three sheets are **INFERRED** studies, not measured views or completed models.
+They may guide a first volume blockout but never qualify silhouette, anatomy,
+manufacturing readiness, runtime integration or 3D-pilot approval by themselves.
+
+## Aurorawing and Worldcoil v1 review
+
+Built-in ImageGen generated front/side/rear/top gray-clay hypotheses from each
+existing approved v2 blueprint. Literal prompts, source references, dimensions and
+hashes are in `depth-studies-v1-provenance.json`. Both tool-managed C: sources were
+copied to this durable E: folder and verified by exact bytes and SHA-256.
+
+Read-only UI review found these useful only as blockout hypotheses:
+
+- Aurorawing: the study shortens the approved long tail fan, shortens/hooks the beak,
+  and makes the body too upright. Lock the original longer beak-to-tail silhouette,
+  low horizontal body and four distinct fore/hind ground contacts before feathers.
+- Worldcoil: the inferred symmetric horn pair is not source measurement; preserve
+  the approved longer snout and swept side crest. Define one continuous serpentine
+  centerline through neck, coil and tail, never a detached donut pedestal, ambiguous
+  closed torus or self-intersecting spiral.
+
+Source geometry and material authority still come from the approved creature art.
+These studies do not authorize replacing sprites or inventing hidden anatomy as fact.
 
 ## Cinderpaw v1 provenance and limitation
 

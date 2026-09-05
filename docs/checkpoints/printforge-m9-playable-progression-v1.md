@@ -737,11 +737,19 @@ rather than inventing or promoting placeholder printable art.
    required-decision controls reach a settled Result without any phase or manual
    Attack button. Both seats use the same checked rules. Privacy, revision increments,
    finite presentations, queue ordering, and one living sprite per deployed unit hold.
-   A unified-authority matrix uses each fresh Founder starter, every M9 bot difficulty,
-   both opening seats, and at least five fixed seeds per combination. Every non-Concede
-   match finishes at printer zero within 30 complete rounds, median length is 12-22,
-   and repeated runs reproduce winners/revisions. Reports include min/median/p95/max,
-   intents, creature/printer hits, damage by target, opening seat, winner, and final HP.
+   The exact unified-authority matrix is 30 matches: each fresh Founder starter,
+   both forced opening seats, and launcher seed inputs `[11, 23, 37, 53, 71]` against
+   the route-generated `first_layers_1` rival, using the current single
+   `UnifiedAIOpponent` policy for both seats. The hashed authority seed is reported.
+   Accessibility difficulty labels and legacy battle results do not count. Every case
+   finishes at printer zero with `rounds_started <= 30`; median `rounds_started` is
+   12-22. `state.turn` is the
+   current round number, while completed rounds and per-seat started/completed turns
+   are reported separately. Repeated runs reproduce winners, revisions, and traces.
+   Guard expiry, round 31, empty/rejected intent, pending stall, or exhausting the
+   real rival loop's 48 accepted-action per-seat-turn budget is a failed audit, never
+   a timeout victory, draw, Result, or reward. The exact fixture and no-fatigue
+   regression are locked in `printforge-m9-battle-pacing-audit-v1.md`.
    Direct printer hits apply exactly x10 normal damage only after all defenders clear;
    creature damage, HP 2000, Chassis +500, and no-fatigue behavior remain unchanged.
    Any stall/overrun blocks acceptance and returns traces for a separate decision; it
