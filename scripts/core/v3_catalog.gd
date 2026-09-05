@@ -64,7 +64,10 @@ static func validation_errors() -> Array[String]:
 					failures.append("v3 non-creature atlas art is invalid: %s" % id)
 				art_identity = "atlas:%s:%d" % [atlas_id, cell]
 			else:
-				if not direct_path.begins_with("res://") or not FileAccess.file_exists(direct_path):
+				# Exported resources commonly retain import/remap payloads without the
+				# loose authoring PNG. ResourceLoader is therefore authoritative for
+				# packaged content; FileAccess remains the source/headless fallback.
+				if not direct_path.begins_with("res://") or not _resource_path_exists(direct_path):
 					failures.append("v3 non-creature direct art path is invalid: %s" % id)
 				art_identity = "path:%s" % direct_path
 			if not art_identity.is_empty():
@@ -76,6 +79,9 @@ static func validation_errors() -> Array[String]:
 				if not effect is Dictionary or str(effect.get("target", "")) not in EFFECT_TARGETS:
 					failures.append("v3 effect target is invalid: %s" % id)
 	return failures
+
+static func _resource_path_exists(path: String) -> bool:
+	return ResourceLoader.exists(path) or FileAccess.file_exists(path)
 
 static func cards() -> Array:
 	if not _cards_cache.is_empty(): return _cards_cache.duplicate(true)

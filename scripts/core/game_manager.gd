@@ -4,6 +4,7 @@ const CAMPAIGN_RULES := preload("res://scripts/core/campaign_rules.gd")
 const SOLO_BATTLE_FACTORY := preload("res://scripts/core/solo_battle_factory.gd")
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_BATTLE_STATE := preload("res://scripts/battle/unified_battle_state.gd")
+const V3_CATALOG := preload("res://scripts/core/v3_catalog.gd")
 ## Account state facade. All mutations pass through SaveService journal entries.
 
 signal profile_changed
@@ -30,6 +31,14 @@ func _ready() -> void:
 ## Kept narrow and callable by isolated save-compatibility tests. It is the only
 ## bootstrap path that is allowed to migrate or persist a loaded profile.
 func _initialize_loaded_profile(loaded: Dictionary) -> void:
+	# Package/catalog validation must run before profile normalization or any
+	# snapshot/journal/receipt-sidecar write. A bad build is not bad player data.
+	var catalog_errors: Array[String] = V3_CATALOG.validation_errors()
+	if not catalog_errors.is_empty():
+		profile = loaded.duplicate(true)
+		save_compatibility = {"compatible":false, "state":"catalog_unavailable", "message":"This build could not load its card catalog. Your saved workshop has not been changed. Install the updated PrintForge build and reopen it.", "catalog_errors":catalog_errors.duplicate()}
+		push_error("PrintForge catalog unavailable: %s" % "; ".join(catalog_errors))
+		return
 	if SaveService.recovery_status in ["corrupt_primary", "corrupt_backup"]:
 		profile = {}
 		save_compatibility = {"compatible":false, "state":SaveService.recovery_status, "message":"No valid save snapshot could be read. Your recoverable files have not been changed."}
@@ -49,11 +58,26 @@ func _initialize_loaded_profile(loaded: Dictionary) -> void:
 	else:
 		# This service reads only the clean v3 namespace, so legacy migration is
 		# intentionally never invoked here.
-		var unified := UNIFIED_RULES.ensure(profile)
-		if unified != profile:
-			profile = unified
+		var loaded_profile := profile.duplicate(true)
+		var unified := UNIFIED_RULES.ensure(loaded_profile)
+		# JSON storage may deserialize a numeric field as a float while the rules
+		# canonicalize the same value to an integer. That is not a migration and
+		# must not rewrite a valid player save on every startup. Persist only an
+		# actual JSON-value/schema change; still publish the ensured in-memory form.
+		var needs_persistence := not _json_value_equivalent(unified, loaded_profile)
+		profile = unified
+		if needs_persistence:
 			SaveService.commit_snapshot(profile)
 	apply_android_review_coin_floor(OS.has_feature("android_review"))
+
+func _json_value_equivalent(first: Variant, second: Variant) -> bool:
+	return JSON.stringify(_json_value_normalized(first)) == JSON.stringify(_json_value_normalized(second))
+
+func _json_value_normalized(value: Variant) -> Variant:
+	# Serializing then parsing normalizes Godot's in-memory numeric representations
+	# to the values actually stored by SaveService, without mutating player data.
+	var normalized: Variant = JSON.parse_string(JSON.stringify(value))
+	return value if normalized == null else normalized
 
 func is_save_read_only() -> bool:
 	return not bool(save_compatibility.get("compatible", true))

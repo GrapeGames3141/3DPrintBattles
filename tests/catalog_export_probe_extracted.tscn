@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://build/evidence/catalog-export-probe/catalog_export_probe.gd" id="1_probe"]
+
+[node name="CatalogExportProbe" type="Node"]
+script = ExtResource("1_probe")

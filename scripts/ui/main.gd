@@ -382,6 +382,12 @@ func _dispatch_pending_system_back() -> void:
 func request_back() -> void:
 	# Android may surface KEY_BACK and WM_GO_BACK_REQUEST for one gesture.  The
 	# frame guard keeps both routes on one dispatcher without dropping a later key.
+	# A package/catalog failure happens before any profile normalization or write.
+	# Its recovery plate has one safe exit; routing to Title would only rebuild the
+	# same blocking plate.
+	if str(GameManager.save_compatibility.get("state", "")) == "catalog_unavailable":
+		get_tree().quit()
+		return
 	var frame := Engine.get_process_frames()
 	if _last_back_dispatch_frame == frame: return
 	_last_back_dispatch_frame = frame

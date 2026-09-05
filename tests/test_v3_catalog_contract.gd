@@ -38,7 +38,7 @@ func _ready() -> void:
 		var identity := "path:%s" % direct_path if not direct_path.is_empty() else "atlas:%s:%d" % [atlas_id, int(art.get("cell", -1))]
 		require(not identity.is_empty() and not visible_art.has(identity), "%s has unique visible front art." % source.id)
 		visible_art[identity] = true
-		if not direct_path.is_empty(): require(direct_path == "res://assets/cards/v3/filament_ring_art_v1.png" and FileAccess.file_exists(direct_path), "Filament Ring direct front path exists.")
+		if not direct_path.is_empty(): require(direct_path == "res://assets/cards/v3/filament_ring_art_v1.png" and ResourceLoader.exists(direct_path) and ResourceLoader.load(direct_path) != null, "Filament Ring direct front resolves through Godot resource loading.")
 		var resolved := CARD_VIEW.art_for_definition(RULES.card(str(source.get("id", ""))))
 		require(resolved != null and resolved != card_back, "%s resolves front art instead of the cardback." % source.id)
 	require(visible_art.size() == 33, "Every 33 non-creature cards has distinct visible front art.")

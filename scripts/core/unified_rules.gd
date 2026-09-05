@@ -607,12 +607,19 @@ static func clear_pack_reveal(source: Dictionary) -> Dictionary:
 	if p.pending_pack_reveal.is_empty(): return fail(p, "There is no pack receipt waiting to keep.")
 	var cards: Array = p.pending_pack_reveal.get("cards", [])
 	var bonus_cards: Array = p.pending_pack_reveal.get("bonus_cards", [])
+	var final_founder_keep := false
 	if bool(p.pending_pack_reveal.get("founder_reward", false)):
 		var rewards: Dictionary = p.get("starter_pack_rewards", {})
 		if int(rewards.get("kept", 0)) >= int(rewards.get("opened", 0)): return fail(p, "That Founder receipt was already kept.")
 		rewards["kept"] = int(rewards.get("kept", 0)) + 1
 		p.starter_pack_rewards = rewards
+		final_founder_keep = str(rewards.get("kind", "")) == FOUNDER_VERSION and int(rewards.get("entitled", 0)) == 3 and int(rewards.get("kept", 0)) == 3
 	p.pending_pack_reveal = {}
+	# The existing complete-Founder repair stays unavailable while a receipt is
+	# pending. Once the final Keep is acknowledged, apply that idempotent repair
+	# in this same candidate so an affected exported save needs no restart before
+	# its already-earned 40-card deck is legal.
+	if final_founder_keep: p = ensure(p)
 	return ok(p,{"cards":cards.duplicate(),"bonus_cards":bonus_cards.duplicate()})
 static func dismantle_card(source: Dictionary, card_id: String, count := 1) -> Dictionary:
 	var p := ensure(source); var def := card(card_id); if def.is_empty() or count <= 0 or int(p.owned_cards.get(card_id,0)) < count: return fail(p,"Card cannot be dismantled.")

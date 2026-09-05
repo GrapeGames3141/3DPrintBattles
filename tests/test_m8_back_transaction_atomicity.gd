@@ -31,6 +31,10 @@ func _run() -> void:
 	# as the current M9 route fixtures; do not recreate a retired one-card profile.
 	GameManager.profile = PROFILES.founder_ready("cinderpaw")
 	var main := await _mount()
+	# This fixture advances the accepted print explicitly below. Freeze Main's
+	# wall-clock presentation tick so layout-frame waits cannot race its exact
+	# sequence/progress atomicity assertions.
+	main.printer_capture_freeze = true
 	# Accepted Forge: the first Back pauses to caller, stale second Back must not
 	# advance/cancel/commit the same authoritative sequence.
 	main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.advance_printer_for_test(4200); await get_tree().process_frame

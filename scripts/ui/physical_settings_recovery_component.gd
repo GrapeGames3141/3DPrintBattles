@@ -139,6 +139,7 @@ func _recovery_preservation_receipt(main: Control, host: Control, state: String)
 	var text := "Saved record preserved · No changes made"
 	if state == "backup_recovered": text = "Validated backup preserved · Awaiting acknowledgement"
 	elif state == "storage_unavailable": text = "No changes made · Storage remains read-only"
+	elif state == "catalog_unavailable": text = "Game content unavailable · Player data unchanged"
 	var label: Label = main.label(text, 11, Color("47331f")); label.name = "RecoveryPreservationCopy"; label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _settings_rect(label, Rect2(0.04, 0.08, 0.92, 0.84)); receipt.add_child(label)
 
 func _recovery_actions(main: Control, host: Control, state: String) -> void:
@@ -146,6 +147,18 @@ func _recovery_actions(main: Control, host: Control, state: String) -> void:
 	# promise. Only state-specific safe actions remain reachable.
 	if state == "backup_recovered":
 		var acknowledge := _settings_transparent_button("RecoveryAcknowledgeBackup", "ACKNOWLEDGE", main._m3_acknowledge_backup_recovery, true); _settings_rect(acknowledge, Rect2(0.500, 0.830, 0.245, 0.125)); acknowledge.custom_minimum_size = Vector2(56, 56); acknowledge.tooltip_text = "Acknowledge recovered backup and safely resume"; acknowledge.accessibility_name = acknowledge.tooltip_text; host.add_child(acknowledge)
+	elif state == "catalog_unavailable":
+		# Content validation intentionally has no recovery route: request_back owns
+		# the one safe exit for both this native action and Android system Back.  Seat
+		# its transparent hit target on the existing lower-left cream action plate.
+		var exit := _settings_transparent_button("RecoveryExitCatalogUnavailable", "EXIT", main.request_back)
+		_settings_rect(exit, Rect2(0.235, 0.767, 0.225, 0.069))
+		exit.custom_minimum_size = Vector2(56, 56)
+		exit.tooltip_text = "Exit PrintForge without changing your saved workshop"
+		exit.accessibility_name = exit.tooltip_text
+		for key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+			exit.add_theme_color_override(key, Color("47331f"))
+		host.add_child(exit)
 	elif state in ["corrupt_primary", "corrupt_backup"]:
 		var text := "CONFIRM NEW MAKER" if main.m3_recovery_new_maker_confirm else "PRESERVE + NEW MAKER"
 		var action: Callable = main._m3_confirm_new_maker_recovery if main.m3_recovery_new_maker_confirm else main._m3_request_new_maker_recovery
@@ -156,6 +169,7 @@ func _recovery_side_indicator(main: Control, node_name: String, value: String) -
 
 func _recovery_title(state: String) -> String:
 	match state:
+		"catalog_unavailable": return "GAME CONTENT UNAVAILABLE"
 		"backup_recovered": return "RECOVERED WORKSHOP"
 		"future_schema": return "NEWER WORKSHOP RECORD"
 		"corrupt_primary", "corrupt_backup": return "WORKSHOP RECORD NEEDS CARE"
@@ -163,6 +177,7 @@ func _recovery_title(state: String) -> String:
 
 func _recovery_copy(state: String) -> String:
 	match state:
+		"catalog_unavailable": return "This build could not load its card catalog. Your saved workshop has not been changed. Install the updated PrintForge build and reopen it."
 		"backup_recovered": return "A validated backup is ready. Acknowledge it before PrintForge writes a new primary record."
 		"future_schema": return "This workshop was made by a newer PrintForge version. Update the game before changing it."
 		"corrupt_primary", "corrupt_backup": return "The saved record cannot be read. It remains preserved until you separately confirm a New Maker."
@@ -170,6 +185,7 @@ func _recovery_copy(state: String) -> String:
 
 func _recovery_indicator(state: String) -> String:
 	match state:
+		"catalog_unavailable": return "CATALOG HELD"
 		"backup_recovered": return "BACKUP READY"
 		"future_schema": return "UPDATE NEEDED"
 		"corrupt_primary", "corrupt_backup": return "RECORD HELD"
