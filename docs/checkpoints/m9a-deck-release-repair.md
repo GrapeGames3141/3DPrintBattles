@@ -1,7 +1,7 @@
 # PrintForge M9A exported deck release repair
 
-Status: **baseline runtime cause confirmed; bounded implementation and source
-regressions pass; packaged candidate and physical Android evidence pending**
+Status: **source and compiled-APK repair gates pass; APK and README delivered and
+hash-verified on DriveFS; cloud sync and physical Android acceptance unconfirmed**
 
 Date: 2026-09-05
 
@@ -77,9 +77,9 @@ profile.
   error captures with no P0/P1. The initial detached Exit was retained as failed
   evidence and corrected onto the existing cream action plate. Corrected guard
   PIDs `55180` / `58612` passed geometry, parsed touch Exit, and no-save-write checks.
-- These are source results. A new APK, candidate packaged-content proof, affected-
-  player physical-device upgrade proof, and physical Android acceptance remain
-  pending. The portable compiled-APK harness must still pass before release delivery.
+- These source results are separate from the compiled-APK proof recorded below.
+  Affected-player physical-device upgrade and Android acceptance remain unverified;
+  no desktop result has been labeled as a physical-phone pass.
 
 ### Durable source review images
 
@@ -95,6 +95,72 @@ hidden task-owned launches with isolated E: saves and logs; no task-owned Godot 
 Windows crash-report process survived the root cleanup inspection. The Android SDK
 reported no connected device. Desktop Mobile renderer evidence is not Android OS,
 touch-device, lifecycle, or no-data-clear install evidence.
+
+## Packaged candidate evidence — 0.8.8 / 4c78ed6df9e6
+
+APK export PID `50004` completed cleanly (08:35:54–08:36:20 CT). Package version is
+`0.8.8-deck-export-fix`, code `104`, arm64 portrait, no ads. The signing certificate
+is unchanged from 0.8.7. Static package, launcher alias, 16 KB alignment, v2/v3 signing,
+stock native/DEX dependency, exclusion, and advertising-absence checks all pass.
+
+The APK is **241391544 bytes**, SHA-256
+`AA446B261FF38A003D97A4640E6D8F1917D4E543E0EDD73E572D29AD52C83D97`.
+All **611** extracted runtime entries (**211097758 bytes**) matched their original
+APK bytes and hashes both before and after every probe. Only isolated QA harnesses
+were added to extracted `build/evidence`; no authoring image or source runtime was
+injected. The maintained runner is `tools/run_catalog_export_probe.ps1 -RunDeckInput`.
+
+| Actual packaged-runtime check | PID | Result |
+| --- | --- | --- |
+| All 57 front resources and type ledger | 55092 | PASS |
+| 576 rendered Deck edits, exact save/reload, bot entry | 57444 | PASS |
+| 720 rendered Deck edits, exact save/reload, bot entry | 62212 | PASS |
+| Affected Founder save recovery / atomic final Keep | 55208 | PASS |
+| Unchanged-save bytes and real migration | 63520 | PASS |
+| 720 genuine-content fault / no-write / parsed touch Exit | 61836 | PASS |
+
+Every listed process exited `0` and was confirmed cleaned up. The first supplemental
+save-fixture attempt (`61464`) used an excessively nested Windows QA directory; its
+261-character fixture directories could not be opened for save promotion. It is
+retained as failed harness evidence. The unchanged compiled runtime and byte-identical
+test scripts passed with shorter, still-isolated E: QA roots (`q-mg`, `q-up`, `q-guard`).
+This does not establish or imply an Android storage defect.
+
+Read-only visual review passed all four packaged Deck/bot frames; each is byte-identical
+to its reviewed source counterpart. Physical Android install, touch/hardware Back,
+lifecycle, performance, and no-data-clear upgrade remain unverified. No connected
+device or emulator was available. This is a functional repair review, not a new art
+approval request or a claim of complete Android acceptance.
+
+### Durable compiled-APK images
+
+- [Packaged 576 Deck](<E:/AI Projects/games/3d print battler/build/evidence/deck-export-repair-20260905/release-4c78ed6df9e6/packaged-runtime-v1/shipped-assets/build/evidence/deck-export-input/deck-shipped-576x1024/qa-save/deck-export-second-slot-legal-576x1024.png>) and [packaged 576 bot opening](<E:/AI Projects/games/3d print battler/build/evidence/deck-export-repair-20260905/release-4c78ed6df9e6/packaged-runtime-v1/shipped-assets/build/evidence/deck-export-input/deck-shipped-576x1024/qa-save/deck-export-bot-opening-hand-576x1024.png>).
+- [Packaged 720 Deck](<E:/AI Projects/games/3d print battler/build/evidence/deck-export-repair-20260905/release-4c78ed6df9e6/packaged-runtime-v1/shipped-assets/build/evidence/deck-export-input/deck-shipped-720x1280/qa-save/deck-export-second-slot-legal-720x1280.png>) and [packaged 720 bot opening](<E:/AI Projects/games/3d print battler/build/evidence/deck-export-repair-20260905/release-4c78ed6df9e6/packaged-runtime-v1/shipped-assets/build/evidence/deck-export-input/deck-shipped-720x1280/qa-save/deck-export-bot-opening-hand-720x1280.png>).
+- [Packaged 720 safe content error](<E:/AI Projects/games/3d print battler/build/evidence/deck-export-repair-20260905/release-4c78ed6df9e6/packaged-runtime-v1/shipped-assets/build/evidence/q-guard/catalog-package-unavailable-720x1280.png>).
+
+## Verified release delivery
+
+At **2026-09-05 08:50:22 CT**, the release APK and README were copied, without
+overwriting existing files, to `H:\My Drive\AI Projects\PrintForge`.
+
+- [APK on DriveFS](<H:/My Drive/AI Projects/PrintForge/PrintForge-Legends-0.8.8-deck-export-fix-arm64-4c78ed6df9e6.apk>):
+  241391544 bytes; SHA-256 `AA446B261FF38A003D97A4640E6D8F1917D4E543E0EDD73E572D29AD52C83D97`.
+- [README on DriveFS](<H:/My Drive/AI Projects/PrintForge/README-0.8.8-deck-export-fix-4c78ed6df9e6.md>):
+  4987 bytes; SHA-256 `C106AB06F42494C48B32F82996A6A6574E50448A368584BCF479EE3749040429`.
+- [Durable local APK](<E:/AI Projects/games/3d print battler/build/android/PrintForge-Legends-0.8.8-deck-export-fix-arm64-4c78ed6df9e6.apk>) and
+  [local README](<E:/AI Projects/games/3d print battler/build/android/README-0.8.8-deck-export-fix-4c78ed6df9e6.md>).
+
+Both local/DriveFS pairs match byte size and SHA-256. The delivery receipt is
+`build/evidence/deck-export-repair-20260905/release-4c78ed6df9e6/drivefs-delivery.json`.
+No cloud connector was available, so cloud-visible synchronization is **unconfirmed**,
+not inferred from the mount. The older 0.8.7 APK and README were retained unchanged.
+
+This candidate needs an on-device review, not another art/design approval. Install
+over the same-package previous playtest without uninstalling or clearing saved data.
+The runtime source is commit `4c78ed6df9e61711be380923bf5f08db37737dce`; later evidence-only
+documentation commits do not change the qualified binary. The maintainability review
+kept the repair at the catalog boundary, profile bootstrap, and existing final-Keep
+transaction; it added no duplicated reward algorithm, save schema, assets, or ad code.
 
 ## Locked boundaries
 
@@ -261,21 +327,22 @@ touch-device, lifecycle, or no-data-clear install evidence.
   persisting real missing-field migration.
 - [x] Root-confirmed source suites pass all-57 resources/fronts, rules, Founder
   progression, no-Ad, Back `18/18`, Back atomicity, and live controls.
-- [ ] Export a new versioned arm64 APK and prove from that packaged runtime that all 57
+- [x] Export a new versioned arm64 APK and prove from that packaged runtime that all 57
   identities/fronts load and genuine required-content failure remains pre-profile,
   read-only, and safe-Exit-only.
 - [ ] Upgrade without uninstalling or clearing data from an isolated affected-version
   fixture. Before/after evidence must preserve every fixed deck slot and contents,
   selected/active slot, Pre-Print order, owned cards, licenses/models, Founder counters,
   and any pending receipt ID/order/caller; startup alone must not rewrite valid bytes.
-- [ ] Resume any pending receipt exactly once, save/activate the intended legal deck,
+- [x] In source and desktop compiled-APK fixtures, resume a pending receipt exactly
+  once, save/activate the intended legal deck,
   relaunch, and start the existing bot without a duplicate grant or empty/card-back
   substitution.
-- [ ] After packaged-content proof passes, Sol/root may stage and deliver a
+- [x] After packaged-content proof passes, Sol/root may stage and deliver a
   **device-unverified review build** with physical Android explicitly pending. A real
   no-data-clear device upgrade and fresh-device Founder-to-bot run are still required
   for full Android acceptance.
-- [ ] Copy the new non-overwriting APK/README to DriveFS, verify bytes/SHA-256, and
+- [x] Copy the new non-overwriting APK/README to DriveFS, verify bytes/SHA-256, and
   report cloud-visible synchronization separately.
 
 ## Decision-complete acceptance criteria
