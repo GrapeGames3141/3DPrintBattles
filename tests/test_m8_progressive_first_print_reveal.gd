@@ -102,6 +102,10 @@ func _caller_safe_back() -> void:
 	canvas.add_child(main)
 	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await get_tree().process_frame
+	# This continuity fixture owns every presentation advance explicitly below.
+	# Freeze Main's wall-clock tick so frame waits used for layout cannot race the
+	# exact accepted sequence/progress comparison across caller-safe Back/resume.
+	main.set_process(false)
 	main.screen = "onboarding"
 	main.open_printer("cinderpaw")
 	await get_tree().process_frame
