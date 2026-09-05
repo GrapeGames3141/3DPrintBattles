@@ -1,10 +1,12 @@
 # PrintForge M9A release acceptance checklist
 
-Status: **VISUAL PASS — root and independent UI review have no P0/P1 across
-`full-map-v2`, unaffected `accessibility-map-v4-final` rows, and the 19-row
-`accessibility-map-v4-supplemental7-forwardplus` replacement set. Candidate-commit
-tests, Android audit and Drive delivery remain open. Physical device evidence is
-BLOCKED because no authorized device is attached.**
+Status: **REVIEW DELIVERY PASS — 18/18 candidate-commit tests, visual review with
+no P0/P1, static Android audit and non-overwriting DriveFS APK/README hashes verified.
+Physical device evidence remains BLOCKED; cloud-visible synchronization is PENDING.**
+
+Exact source, per-suite PIDs/commands, manifests, package metadata and delivery hashes:
+[M9A final release receipt](m9a-release-7ec8920bfd48.md). The receipt supersedes the
+historical open-status notes below without turning unavailable device evidence into PASS.
 
 Date: 2026-09-05
 
@@ -38,7 +40,7 @@ console/worker PIDs, exit code, retained log, and task-owned process/dialog clea
 Earlier runs remain useful evidence but are not a substitute if their exercised code
 differs from the release candidate.
 
-- [ ] `test_m9_founder_progression` proves rule/profile authority for all three
+- [x] `test_m9_founder_progression` proves rule/profile authority for all three
   starters from empty isolated storage. Choice grants one card/license and a one-card provisional
   deck with new-profile-only `founder_v1`; First Print grants no hidden deck fill.
   Claims 1/2/3 each atomically grant and append the ordered 13 cards, persist the
@@ -49,7 +51,7 @@ differs from the release candidate.
   complete/in-progress unmarked legacy profiles grant nothing extra. A separate
   rendered coordinate-input fixture must choose each starter and complete this same
   flow through the visible controls; the rule test alone is not usability evidence.
-- [ ] `test_unified_card_acquisition_ui` proves acquisition/receipt authority, and a
+- [x] `test_unified_card_acquisition_ui` proves acquisition/receipt authority, and a
   rendered coordinate-input fixture uses actual Market controls to buy
   Basic/Forge/Arcane/Primordial/Champion at the frozen displayed
   debit; every committed base/bonus card is reachable in stable order at five per
@@ -57,22 +59,22 @@ differs from the release candidate.
   reopens the same receipt; Keep acknowledges once. Pending, insufficient-funds,
   double-submit, reload, and sidecar-persistence failure cannot reroll, hide, duplicate,
   or partially grant cards. A new receipt resets its local page/inspector state.
-- [ ] Native facts use authoritative normalized aliases (`cost`/`print_ticks` from
+- [x] Native facts use authoritative normalized aliases (`cost`/`print_ticks` from
   `filament_cost`/`print_turns`), real Spool level and exact effective price. Creatures
   show HP/Bend/element/ability, not invented ATK; support/equipment facts and
   creature/equipment license coupling match catalog/rules authority.
-- [ ] `test_m8_route_back_contract` executes all 18 stable rows and every named
+- [x] `test_m8_route_back_contract` executes all 18 stable rows and every named
   semantic subcase twice from identical serialized fixtures: visible Back versus dispatcher
   `go_back_requested`, with exact caller/modal/draft/job/receipt/profile/focus/callback
   parity. Title opens Exit confirmation; live Battle opens Concede/Stay; background
   controls stay shielded; receipt Back preserves pending content; locked commit states
   expose the same reason. Every visible owner is unique, focusable, reachable and at
   least 48x48 logical pixels.
-- [ ] `test_m8_back_transaction_atomicity` proves one debounce/transition under
+- [x] `test_m8_back_transaction_atomicity` proves one debounce/transition under
   repeated visible/WM/KEY Back, rebuild/replacement and persistence rejection. No
   partial Deck + Pre-Print save, purchase dismissal, result replay, accepted-job
   cancellation, or deferred stale callback is possible.
-- [ ] `test_m9_real_input_navigation` first proves a known-good target and the
+- [x] `test_m9_real_input_navigation` first proves a known-good target and the
   original STOP-overlay negative control, then obtains each real control rect and
   injects pointer/touch press and release through `Viewport.push_input` at its coordinates.
   It covers First Print, active Forge, Founder paging/recovery, Archive, Deck, Market,
@@ -81,17 +83,17 @@ differs from the release candidate.
   input fixture. A rendered `Input.parse_input_event` fixture independently repeats
   the release-critical Founder/pack/Back path; headless or viewport injection does
   not stand in for that rendered input proof.
-- [ ] `test_m8_progressive_first_print_reveal` preserves the existing 0/1/25/60/99,
+- [x] `test_m8_progressive_first_print_reveal` preserves the existing 0/1/25/60/99,
   RAW_COMPLETE, awaken and departure authority/mask contract in normal and reduced
   motion. Pre-100 never reveals a full figure; the scan-adjacent preview band remains
   at most 8% of printable height.
-- [ ] Forge continuity validation proves one persistent parent-owned stage and one
+- [x] Forge continuity validation proves one persistent parent-owned stage and one
   job/subject/generation across caller exit, pause and resume; no orphan/duplicate
   stage, texture, callback or authority owner is created. Frozen browse/render and
   nonboundary visual advance mutate no profile, RNG, receipt, ownership, progress or
   revision. Skip introduces no grant or bypass; if it lawfully reaches existing
   `RAW_COMPLETE`, the ordinary exactly-once completion commit may run once.
-- [ ] `test_game_manager_atomicity`, `test_save_recovery`, `test_m3_live_controls`,
+- [x] `test_game_manager_atomicity`, `test_save_recovery`, `test_m3_live_controls`,
   `test_ui_workshop_nav`, `test_unified_ui_layout`, `test_m5_android_no_ad`,
   `test_export_boundary`, and `test_runtime_asset_manifest` pass as candidate-commit
   regressions. Invalid QA storage is rejected before any autoload profile load; final
@@ -107,7 +109,7 @@ differs from the release candidate.
   `after-start`, and normalized `print-60` frames. They close the three P1s above,
   preserve the enclosed brass/navy star-gem station, keep the M8 progressive mask,
   and receive root plus read-only original-resolution UI review with P0 none/P1 none.
-- [ ] Approved carriage/head crops retain alpha, registration and stable bounds.
+- [x] Approved carriage/head crops retain alpha, registration and stable bounds.
   Runtime dependency and rendered-pixel scans reject every old Workshop overview,
   old printer closeup/theme fallback, and `arcane_forge_printer_frame_01..04` path.
 
@@ -141,11 +143,11 @@ completion boundary.
 | `M9-FC-19-Tall` | Starter IDLE, routine IDLE, 60% and done | 1080x2400; production reserve 0 |
 | `M9-FC-20-MissingLayerSafe` | Injected missing layer; native safe state, no old fallback | 576x1024 and 720x1280 |
 
-- [ ] Original-resolution review of the complete map reports P0 none/P1 none for
+- [x] Original-resolution review of the complete map reports P0 none/P1 none for
   enclosure continuity, material family, crop/registration, no detached head/raft,
   native ink containment, exact one Back/control owner, 100%/150% text, high contrast,
   reduced motion, and reachable 48/56px controls.
-- [ ] Previously reviewed non-Forge M9A route captures remain bound to unchanged
+- [x] Previously reviewed non-Forge M9A route captures remain bound to unchanged
   candidate inputs, or the existing route matrix is rerun before sign-off. Prior
   Market/Archive/Deck/Founder/Workshop/Starter/recovery/Battle-exit/Settings/Result
   visual passes are retained evidence, never proof of changed pixels. Stress captures
@@ -205,29 +207,29 @@ Locked candidate identity: portrait Android debug/review APK; package
 `0.8.7-founder-navigation`; code `103`; ABI `arm64-v8a` only; additional production
 bottom reserve `0`.
 
-- [ ] Build/export begins only from the clean reviewed M9A commit. Record full commit
+- [x] Build/export begins only from the clean reviewed M9A commit. Record full commit
   hash, branch, Godot 4.7.1/template/Android tool identities, exact export command,
   task-owned PIDs, exit and cleanup. The APK and README use non-overwriting names
   `PrintForge-Legends-0.8.7-founder-navigation-arm64-<commit12>.apk` and
   `README-0.8.7-founder-navigation-<commit12>.md`.
-- [ ] No-AdMob means absence. Source, dependency graph, resolved manifest, archive,
+- [x] No-AdMob means absence. Source, dependency graph, resolved manifest, archive,
   resources, DEX/classes/strings and native-library scans contain no Google Mobile
   Ads/mediation/ad-services library, Godot ad addon/plugin/bridge, app/unit ID
   (including `ca-app-pub-` samples), ad metadata/component/provider/service/receiver,
   `AD_ID`/ad-only permission, request path, consent/telemetry path, placeholder or
   reserved band. `test_m5_android_no_ad` and archive audit pass.
-- [ ] Static APK audit verifies package/version/code, portrait MAIN/LAUNCHER,
+- [x] Static APK audit verifies package/version/code, portrait MAIN/LAUNCHER,
   arm64-only archive, approved launcher/adaptive resources, debug/review signature,
   required runtime assets, and exclusion of docs/tests/tools/source/evidence/secrets/
   credentials/keystores/logs. Record local bytes and SHA-256.
-- [ ] When an authorized device exists, prove the installed APK is the same local
+- [x] When an authorized device exists, prove the installed APK is the same local
   byte/hash-qualified artifact and record the physical results above. Otherwise keep
   each physical-only claim explicitly BLOCKED.
-- [ ] Copy only after all available gates to the observed studio folder
+- [x] Copy only after all available gates to the observed studio folder
   `H:\My Drive\AI Projects\PrintForge`. Refuse an existing destination filename;
   never overwrite, delete, rename, or replace an earlier release. Verify local versus
   DriveFS APK bytes and SHA-256 exactly and verify the companion README copy.
-- [ ] README binds the same full commit, metadata, ABI/orientation, debug signing,
+- [x] README binds the same full commit, metadata, ABI/orientation, debug signing,
   no-AdMob audit, tests/captures, device PASS/FAIL/BLOCKED outcomes, local/Drive paths,
   bytes/SHA and launch scope. Report `DriveFS copy: VERIFIED` only after comparison;
   report cloud visibility independently as `CONFIRMED` or `PENDING` and never infer it

@@ -356,3 +356,19 @@ Frozen source is ready for the explicit owned-file candidate commit and final te
   and separately cloud-visible synchronization. None is claimed by this ledger.
 - M9B battle/progression and M9C actual models are subsequent milestones, not done
   merely because M9A or an art source passes.
+
+## Final M9A delivery closure — 2026-09-05
+
+The prior open items above are closed for the review-delivery scope by
+[the exact candidate release receipt](evidence/m9a-release-7ec8920bfd48.md): source
+`7ec8920bfd48ee31a40e7f94ec94e820cb51c1d9`, 18/18 final Forward+ suites, no remaining
+visual P0/P1, static APK audit, same Android debug update certificate, and both
+non-overwriting DriveFS copies verified by bytes/SHA-256. The two post-runtime
+commits only freeze a timing-sensitive test and update obsolete selector fixtures
+to actual cartridge input; the approved runtime visuals did not change.
+
+Delivered version `0.8.7-founder-navigation` / code 103, arm64, portrait, no ads.
+Cloud-visible sync remains PENDING. Physical Android install/launch/touch/OS Back
+and live device animation remain BLOCKED because no authorized device is attached.
+M9B and M9C remain separate unfinished milestones; no new models or battle pacing
+work is implied by this M9A delivery.

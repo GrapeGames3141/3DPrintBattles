@@ -16,6 +16,9 @@ gates; this is not a device-test claim.
 
 [Retained v4 review](accessibility-v4-review-index.md) · [Normal Forge map](normal-map-review-index.md)
 
+[Final committed rendered input frame · 576×1024](<../../../build/evidence/m9a-release-7ec8920bfd48/test_m9_rendered_founder_pack_input/qa/forward-plus-input-proof-576x1024.png>)
+is actual Forward+ input evidence, separate from the visual map.
+
 ## Final supplemental captures
 
 - [M9-FC-ManagementFounderNormal · 576×1024](<../../../build/evidence/m9a-runtime-20260904/forge-continuity/accessibility-map-v4-supplemental7-forwardplus/576x1024/M9-FC-ManagementFounderNormal-576x1024.png>)
