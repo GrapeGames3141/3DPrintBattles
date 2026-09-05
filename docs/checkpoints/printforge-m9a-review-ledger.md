@@ -1,7 +1,8 @@
 # M9A root review ledger
 
-Root review, 2026-09-04. **HOLD: P0 Forge scene-identity regression.** This is an
-in-progress gate, not release sign-off.
+Root review, 2026-09-04. **HOLD: Forge runtime integration/validation pending.**
+The exact matching source family is human-approved; this remains an in-progress
+runtime gate, not release sign-off.
 
 ## User correction overrides the incomplete visual pass
 
@@ -20,6 +21,39 @@ candidates are in `docs/art/m9-forge-continuity-20260904/`; they are not runtime
 promotion. The build remains held pending the art/integration/review gates. Terra
 completed and cleaned the already-running 1080 matrix before the hold, then stopped
 without speculative route edits or export. No task-owned Godot processes remained.
+
+The user's subsequent approval authorizes the exact two-source family in
+`docs/art/m9-forge-continuity-20260904/approval-20260904.md`. Root and read-only UI
+have passed the preserved-alpha carriage/head extraction and registered-composite
+proof against the enclosed master. This permits controlled runtime integration;
+it does not reinstate the rejected Active Forge capture's visual pass. The first
+new runtime gate is actual Start before/after/60% at 576x1024.
+
+The first actual-Start capture run (console PID 38312, exit 0; only the environmental
+Windows certificate-store diagnostic) restores the correct enclosure across all
+three states, and the M8 60% reveal keeps solid pixels below the datum with only a
+narrow preview band. Root/UI nevertheless hold that runtime gate for three P1s:
+the nozzle separates vertically from its rails, the raw raft floats above the bed,
+and native copy crosses cream/brass boundaries or uses white-on-cream ink. Root
+also identified IDLE incorrectly inheriting the sequence helper's 100% value, a
+duplicated-percent pseudo-ETA, small selector targets and a legacy shader applied
+to already-authored v2 blueprint ink. Terra received one bounded correction batch;
+the replacement captures will be stored separately from `first-gate/`. Source
+approval is unchanged. No new art direction or human decision is required.
+
+`first-gate-v2/` improved bed contact and ETA but did not pass visual review: Back
+ink was reset by the navigation helper, the scan still used an unshifted duplicate
+raw rect, and dial/cartridge geometry was not yet corrected. Its harness PASS is
+input/state evidence only. A fresh sole-writer Terra context completed the shared
+alpha geometry and material-owner corrections.
+
+Root and read-only UI now pass the narrow `first-gate-v3/` Start/60% family with no
+P0/P1: attached gantry, nozzle at datum, raft on bed, zero-percent IDLE, local M8
+reveal, dark native ink inside cream faces and parchment-contained v2 blueprint.
+The selector follow-up (console PID 32932, exit 0) logs actual Next then Previous
+activation for `[cinderpaw, mossmunk]` with two nonoverlapping 58.8x56 logical targets;
+root sees both contrasting jewel chevrons. Full phase, accessibility, caller/focus,
+missing-layer, refactor and regression gates are still pending. No APK is implied.
 
 ## Authority and implementation
 
@@ -118,11 +152,51 @@ preserve the production 576x1024 base and change only physical Window size. At
 720x1280 the logged transform is 1.25 with a 576x1024 visible logical viewport.
 Tall 1080x2400 expands the visible logical height instead of changing base width.
 
-Read-only UI review passes 13 of 14 official 720 routes. Battle Exit still needs
-its background focus highlight removed and Stay focused while the shield owns
-input. Initial tall Active Forge with 150% text/high contrast/reduced motion passes
-layout; a still image alone is not reduced-motion behavioral evidence. Full tall
-matrix, final modal recaptures and accessibility tests remain release gates.
+Read-only UI review passed the remaining official 720 routes, but the Active Forge
+material pass was subsequently withdrawn by the user correction above. Background
+Battle Back is now disabled and excluded from focus while Stay owns the shield;
+`parity576-battle_exit-focus.png`, `parity720-battle_exit-focus.png` and
+`parity1080-battle_exit-focus.png` pass root/UI review. Their console PIDs are
+29900, 48184 and 41804 respectively, all exit 0 with task-owned cleanup reported.
+
+Read-only original-resolution review of the six remaining official 1080 captures
+(Founder recovery, Archive, Deck, Market, Settings and Result) found no P0/P1. They
+retain their approved cabinet, folio, clipboard, instrument-board and result-ledger
+owners and fill the tall surface without a blank banner reserve or clipped primary
+action. P2 follow-ups are floating top HUD treatment, selected parchment inset,
+`FC`/`COINS` copy consistency, Apply label centering and sparse result wells. These
+are not logic or physical Android input evidence. First/Active Forge still require
+new captures and behavioral accessibility checks after the route-wide correction.
+
+Root's current M9A core diff review confirms bounded Founder provenance, deterministic
+13-card receipts, separate Keep acknowledgement, creature/equipment license coupling,
+bounded receipt caller hints and a presentation-only sidecar adjacent to the profile.
+Existing unmarked profiles retain their legacy grant path. The sidecar's crash-window
+backup fallback remains a P2 browsing-position risk only; cards/coins are committed
+separately. Final regression results and runtime maintainability closure are pending.
+
+One final price-boundary case remains to close: the physical Market confirmation
+stores a displayed pack price, but `_m3_execute_market_purchase` currently does not
+pass that expected debit to the rule/commit boundary. A Newcomer offer can expire
+between opening the confirmation and accepting it. The bounded correction is an
+optional expected-price guard for pack purchase, checked before spend/RNG/receipt
+mutation; a mismatch refreshes the offer and requests a fresh confirmation instead
+of silently applying a different debit. Existing non-confirmation callers keep
+their current default API behavior. Add deterministic stale-price rejection and
+matching-price success tests; do not alter prices or eligibility as a workaround.
+
+The final Android exclusion audit must also omit the two unrelated root capture
+PNGs (`m8_print_idle_576x1024_M8-R5-m8-print-idle-576x1024.png` and
+`onboarding_576x1024.png`). They are intentionally preserved untracked, but an
+`all_resources` export can otherwise package their imports. Use exact exclusion
+paths, not a broad PNG filter that could remove legitimate runtime art. Existing
+`docs/`, `tests/`, `tools/`, `build/`, attachment and Android-plugin exclusions remain.
+
+Startup still names the rejected old landscape Workshop as `boot_splash/image`.
+For this review build, use the already-approved portrait Title plate
+`assets/ui/physical_ui/title-backplate-text-free-v2.png`, matching the actual Title
+route. This is reuse of approved art, not a new splash/logo direction. Verify its
+export inclusion and retain native Title brand/actions after startup.
 
 Verbose actual-input PID 38820 and its later diagnostic run exposed detached
 Node ownership leaks, not just static caches. RefCounted Forge, Battle and Workshop
@@ -135,6 +209,22 @@ environmental. `_save_to_cache` at `shader_rd.cpp:696` is a renderer shader-cach
 write issue, not a missing UI font. Preserve that classification and exact logs.
 
 OS-delivered Android Back is still not established by desktop input evidence.
+
+Root rechecked M8 atomicity v3 (PID 29508, exit 0), route-Back v3 (PID 45320,
+exit 0, all 18 rows), progressive (PID 21340, exit 0 reported) and lifecycle v2
+(PID 1232, exit 0). The atomicity fixture now uses the legal M9 Founder fixture
+and distinguishes same-frame duplicate Back from a genuine later Workshop-to-Title
+Back. Its storage rejection warnings are intentional negative seams, not runtime
+storage failures. Candidate-commit reruns remain required. Manually assigned Forge
+ledger timestamps are being corrected against actual retained log metadata; no
+unobserved timestamp is accepted as process evidence.
+
+Final test hygiene also requires `test_game_manager_atomicity` and
+`test_save_recovery` to derive their isolated paths from the pre-autoload QA root
+and restore that same root, never switch to `user://` or the player's default.
+`test_m5_android_no_ad` still hard-codes the previous M5 version/code; update only
+that expected identity to the approved 0.8.7/code 103 while retaining every
+absence, approved-icon, arm64, portrait and zero-reserve assertion.
 
 - Remaining final diff/test/render review and maintainability refactor.
 - Actual Android device Back/launch evidence: no device was attached at inventory.

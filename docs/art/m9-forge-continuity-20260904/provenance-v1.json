@@ -2,8 +2,8 @@
   "created": "2026-09-04",
   "tool": "built-in ImageGen",
   "reference": "assets/ui/physical_ui/m1-r2/first-print-empty-printer-v2.png",
-  "authority": "Existing approved M1-R4 enclosed steampunk Forge. Derivative layers are candidates, not runtime promotion or a completed UI repair.",
-  "status": "Read-only original-resolution candidate direction PASS, no P0/P1; human derivative-family approval and runtime promotion pending. See review-v1.md.",
+  "authority": "Existing approved M1-R4 enclosed steampunk Forge. Human approved the exact derivative source family on 2026-09-04. Root authorized faithful runtime integration after alpha/registration review.",
+  "status": "Source and alpha/registration PASS, no P0/P1; human derivative-family APPROVED 2026-09-04. Runtime first-gate-v3 Start/60% PASS at 576x1024. Full phase/input/accessibility and release evidence remain pending. See review-v1.md and approval-20260904.md.",
   "images": [
     {
       "file": "enclosed-forge-static-master-v1.png",
@@ -28,5 +28,24 @@
       "prompt": "Use case: background-extraction. Asset type: two-piece transparent animation atlas for the existing approved PrintForge steampunk printer. Image 1 is the exact object/finish reference. Isolate and faithfully reconstruct ONLY its movable hardware into TWO SEPARATE, NONOVERLAPPING objects on a genuinely transparent background: upper half contains the horizontal two parallel silver carriage guide rods with their original brass/navy left and right bearing blocks, NO central print head; lower half contains the original central vertical brass and cyan-glass print-head barrel with its tiny downward brass nozzle, NO rods. Keep the straight-on perspective, warm brass highlights, navy enamel, contained cyan illumination, exact original mechanical style and proportions. The rail assembly is wide and shallow, the nozzle assembly is narrow and vertical. Center each with generous transparent gutters; all metal edges fully in frame. No other casing, back wall, vertical rails, floor, bed, instrument dials, star emblem, new hoses or mechanisms. Do not redesign, do not add another printer, creature, text, marks, labels, drop-shadow rectangle or checkerboard pixels. True alpha outside both isolated objects, including the gap between the two silver rods. The two objects will be cropped separately and moved independently by Godot, so they must not touch or overlap. Match the supplied printer exactly rather than creating a new machine.",
       "alpha": "Actual RGBA. 1,178,834 pixels alpha=0. Preserve generated alpha; no opaque matte removal is indicated."
     }
-  ]
+  ],
+  "runtime_derivation": {
+    "method": "4-connected alpha>0 source components, original RGBA copied unchanged, 4px transparent padding; no hand-drawn replacement or luminance matte removal",
+    "tool": "tools/extract_forge_continuity_layers.gd",
+    "evidence": "build/evidence/m9a-runtime-20260904/forge-continuity-alpha/manifest.json",
+    "static_runtime_path": "assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "static_runtime_sha256": "108175B25AC1A1160A1356C6D5E0965E67713C1ED1A451F350EA66AC79816D3B",
+    "guide": {
+      "runtime_path": "assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png",
+      "source_bounds_xywh": [31, 22, 1474, 411],
+      "dimensions": [1482, 419],
+      "sha256": "2BF53578778AE1D6670BA9C5E3EFC0726CF74270C44B809BAF3D02334E14608C"
+    },
+    "head": {
+      "runtime_path": "assets/ui/physical_ui/forge-continuity/carriage-head-v1.png",
+      "source_bounds_xywh": [625, 386, 286, 602],
+      "dimensions": [294, 610],
+      "sha256": "A3ED2A3EE04FB8AF3B77A46F16F22537129BAE3B2273A0D1B1B600481586A07C"
+    }
+  }
 }

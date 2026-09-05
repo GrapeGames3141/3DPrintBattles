@@ -1,14 +1,16 @@
 # Restore the enclosed steampunk Forge
 
-The user's rejected capture used the wrong scene. The existing code selects the
+The user's rejected capture used the wrong scene. The previous code selected the
 approved enclosed printer only for starter IDLE, then switches to an old room and
 open desktop printer for routine selection and active printing. This is a P0
 screen-identity failure, not a high-contrast setting or a mere button-style problem.
-The Android review build is held; no replacement runtime is claimed yet.
+The approved replacement is now integrated and its narrow Start/60% runtime gate
+passes. The Android review build is still held for the full phase/regression review.
 
-Read-only source review: **candidate direction PASS, no P0/P1**. Human approval of
-this matching derivative family is pending; [review details](review-v1.md) separate
-that source gate from alpha/crop registration and actual runtime validation.
+Read-only source review: **candidate direction PASS, no P0/P1**. The user
+[approved this matching derivative family](approval-20260904.md); [review
+details](review-v1.md) separate that source gate from alpha/crop registration and
+actual runtime validation, which remain required before delivery.
 
 ## Exact approved reference and matching layer candidates
 
@@ -29,7 +31,28 @@ These source candidates were generated with built-in ImageGen from the existing
 approved printer, then copied from its required tool-managed C: output into this
 durable E: repository. Source and destination bytes/SHA-256 match. The carriage
 atlas has real transparency; dark preview RGB outside the objects has alpha zero.
-Runtime crop registration, animation and input evidence are still pending.
+Runtime crop registration and the narrow actual-Start input/visual gate now pass.
+Full phase, accessibility and final release evidence are still pending.
+
+## Durable runtime review images
+
+Selected alpha/registration proofs:
+
+- [Registered enclosure and carriage](../../../build/evidence/m9a-runtime-20260904/forge-continuity-alpha/registered-composite.png)
+- [Light alpha proof](../../../build/evidence/m9a-runtime-20260904/forge-continuity-alpha/light-proof.png)
+- [Dark alpha proof](../../../build/evidence/m9a-runtime-20260904/forge-continuity-alpha/dark-proof.png)
+
+Current first-gate-v3: root/UI pass the normal 576x1024 Start/60% composition;
+this does not approve uncaptured phases, accessibility or physical Android input.
+
+- [Before Start and routine selector](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v3/before-start-576x1024.png)
+- [After actual Start](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v3/after-start-576x1024.png)
+- [60% progressive print](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v3/print-60-576x1024.png)
+
+Rejected integration history is retained for comparison, not release approval:
+
+- First gate: [before](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate/before-start-576x1024.png), [after](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate/after-start-576x1024.png), [60%](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate/print-60-576x1024.png).
+- Second gate: [before](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v2/before-start-576x1024.png), [after](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v2/after-start-576x1024.png), [60%](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v2/print-60-576x1024.png).
 
 ## Other M9 art delivered earlier in this work
 

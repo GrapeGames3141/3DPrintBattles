@@ -1,8 +1,11 @@
 # M9 Forge continuity implementation handoff
 
 Root plan, 2026-09-04. Sole runtime writer: `terra_implementer`.
-Implementation is held until the candidate art gate in the companion correction
-contract is satisfied. Existing M9A work must be preserved; no parallel runtime writer.
+The exact candidate art gate is satisfied by the human approval recorded in
+`docs/art/m9-forge-continuity-20260904/approval-20260904.md`; implementation is active.
+The narrow normal-size Start/60% and selector review passes in `first-gate-v3`.
+The complete phase/accessibility and release gates remain open. Existing M9A work
+must be preserved; no parallel runtime writer.
 
 ## Bounded change
 
@@ -94,3 +97,36 @@ economy, print eligibility, sequence thresholds/timing, profile or save authorit
    export the next Android review and deliver non-overwriting APK/README to Drive.
 
 Do not add M9B battle or progression rules in this bounded correction.
+
+## Post-first-gate source audit — next bounded validation batch
+
+Root source review identified these concrete later-phase risks, to validate and
+correct while executing the existing M9-FC phase map (not a new design scope):
+
+- `PhysicalForgeScreenComponent` currently assigns terminal `OPEN PACK` outside
+  the eligible-Founder branch. Keep its text and callback paired: eligible receipt
+  uses Open Pack, otherwise Print Another. Exercise both by actual input.
+- The missing-layer safe screen uses cream-well dark ink without its cream plate.
+  Give its one Back owner an existing physical control or contrasting native safe
+  treatment, preserve the recorded caller, and freeze the accepted job. A missing
+  static/guide/head/raw layer must never show an older room or substitute creature.
+- `refresh_native` must not replace a FAILED reason with a generic phase string.
+  Keep one truthful native failure owner and unabridged accessible reason; do not
+  label a persistence error as bad input. SECURING must not claim RECORD SECURE
+  before the existing commit resolves.
+- Armor/core still take their legacy raw-region geometry while the new carriage
+  uses creature-style alpha-aware layout. Use a single shared canonical raw bound
+  and scan datum for the current subject type. Preserve existing equipment sources
+  and rules; this is not promotion of the future M9C art/model work.
+- Living sprite feet and dormant raw raft must both anchor to the authored bed
+  using real nontransparent bounds. Inspect mid-awakening and departure, including
+  large silhouettes. Keep the existing finite animation and one subject owner.
+- Current continuous refresh assigns legacy minimum stage heights and loads the
+  component script repeatedly. Retain the fitted station size, cache the existing
+  presentation owner, and avoid unnecessary hierarchy/resource churn. Assert a
+  stable parent/stage/generation through redraw, resize and caller pause/resume.
+
+Batch the capture harness by physical resolution, keeping the production logical
+base 576x1024. Every row must record its exact state, authoritative profile hash,
+visible texture paths, dimensions and image hash. Do not treat a harness exit-zero
+as a visual pass; root/read-only UI review owns that decision.

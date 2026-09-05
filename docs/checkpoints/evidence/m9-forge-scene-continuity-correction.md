@@ -1,13 +1,17 @@
 # M9 Forge scene continuity correction
 
-Status: **decision-complete presentation correction; replacement layer family,
-runtime integration, captures, read-only review, and human art approval pending**
+Status: **exact two-PNG derivative family human-approved and source UI review PASS
+with no P0/P1; runtime integration, crop/registration proof, captures, deterministic
+validation, Android review build, release evidence, and Drive delivery pending**
 
 Date: 2026-09-04
 
 Authority: the user rejection of the current active-Forge screenshot in the current
 thread; the approved M1-R4 First Print composition; the M8 progressive-print and Back
-contracts; and the M5 no-ad decision. This document approves no new art.
+contracts; the M5 no-ad decision; and
+`docs/art/m9-forge-continuity-20260904/approval-20260904.md`. This checkpoint records
+the user's exact derivative-family approval; it does not independently approve any
+later crop, redraw, runtime composite, or additional art.
 
 ## Finding and correction boundary
 
@@ -51,6 +55,32 @@ that same phase/generation is rendered again. Neither is a new sequence phase.
   SDK, placeholder, disclosure, creative, reserved strip, reward, permission, or
   configuration is introduced by this correction.
 
+### Exact derivative-family approval record
+
+- **Entry:** The user reviewed the source family linked from
+  `docs/art/m9-forge-continuity-20260904/README.md` after its original-resolution
+  read-only review reported candidate-direction PASS with no P0/P1.
+- **Player decision:** On 2026-09-04 the user replied, “approved, make sure you stage
+  to google drive when you finish”.
+- **Result:** The approved family is exactly these two source PNGs and no others:
+  `enclosed-forge-static-master-v1.png` (941x1672, 2,103,608 bytes, SHA-256
+  `108175B25AC1A1160A1356C6D5E0965E67713C1ED1A451F350EA66AC79816D3B`) and
+  `enclosed-forge-carriage-atlas-source-v1.png` (1536x1024, 1,513,070 bytes,
+  SHA-256 `B3DFBFF777C68DEFF6362737225F942C929F08CEF32CAA482D10C1428B990B34`).
+  They are the authorized source family for the route-wide continuity correction.
+- **Failure:** A changed source hash, additional/redrawn machine, poor crop, doubled
+  retained post, alpha fringe, registration drift, old-scene fallback, or runtime
+  result that fails this checkpoint is not covered by the approval.
+- **Disabled:** Source approval does not waive deterministic alpha-component
+  separation, transparent padding, registered in-aperture composite proof, runtime
+  state/input/accessibility checks, Android build review, or release/Drive evidence.
+- **Feedback:** `review-v1.md` records the no-P0/P1 source review and its remaining
+  crop/alpha cautions. Runtime captures must still prove the approved family remains
+  coherent after derivation and composition.
+- **Progression:** Approval changes no profile, print, job, receipt, currency, save,
+  build, or delivery state. It authorizes the sole writer to integrate the exact
+  family under this existing presentation contract.
+
 ## Player-facing continuity contract
 
 - **Entry:** Enter the Forge from starter setup, the Workshop printer, Archive/
@@ -86,22 +116,28 @@ that same phase/generation is rendered again. Neither is a new sequence phase.
   progress, button text, or accessibility content. Physical lamps, scan light, meter
   motion, pressed depth, and focus treatment reinforce rather than replace native
   facts.
-- **Progression:** Selection, rendering, capture, accessibility variants, Back,
-  pause, resume, and presentation skip are zero-authority operations. The existing
-  raw-completion transaction alone may commit its debit/model/revision exactly once;
-  the existing terminal starter-pack action alone may claim its entitlement exactly
-  once. This correction changes neither boundary nor its payload.
+- **Progression:** Selection, frozen-state rendering/capture, focus/accessibility
+  variants, interruptible Back, pause, and resume are zero-authority operations.
+  Start, ordinary presentation advance, or a legal Skip may legitimately reach the
+  existing `RAW_COMPLETE` boundary; reaching it must invoke, not bypass, the existing
+  exactly-once commit. Skip itself introduces no grant and no bypass. That boundary
+  alone may commit its debit/model/revision once, and the existing terminal starter-
+  pack action alone may claim its entitlement once. This correction changes neither
+  boundary nor its payload.
 
 ## Single-owner composition
 
 One route-owned Forge surface owns the complete visual stack for every row below:
 
-1. **Static station owner:** one approved or later human-approved text-free close
-   printer plate. It owns enclosure, navy enamel, brass, star-gem, chamber, bed,
-   instrument housings, control seats, and restrained close-background material.
+1. **Static station owner:** the exact approved text-free
+   `enclosed-forge-static-master-v1.png`. It owns enclosure, navy enamel, brass,
+   star-gem, chamber, bed, instrument housings, control seats, and restrained close-
+   background material.
 2. **Chamber presentation owner:** one clipped stateful layer inside the approved bed/
-   chamber aperture. It alone owns footprint seed, progressive raw mask, narrow M8
-   preview band, scan line, raw form, living sprite, sparks, and departure transform.
+   chamber aperture. Its moving hardware is deterministically isolated from the exact
+   approved `enclosed-forge-carriage-atlas-source-v1.png`; it alone owns footprint
+   seed, progressive raw mask, narrow M8 preview band, scan line, raw form, living
+   sprite, sparks, and departure transform.
 3. **Native instrument owner:** one safe-area-aware layer owns every changing fact,
    progress control, status, error, tooltip, accessibility description, and receipt.
    Native content sits in authored blank faces and never redraws the printer.
@@ -187,16 +223,20 @@ intersection.
    native interaction owner, and no forbidden texture dependency. State rebuilds and
    resize do not accumulate nodes, timers, controls, or callbacks.
 3. Freeze a serialized authority/profile fixture before every visual-state capture.
-   After render, frame advance, focus traversal, resize, high contrast, reduced
-   motion, pause, and resume, require byte-equivalent profile, revision, currency,
-   ownership, printed count, receipt count, entitlement count, save journal, and
-   authoritative job data. Presentation sequence fields may change only in tests
-   explicitly advancing the existing finite presentation.
+   After frozen render, focus traversal, resize, high contrast, reduced motion,
+   interruptible Back, pause, resume, or an explicitly non-boundary presentation
+   advance, require byte-equivalent profile, revision, currency, ownership, printed
+   count, receipt count, entitlement count, save journal, and authoritative job data.
+   Presentation sequence fields may change only in tests explicitly advancing the
+   existing finite presentation. An advance or Skip that reaches `RAW_COMPLETE` is
+   evaluated by the separate exactly-once boundary case below, not this zero-mutation
+   assertion.
 4. Keep exactly-once mutation evidence separate from the zero-mutation visual cases.
-   At the existing `RAW_COMPLETE` boundary, repeated commit requests, duplicate
-   callbacks, Back attempts, reload, and resume yield one accepted debit/model/
-   revision or one unchanged failure. `RAW_HOLD` onward never commits again. Terminal
-   pack activation uses its existing unique receipt and cannot grant twice.
+   Start, timed advance, and legal Skip may all arrive at the existing `RAW_COMPLETE`
+   boundary. Repeated commit requests, duplicate callbacks, Back attempts, reload,
+   and resume then yield one accepted debit/model/revision or one unchanged failure.
+   `RAW_HOLD` onward never commits again. Terminal pack activation uses its existing
+   unique receipt and cannot grant twice.
 5. Re-run the M8 alpha/mask assertions at 0%, 25%, 60%, and 99% in normal, high-
    contrast, and reduced-motion variants. At all values below 100%, no connected mask
    spans the printable bounds, raw alpha is zero on/above scan, preview alpha is zero
@@ -253,8 +293,16 @@ exactly-once behavior, Android/visible Back equivalence, and parent ownership.
 
 ## Gate
 
-This correction is ready for a text-free layer brief and candidate production. It is
-not permission to promote a candidate. Runtime integration begins only after the
-replacement family covers the complete state map, original-resolution read-only UI
-review reports no P0/P1, and the user approves the art family. No prior approval of
-the M1-R4 composition is approval of a new derivative.
+The exact two-PNG derivative source family is human-approved as of 2026-09-04, and
+its original-resolution source review passed with no P0/P1. Do not request redundant
+approval of those unchanged source hashes. Sole-writer runtime integration is
+authorized under the completed implementation plan, but this checkpoint remains open
+until deterministic crop/alpha/registration proof, the full unchanged capture map,
+actual-control and transaction evidence, original-resolution runtime UI review, root
+diff/maintainability review, Android review build, and release delivery are complete.
+
+The user's approval also requests Google Drive staging when the build is finished.
+Delivery must use the established non-overwriting versioned release path, verify the
+local and DriveFS APK/README bytes and SHA-256, and report DriveFS copy separately
+from confirmed cloud-visible synchronization. This status records that release
+condition; it does not claim a build, copy, or synchronization has occurred.
