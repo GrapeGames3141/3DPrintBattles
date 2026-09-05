@@ -1,0 +1,32 @@
+{
+  "created": "2026-09-04",
+  "tool": "built-in ImageGen",
+  "reference": "assets/ui/physical_ui/m1-r2/first-print-empty-printer-v2.png",
+  "authority": "Existing approved M1-R4 enclosed steampunk Forge. Derivative layers are candidates, not runtime promotion or a completed UI repair.",
+  "status": "Read-only original-resolution candidate direction PASS, no P0/P1; human derivative-family approval and runtime promotion pending. See review-v1.md.",
+  "images": [
+    {
+      "file": "enclosed-forge-static-master-v1.png",
+      "source": "C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-f591f4ca-9fda-430d-87b8-cfcf6cb873a1.png",
+      "dimensions": [
+        941,
+        1672
+      ],
+      "bytes": 2103608,
+      "sha256": "108175B25AC1A1160A1356C6D5E0965E67713C1ED1A451F350EA66AC79816D3B",
+      "prompt": "Use case: precise-object-edit. Asset type: text-free static enclosure layer for the already-approved PrintForge portrait game UI. Image 1 is the EDIT TARGET, not loose inspiration. Change ONLY the moving horizontal carriage assembly inside the printer chamber: remove both silver horizontal cross-rods, their left/right traveling blocks, and the central cyan/brass print-head barrel/nozzle. Fill those removed areas seamlessly with the same recessed dark navy textured back wall. Keep the fixed vertical side rails, cyan perimeter lighting, empty cream/brass bed, exact outer brass/navy enclosure silhouette, large cyan star-gem crest, right-side blueprint cylinder and its blank cream label, three round blank cream instrument dials, three lower blank cream action plaques, cyan indicator lamps, background slivers, warm lighting, framing, perspective and proportions unchanged. Do not redesign or enlarge anything. Preserve the entire source composition and aspect ratio, all edges inside the image. No creature, model, raw print, wireframe, scan beam, smoke, glass overlay, text, letters, numbers, logos, new UI, or added objects. The result must be one opaque, clean, coherent original-looking enclosure plate, ready for native runtime labels and a separately animated carriage. This is NOT the older open desktop printer in a wooden workshop room; preserve this enclosed steampunk machine exactly."
+    },
+    {
+      "file": "enclosed-forge-carriage-atlas-source-v1.png",
+      "source": "C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-a71f4421-38b0-4dbc-a89e-a8bd6562159f.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "bytes": 1513070,
+      "sha256": "B3DFBFF777C68DEFF6362737225F942C929F08CEF32CAA482D10C1428B990B34",
+      "prompt": "Use case: background-extraction. Asset type: two-piece transparent animation atlas for the existing approved PrintForge steampunk printer. Image 1 is the exact object/finish reference. Isolate and faithfully reconstruct ONLY its movable hardware into TWO SEPARATE, NONOVERLAPPING objects on a genuinely transparent background: upper half contains the horizontal two parallel silver carriage guide rods with their original brass/navy left and right bearing blocks, NO central print head; lower half contains the original central vertical brass and cyan-glass print-head barrel with its tiny downward brass nozzle, NO rods. Keep the straight-on perspective, warm brass highlights, navy enamel, contained cyan illumination, exact original mechanical style and proportions. The rail assembly is wide and shallow, the nozzle assembly is narrow and vertical. Center each with generous transparent gutters; all metal edges fully in frame. No other casing, back wall, vertical rails, floor, bed, instrument dials, star emblem, new hoses or mechanisms. Do not redesign, do not add another printer, creature, text, marks, labels, drop-shadow rectangle or checkerboard pixels. True alpha outside both isolated objects, including the gap between the two silver rods. The two objects will be cropped separately and moved independently by Godot, so they must not touch or overlap. Match the supplied printer exactly rather than creating a new machine.",
+      "alpha": "Actual RGBA. 1,178,834 pixels alpha=0. Preserve generated alpha; no opaque matte removal is indicated."
+    }
+  ]
+}
