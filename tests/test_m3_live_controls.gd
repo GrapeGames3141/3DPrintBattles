@@ -5,8 +5,10 @@ extends Node
 
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
+const M9_TEST_PROFILES := preload("res://tests/m9_test_profile_factory.gd")
 
 var failures: Array[String] = []
+var configured_root := ""
 
 func require(value: bool, message: String) -> void:
 	if value: return
@@ -54,14 +56,17 @@ func _ready() -> void:
 	get_window().content_scale_size = requested_size
 	get_window().size = requested_size
 	await get_tree().process_frame
-	var root := "E:/AI Projects/games/3d print battler/build/task-state/m3-live-controls"
+	configured_root = SaveService.profile_path.get_base_dir()
+	if not configured_root.replace("\\", "/").contains("/build/evidence/"):
+		require(false, "M3 live-control test requires pre-autoload E: build/evidence QA storage; refusing fixture writes outside it.")
+		get_tree().quit(1)
+		return
+	var root := configured_root.path_join("m3-live-controls")
 	DirAccess.make_dir_recursive_absolute(root)
 	SaveService.configure_test_paths(root)
 	GameManager.save_compatibility = {"compatible":true, "state":"ready", "message":""}
-	var profile := RULES.new_profile()
+	var profile := M9_TEST_PROFILES.founder_ready()
 	profile.forge_coins = 1200
-	profile = RULES.choose_starter(profile, "cinderpaw").profile
-	profile = RULES.print_starter(profile).profile
 	GameManager.profile = profile
 	var main := MAIN.instantiate()
 	add_child(main)
@@ -113,19 +118,28 @@ func _ready() -> void:
 
 	# A committed receipt alone owns Pack. Its card is inspectable and Keep is a
 	# real focus activation, never a direct claim call.
-	GameManager.profile.starter_pack_rewards = {"entitled":3, "opened":0}
-	var seeded_pack := GameManager.claim_next_starter_pack()
+	var onboarding_profile := RULES.new_profile()
+	onboarding_profile = RULES.choose_starter(onboarding_profile, "cinderpaw").profile
+	onboarding_profile = RULES.print_starter(onboarding_profile).profile
+	GameManager.profile = onboarding_profile
+	var seeded_pack := GameManager.claim_next_starter_pack("unified_library")
 	require(bool(seeded_pack.get("ok", false)), "Live Pack setup commits one authoritative starter receipt before control testing.")
-	main.screen = "unified_library"; main.m3_pack_inspector_id = ""; main.render(); await get_tree().process_frame
+	main.m3_pack_inspector_id = ""; main._m3_open_pending_pack("unified_library"); await get_tree().process_frame
 	var pending_cards: Array = (GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).get("cards", []) as Array
 	var first_pack_id := str(pending_cards[0]) if not pending_cards.is_empty() else ""
 	var pack_card := _button(main, "UnifiedPackCardView" + first_pack_id.capitalize())
-	require(await _pointer_activate(pack_card) and main.m3_pack_inspector_id == first_pack_id, "Live Pack dock pointer exposes persisted card facts in the receipt surface.")
+	var receipt_revision := int(GameManager.profile.get("revision", 0))
+	require(await _pointer_activate(pack_card) and main.m3_pack_inspector_id == first_pack_id and int(GameManager.profile.get("revision", 0)) == receipt_revision, "Live Pack dock pointer exposes persisted card facts without mutating progression.")
+	var next_page := _button(main, "UnifiedPackRevealNext")
+	require(await _pointer_activate(next_page) and main.unified_reveal_page == 1 and int(GameManager.profile.get("revision", 0)) == receipt_revision, "Live Pack page target persists only receipt UI state, not a profile revision.")
+	var pack_back := _button(main, "UnifiedPackRevealBack")
+	require(await _pointer_activate(pack_back) and main.screen == "unified_library" and not (GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).is_empty() and main.unified_reveal_page == 1 and main.m3_pack_inspector_id == first_pack_id, "Pack Back returns once to its stored caller while preserving pending receipt page and selected-card context without claiming cards.")
+	main.screen = "workshop"; main.render(); await get_tree().process_frame
+	var resume_pack := _button(main, "WorkshopResumePendingPack")
+	require(await _pointer_activate(resume_pack) and main.screen == "m3_pack" and main.unified_reveal_page == 1, "Workshop recovery reopens the same pending receipt at its saved page.")
 	var keep := _button(main, "UnifiedPackRevealKeepCards")
-	require(await _focus_accept(keep) and int((GameManager.profile.get("starter_pack_rewards", {}) as Dictionary).get("opened", 0)) == 2 and str((GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).get("receipt", "")) == "starter-basic-2", "Focused Keep files the committed receipt exactly through its physical control and chains only the authorized next starter receipt.")
-	# Keep has legitimately chained pack two; clear this test-only receipt through the
-	# existing authoritative helper before asserting an unrelated Result route.
-	GameManager.claim_pending_pack_reveal_result()
+	require(await _focus_accept(keep) and int((GameManager.profile.get("starter_pack_rewards", {}) as Dictionary).get("opened", 0)) == 1 and int((GameManager.profile.get("starter_pack_rewards", {}) as Dictionary).get("kept", 0)) == 1 and (GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).is_empty() and main.screen == "unified_library", "Focused Keep acknowledges one committed Founder receipt and returns to its caller without opening another.")
+	GameManager.profile = profile
 
 	# Result has one physical exit. No duplicate HUD Back control can receive focus.
 	main.screen = "m3_result"; main.battle_mode = "daily"; main.m3_result_state = "committed"; main.m3_result_receipt = {"result":"victory", "coins":1, "xp":1}; main.render(); await get_tree().process_frame
@@ -135,4 +149,5 @@ func _ready() -> void:
 	main.queue_free()
 	await get_tree().process_frame
 	if failures.is_empty(): print("PASS: M3 live pointer/focus physical control paths")
+	SaveService.configure_test_paths(configured_root)
 	get_tree().quit(0 if failures.is_empty() else 1)

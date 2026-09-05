@@ -18,6 +18,7 @@ func require(value: bool, message: String) -> void:
 
 func _ready() -> void:
 	await _progressive_masks()
+	await _continuity_near_complete_guard()
 	await _caller_safe_back()
 	if failures.is_empty():
 		print("PASS: M8 progressive Forge reveal and caller-safe Back contract")
@@ -64,6 +65,26 @@ func _progressive_masks() -> void:
 	await get_tree().process_frame
 	require(forge._last_solid_rect.size == Vector2.ZERO and forge._last_wireframe_rect.size == Vector2.ZERO, "M8 departure clears raw/wireframe bed geometry before the living print leaves.")
 	forge.queue_free()
+
+func _continuity_near_complete_guard() -> void:
+	# The approved physical station is rasterized at both normal review sizes.
+	# At 99% it must retain a truly visible final slice, including reduced motion;
+	# only RAW_COMPLETE may expose the full alpha-bound raw source.
+	for raster in [Vector2(576, 1024), Vector2(720, 1280)]:
+		for reduced in [false, true]:
+			var forge := FORGE.new()
+			forge.name = "M8ContinuityGuard-%dx%d-%s" % [int(raster.x), int(raster.y), "rm" if reduced else "normal"]
+			forge.size = raster
+			add_child(forge)
+			forge.configure("cinderpaw", reduced, false)
+			forge.set_continuity_station(true)
+			forge.set_preview_phase(ArcaneForgeSequence.PRINTING, 6930)
+			await get_tree().process_frame
+			require(forge._last_unrevealed_opaque_rows > 0 and forge._last_unrevealed_logical_pixels >= 4.0 and forge._last_solid_rect.size.y < forge._last_printable_rect.size.y, "M8 continuity %dx%d %s keeps a visible %.2f logical-pixel final raw slice below the single scan datum at 99%%." % [int(raster.x), int(raster.y), "reduced motion" if reduced else "normal", forge._last_unrevealed_logical_pixels])
+			forge.set_preview_phase(ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.PRINT_COMPLETE_BPS)
+			await get_tree().process_frame
+			require(forge._last_unrevealed_opaque_rows == 0 and forge._last_unrevealed_logical_pixels == 0.0 and forge._last_solid_rect.size.y >= forge._last_printable_rect.size.y - 1.5, "M8 continuity %dx%d %s exposes the full raw source only at RAW_COMPLETE." % [int(raster.x), int(raster.y), "reduced motion" if reduced else "normal"])
+			forge.queue_free()
 
 func _caller_safe_back() -> void:
 	var selected: Dictionary = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile

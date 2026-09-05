@@ -45,15 +45,16 @@ func _ready() -> void:
 	var project := _text("res://project.godot")
 	var export_config := _text("res://export_presets.cfg")
 	require(not project.contains("[admob_review]") and not project.contains("ReviewAdMobBanner") and not project.contains("[editor_plugins]"), "Project configuration has no advertising review singleton or plugin section.")
-	require(export_config.contains('version/name="0.8.5-physical-ui-no-ad-review"') and export_config.contains("version/code=101"), "Android no-ad version and code are locked.")
+	require(export_config.contains('version/name="0.8.7-founder-navigation"') and export_config.contains("version/code=103"), "Android no-ad version and code are locked.")
 	require(export_config.contains('package/unique_name="com.tak.printforge.legends.playtest"') and export_config.contains('package/name="PrintForge Legends Physical UI No-Ad Review"'), "Android no-ad package identity is locked.")
 	require(export_config.contains('custom_features="unified_playtest"') and not export_config.contains("android_review"), "Android export has no review-only custom feature.")
 	require(export_config.contains("gradle_build/use_gradle_build=false"), "Android export uses the standard Godot template.")
-	require(export_config.contains("package/signed=false"), "Android no-ad review preset remains debug-signed.")
+	require(export_config.contains("package/signed=false"), "Android no-ad review preset makes no project signing request; APK signing is verified separately.")
 	require(export_config.contains("architectures/arm64-v8a=true") and export_config.contains("architectures/armeabi-v7a=false") and export_config.contains("architectures/x86=false") and export_config.contains("architectures/x86_64=false"), "Android export remains arm64-only.")
 	require(project.contains("window/handheld/orientation=1"), "Android gameplay remains portrait-only.")
 	require(export_config.contains("launcher_icons/main_192x192") and export_config.contains("branding-adaptive-icon-background-v1.png") and export_config.contains("branding-adaptive-icon-foreground-v2.png"), "Approved launcher branding remains selected.")
 	require(export_config.contains("addons/*") and export_config.contains("android-plugins/*") and export_config.contains("tests/*") and export_config.contains("docs/*") and export_config.contains("build/*"), "Android export excludes plugins, tests, source docs, and build output.")
+	require(export_config.contains("m8_print_idle_576x1024_M8-R5-m8-print-idle-576x1024.png") and export_config.contains("onboarding_576x1024.png"), "Android export excludes the two retained root capture PNGs exactly.")
 
 	for path in REMOVED_PATHS:
 		require(not FileAccess.file_exists(path) and not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(path)), "Removed M4 path is absent: %s" % path)

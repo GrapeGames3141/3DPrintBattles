@@ -5,6 +5,7 @@ extends Node
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const ACCESSIBILITY_RULES := preload("res://scripts/core/accessibility_rules.gd")
+const M9_TEST_PROFILE_FACTORY := preload("res://tests/m9_test_profile_factory.gd")
 const MATRIX_PATH := "res://tests/m3_capture_matrix.json"
 
 func _matrix_ids() -> Array:
@@ -203,9 +204,12 @@ func _ready() -> void:
 	window.content_scale_size = Vector2i(requested_size)
 	window.size = Vector2i(requested_size)
 	await get_tree().process_frame
-	SaveService.configure_test_paths("E:/AI Projects/games/3d print battler/build/task-state/m3-runtime-20260831/capture-save")
+	var save_root := "E:/AI Projects/games/3d print battler/build/evidence/m9a-runtime-20260904/state/rendered-captures"
+	DirAccess.make_dir_recursive_absolute(save_root)
+	SaveService.configure_test_paths(save_root)
 	GameManager.save_compatibility = {"compatible":true, "state":"ready", "message":""}
-	var profile := RULES.new_profile(); profile.forge_coins = 1200; profile = RULES.choose_starter(profile, "cinderpaw").profile; profile = RULES.print_starter(profile).profile
+	var profile := M9_TEST_PROFILE_FACTORY.founder_ready("cinderpaw")
+	profile.forge_coins = 1200
 	profile = ACCESSIBILITY_RULES.ensure_fields(profile)
 	GameManager.profile = profile
 	var main := MAIN.instantiate(); add_child(main)

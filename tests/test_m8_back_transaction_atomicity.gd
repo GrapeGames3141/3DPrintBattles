@@ -5,6 +5,8 @@ extends Node
 ## settlement, or a second Forge transition.
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
+const PROFILES := preload("res://tests/m9_test_profile_factory.gd")
+const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
 var failures: Array[String] = []
 
 func require(value: bool, message: String) -> void:
@@ -25,19 +27,23 @@ func _mount() -> Control:
 	return main
 
 func _run() -> void:
-	var selected: Dictionary = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
-	GameManager.profile = RULES.print_starter(selected).profile
+	# The composed deck-save seam requires the same legal forty-card Founder state
+	# as the current M9 route fixtures; do not recreate a retired one-card profile.
+	GameManager.profile = PROFILES.founder_ready("cinderpaw")
 	var main := await _mount()
 	# Accepted Forge: the first Back pauses to caller, stale second Back must not
 	# advance/cancel/commit the same authoritative sequence.
 	main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.advance_printer_for_test(4200); await get_tree().process_frame
 	var sequence: Variant = main.printer_sequence; var progress := int(main.printer_sequence.progress_bps)
 	var accepted_profile := JSON.stringify(GameManager.profile)
-	main.dispatch_back(); await get_tree().process_frame; main.dispatch_back(); await get_tree().process_frame
-	require(main.printer_sequence == sequence and int(main.printer_sequence.progress_bps) == progress and JSON.stringify(GameManager.profile) == accepted_profile, "M8 repeated active Forge Back neither cancels nor completes/grants a second transaction.")
+	main.request_back(); main.request_back(); await get_tree().process_frame
+	require(main.screen == "workshop" and main.printer_sequence == sequence and int(main.printer_sequence.progress_bps) == progress and JSON.stringify(GameManager.profile) == accepted_profile, "M8 same-frame duplicate active Forge Back resolves once to Workshop without cancelling or granting a second transaction.")
+	main.request_back(); await get_tree().process_frame
+	require(main.screen == "title" and main.printer_sequence == sequence and int(main.printer_sequence.progress_bps) == progress and JSON.stringify(GameManager.profile) == accepted_profile, "M8 a genuine later Back may leave Workshop for Title without touching the accepted Forge transaction.")
 	# Exercise the production orientation rebuild path while an accepted job is
 	# foregrounded. The same sequence object/generation must survive a real resize,
 	# then a stale deferred presentation token must be ignored after route replacement.
+	main.open_printer("cinderpaw"); await get_tree().process_frame
 	main.size = Vector2(720, 1280); main.notification(Control.NOTIFICATION_RESIZED); await get_tree().process_frame
 	require(main.printer_sequence == sequence and int(main.printer_sequence.progress_bps) == progress, "M8 orientation rebuild during active Forge keeps the exact accepted job/progress without a partial commit.")
 	main.screen = "workshop"; main.render(); main.call_deferred("_return_from_forge_idle"); await get_tree().process_frame
@@ -55,13 +61,20 @@ func _run() -> void:
 	# Result error is stable, while a committed receipt exits exactly once.
 	main.screen = "m3_result"; main.m3_result_state = "error"; main.dispatch_back(); await get_tree().process_frame
 	require(main.screen == "m3_result" and JSON.stringify(GameManager.profile) == market_profile, "M8 error result Back cannot fabricate a settlement.")
-	main.battle_mode = "training"; main.m3_result_state = "committed"; main.dispatch_back(); await get_tree().process_frame; main.dispatch_back(); await get_tree().process_frame
-	require(main.screen == "workshop" and JSON.stringify(GameManager.profile) == market_profile, "M8 committed result repeated Back leaves once without duplicate settlement/grant.")
+	main.battle_mode = "training"; main.m3_result_state = "committed"; main.request_back(); main.request_back(); await get_tree().process_frame
+	require(main.screen == "workshop" and JSON.stringify(GameManager.profile) == market_profile, "M8 same-frame duplicate committed-result Back leaves once to Workshop without duplicate settlement or grant.")
+	main.request_back(); await get_tree().process_frame
+	require(main.screen == "title" and JSON.stringify(GameManager.profile) == market_profile, "M8 a later genuine Back may leave Workshop for Title without fabricating a committed-result settlement.")
 	# Exercise the real persistence boundary rather than a mock: a regular file
 	# used as SaveService's parent makes the candidate temp snapshot unavailable.
 	# A failed, repeated authority call must leave profile/revision untouched.
 	var prior_profile: Dictionary = GameManager.profile.duplicate(true)
-	var blocked_root := ProjectSettings.globalize_path("user://m8_atomicity_unavailable")
+	var configured_root := SaveService.profile_path.get_base_dir().replace("\\", "/")
+	var evidence_root := ProjectSettings.globalize_path("res://build/evidence/").replace("\\", "/").trim_suffix("/")
+	if not configured_root.begins_with(evidence_root + "/"):
+		require(false, "M8 atomicity requires the pre-autoload E: QA root before creating its persistence-failure seams.")
+		return
+	var blocked_root := configured_root.path_join("m8_atomicity_unavailable")
 	DirAccess.make_dir_recursive_absolute(blocked_root)
 	var blocker_path := blocked_root.path_join("not_a_directory")
 	var blocker := FileAccess.open(blocker_path, FileAccess.WRITE)
@@ -77,7 +90,7 @@ func _run() -> void:
 	main.size = Vector2(576, 1024); main.notification(Control.NOTIFICATION_RESIZED); await get_tree().process_frame
 	var second_rejected := GameManager.choose_starter("cinderpaw")
 	require(not first_rejected and not second_rejected and not SaveService.last_commit_error.is_empty() and JSON.stringify(GameManager.profile) == rejected_before and int(GameManager.profile.get("revision", 0)) == 0, "M8 real unavailable-storage rejection leaves the candidate profile/revision unchanged across repeated authority calls.")
-	SaveService.configure_unified_playtest_paths()
+	SaveService.configure_test_paths(configured_root)
 	GameManager.profile = prior_profile
 	DirAccess.remove_absolute(blocker_path)
 	DirAccess.remove_absolute(blocked_root)
@@ -92,7 +105,7 @@ func _run() -> void:
 	require(not GameManager.save_unified_deck_and_preprints(active_cards, ["raw_filament"], str(GameManager.profile.get("active_deck_id", "starter-deck"))) and JSON.stringify(GameManager.profile) == combined_before and int(GameManager.profile.get("revision", 0)) == combined_revision, "M8 dirty Deck Save rejects an invalid second Pre-Print validation atomically with no deck-first persistence.")
 	# A second, independent unavailable-storage seam proves that a *fully valid*
 	# composed candidate still cannot publish either half when its one snapshot fails.
-	var combined_blocked_root := ProjectSettings.globalize_path("user://m8_combined_save_unavailable")
+	var combined_blocked_root := configured_root.path_join("m8_combined_save_unavailable")
 	DirAccess.make_dir_recursive_absolute(combined_blocked_root)
 	var combined_blocker_path := combined_blocked_root.path_join("not_a_directory")
 	var combined_blocker := FileAccess.open(combined_blocker_path, FileAccess.WRITE)
@@ -103,7 +116,7 @@ func _run() -> void:
 	var valid_before := JSON.stringify(GameManager.profile)
 	var valid_revision := int(GameManager.profile.get("revision", 0))
 	require(not GameManager.save_unified_deck_and_preprints(active_cards, [], str(GameManager.profile.get("active_deck_id", "starter-deck"))) and not SaveService.last_commit_error.is_empty() and JSON.stringify(GameManager.profile) == valid_before and int(GameManager.profile.get("revision", 0)) == valid_revision, "M8 valid combined Deck/Pre-Print candidate persistence rejection leaves profile and revision unchanged.")
-	SaveService.configure_unified_playtest_paths()
+	SaveService.configure_test_paths(configured_root)
 	DirAccess.remove_absolute(combined_blocker_path)
 	DirAccess.remove_absolute(combined_blocked_root)
 	require(GameManager.save_unified_deck_and_preprints(active_cards, [], str(GameManager.profile.get("active_deck_id", "starter-deck"))) and int(GameManager.profile.get("revision", 0)) == combined_revision + 1, "M8 dirty Deck Save commits a legal deck and Pre-Print candidate exactly once.")
@@ -117,3 +130,13 @@ func _run() -> void:
 	var stale_profile := JSON.stringify(GameManager.profile)
 	main.screen = "workshop"; main._leave_unified_battle(); main.call_deferred("_continue_unified_run_cycle", stale_generation); await get_tree().process_frame
 	require(main.screen == "workshop" and main.battle == null and JSON.stringify(GameManager.profile) == stale_profile and battle_before.length() > 0, "M8 route replacement invalidates the real battle generation so a stale cycle callback cannot settle, grant, or restore battle state.")
+	# The mounted route owns a persistent Forge stage and shared control textures.
+	# Release both here so verbose cleanup reflects this fixture rather than caches.
+	var canvas := main.get_parent()
+	var viewport := canvas.get_parent() if canvas != null else null
+	if canvas != null: canvas.remove_child(main)
+	main.free()
+	if viewport != null: remove_child(viewport); viewport.free()
+	CONTROLS.release_cached_resources()
+	await get_tree().process_frame
+	await get_tree().process_frame

@@ -116,8 +116,14 @@ correct while executing the existing M9-FC phase map (not a new design scope):
   before the existing commit resolves.
 - Armor/core still take their legacy raw-region geometry while the new carriage
   uses creature-style alpha-aware layout. Use a single shared canonical raw bound
-  and scan datum for the current subject type. Preserve existing equipment sources
-  and rules; this is not promotion of the future M9C art/model work.
+  and scan datum for any supported current subject type. Preserve equipment rules;
+  this is not promotion of the future M9C art/model work. Root inspected
+  `assets/armor/raw/full_suit_raw_print_alpha_v2.png`: it is the retired humanoid
+  suit and must not appear in the new station. The approved animal-barding source
+  direction still has an explicit M9C runtime-promotion gate in its README. Until
+  that gate closes, the legacy suit caller uses a truthful unavailable-art/native
+  Back state, not the humanoid suit or a substitute creature. Core sources still
+  require identity/geometry review before their normal caller can pass.
 - Living sprite feet and dormant raw raft must both anchor to the authored bed
   using real nontransparent bounds. Inspect mid-awakening and departure, including
   large silhouettes. Keep the existing finite animation and one subject owner.

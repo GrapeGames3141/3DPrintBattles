@@ -5,6 +5,7 @@ extends RefCounted
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
 const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
+const NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
 const IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
 const DECK_INK_SHADER := preload("res://scripts/ui/physical_catalog_imprint.gdshader")
 const ARCANE_FOUNDRY_THEME_KIT := preload("res://scripts/ui/arcane_foundry_theme_kit.gd")
@@ -30,8 +31,8 @@ func render_archive(main: Control, surface: Control, margin: Callable, heading: 
 		_archive_detail(main, surface)
 		return
 	var hud := Control.new(); hud.name = "ArchiveNavyArchHud"; hud.anchor_left = 0.130; hud.anchor_top = 0.025; hud.anchor_right = 0.870; hud.anchor_bottom = 0.100; surface.add_child(hud)
-	var back := _archive_button("ArchiveArchBack", "Back", main.dispatch_back, false); back.set_anchors_preset(Control.PRESET_FULL_RECT); back.anchor_top = 0.18; back.anchor_right = 0.145; back.anchor_bottom = 0.82; back.offset_bottom = -2; back.custom_minimum_size = Vector2(54, 48); back.tooltip_text = "Return to Workshop"; back.accessibility_name = back.tooltip_text; hud.add_child(back)
-	_archive_hud_label(main, hud, "ArchiveHudLevel", "Level %d" % int(GameManager.profile.get("level", 1)), Rect2(0.180, 0.14, 0.205, 0.68))
+	var back := _archive_button("ArchiveArchBack", "BACK", main.request_back, false); back.set_anchors_preset(Control.PRESET_FULL_RECT); back.anchor_top = 0.18; back.anchor_right = 0.145; back.anchor_bottom = 0.82; back.offset_bottom = -2; NAVIGATION.configure_back(back, "Workshop", Vector2(72, 56)); hud.add_child(back)
+	_archive_hud_label(main, hud, "ArchiveHudLevel", "Level %d" % int(GameManager.profile.get("spool_level", 1)), Rect2(0.180, 0.14, 0.205, 0.68))
 	_archive_hud_label(main, hud, "ArchiveHudXp", "XP %d" % int(GameManager.profile.get("spool_xp", 0)), Rect2(0.405, 0.14, 0.245, 0.68))
 	_archive_hud_label(main, hud, "ArchiveHudCoins", "Coin %d" % int(GameManager.profile.get("forge_coins", 0)), Rect2(0.675, 0.14, 0.305, 0.68))
 	var cards: Array = []
@@ -41,9 +42,9 @@ func render_archive(main: Control, surface: Control, margin: Callable, heading: 
 	var category := str(main.get_meta("m3_archive_category", "all")); cards = _archive_category_cards(cards, category)
 	var page := int(main.get_meta("m3_archive_page", 0)); var pages := maxi(1, ceili(cards.size() / 6.0)); page = clampi(page, 0, pages - 1); main.set_meta("m3_archive_page", page)
 	var header := PanelContainer.new(); header.name = "ArchiveParchmentHeader"; header.anchor_left = 0.155; header.anchor_top = 0.105; header.anchor_right = 0.855; header.anchor_bottom = 0.164; header.add_theme_stylebox_override("panel", main._visual_style(Color("ead9b7"), Color("755332"), 8, 2)); surface.add_child(header)
-	var header_box := VBoxContainer.new(); header_box.add_theme_constant_override("separation", 0); header.add_child(header_box); var title: Label = main.label("ARCHIVE", 18, Color("352516")); title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title.autowrap_mode = TextServer.AUTOWRAP_OFF; header_box.add_child(title); var count: Label = main.label("%d results · page %d/%d" % [cards.size(), page + 1, pages], 11, Color("513c25")); count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; count.autowrap_mode = TextServer.AUTOWRAP_OFF; header_box.add_child(count)
-	var aperture := Control.new(); aperture.name = "ArchiveSixCardApertures"; aperture.clip_contents = true; aperture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); surface.add_child(aperture)
-	var grid := Control.new(); grid.name = "ArchiveBookCardGrid"; grid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); aperture.add_child(grid)
+	var header_box := VBoxContainer.new(); header_box.add_theme_constant_override("separation", 0); header.add_child(header_box); var title: Label = main.label("ARCHIVE", 18, Color("172b3c")); title.name = "ArchiveHeaderTitle"; title.add_theme_color_override("font_color", Color("172b3c")); title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title.autowrap_mode = TextServer.AUTOWRAP_OFF; header_box.add_child(title); var count: Label = main.label("%d results · page %d/%d" % [cards.size(), page + 1, pages], 11, Color("172b3c")); count.name = "ArchiveHeaderCount"; count.add_theme_color_override("font_color", Color("172b3c")); count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; count.autowrap_mode = TextServer.AUTOWRAP_OFF; header_box.add_child(count)
+	var aperture := Control.new(); aperture.name = "ArchiveSixCardApertures"; aperture.mouse_filter = Control.MOUSE_FILTER_IGNORE; aperture.clip_contents = true; aperture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); surface.add_child(aperture)
+	var grid := Control.new(); grid.name = "ArchiveBookCardGrid"; grid.mouse_filter = Control.MOUSE_FILTER_IGNORE; grid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); aperture.add_child(grid)
 	var visible_cards: Array = cards.slice(page * 6, page * 6 + 6)
 	for index in visible_cards.size():
 		var host := Control.new(); host.name = "ArchiveCardWell%02d" % (index + 1); host.clip_contents = true; _set_normalized_rect(host, ARCHIVE_CARD_WELLS[index]); grid.add_child(host)
@@ -54,12 +55,12 @@ func render_archive(main: Control, surface: Control, margin: Callable, heading: 
 	var categories := [["all","All"],["creature","Creatures"],["filament","Filament"],["spell","Spells"],["equipment","Equipment"],["trap","Traps"],["upgrade","Upgrades"]]
 	for index in categories.size():
 		var entry: Array = categories[index]; var id := str(entry[0]); var tab := _archive_button("ArchiveCategory" + id.capitalize(), str(entry[1]), func(): main.set_meta("m3_archive_category", id); main.set_meta("m3_archive_page", 0); main.render(), category == id); tab.custom_minimum_size = Vector2(92, 48); tab.tooltip_text = "Browse %s" % str(entry[1]).to_lower(); tab.accessibility_name = tab.tooltip_text; tab.focus_entered.connect(rail.ensure_control_visible.bind(tab)); tab_row.add_child(tab)
-	var rail_previous := _archive_button("ArchiveCategoryRailPrevious", "‹", func(): _scroll_archive_tabs(rail, -1)); _set_normalized_rect(rail_previous, Rect2(0.150, 0.777, 0.090, 0.086)); rail_previous.custom_minimum_size = Vector2(48, 48); rail_previous.tooltip_text = "Show earlier archive categories"; rail_previous.accessibility_name = rail_previous.tooltip_text; surface.add_child(rail_previous)
-	var rail_next := _archive_button("ArchiveCategoryRailNext", "›", func(): _scroll_archive_tabs(rail, 1)); _set_normalized_rect(rail_next, Rect2(0.760, 0.777, 0.090, 0.086)); rail_next.custom_minimum_size = Vector2(48, 48); rail_next.tooltip_text = "Show later archive categories"; rail_next.accessibility_name = rail_next.tooltip_text; surface.add_child(rail_next)
+	var rail_previous := _archive_button("ArchiveCategoryRailPrevious", "‹", func(): _scroll_archive_tabs(rail, -1)); _set_normalized_rect(rail_previous, Rect2(0.150, 0.777, 0.090, 0.086)); rail_previous.custom_minimum_size = Vector2(48, 48); rail_previous.add_theme_font_size_override("font_size", main.scaled_font(22)); rail_previous.tooltip_text = "Show earlier archive categories"; rail_previous.accessibility_name = rail_previous.tooltip_text; surface.add_child(rail_previous)
+	var rail_next := _archive_button("ArchiveCategoryRailNext", "›", func(): _scroll_archive_tabs(rail, 1)); _set_normalized_rect(rail_next, Rect2(0.760, 0.777, 0.090, 0.086)); rail_next.custom_minimum_size = Vector2(48, 48); rail_next.add_theme_font_size_override("font_size", main.scaled_font(22)); rail_next.tooltip_text = "Show later archive categories"; rail_next.accessibility_name = rail_next.tooltip_text; surface.add_child(rail_next)
 	var wells := Control.new(); wells.name = "ArchiveLowerPhysicalWells"; wells.mouse_filter = Control.MOUSE_FILTER_IGNORE; wells.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); surface.add_child(wells)
 	var rocker := Control.new(); rocker.name = "ArchivePageRocker"; rocker.mouse_filter = Control.MOUSE_FILTER_IGNORE; rocker.clip_contents = true; _set_normalized_rect(rocker, ARCHIVE_PAGE_ROCKER_RECT); wells.add_child(rocker)
-	var previous := _archive_button("ArchivePagePrevious", "‹", func(): main.set_meta("m3_archive_page", maxi(0, page - 1)); main.render()); previous.disabled = page <= 0; previous.tooltip_text = "Previous archive page"; previous.anchor_right = 0.50; previous.anchor_bottom = 1.0; previous.custom_minimum_size = Vector2(48, 48); rocker.add_child(previous)
-	var next := _archive_button("ArchivePageNext", "›", func(): main.set_meta("m3_archive_page", mini(pages - 1, page + 1)); main.render()); next.disabled = page >= pages - 1; next.tooltip_text = "Next archive page"; next.anchor_left = 0.50; next.anchor_right = 1.0; next.anchor_bottom = 1.0; next.custom_minimum_size = Vector2(48, 48); rocker.add_child(next)
+	var previous := _archive_button("ArchivePagePrevious", "‹", func(): main.set_meta("m3_archive_page", maxi(0, page - 1)); main.render()); previous.disabled = page <= 0; previous.tooltip_text = "Previous archive page"; previous.anchor_right = 0.50; previous.anchor_bottom = 1.0; previous.custom_minimum_size = Vector2(48, 48); previous.add_theme_font_size_override("font_size", main.scaled_font(22)); rocker.add_child(previous)
+	var next := _archive_button("ArchivePageNext", "›", func(): main.set_meta("m3_archive_page", mini(pages - 1, page + 1)); main.render()); next.disabled = page >= pages - 1; next.tooltip_text = "Next archive page"; next.anchor_left = 0.50; next.anchor_right = 1.0; next.anchor_bottom = 1.0; next.custom_minimum_size = Vector2(48, 48); next.add_theme_font_size_override("font_size", main.scaled_font(22)); rocker.add_child(next)
 	var owned_well := _archive_button("ArchiveWellOwned", "Owned", func(): main.m3_archive_owned_only = not bool(main.m3_archive_owned_only); main.set_meta("m3_archive_page", 0); main.render(), bool(main.m3_archive_owned_only)); _set_normalized_rect(owned_well, ARCHIVE_BOTTOM_WELLS[0]); owned_well.custom_minimum_size = Vector2(48, 48); wells.add_child(owned_well)
 	var printable_well := _archive_button("ArchiveWellPrintable", "Printable", func(): main.m3_archive_printable_only = not bool(main.m3_archive_printable_only); main.set_meta("m3_archive_page", 0); main.render(), bool(main.m3_archive_printable_only)); _set_normalized_rect(printable_well, ARCHIVE_BOTTOM_WELLS[1]); printable_well.custom_minimum_size = Vector2(48, 48); wells.add_child(printable_well)
 	var clear_well := _archive_button("ArchiveWellClear", "Clear", func(): main.m3_archive_owned_only = false; main.m3_archive_printable_only = false; main.set_meta("m3_archive_category", "all"); main.set_meta("m3_archive_page", 0); main.render()); _set_normalized_rect(clear_well, ARCHIVE_BOTTOM_WELLS[2]); clear_well.custom_minimum_size = Vector2(48, 48); wells.add_child(clear_well)
@@ -79,7 +80,10 @@ func _archive_hud_label(main: Control, hud: Control, node_name: String, value: S
 func _archive_button(node_name: String, value: String, action: Callable, active := false) -> Button:
 	var button := Button.new()
 	button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.tooltip_text = value; button.accessibility_name = value
-	button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "binding", active)
+	# Archive plates, category rails, and card wells are authored in the master.
+	# Their native actions stay transparent so a generic button skin never hides
+	# the folio art; the actual navigation Back applies its own hardware afterward.
+	button.flat = true; button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "lever", active, true)
 	# Archive rail/bottom controls sit directly on navy leather and brass wells.
 	# Pale native ink is required there; CO-02's parchment actions explicitly
 	# override this through _archive_detail_button.
@@ -94,7 +98,7 @@ func _archive_button_style(fill: Color, edge: Color, width := 2) -> StyleBoxFlat
 	var style := StyleBoxFlat.new(); style.bg_color = fill; style.border_color = edge; style.set_border_width_all(width); style.corner_radius_top_left = 7; style.corner_radius_top_right = 7; style.corner_radius_bottom_left = 7; style.corner_radius_bottom_right = 7; style.content_margin_left = 4; style.content_margin_right = 4; style.content_margin_top = 2; style.content_margin_bottom = 2; return style
 
 func _archive_tile(card: Dictionary, owned: int, chip: String) -> Button:
-	var tile := _archive_button("ArchiveTile", "", Callable()); tile.tooltip_text = "%s · %s" % [str(card.get("name", "Card")), chip]; tile.accessibility_name = tile.tooltip_text
+	var tile := _archive_button("ArchiveTile", "", Callable()); tile.flat = false; tile.tooltip_text = "%s · %s" % [str(card.get("name", "Card")), chip]; tile.accessibility_name = tile.tooltip_text
 	var is_creature := str(card.get("type", "")) == "creature"
 	# The full dark master well is the outer seat.  This native parchment leaf is
 	# deliberately broad enough to read as a filed blueprint page, not a second
@@ -104,17 +108,15 @@ func _archive_tile(card: Dictionary, owned: int, chip: String) -> Button:
 	var pressed_leaf := _archive_leaf_style(Color("d4bc8c"), Color("775128"), 3); pressed_leaf.content_margin_top = 3; tile.add_theme_stylebox_override("pressed", pressed_leaf)
 	tile.add_theme_stylebox_override("focus", _archive_leaf_style(Color("e5d1a8"), Color("75d8dd"), 4))
 	tile.add_theme_stylebox_override("disabled", _archive_leaf_style(Color("a89575"), Color("66523a"), 2))
-	var ink := Color("f3e5c9") if is_creature else Color("47331f")
+	var ink := Color("47331f")
 	var title := Label.new(); title.name = "ArchiveTileName"; title.text = str(card.get("name", "Card")); title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; title.autowrap_mode = TextServer.AUTOWRAP_OFF; title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; title.add_theme_font_size_override("font_size", 13); title.add_theme_color_override("font_color", ink); title.mouse_filter = Control.MOUSE_FILTER_IGNORE; title.z_index = 2; title.anchor_left = 0.08; title.anchor_top = 0.05; title.anchor_right = 0.70; title.anchor_bottom = 0.20; tile.add_child(title)
 	var cost := Label.new(); cost.name = "ArchiveTileCost"; cost.text = "%dF" % int(card.get("cost", 0)); cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; cost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; cost.add_theme_font_size_override("font_size", 10); cost.add_theme_color_override("font_color", Color("47331f")); cost.add_theme_stylebox_override("normal", _archive_leaf_style(Color("d0ad62"), Color("74522c"), 1)); cost.mouse_filter = Control.MOUSE_FILTER_IGNORE; cost.z_index = 2; cost.anchor_left = 0.73; cost.anchor_top = 0.05; cost.anchor_right = 0.94; cost.anchor_bottom = 0.20; tile.add_child(cost)
 	if is_creature:
-		# The authored blueprint has its own navy perimeter; the dark folio well is
-		# its only seat.  Avoid placing a parchment/card face underneath it.
-		tile.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-		tile.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-		tile.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-		tile.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
-		IMPRINT.add_blueprint_card(tile, "ArchiveTileBlueprintCard", IMPRINT.blueprint_texture(card), Rect2(0.035, 0.025, 0.93, 0.93))
+		# Keep the parchment leaf beneath transparent blueprint ink.  The shared
+		# ink treatment preserves approved pixels while keeping light creature lines
+		# readable against this physical archive paper.
+		var blueprint_art := IMPRINT.add_blueprint_card(tile, "ArchiveTileBlueprintCard", IMPRINT.blueprint_texture(card), Rect2(0.035, 0.025, 0.93, 0.93))
+		_deck_apply_blueprint_ink(blueprint_art, card)
 	else:
 		IMPRINT.add(tile, "ArchiveTileCatalogArt", UNIFIED_CARD_VIEW.art_for_definition(card), Rect2(0.08, 0.20, 0.84, 0.59), true)
 	var status := Label.new(); status.name = "ArchiveTileStatus"; status.text = chip; status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; status.autowrap_mode = TextServer.AUTOWRAP_OFF; status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; status.add_theme_font_size_override("font_size", 10); status.add_theme_color_override("font_color", Color("f4e6c8")); status.add_theme_stylebox_override("normal", _archive_button_style(Color("223339"), Color("587e77"), 1)); status.mouse_filter = Control.MOUSE_FILTER_IGNORE; status.z_index = 2; status.anchor_left = 0.10; status.anchor_top = 0.82; status.anchor_right = 0.90; status.anchor_bottom = 0.95; tile.add_child(status)
@@ -210,9 +212,9 @@ func render_deck(main: Control, surface: Control, margin: Callable, heading: Cal
 
 func _deck_hud(main: Control, host: Control) -> void:
 	var rail := Control.new(); rail.name = "DeckCompactHud"; rail.anchor_left = 0.090; rail.anchor_top = 0.018; rail.anchor_right = 0.920; rail.anchor_bottom = 0.092; host.add_child(rail)
-	var back := _deck_button("UnifiedFoundryWorkshopReturn", "Back", main.dispatch_back); _set_normalized_rect(back, Rect2(0.0, 0.12, 0.12, 0.76)); back.custom_minimum_size = Vector2(54, 48); back.tooltip_text = "Return to Workshop"; back.accessibility_name = back.tooltip_text; rail.add_child(back)
+	var back := _deck_button("UnifiedFoundryWorkshopReturn", "BACK", main.request_back); _set_normalized_rect(back, Rect2(0.0, 0.12, 0.12, 0.76)); NAVIGATION.configure_back(back, "Workshop", Vector2(72, 56)); rail.add_child(back)
 	# Keep XP left of the centred clipboard crest instead of spanning it.
-	for entry in [["DeckHudLevel", "Level %d" % int(GameManager.profile.get("level", 1)), Rect2(0.18, 0.10, 0.18, 0.80)], ["DeckHudXp", "XP %d" % int(GameManager.profile.get("spool_xp", 0)), Rect2(0.39, 0.10, 0.16, 0.80)], ["DeckHudCoins", "Coin %d" % int(GameManager.profile.get("forge_coins", 0)), Rect2(0.68, 0.10, 0.30, 0.80)]]:
+	for entry in [["DeckHudLevel", "Level %d" % int(GameManager.profile.get("spool_level", 1)), Rect2(0.18, 0.10, 0.18, 0.80)], ["DeckHudXp", "XP %d" % int(GameManager.profile.get("spool_xp", 0)), Rect2(0.39, 0.10, 0.16, 0.80)], ["DeckHudCoins", "Coin %d" % int(GameManager.profile.get("forge_coins", 0)), Rect2(0.68, 0.10, 0.30, 0.80)]]:
 		var label: Label = main.label(str(entry[1]), 12, Color("f3e5c9")); label.name = str(entry[0]); label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; label.custom_minimum_size = Vector2(112, 48) if str(entry[0]) == "DeckHudCoins" else Vector2(64, 48); _set_normalized_rect(label, entry[2]); rail.add_child(label)
 
 func _deck_folio(main: Control, host: Control, selected_id: String) -> void:
@@ -232,26 +234,32 @@ func _deck_slot_medallions(main: Control, host: Control) -> void:
 		var slot_name := str(slot.get("name", id))
 		var live_reason := RULES.deck_reason(GameManager.profile, main.unified_deck_draft)
 		var live_status := "%d · %s" % [main.unified_deck_draft.size(), "LEGAL" if live_reason.is_empty() else live_reason]
-		var visible_text := "%s\n%s" % [slot_name, live_status] if active else slot_name
-		var pick := _deck_button("ArchiveDeckSlot" + id.capitalize(), visible_text, main._m3_request_deck_slot.bind(id), active)
+		# Queue and Arcane are two-word labels on compact cream medallions.  Keep
+		# their native copy within the existing hardware at large text instead of
+		# shrinking it or letting it collide with the neighboring folio.
+		# Each oversized transparent target owns a painted cream medallion. Its
+		# caption is independently seated at that face centre instead of following
+		# the broad hit rectangle above/below the hardware.
+		var compact_slot_name: String = str({"Forge Deck":"FORGE", "Queue Deck":"QUEUE", "Arcane Deck":"ARCANE"}.get(slot_name, slot_name))
+		var pick := _deck_button("ArchiveDeckSlot" + id.capitalize(), "", main._m3_request_deck_slot.bind(id), active)
 		pick.autowrap_mode = TextServer.AUTOWRAP_OFF
-		pick.add_theme_font_size_override("font_size", 10 if active else 11)
 		pick.set_meta("deck_legality_text", live_status if active else "")
 		_set_normalized_rect(pick, Rect2(0.08, 0.03 + index * 0.323, 0.84, 0.275)); pick.custom_minimum_size = Vector2(56, 56); pick.tooltip_text = "Edit %s deck slot%s" % [slot_name, " · %s" % live_status if active else ""]; pick.accessibility_name = pick.tooltip_text; slots.add_child(pick)
+		var slot_ink: Label = main.label(compact_slot_name, 10, Color("172b3c")); slot_ink.name = "ArchiveDeckSlotInk" + id.capitalize(); slot_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; slot_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; slot_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; slot_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; slot_ink.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; slot_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(slot_ink, Rect2(0.16, 0.245 + index * 0.230, 0.68, 0.100)); slots.add_child(slot_ink)
 
 func _deck_occurrence_tray(main: Control, host: Control, owned_cards: Array, selected_id: String) -> void:
 	var tray := ScrollContainer.new(); tray.name = "M3OwnedCardRack"; tray.clip_contents = true; tray.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; tray.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; _set_normalized_rect(tray, Rect2(0.083, 0.350, 0.624, 0.238)); tray.get_v_scroll_bar().modulate = Color(1, 1, 1, 0); tray.get_v_scroll_bar().mouse_filter = Control.MOUSE_FILTER_IGNORE; host.add_child(tray)
 	var rows := VBoxContainer.new(); rows.name = "DeckOccurrenceRows"; rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL; rows.add_theme_constant_override("separation", 4); tray.add_child(rows)
 	for definition_variant in owned_cards:
 		var definition: Dictionary = definition_variant; var id := str(definition.get("id", "")); var owned := int(GameManager.profile.get("owned_cards", {}).get(id, 0)); var row_shell := Panel.new(); row_shell.name = "DeckOccurrencePlate" + id.capitalize(); row_shell.custom_minimum_size = Vector2(0, 48); row_shell.add_theme_stylebox_override("panel", _deck_recess_style()); rows.add_child(row_shell); var row := HBoxContainer.new(); row.name = "DeckOccurrence" + id.capitalize(); row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); row.offset_left = 4; row.offset_right = -4; row.add_theme_constant_override("separation", 6); row_shell.add_child(row)
-		var minus := _deck_button("DeckMinus" + id.capitalize(), "−", main._m3_change_deck_occurrence.bind(id, false)); minus.custom_minimum_size = Vector2(48, 48); minus.disabled = main.unified_deck_draft.count(id) <= 0; row.add_child(minus)
+		var minus := _deck_button("DeckMinus" + id.capitalize(), "−", main._m3_change_deck_occurrence.bind(id, false)); minus.custom_minimum_size = Vector2(48, 48); minus.add_theme_font_size_override("font_size", main.scaled_font(22)); minus.disabled = main.unified_deck_draft.count(id) <= 0; row.add_child(minus)
 		# The center is an input-only target over the dark recess, not another leather
 		# rail.  That leaves an uninterrupted native-copy band above the +/- hardware.
 		var select := Button.new(); select.name = "DeckSelect" + id.capitalize(); select.text = ""; select.flat = true; select.focus_mode = Control.FOCUS_ALL; CONTROLS.apply(select, "lever", id == selected_id, true); select.size_flags_horizontal = Control.SIZE_EXPAND_FILL; select.custom_minimum_size = Vector2(120, 48); select.tooltip_text = "Inspect %s" % str(definition.get("name", id)); select.accessibility_name = select.tooltip_text; select.pressed.connect(func(): main.set_meta("m3_deck_selected_card_id", id); main.render()); row.add_child(select)
-		var plus := _deck_button("DeckPlus" + id.capitalize(), "+", main._m3_change_deck_occurrence.bind(id, true), true); plus.custom_minimum_size = Vector2(48, 48); plus.disabled = main.unified_deck_draft.count(id) >= owned; row.add_child(plus)
+		var plus := _deck_button("DeckPlus" + id.capitalize(), "+", main._m3_change_deck_occurrence.bind(id, true), true); plus.custom_minimum_size = Vector2(48, 48); plus.add_theme_font_size_override("font_size", main.scaled_font(22)); plus.disabled = main.unified_deck_draft.count(id) >= owned; row.add_child(plus)
 		var copy: Label = main.label("%s  ×%d/%d" % [str(definition.get("name", id)), main.unified_deck_draft.count(id), owned], 9, Color("f3e5c9")); copy.name = "DeckOccurrenceCopy" + id.capitalize(); copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; copy.vertical_alignment = VERTICAL_ALIGNMENT_TOP; copy.autowrap_mode = TextServer.AUTOWRAP_OFF; copy.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; copy.mouse_filter = Control.MOUSE_FILTER_IGNORE; copy.z_index = 3; _set_normalized_rect(copy, Rect2(0.225, 0.035, 0.550, 0.285)); row_shell.add_child(copy)
-	var up := _deck_button("DeckOccurrencePrevious", "↑", func(): tray.scroll_vertical = maxi(0, tray.scroll_vertical - 104)); _set_normalized_rect(up, Rect2(0.055, 0.320, 0.070, 0.040)); up.custom_minimum_size = Vector2(48, 48); up.tooltip_text = "Scroll occurrence tray up"; up.accessibility_name = up.tooltip_text; host.add_child(up)
-	var down := _deck_button("DeckOccurrenceNext", "↓", func(): tray.scroll_vertical = mini(int(tray.get_v_scroll_bar().max_value), tray.scroll_vertical + 104)); _set_normalized_rect(down, Rect2(0.620, 0.320, 0.070, 0.040)); down.custom_minimum_size = Vector2(48, 48); down.tooltip_text = "Scroll occurrence tray down"; down.accessibility_name = down.tooltip_text; host.add_child(down)
+	var up := _deck_button("DeckOccurrencePrevious", "↑", func(): tray.scroll_vertical = maxi(0, tray.scroll_vertical - 104)); _set_normalized_rect(up, Rect2(0.055, 0.320, 0.070, 0.040)); up.custom_minimum_size = Vector2(48, 48); up.add_theme_font_size_override("font_size", main.scaled_font(22)); up.tooltip_text = "Scroll occurrence tray up"; up.accessibility_name = up.tooltip_text; host.add_child(up)
+	var down := _deck_button("DeckOccurrenceNext", "↓", func(): tray.scroll_vertical = mini(int(tray.get_v_scroll_bar().max_value), tray.scroll_vertical + 104)); _set_normalized_rect(down, Rect2(0.620, 0.320, 0.070, 0.040)); down.custom_minimum_size = Vector2(48, 48); down.add_theme_font_size_override("font_size", main.scaled_font(22)); down.tooltip_text = "Scroll occurrence tray down"; down.accessibility_name = down.tooltip_text; host.add_child(down)
 
 func _deck_inspector(main: Control, host: Control, selected_id: String, reason: String) -> void:
 	var inspector := Control.new(); inspector.name = "DeckPhysicalInspector"; inspector.clip_contents = true; _set_normalized_rect(inspector, Rect2(0.748, 0.350, 0.185, 0.205)); host.add_child(inspector)
@@ -270,12 +278,17 @@ func _deck_inspector(main: Control, host: Control, selected_id: String, reason: 
 	var legal: Label = main.label(legal_text, 11, Color("f3e5c9") if reason.is_empty() else Color("ffd0c8")); legal.name = "DeckLegalityStatus"; legal.tooltip_text = "%d cards · %s" % [main.unified_deck_draft.size(), "legal" if reason.is_empty() else reason]; legal.accessibility_name = legal.tooltip_text; legal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; legal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; legal.autowrap_mode = TextServer.AUTOWRAP_OFF; legal.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; legal.z_index = 3; legal.add_theme_stylebox_override("normal", _deck_recess_style()); _set_normalized_rect(legal, Rect2(0.04, 0.70, 0.92, 0.18)); inspector.add_child(legal)
 	# The two lower-right physical wells are deliberately non-overlapping at 576px;
 	# both retain a true 48px global target rather than relying on a narrow label.
-	var save_rect := Rect2(0.730, 0.542, 0.118, 0.055)
+	var save_rect := Rect2(0.730, 0.520, 0.118, 0.055)
 	# PRE-PRINT is a two-word native action; reserve its full readable keycap
 	# width instead of allowing Button minimum sizing to outgrow the visible well.
-	var preprint_rect := Rect2(0.850, 0.542, 0.140, 0.055)
-	var save := _deck_button("SaveActiveDeck", "Save", main._m3_save_deck, true); _set_normalized_rect(save, save_rect); save.custom_minimum_size = Vector2(56, 56); save.disabled = not reason.is_empty(); save.z_index = 3; host.add_child(save)
-	var save_pre := _deck_button("SavePrePrintLoadout", "Pre-Print", main._m3_save_preprints); save_pre.add_theme_font_size_override("font_size", 9); _set_normalized_rect(save_pre, preprint_rect); save_pre.custom_minimum_size = Vector2(56, 56); save_pre.z_index = 3; host.add_child(save_pre)
+	var preprint_rect := Rect2(0.850, 0.520, 0.140, 0.055)
+	# The transparent actions retain their large accessible hit areas.  Their small
+	# painted cream keycaps are narrower, so their native ink is independently
+	# inset to the actual faces rather than centred in the broad interaction rects.
+	var save := _deck_button("SaveActiveDeck", "", main._m3_save_deck, true); _deck_cream_ink(save); save.tooltip_text = "Save the active fixed deck"; save.accessibility_name = save.tooltip_text; _set_normalized_rect(save, save_rect); save.custom_minimum_size = Vector2(56, 56); save.disabled = not reason.is_empty(); save.z_index = 3; host.add_child(save)
+	var save_ink: Label = main.label("SAVE", 11, Color("172b3c")); save_ink.name = "SaveActiveDeckInk"; save_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; save_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; save_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; save_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; save_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(save_ink, Rect2(0.756, 0.520, 0.087, 0.055)); save_ink.z_index = 4; host.add_child(save_ink)
+	var save_pre := _deck_button("SavePrePrintLoadout", "", main._m3_save_preprints); _deck_cream_ink(save_pre); save_pre.tooltip_text = "Save Pre-Print loadout"; save_pre.accessibility_name = save_pre.tooltip_text; _set_normalized_rect(save_pre, preprint_rect); save_pre.custom_minimum_size = Vector2(56, 56); save_pre.z_index = 3; host.add_child(save_pre)
+	var pre_ink: Label = main.label("PRE", 10, Color("172b3c")); pre_ink.name = "SavePrePrintLoadoutInk"; pre_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; pre_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pre_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; pre_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; pre_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(pre_ink, Rect2(0.862, 0.520, 0.073, 0.055)); pre_ink.z_index = 4; host.add_child(pre_ink)
 
 func _deck_preprint_clamps(main: Control, host: Control) -> void:
 	var clamps := Control.new(); clamps.name = "M3PrePrintClamps"; _set_normalized_rect(clamps, Rect2(0.070, 0.604, 0.860, 0.203)); host.add_child(clamps)
@@ -301,11 +314,11 @@ func _deck_owned_tray(main: Control, host: Control, owned_cards: Array, selected
 	var row := HBoxContainer.new(); row.name = "DeckOwnedArtRow"; row.custom_minimum_size = Vector2(maxi(1, owned_cards.size()) * 86, 0); row.add_theme_constant_override("separation", 6); tray.add_child(row)
 	for definition_variant in owned_cards:
 		var definition: Dictionary = definition_variant; var id := str(definition.get("id", "")); var tile := _deck_card_tile(definition, int(GameManager.profile.get("owned_cards", {}).get(id, 0)), id == selected_id); tile.name = "DeckOwnedCard" + id.capitalize(); tile.custom_minimum_size = Vector2(78, 104); tile.pressed.connect(func(): main.set_meta("m3_deck_selected_card_id", id); main.render()); row.add_child(tile)
-	var previous := _deck_button("DeckOwnedPrevious", "‹", func(): tray.scroll_horizontal = maxi(0, tray.scroll_horizontal - 180)); _set_normalized_rect(previous, Rect2(0.025, 0.850, 0.052, 0.062)); previous.custom_minimum_size = Vector2(48, 48); host.add_child(previous)
-	var next := _deck_button("DeckOwnedNext", "›", func(): tray.scroll_horizontal = mini(int(tray.get_h_scroll_bar().max_value), tray.scroll_horizontal + 180)); _set_normalized_rect(next, Rect2(0.925, 0.850, 0.052, 0.062)); next.custom_minimum_size = Vector2(48, 48); host.add_child(next)
+	var previous := _deck_button("DeckOwnedPrevious", "‹", func(): tray.scroll_horizontal = maxi(0, tray.scroll_horizontal - 180)); _set_normalized_rect(previous, Rect2(0.025, 0.850, 0.052, 0.062)); previous.custom_minimum_size = Vector2(48, 48); previous.add_theme_font_size_override("font_size", main.scaled_font(22)); host.add_child(previous)
+	var next := _deck_button("DeckOwnedNext", "›", func(): tray.scroll_horizontal = mini(int(tray.get_h_scroll_bar().max_value), tray.scroll_horizontal + 180)); _set_normalized_rect(next, Rect2(0.925, 0.850, 0.052, 0.062)); next.custom_minimum_size = Vector2(48, 48); next.add_theme_font_size_override("font_size", main.scaled_font(22)); host.add_child(next)
 
 func _deck_card_tile(card: Dictionary, copies: int, active := false) -> Button:
-	var tile := _deck_button("DeckCompactCard", "", Callable(), active); tile.tooltip_text = "%s · %d copies" % [str(card.get("name", "Card")), copies]; tile.accessibility_name = tile.tooltip_text
+	var tile := _deck_button("DeckCompactCard", "", Callable(), active); tile.clip_contents = true; CONTROLS.apply(tile, "lever", active, true); tile.tooltip_text = "%s · %d copies" % [str(card.get("name", "Card")), copies]; tile.accessibility_name = tile.tooltip_text
 	var creature := str(card.get("type", "")) == "creature"
 	# Creature blueprints now share the same parchment leaf + recessed lip in each
 	# deck context. The approved navy card remains intact, but never floats alone
@@ -319,7 +332,9 @@ func _deck_card_tile(card: Dictionary, copies: int, active := false) -> Button:
 	return tile
 
 func _deck_button(node_name: String, value: String, action: Callable, active := false) -> Button:
-	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 11); CONTROLS.apply(button, "binding", active)
+	# Deck artwork supplies the seats for compact buttons.  Preserve those seats
+	# and reserve opaque shared hardware for explicit Back/commit controls below.
+	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.flat = true; button.add_theme_font_size_override("font_size", 11); CONTROLS.apply(button, "lever", active, true)
 	# Deck actuators and occurrence rails are navy/brass hardware, not parchment.
 	# The generic dark control ink was disappearing into their textured faces.
 	button.add_theme_color_override("font_color", Color("f3e5c9"))
@@ -332,6 +347,10 @@ func _deck_button(node_name: String, value: String, action: Callable, active := 
 			button.add_theme_stylebox_override(state, _deck_keycap_style(role, state))
 	if action.is_valid(): button.pressed.connect(action)
 	return button
+
+func _deck_cream_ink(button: Button) -> void:
+	for key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(key, Color("172b3c"))
 
 func _archive_detail_button(node_name: String, value: String, action: Callable, active := false) -> Button:
 	var button := _archive_button(node_name, value, action, active)
@@ -372,7 +391,7 @@ func _deck_inspector_parchment_sheet(host: Control, rect: Rect2) -> void:
 	sheet.name = "DeckInspectorLooseParchment"
 	sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sheet.clip_contents = true
-	sheet.z_index = -1
+	sheet.z_index = 0
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("e7d4aa")
 	sheet.add_theme_stylebox_override("panel", style)
@@ -397,9 +416,8 @@ func _deck_fact_style() -> StyleBoxFlat:
 	return style
 
 func _deck_apply_blueprint_ink(art: TextureRect, card: Dictionary) -> void:
-	# Deck parchment is a separate inspection medium. It tints only transparent
-	# creature blueprints through the shared alpha-aware shader; Archive and Forge
-	# retain the source-color approved card, and support cards keep their own art.
+	# Deck and Archive parchment share this alpha-aware creature-ink treatment.
+	# It changes no source pixels and leaves support-card art untouched.
 	if art == null or str(card.get("type", "")) != "creature": return
 	var material := ShaderMaterial.new()
 	material.shader = DECK_INK_SHADER

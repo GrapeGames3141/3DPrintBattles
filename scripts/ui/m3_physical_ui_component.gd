@@ -7,6 +7,7 @@ const ARCHIVE_WORKBENCH := preload("res://scripts/ui/physical_archive_workbench_
 const SUPPLY_REWARD := preload("res://scripts/ui/physical_supply_reward_component.gd")
 const RESULT_RECEIPT := preload("res://scripts/ui/physical_result_receipt_component.gd")
 const SETTINGS_RECOVERY := preload("res://scripts/ui/physical_settings_recovery_component.gd")
+const NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
 
 const MASTER_PATHS := {
 	"unified_library":"res://assets/ui/physical_ui/m3/CO-01-archive-folio-grid-text-free-v4.png",
@@ -22,8 +23,10 @@ const MASTER_PATHS := {
 func render(main: Control) -> void:
 	var key := "recovery" if GameManager.is_save_read_only() else str(main.screen)
 	var pending: Dictionary = GameManager.profile.get("pending_pack_reveal", {}) if GameManager.profile.get("pending_pack_reveal", {}) is Dictionary else {}
-	# A committed receipt is a modal route, never an overlay over the originating surface.
-	if not pending.is_empty(): key = "pack"
+	# A pending pack is durable data, not a global presentation override.  Only the
+	# explicit Pack route owns its reveal; Settings/Archive may still be visited
+	# without accidentally replacing their screen forever.
+	if key == "m3_pack": key = "pack"
 	if key == "unified_library" and not str(main.unified_inspector_id).is_empty(): key = "archive_detail"
 	if key == "m3_result": key = "result"
 	if not MASTER_PATHS.has(key): key = "unified_library"
@@ -47,7 +50,7 @@ func _margin(surface: Control, name: String, rect := Rect2(0.055, 0.07, 0.89, 0.
 
 func _heading(main: Control, host: Container, title: String, subtitle: String, back_action: Callable = Callable(), back_tooltip := "Return to Workshop") -> void:
 	var action: Callable = back_action if back_action.is_valid() else main.navigate_to.bind("workshop")
-	var back: Button = main._visual_button("UnifiedFoundryWorkshopReturn", "←", action, Color("8a6945")); back.custom_minimum_size = Vector2(56, 56); back.tooltip_text = back_tooltip; back.accessibility_name = back.tooltip_text; host.add_child(back)
+	var back: Button = main._visual_button("UnifiedFoundryWorkshopReturn", "←", action, Color("8a6945")); NAVIGATION.configure_back(back, back_tooltip.replace("Return to ", "")); host.add_child(back)
 	var h: Label = main.label(title, 22, Color("2d2118")); h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; host.add_child(h)
 	var s: Label = main.label(subtitle, 13, Color("513c25")); s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; host.add_child(s)
 

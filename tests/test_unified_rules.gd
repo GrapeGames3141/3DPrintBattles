@@ -44,7 +44,7 @@ func _ready() -> void:
 	var final_copy_profile := RULES.ensure({"onboarding":{"state":"starter_selected","starter_id":"cinderpaw"},"owned_cards":{"aquafin":1},"owned_blueprints":{"aquafin":true},"decks":[]})
 	var dismantled := RULES.dismantle_card(final_copy_profile, "aquafin", 1)
 	require(bool(dismantled.ok) and int(dismantled.profile.owned_cards.get("aquafin", 0)) == 0 and RULES.has_printable_blueprint(dismantled.profile, "aquafin"), "dismantling the final creature copy with no deck dependency keeps its permanent printable blueprint")
-	var aquafin_selected := RULES.choose_starter(RULES.new_profile(), "aquafin")
+	var aquafin_selected := RULES.choose_starter(RULES.ensure({"onboarding":{"state":"choose_starter","starter_id":""}}), "aquafin")
 	var aquafin_printed := RULES.print_starter(aquafin_selected.profile)
 	var aquafin_deck := deck_cards(aquafin_printed.profile, "starter-deck")
 	require(bool(aquafin_printed.ok) and aquafin_deck.count("aquafin") == 12 and aquafin_deck.count("mossmunk") == 8 and aquafin_deck.count("cinderpaw") == 0 and RULES.deck_reason(aquafin_printed.profile, aquafin_deck).is_empty(), "non-Cinder starter maps to twelve chosen copies and eight Mossmunk copies")
@@ -149,6 +149,12 @@ func _ready() -> void:
 	require(ai_state.revision > 0, "AI issues canonical legal intents")
 	var pack := RULES.buy_pack(printed.profile, "forge", PackedByteArray([1,2,3]))
 	require(bool(pack.ok) and not pack.profile.pending_pack_reveal.is_empty() and (pack.payload.cards as Array).size() == 5, "pack grants are persisted before reveal")
+	var expiry_stamp := 1724284800
+	var expired_newcomer: Dictionary = RULES.new_profile(); expired_newcomer.forge_coins = 1000; expired_newcomer.newcomer_started_at = expiry_stamp - 8 * 86400
+	var stale_free_basic := RULES.buy_pack(expired_newcomer, "basic", PackedByteArray([3,2,1]), expiry_stamp, "workshop", {}, 0)
+	require(not bool(stale_free_basic.ok) and bool(stale_free_basic.get("price_changed", false)) and stale_free_basic.profile == RULES.ensure(expired_newcomer) and int(stale_free_basic.effective_price) > 0, "expired Newcomer free-Basic confirmation rejects before coins, RNG, cards, receipt, or expiry state mutate")
+	var matching_basic := RULES.buy_pack(expired_newcomer, "basic", PackedByteArray([3,2,1]), expiry_stamp, "workshop", {}, int(stale_free_basic.effective_price))
+	require(bool(matching_basic.ok) and int(matching_basic.payload.get("effective_price", stale_free_basic.effective_price)) == int(stale_free_basic.effective_price) and not matching_basic.profile.pending_pack_reveal.is_empty(), "matching frozen effective pack price succeeds through the existing receipt path")
 	var economy: Dictionary = printed.profile.duplicate(true)
 	economy.forge_coins = 50000
 	var market := RULES.market_snapshot(economy, 1724284800)

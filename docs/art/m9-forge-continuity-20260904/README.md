@@ -36,6 +36,8 @@ Full phase, accessibility and final release evidence are still pending.
 
 ## Durable runtime review images
 
+- [Full normal-phase runtime review image index](normal-map-review-index.md) (under review; not final release sign-off).
+
 Selected alpha/registration proofs:
 
 - [Registered enclosure and carriage](../../../build/evidence/m9a-runtime-20260904/forge-continuity-alpha/registered-composite.png)
@@ -50,6 +52,8 @@ this does not approve uncaptured phases, accessibility or physical Android input
 - [60% progressive print](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v3/print-60-576x1024.png)
 
 Rejected integration history is retained for comparison, not release approval:
+
+- [Retired humanoid suit source inspected during the legacy-caller audit](../../../assets/armor/raw/full_suit_raw_print_alpha_v2.png): rejected for this station; the approved future equipment direction is animal barding.
 
 - First gate: [before](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate/before-start-576x1024.png), [after](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate/after-start-576x1024.png), [60%](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate/print-60-576x1024.png).
 - Second gate: [before](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v2/before-start-576x1024.png), [after](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v2/after-start-576x1024.png), [60%](../../../build/evidence/m9a-runtime-20260904/forge-continuity/first-gate-v2/print-60-576x1024.png).

@@ -1,0 +1,2 @@
+# Documentation and review-source assets are read directly by development tools,
+# never loaded through res:// at runtime. Keep editor imports out of this tree.

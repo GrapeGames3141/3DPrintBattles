@@ -1,11 +1,12 @@
 # PrintForge M9A release acceptance checklist
 
-Status: **OPEN — not release PASS. The normal 576x1024 Forge Start/60% and selector
-first gate passed root and read-only UI review in `first-gate-v3`. The full phase and
-accessibility map, candidate-commit tests, Android audit/device evidence, and Drive
-delivery are not yet claimed.**
+Status: **VISUAL PASS — root and independent UI review have no P0/P1 across
+`full-map-v2`, unaffected `accessibility-map-v4-final` rows, and the 19-row
+`accessibility-map-v4-supplemental7-forwardplus` replacement set. Candidate-commit
+tests, Android audit and Drive delivery remain open. Physical device evidence is
+BLOCKED because no authorized device is attached.**
 
-Date: 2026-09-04
+Date: 2026-09-05
 
 Authority: `printforge-m9-playable-progression-v1.md` M9A only,
 `printforge-m9a-review-ledger.md`, `m8-pat-print-back-regression-design.md`,
@@ -14,10 +15,10 @@ contract. This checklist neither reduces nor enlarges those contracts.
 
 ## Scope and present hold
 
-- [ ] Release scope is limited to M9A Founder onboarding, durable/pageable pack
+- [x] Release scope is limited to M9A Founder onboarding, durable/pageable pack
   receipts, faithful native card/price facts, visible/system Back, and the approved
   route-wide Forge continuity correction.
-- [ ] M9B battle pacing/queue/rewards/XP/mastery/mods is recorded **NOT INCLUDED / NOT
+- [x] M9B battle pacing/queue/rewards/XP/mastery/mods is recorded **NOT INCLUDED / NOT
   COMPLETE**. M9C printable creature/equipment models are recorded **NOT INCLUDED /
   NOT COMPLETE**. Neither may be represented as delivered by this M9A artifact.
 - [x] The exact matching two-PNG enclosed Forge source family is HUMAN APPROVED and

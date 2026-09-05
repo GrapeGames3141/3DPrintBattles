@@ -5,8 +5,6 @@ extends Node
 
 const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const PROFILE_RULES := preload("res://scripts/core/profile_rules.gd")
-const ROOT := "user://game-manager-atomicity"
-const BLOCKER := "user://game-manager-atomicity-blocker"
 const FILES: Array[String] = ["profile.json", "profile.tmp.json", "profile.backup.json", "profile.backup.tmp.json", "journal.jsonl"]
 
 var failures: Array[String] = []
@@ -14,6 +12,9 @@ var original_profile: Dictionary = {}
 var original_compatibility: Dictionary = {}
 var campaign_toasts: Array[String] = []
 var campaign_toast_listener: Callable = Callable()
+var configured_root := ""
+var fixture_root := ""
+var blocker_path := ""
 
 func require(value: bool, message: String) -> void:
 	if value: return
@@ -23,6 +24,13 @@ func require(value: bool, message: String) -> void:
 func _ready() -> void:
 	original_profile = GameManager.profile.duplicate(true)
 	original_compatibility = GameManager.save_compatibility.duplicate(true)
+	configured_root = SaveService.profile_path.get_base_dir()
+	if not configured_root.replace("\\", "/").contains("/build/evidence/"):
+		require(false, "Atomicity test requires pre-autoload E: build/evidence QA storage; refusing fixture writes outside it.")
+		_finish()
+		return
+	fixture_root = configured_root.path_join("game-manager-atomicity")
+	blocker_path = configured_root.path_join("game-manager-atomicity-blocker")
 	_prepare_root()
 	GameManager.save_compatibility = {"compatible":true, "state":"ready", "message":""}
 	campaign_toast_listener = func(message: String) -> void: campaign_toasts.append(message)
@@ -76,27 +84,40 @@ func _ready() -> void:
 	var campaign_revision := int(GameManager.profile.get("revision", 0))
 	require(GameManager.claim_campaign_victory("first_layers_1", 5) and int(GameManager.profile.get("revision", 0)) == campaign_revision + 1, "campaign victory emits its result only after one persisted commit")
 
+	# The market facade must reject a stale displayed price before it commits a
+	# receipt, revision, journal source, cards, or Newcomer expiry state.
+	GameManager.profile = UNIFIED_RULES.new_profile()
+	GameManager.profile.forge_coins = 1000
+	GameManager.profile.newcomer_started_at = int(Time.get_unix_time_from_system()) - 8 * 86400
+	SaveService.commit_snapshot(GameManager.profile)
+	var pack_before := GameManager.profile.duplicate(true)
+	var source_before := FileAccess.get_file_as_string(SaveService.profile_path)
+	var stale_pack := GameManager.buy_card_pack("basic", "unified_market", {"market_tab":"packs"}, 0)
+	require(not bool(stale_pack.get("ok", false)) and bool(stale_pack.get("price_changed", false)) and GameManager.profile == pack_before and FileAccess.get_file_as_string(SaveService.profile_path) == source_before and int(GameManager.profile.get("revision", 0)) == int(pack_before.get("revision", 0)), "stale pack confirmation leaves facade memory, persisted source, and revision unchanged")
+	var matching_pack := GameManager.buy_card_pack("basic", "unified_market", {"market_tab":"packs"}, int(stale_pack.get("effective_price", -1)))
+	require(bool(matching_pack.get("ok", false)) and int(GameManager.profile.get("revision", 0)) == int(pack_before.get("revision", 0)) + 1 and not GameManager.profile.get("pending_pack_reveal", {}).is_empty(), "matching frozen pack price commits one existing receipt through the facade")
+
 	_finish()
 
 func _prepare_root() -> void:
-	var absolute_root := ProjectSettings.globalize_path(ROOT)
+	var absolute_root := ProjectSettings.globalize_path(fixture_root)
 	DirAccess.make_dir_recursive_absolute(absolute_root)
 	for filename in FILES:
 		var path := absolute_root.path_join(filename)
 		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
-	var blocker_absolute := ProjectSettings.globalize_path(BLOCKER)
+	var blocker_absolute := ProjectSettings.globalize_path(blocker_path)
 	if FileAccess.file_exists(blocker_absolute): DirAccess.remove_absolute(blocker_absolute)
-	SaveService.configure_test_paths(ROOT)
+	SaveService.configure_test_paths(fixture_root)
 
 func _block_storage() -> void:
-	var blocker := FileAccess.open(BLOCKER, FileAccess.WRITE)
+	var blocker := FileAccess.open(blocker_path, FileAccess.WRITE)
 	if blocker != null:
 		blocker.store_string("This file deliberately occupies the save parent.")
 		blocker.close()
-	SaveService.configure_test_paths(BLOCKER)
+	SaveService.configure_test_paths(blocker_path)
 
 func _restore_storage() -> void:
-	SaveService.configure_test_paths(ROOT)
+	SaveService.configure_test_paths(fixture_root)
 
 func _has_campaign_success_toast() -> bool:
 	for message in campaign_toasts:
@@ -107,7 +128,7 @@ func _has_campaign_success_toast() -> bool:
 func _finish() -> void:
 	if campaign_toast_listener.is_valid() and GameManager.toast_requested.is_connected(campaign_toast_listener):
 		GameManager.toast_requested.disconnect(campaign_toast_listener)
-	SaveService.reset_paths()
+	SaveService.configure_test_paths(configured_root)
 	GameManager.profile = original_profile
 	GameManager.save_compatibility = original_compatibility
 	if failures.is_empty(): print("PASS: GameManager persistence mutations remain atomic across unavailable storage")

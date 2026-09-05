@@ -39,3 +39,12 @@ func detach() -> void:
 
 func leave() -> void:
 	detach()
+
+func dispose() -> void:
+	# `detach()` is deliberately persistent across responsive Workshop rebuilds.
+	# Main's final teardown owns the matching destructive release.
+	if live_layer != null and is_instance_valid(live_layer):
+		detach()
+		live_layer.free()
+	live_layer = null
+	_config_signature = ""

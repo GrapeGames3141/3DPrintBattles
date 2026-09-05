@@ -1,6 +1,7 @@
 class_name PhysicalSettingsRecoveryComponent
 extends RefCounted
 const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
+const NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
 ## Owns Settings drafts and Recovery ledger controls over the shared M3 plate.
 
 func render_settings(main: Control, surface: Control, margin: Callable, heading: Callable) -> void:
@@ -30,11 +31,15 @@ func render_settings(main: Control, surface: Control, margin: Callable, heading:
 	_settings_preview_audio(main, preview_content, "sfx_bps", "SFX", Rect2(0.08, 0.670, 0.84, 0.290), draft)
 	# Buttons centre their label within these exposed hardware hit zones by default;
 	# the slightly tighter vertical seating keeps the baseline on the authored plate.
-	var cancel := _settings_transparent_button("SettingsCancel", "BACK TO\n%s" % caller.to_upper(), main.dispatch_back)
+	# Settings has one deliberate escape owner.  The lower dial is already part of
+	# the instrument artwork, while the compact header stays informational so a
+	# touch user never sees two competing Back actions.
+	var cancel := _settings_transparent_button("SettingsCancel", "BACK TO\n%s" % caller.to_upper(), main.request_back)
 	# Keep both destination lines inside the round dial's cream-safe centre rather
 	# than letting WORKSHOP fall under its lower brass lip at 576px.
 	_settings_rect(cancel, Rect2(0.165, 0.886, 0.215, 0.076))
-	cancel.custom_minimum_size = Vector2(56, 56)
+	cancel.custom_minimum_size = Vector2(72, 56)
+	NAVIGATION.configure_back(cancel, caller, Vector2(72, 56), true)
 	cancel.tooltip_text = "Cancel settings and return to %s" % caller
 	cancel.accessibility_name = cancel.tooltip_text
 	cancel.add_theme_font_size_override("font_size", 10)
@@ -50,8 +55,7 @@ func render_settings(main: Control, surface: Control, margin: Callable, heading:
 
 func _settings_hud(main: Control, host: Control, caller: String) -> void:
 	var rail := Control.new(); rail.name = "SettingsCompactHud"; rail.anchor_left = 0.120; rail.anchor_top = 0.012; rail.anchor_right = 0.880; rail.anchor_bottom = 0.070; host.add_child(rail)
-	var back := _settings_button("UnifiedFoundryWorkshopReturn", "Back", main.dispatch_back); _settings_rect(back, Rect2(0.0, 0.08, 0.145, 0.84)); back.custom_minimum_size = Vector2(54, 48); back.tooltip_text = "Cancel settings and return to %s" % caller; back.accessibility_name = back.tooltip_text; rail.add_child(back)
-	for entry in [["SettingsHudLevel", "Level %d" % int(GameManager.profile.get("level", 1)), Rect2(0.19, 0.08, 0.205, 0.84)], ["SettingsHudXp", "XP %d" % int(GameManager.profile.get("spool_xp", 0)), Rect2(0.43, 0.08, 0.205, 0.84)], ["SettingsHudCoins", "Coin %d" % int(GameManager.profile.get("forge_coins", 0)), Rect2(0.68, 0.08, 0.30, 0.84)]]:
+	for entry in [["SettingsHudLevel", "Level %d" % int(GameManager.profile.get("level", 1)), Rect2(0.02, 0.08, 0.265, 0.84)], ["SettingsHudXp", "XP %d" % int(GameManager.profile.get("spool_xp", 0)), Rect2(0.36, 0.08, 0.265, 0.84)], ["SettingsHudCoins", "Coin %d" % int(GameManager.profile.get("forge_coins", 0)), Rect2(0.69, 0.08, 0.29, 0.84)]]:
 		var label: Label = main.label(str(entry[1]), 12, Color("f3e5c9")); label.name = str(entry[0]); label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; label.custom_minimum_size = Vector2(112, 48) if str(entry[0]) == "SettingsHudCoins" else Vector2(64, 48); _settings_rect(label, entry[2]); rail.add_child(label)
 
 func _settings_dial_row(main: Control, host: Control, key: String, title: String, rect: Rect2, draft: Dictionary) -> void:

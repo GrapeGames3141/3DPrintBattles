@@ -167,7 +167,7 @@ func _assert_integrated_forge(main, subviewport: SubViewport, base_profile: Dict
 	await get_tree().process_frame
 	require(main.printer_sequence != null and main.printer_sequence.phase == ArcaneForgeSequence.PRINTING and main.find_child("PrinterBlueprintSelector", true, false) == null, "Begin enters PRINTING and hides the idle selector.")
 	await _escape(main)
-	require(main.screen == "printer" and main.printer_sequence != null and main.printer_sequence.phase == ArcaneForgeSequence.PRINTING, "Escape cannot cancel an active Forge print.")
+	require(main.screen == "workshop" and main.printer_sequence != null and main.printer_sequence.phase == ArcaneForgeSequence.PRINTING, "Escape pauses an active Forge print at its safe caller without cancelling it.")
 	main.printer_sequence.phase = ArcaneForgeSequence.AWAKENED
 	main.return_to_printer_picker()
 	await get_tree().process_frame

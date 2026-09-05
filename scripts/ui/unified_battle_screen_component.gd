@@ -5,6 +5,8 @@ extends RefCounted
 
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const STAGE := preload("res://scripts/ui/physical_battlefield_stage.gd")
+const NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
+const CONTROL_FAMILY := preload("res://scripts/ui/physical_control_family.gd")
 var _stage: PhysicalBattlefieldStage
 var _overflow_selected: Array[int] = []
 var _overflow_signature := ""
@@ -48,12 +50,16 @@ func render_fullscreen(shell: Control) -> void:
 	shell.add_child(_stage)
 	_stage.set_focus(1, int(shell.unified_battle_coordinator.transient_focus))
 	_stage.set_selected_slot(0, int(shell.unified_selected_slot))
-	var title: Label = shell.label("PRINTFORGE BATTLE\nTurn %d" % int(public_view.get("turn", 0)) if large_text else "PRINTFORGE BATTLE · Turn %d" % int(public_view.get("turn", 0)), 10 if large_text else 15, Color("fff0bb")); title.name = "UnifiedBattleHeading"; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if large_text else TextServer.AUTOWRAP_OFF; title.clip_text = true; title.anchor_left = .15 if large_text else .20; title.anchor_right = .85 if large_text else .80; title.anchor_top = .002 if large_text else .012; title.anchor_bottom = .065 if large_text else .055
+	var title: Label = shell.label("PRINTFORGE BATTLE\nTurn %d" % int(public_view.get("turn", 0)) if large_text else "PRINTFORGE BATTLE · Turn %d" % int(public_view.get("turn", 0)), 10 if large_text else 15, Color("fff0bb")); title.name = "UnifiedBattleHeading"; title.mouse_filter = Control.MOUSE_FILTER_IGNORE; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if large_text else TextServer.AUTOWRAP_OFF; title.clip_text = true; title.anchor_left = .15 if large_text else .20; title.anchor_right = .85 if large_text else .80; title.anchor_top = .002 if large_text else .012; title.anchor_bottom = .065 if large_text else .055
 	shell.add_child(title)
 	_add_hud(shell, public_view)
 	_add_status_plate(shell)
 	_add_anchor_controls(shell, public_view)
 	_add_synthetic_bottom_overlay(shell)
+	var back: Button = shell.make_button("Back", shell.request_back, Color("526e93")); back.name = "UnifiedBattleBack"; NAVIGATION.configure_back(back, "battle pause", Vector2(56, 56)); back.tooltip_text = "Pause battle or choose to concede"; back.accessibility_name = back.tooltip_text; back.anchor_left = .02; back.anchor_right = .13; back.anchor_top = .004; back.anchor_bottom = .065; shell.add_child(back)
+	if bool(shell.battle_back_confirmation):
+		_add_back_choice(shell, battle)
+		return
 	if bool(battle.finished):
 		if not shell.battle_settlement_context.is_empty() and not bool(shell.battle_settlement_finished): shell.call_deferred("_settle_finished_unified_battle")
 		_add_plate(shell, Rect2(.28, .49, .44, .18), "%s printer broke." % ("Rival" if int(battle.winner) == viewer_seat else "Your"), shell.dispatch_back, "Return to Workshop", Color("a86b2e")); return
@@ -78,6 +84,31 @@ func render_fullscreen(shell: Control) -> void:
 	if str(public_view.get("phase", "")) == "draw": shell.call_deferred("_enter_unified_plan")
 	if str(public_view.get("phase", "")) == "main": _add_plan_overlay(shell, active)
 	else: _add_status(shell, "Run Cycle · %s" % str(public_view.get("phase", "")).capitalize())
+
+func _add_back_choice(shell: Control, battle) -> void:
+	var bot_turn := str(shell.battle_mode) != "local" and int(battle.active_seat) == 1
+	# The modal has one active keyboard/pointer owner. Do not leave the background
+	# Back plaque focused or hoverable beneath its shield.
+	var background_back := shell.find_child("UnifiedBattleBack", true, false) as Button
+	if background_back != null:
+		background_back.release_focus()
+		background_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		background_back.disabled = true
+	var shield := ColorRect.new()
+	shield.name = "UnifiedBattleExitShield"
+	shield.color = Color(0.01, 0.03, 0.05, 0.78)
+	shield.mouse_filter = Control.MOUSE_FILTER_STOP
+	shield.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shield.z_index = 19
+	shell.add_child(shield)
+	var panel := _add_plate(shell, Rect2(.20, .39, .60, .24), "Rival is resolving. Resume safely when ready." if bot_turn else "Pause this battle, or concede this match?", Callable(), "", Color("a86b2e"))
+	panel.z_index = 20
+	var body := panel.get_child(0) as VBoxContainer
+	var resume: Button = shell.make_button("Stay", func(): shell.battle_back_confirmation = false; shell.render(), Color("588d73")); resume.name = "UnifiedBattleResume"; resume.custom_minimum_size = Vector2(0,56); CONTROL_FAMILY.apply(resume, "wide"); body.add_child(resume)
+	shell.call_deferred("_deferred_focus_if_ready", resume.get_instance_id())
+	var dismiss: Button = shell.make_button("Back", shell.request_back, Color("526e93")); dismiss.name = "UnifiedBattleExitBack"; NAVIGATION.configure_back(dismiss, "battle pause", Vector2(56,56)); dismiss.anchor_left = .03; dismiss.anchor_right = .15; dismiss.anchor_top = .02; dismiss.anchor_bottom = .08; dismiss.z_index = 21; shell.add_child(dismiss)
+	if not bot_turn:
+		var concede: Button = shell.make_button("Concede", shell._concede_unified_battle, Color("a86b2e")); concede.name = "UnifiedBattleConcede"; concede.custom_minimum_size = Vector2(0,56); CONTROL_FAMILY.apply(concede, "lever"); body.add_child(concede)
 
 func _viewer_seat(shell: Control, battle) -> int:
 	return int(battle.active_seat) if str(shell.battle_mode) == "local" else 0
@@ -111,13 +142,13 @@ func _add_hud(shell: Control, public_view: Dictionary) -> void:
 		var hp_rect := Rect2(.31, .118, .38, .035) if seat == 1 and large_text else Rect2(.31, .132, .38, .032) if seat == 1 else Rect2(.31, .745, .38, .035) if large_text else Rect2(.31, .765, .38, .032)
 		var resource_rect := Rect2(.31, .154, .38, .035) if seat == 1 and large_text else Rect2(.31, .166, .38, .032) if seat == 1 else Rect2(.31, .782, .38, .035) if large_text else Rect2(.31, .790, .38, .042)
 		var side := "Rival" if seat == 1 else "Your"
-		var hud: Label = shell.label("%s HP %d/%d" % [side, int(printer.get("hp", 0)), int(printer.get("max_hp", 2000))] if large_text else "%s printer %d/%d" % [side, int(printer.get("hp", 0)), int(printer.get("max_hp", 2000))], 7 if large_text else 12, Color("d8f7ff")); hud.name = "PhysicalBattleHud%d" % seat; hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; hud.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; hud.clip_text = true; hud.anchor_left = hp_rect.position.x; hud.anchor_top = hp_rect.position.y; hud.anchor_right = hp_rect.end.x; hud.anchor_bottom = hp_rect.end.y; shell.add_child(hud)
+		var hud: Label = shell.label("%s HP %d/%d" % [side, int(printer.get("hp", 0)), int(printer.get("max_hp", 2000))] if large_text else "%s printer %d/%d" % [side, int(printer.get("hp", 0)), int(printer.get("max_hp", 2000))], 7 if large_text else 12, Color("d8f7ff")); hud.name = "PhysicalBattleHud%d" % seat; hud.mouse_filter = Control.MOUSE_FILTER_IGNORE; hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; hud.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; hud.clip_text = true; hud.anchor_left = hp_rect.position.x; hud.anchor_top = hp_rect.position.y; hud.anchor_right = hp_rect.end.x; hud.anchor_bottom = hp_rect.end.y; shell.add_child(hud)
 		var queue: Array = player.get("queue", []) if player.get("queue", []) is Array else []
 		# The player instrument is deliberately two concise native rows: its brass
 		# face stops before the material canisters, so remaining-turn wording must
 		# remain explicit without relying on label clipping.
 		var resource_copy := "F %d/%d · Q %d" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size()] if large_text else "%d/%d filament · Queue %d\nHead: %s · %d turn left" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size(), str(RULES.card(str((queue[0] as Dictionary).get("card_id", ""))).get("name", "—")) if not queue.is_empty() else "—", int((queue[0] as Dictionary).get("remaining", 0)) if not queue.is_empty() else 0] if seat == 0 else "%d/%d filament · Queue %d" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size()]
-		var resources: Label = shell.label(resource_copy, 7 if large_text else 9, Color("d8f7ff")); resources.name = "PhysicalBattleHud%dResources" % seat; resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; resources.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; resources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if not large_text else TextServer.AUTOWRAP_OFF; resources.clip_text = true; resources.anchor_left = resource_rect.position.x; resources.anchor_top = resource_rect.position.y; resources.anchor_right = resource_rect.end.x; resources.anchor_bottom = resource_rect.end.y; shell.add_child(resources)
+		var resources: Label = shell.label(resource_copy, 7 if large_text else 9, Color("d8f7ff")); resources.name = "PhysicalBattleHud%dResources" % seat; resources.mouse_filter = Control.MOUSE_FILTER_IGNORE; resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; resources.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; resources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if not large_text else TextServer.AUTOWRAP_OFF; resources.clip_text = true; resources.anchor_left = resource_rect.position.x; resources.anchor_top = resource_rect.position.y; resources.anchor_right = resource_rect.end.x; resources.anchor_bottom = resource_rect.end.y; shell.add_child(resources)
 
 func _anchor_focus_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new(); style.bg_color = Color(0.20, 0.88, 1.0, .06); style.border_color = Color("9af4ff"); style.set_border_width_all(3); style.corner_radius_top_left = 8; style.corner_radius_top_right = 8; style.corner_radius_bottom_left = 8; style.corner_radius_bottom_right = 8
@@ -300,3 +331,13 @@ func _add_plate(shell: Control, rect: Rect2, caption: String, action: Callable, 
 
 func detach() -> void:
 	if _stage != null and is_instance_valid(_stage) and _stage.get_parent() != null: _stage.get_parent().remove_child(_stage)
+
+func dispose() -> void:
+	# Route rebuilds intentionally detach this expensive stage for safe resume.
+	# Only the Main owner teardown releases the detached node and its resources.
+	if _stage != null and is_instance_valid(_stage):
+		detach()
+		_stage.free()
+	_stage = null
+	_overflow_selected.clear()
+	_overflow_signature = ""

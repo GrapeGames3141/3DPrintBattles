@@ -4,6 +4,7 @@ extends Node
 ## physical owners rather than the retired generic Market, Archive, and Pack shells.
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
+const M9_TEST_PROFILE_FACTORY := preload("res://tests/m9_test_profile_factory.gd")
 
 var failures: Array[String] = []
 
@@ -13,7 +14,7 @@ func require(value: bool, message: String) -> void:
 		push_error(message)
 
 func _profile() -> Dictionary:
-	var profile: Dictionary = RULES.new_profile()
+	var profile: Dictionary = M9_TEST_PROFILE_FACTORY.founder_ready("cinderpaw")
 	profile.forge_coins = 1200
 	profile = RULES.choose_starter(profile, "cinderpaw").profile
 	return RULES.print_starter(profile).profile
@@ -33,6 +34,9 @@ func _pack_grid_ok(main) -> bool:
 	return plate != null and grid != null and grid.get_child_count() == 5 and cards.size() == 5
 
 func _ready() -> void:
+	var save_root := "E:/AI Projects/games/3d print battler/build/evidence/m9a-runtime-20260904/state/card-acquisition"
+	DirAccess.make_dir_recursive_absolute(save_root)
+	SaveService.configure_test_paths(save_root)
 	GameManager.profile = _profile()
 	var main := MAIN.instantiate()
 	add_child(main)
@@ -131,21 +135,27 @@ func _ready() -> void:
 	var support_facts := main.find_child("ArchiveDetailNativeFacts", true, false) as Label
 	require(support_facts != null and support_facts.text.contains("Owned copies") and support_facts.text.contains("Filament") and support_facts.text.contains("filament") and not support_facts.text.contains("HP 0") and not support_facts.text.contains("ATK 0"), "Support archive detail reports owned/type/cost/rules facts without fabricated creature zeroes.")
 
-	# Keep drives the persisted 1→2→3 starter receipt chain. Each intermediate
-	# render remains the exclusive five-dock M3 Pack plate; after the third Keep,
-	# Collection returns and no fourth claim changes cards or pending state.
+	# A genuine Founder flow proves that Keep and Open Next are separate
+	# transactions. Each receipt has thirteen cards across three physical pages.
+	GameManager.profile = RULES.print_starter(RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile).profile
+	GameManager.profile.forge_coins = 1200
 	main.unified_inspector_id = ""
 	main.render()
 	await get_tree().process_frame
 	main._open_next_starter_pack()
 	await get_tree().process_frame
-	require(main.screen == "unified_library" and _pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 1, "Starter pack 1 opens as a persisted five-dock physical receipt.")
+	require(main.screen == "m3_pack" and _pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 1, "Starter pack 1 opens as a persisted five-dock physical receipt.")
 	main._keep_unified_pack_cards()
 	await get_tree().process_frame
-	require(_pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 2, "Keeping pack 1 opens persisted starter pack 2 in the same physical receipt owner.")
+	require(main.screen == "unified_library" and GameManager.profile.get("pending_pack_reveal", {}).is_empty() and int(GameManager.profile.get("starter_pack_rewards", {}).get("kept", 0)) == 1, "Keeping Founder pack 1 acknowledges only that persisted receipt and returns to its caller.")
+	main._open_next_starter_pack()
+	await get_tree().process_frame
+	require(_pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 2, "Open Next commits Founder pack 2 as its own receipt.")
 	main._keep_unified_pack_cards()
 	await get_tree().process_frame
-	require(_pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3, "Keeping pack 2 opens persisted starter pack 3 in the same physical receipt owner.")
+	main._open_next_starter_pack()
+	await get_tree().process_frame
+	require(_pack_grid_ok(main) and bool(GameManager.profile.get("pending_pack_reveal", {}).get("starter_reward", false)) and int(GameManager.profile.get("starter_pack_rewards", {}).get("opened", 0)) == 3, "Open Next commits Founder pack 3 as its own receipt.")
 	main._keep_unified_pack_cards()
 	await get_tree().process_frame
 	var owned_after_rewards: Dictionary = (GameManager.profile.get("owned_cards", {}) as Dictionary).duplicate(true)

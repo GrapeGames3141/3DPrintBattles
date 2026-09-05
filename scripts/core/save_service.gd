@@ -13,6 +13,32 @@ var profile_temp_path := PROFILE_TEMP_PATH
 var profile_backup_path := PROFILE_BACKUP_PATH
 var profile_backup_temp_path := PROFILE_BACKUP_TEMP_PATH
 var journal_path := JOURNAL_PATH
+var pack_ui_session_path := "user://printforge_pack_ui_session.json"
+var pack_ui_session_temp_path := "user://printforge_pack_ui_session.tmp.json"
+var pack_ui_session_backup_path := "user://printforge_pack_ui_session.backup.json"
+
+func configure_debug_qa_storage_from_command_line() -> Dictionary:
+	# Autoloads start before a test scene can call `configure_test_paths`.  Keep
+	# that debug-only bootstrap alongside the path authority so no runtime screen
+	# reimplements validation or accidentally opens the maker's `user://` save.
+	const PREFIX := "--qa-save-root="
+	var requested: Array[String] = []
+	for argument in OS.get_cmdline_user_args():
+		var value := str(argument)
+		if value.begins_with(PREFIX): requested.append(value.trim_prefix(PREFIX))
+	if requested.is_empty(): return {"handled":false, "ok":true}
+	if requested.size() != 1:
+		return {"handled":true, "ok":false, "error":"QA storage accepts exactly one root."}
+	if not OS.is_debug_build():
+		return {"handled":true, "ok":false, "error":"QA storage is unavailable outside a debug build."}
+	var root := requested[0].strip_edges().trim_prefix("\"").trim_suffix("\"").replace("\\", "/")
+	var allowed_root := ProjectSettings.globalize_path("res://build/evidence/").replace("\\", "/").trim_suffix("/")
+	if root.is_empty() or root.contains("..") or not root.is_absolute_path() or not root.begins_with(allowed_root + "/"):
+		return {"handled":true, "ok":false, "error":"Rejected invalid QA storage root."}
+	if DirAccess.make_dir_recursive_absolute(root) != OK:
+		return {"handled":true, "ok":false, "error":"Could not prepare QA storage root."}
+	configure_test_paths(root)
+	return {"handled":true, "ok":true, "root":root}
 
 func configure_unified_playtest_paths() -> void:
 	# v3 is a clean namespace: it never opens or migrates the 0.7 playtest save.
@@ -21,6 +47,7 @@ func configure_unified_playtest_paths() -> void:
 	profile_backup_path = "user://printforge_v3_profile.backup.json"
 	profile_backup_temp_path = "user://printforge_v3_profile.backup.tmp.json"
 	journal_path = "user://printforge_v3_journal.jsonl"
+	_configure_pack_ui_session_paths()
 	recovery_status = "primary"
 
 func configure_test_paths(root: String) -> void:
@@ -29,11 +56,23 @@ func configure_test_paths(root: String) -> void:
 	profile_backup_path = root.path_join("profile.backup.json")
 	profile_backup_temp_path = root.path_join("profile.backup.tmp.json")
 	journal_path = root.path_join("journal.jsonl")
+	_configure_pack_ui_session_paths()
 	recovery_status = "primary"; session_events.clear()
 
 func reset_paths() -> void:
 	profile_path = PROFILE_PATH; profile_temp_path = PROFILE_TEMP_PATH; profile_backup_path = PROFILE_BACKUP_PATH; profile_backup_temp_path = PROFILE_BACKUP_TEMP_PATH; journal_path = JOURNAL_PATH
+	_configure_pack_ui_session_paths()
 	recovery_status = "primary"; session_events.clear()
+
+func _configure_pack_ui_session_paths() -> void:
+	# Keep the browsing sidecar adjacent to the configured profile authority. This
+	# makes every test namespace isolated and prevents a global receipt cache from
+	# crossing profile roots.
+	var parent := profile_path.get_base_dir()
+	var stem := profile_path.get_file().get_basename()
+	pack_ui_session_path = parent.path_join("%s.pack_ui_session.json" % stem)
+	pack_ui_session_temp_path = parent.path_join("%s.pack_ui_session.tmp.json" % stem)
+	pack_ui_session_backup_path = parent.path_join("%s.pack_ui_session.backup.json" % stem)
 
 func load_profile() -> Dictionary:
 	var primary := _read_profile(profile_path)
@@ -134,6 +173,53 @@ func commit_mutation(profile: Dictionary, kind: String, payload: Dictionary, rev
 	# replay journal. UI callers may only acknowledge a transition after this.
 	if not commit_snapshot(profile): return false
 	return append_event(kind, payload, revision)
+
+func load_pack_ui_session(receipt: String) -> Dictionary:
+	var session := _read_profile(pack_ui_session_path)
+	if str(session.get("receipt", "")) != receipt: return {}
+	var presentation: Variant = session.get("presentation", {})
+	return presentation.duplicate(true) if presentation is Dictionary else {}
+
+func save_pack_ui_session(receipt: String, presentation: Dictionary) -> bool:
+	last_commit_error = ""
+	var file := FileAccess.open(pack_ui_session_temp_path, FileAccess.WRITE)
+	if file == null:
+		last_commit_error = "Pack position could not be saved. The committed cards are safe."
+		return false
+	file.store_string(JSON.stringify({"receipt":receipt,"presentation":presentation.duplicate(true)}))
+	file.flush()
+	file.close()
+	var verified := _read_profile(pack_ui_session_temp_path)
+	if str(verified.get("receipt", "")) != receipt:
+		last_commit_error = "Pack position could not be verified. The committed cards are safe."
+		return false
+	var directory := DirAccess.open(pack_ui_session_path.get_base_dir())
+	if directory == null:
+		last_commit_error = "Pack position storage is unavailable. The committed cards are safe."
+		return false
+	# Windows cannot rename over an existing file. Move the previous sidecar aside
+	# first, restore it if promotion fails, and remove it only after verification.
+	var moved_previous := false
+	if FileAccess.file_exists(pack_ui_session_path):
+		if FileAccess.file_exists(pack_ui_session_backup_path): directory.remove(pack_ui_session_backup_path)
+		if directory.rename(pack_ui_session_path, pack_ui_session_backup_path) != OK:
+			last_commit_error = "Pack position could not be replaced. The committed cards are safe."
+			return false
+		moved_previous = true
+	if directory.rename(pack_ui_session_temp_path, pack_ui_session_path) != OK:
+		if moved_previous: directory.rename(pack_ui_session_backup_path, pack_ui_session_path)
+		last_commit_error = "Pack position could not be saved. The committed cards are safe."
+		return false
+	if moved_previous and FileAccess.file_exists(pack_ui_session_backup_path): directory.remove(pack_ui_session_backup_path)
+	return true
+
+func clear_pack_ui_session() -> void:
+	if FileAccess.file_exists(pack_ui_session_path):
+		var directory := DirAccess.open(pack_ui_session_path.get_base_dir())
+		if directory != null: directory.remove(pack_ui_session_path)
+	if FileAccess.file_exists(pack_ui_session_backup_path):
+		var backup_directory := DirAccess.open(pack_ui_session_backup_path.get_base_dir())
+		if backup_directory != null: backup_directory.remove(pack_ui_session_backup_path)
 
 func pending_events() -> Array:
 	if not FileAccess.file_exists(journal_path): return session_events.duplicate(true)

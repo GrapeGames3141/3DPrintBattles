@@ -12,7 +12,17 @@ var profile: Dictionary = {}
 var save_compatibility: Dictionary = {"compatible":true, "state":"ready", "message":""}
 
 func _ready() -> void:
-	SaveService.configure_unified_playtest_paths()
+	var qa_storage := SaveService.configure_debug_qa_storage_from_command_line()
+	if bool(qa_storage.get("handled", false)) and not bool(qa_storage.get("ok", false)):
+		var error := str(qa_storage.get("error", "QA storage could not be configured."))
+		push_error(error)
+		save_compatibility = {"compatible":false, "state":"qa_storage_rejected", "message":error}
+		get_tree().quit(1)
+		return
+	if not bool(qa_storage.get("handled", false)):
+		SaveService.configure_unified_playtest_paths()
+	else:
+		print("PRINTFORGE_STARTUP marker=qa_storage profile=%s journal=%s receipt_ui=%s user_data=%s" % [SaveService.profile_path, SaveService.journal_path, SaveService.pack_ui_session_path, OS.get_user_data_dir()])
 	print("PRINTFORGE_STARTUP marker=profile_load path=%s" % SaveService.profile_path)
 	_initialize_loaded_profile(SaveService.load_profile())
 	print("PRINTFORGE_STARTUP marker=profile_ready compatibility=%s has_starter=%s" % [str(save_compatibility.get("state", "ready")), str(has_selected_starter())])
@@ -81,17 +91,17 @@ func print_workshop_model_v3(blueprint_id: String, receipt_id := "") -> Dictiona
 	var result := UNIFIED_RULES.print_workshop_model(profile, blueprint_id, receipt_id)
 	return _commit_rule_result(result, "v3_workshop_print")
 
-func buy_card_pack(pack_id: String) -> Dictionary:
+func buy_card_pack(pack_id: String, return_route := "workshop", return_context: Dictionary = {}, expected_price: int = -1) -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
-	var result := UNIFIED_RULES.buy_pack(profile, pack_id, PackedByteArray(), int(Time.get_unix_time_from_system()))
+	var result := UNIFIED_RULES.buy_pack(profile, pack_id, PackedByteArray(), int(Time.get_unix_time_from_system()), return_route, return_context, expected_price)
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "Pack unavailable."))); return result
 	# Persist result before a reveal may animate; a reload simply resumes it.
 	return _commit_rule_result(result, "buy_card_pack")
 
-func claim_next_starter_pack() -> Dictionary:
+func claim_next_starter_pack(return_route := "unified_library", return_context: Dictionary = {}) -> Dictionary:
 	if _reject_read_only(): return {"ok":false,"error":save_recovery_message()}
-	var result := UNIFIED_RULES.claim_next_starter_pack(profile)
+	var result := UNIFIED_RULES.claim_next_starter_pack(profile, PackedByteArray(), return_route, return_context)
 	if not bool(result.get("ok", false)):
 		toast_requested.emit(str(result.get("error", "No starter pack available.")))
 		return result
@@ -208,7 +218,33 @@ func claim_pending_pack_reveal_result() -> Dictionary:
 	if cards.is_empty(): return {"ok":false, "error":"There are no pack cards waiting to keep.", "cards":[]}
 	var result := _commit_rule_result(UNIFIED_RULES.clear_pack_reveal(profile), "pack_reveal_seen")
 	if not bool(result.get("ok", false)): return {"ok":false, "error":str(result.get("error", "Pack receipt could not be saved.")), "cards":[]}
+	SaveService.clear_pack_ui_session()
 	return {"ok":true, "cards":cards, "payload":result.get("payload", {})}
+
+func pending_pack_presentation(receipt: String) -> Dictionary:
+	var pending: Dictionary = profile.get("pending_pack_reveal", {}) if profile.get("pending_pack_reveal", {}) is Dictionary else {}
+	if pending.is_empty() or str(pending.get("receipt", "")) != receipt: return {}
+	var cards: Array = (pending.get("cards", []) as Array).duplicate()
+	cards.append_array((pending.get("bonus_cards", []) as Array).duplicate())
+	var presentation := SaveService.load_pack_ui_session(receipt)
+	var pages := maxi(1, ceili(float(cards.size()) / 5.0))
+	var inspector_id := str(presentation.get("inspector_id", ""))
+	if not inspector_id.is_empty() and inspector_id not in cards: inspector_id = ""
+	return {"page":clampi(int(presentation.get("page", 0)), 0, pages - 1), "inspector_id":inspector_id}
+
+func save_pending_pack_presentation(receipt: String, page: int, inspector_id := "") -> Dictionary:
+	var pending: Dictionary = profile.get("pending_pack_reveal", {}) if profile.get("pending_pack_reveal", {}) is Dictionary else {}
+	if pending.is_empty() or str(pending.get("receipt", "")) != receipt:
+		return {"ok":false, "error":"That pack receipt is no longer waiting."}
+	var cards: Array = (pending.get("cards", []) as Array).duplicate()
+	cards.append_array((pending.get("bonus_cards", []) as Array).duplicate())
+	if not inspector_id.is_empty() and inspector_id not in cards:
+		return {"ok":false, "error":"That card is not in the current receipt."}
+	var pages := maxi(1, ceili(float(cards.size()) / 5.0))
+	var clamped_page := clampi(page, 0, pages - 1)
+	if not SaveService.save_pack_ui_session(receipt, {"page":clamped_page,"inspector_id":inspector_id}):
+		return {"ok":false, "error":SaveService.last_commit_error}
+	return {"ok":true, "presentation":{"page":clamped_page,"inspector_id":inspector_id}}
 
 func save_unified_deck(cards: Array, deck_id := "starter-deck") -> bool:
 	return apply_transition(UNIFIED_RULES.save_deck(profile, cards, deck_id), "save_unified_deck")
@@ -761,6 +797,7 @@ func create_new_maker_profile() -> Dictionary:
 	var candidate := UNIFIED_RULES.new_profile()
 	if not _commit_candidate(candidate, "title_new_maker", {"entry":"title"}):
 		return {"ok":false, "error":SaveService.last_commit_error if not SaveService.last_commit_error.is_empty() else "Could not save the new maker profile."}
+	SaveService.clear_pack_ui_session()
 	return {"ok":true, "profile":profile.duplicate(true), "revision":int(profile.get("revision", 0))}
 
 func _commit_candidate(candidate: Dictionary, kind: String, payload: Dictionary) -> bool:

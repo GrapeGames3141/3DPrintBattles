@@ -16,27 +16,26 @@ func _ready() -> void:
 	require(reduced.reduced_motion and reduced.phase == ArcaneForgeSequence.RAW_COMPLETE and reduced.request_commit() and reduced.resolve_commit(true) and reduced.skip() and reduced.phase == ArcaneForgeSequence.AWAKENED and ArcaneForgeSequence.presentation_interval_seconds(true) > ArcaneForgeSequence.presentation_interval_seconds(false), "reduced motion remains calm staged, safe, and skippable")
 	var frame_stage := ArcaneForgeStage.new()
 	frame_stage.configure("cinderpaw", false, false)
-	frame_stage.set_presentation_time(0.0)
-	var first_frame := frame_stage.printer_frame_index()
+	frame_stage.set_continuity_station(true)
 	frame_stage.set_preview_phase(ArcaneForgeSequence.PRINTING, 1200)
 	frame_stage.set_presentation_time(1.0)
-	require(first_frame == 0 and frame_stage.printer_frame_index() in [1, 2, 3] and frame_stage.is_processing() and ArcaneForgeStage.PRINTER_FRAME_PATHS.size() == 4, "printing maps four printer frames through a deterministic ping-pong")
+	require(ResourceLoader.exists(ArcaneForgeStage.CONTINUITY_GUIDE_PATH) and ResourceLoader.exists(ArcaneForgeStage.CONTINUITY_HEAD_PATH) and not frame_stage.is_processing(), "continuity Forge uses source-derived carriage layers from Main's presentation clock instead of retired frame timers")
 	frame_stage.set_preview_phase(ArcaneForgeSequence.AWAKENED, 10000)
 	require(not frame_stage.is_processing(), "idle or awakened Forge preview disables processing")
 	frame_stage.set_preview_phase(ArcaneForgeSequence.AWAKENING, 8000, 5000)
 	require(not frame_stage.is_processing(), "awakening is driven by deterministic phase progress rather than per-frame stage processing")
 	frame_stage.set_preview_phase(ArcaneForgeSequence.DEPARTING, 9000, 5000)
 	require(not frame_stage.is_processing(), "departure is driven by deterministic phase progress rather than per-frame stage processing")
-	for path in ArcaneForgeStage.PRINTER_FRAME_PATHS:
-		var source := Image.load_from_file(ProjectSettings.globalize_path(path))
-		require(source != null and not source.is_empty() and source.get_pixel(0, 0).a == 0.0 and source.get_pixel(source.get_width() - 1, source.get_height() - 1).a == 0.0, "%s has transparent keyed corners" % path)
-	const WORKSHOP_BOOT_SPLASH_PATH := "res://assets/ui/workshop/workshop_overview_landscape_v4.png"
-	for path in ["res://assets/ui/printforge_launcher_icon.png", WORKSHOP_BOOT_SPLASH_PATH]:
+	var guide_source := Image.load_from_file(ProjectSettings.globalize_path(ArcaneForgeStage.CONTINUITY_GUIDE_PATH))
+	var head_source := Image.load_from_file(ProjectSettings.globalize_path(ArcaneForgeStage.CONTINUITY_HEAD_PATH))
+	require(guide_source != null and not guide_source.is_empty() and guide_source.get_pixel(0, 0).a == 0.0 and head_source != null and not head_source.is_empty() and head_source.get_pixel(0, 0).a == 0.0, "continuity carriage derivatives retain transparent source guards")
+	const TITLE_BOOT_SPLASH_PATH := "res://assets/ui/physical_ui/title-backplate-text-free-v2.png"
+	for path in ["res://assets/ui/printforge_launcher_icon.png", TITLE_BOOT_SPLASH_PATH]:
 		require(ResourceLoader.exists(path) and ResourceLoader.load(path) != null, "%s runtime icon/splash path loads" % path)
-	var workshop_boot_splash := Image.load_from_file(ProjectSettings.globalize_path(WORKSHOP_BOOT_SPLASH_PATH))
-	require(workshop_boot_splash != null and not workshop_boot_splash.is_empty() and workshop_boot_splash.get_width() == 1672 and workshop_boot_splash.get_height() == 941, "boot splash uses the canonical 1672x941 Workshop overview plate")
+	var title_boot_splash := Image.load_from_file(ProjectSettings.globalize_path(TITLE_BOOT_SPLASH_PATH))
+	require(title_boot_splash != null and not title_boot_splash.is_empty() and title_boot_splash.get_width() == 941 and title_boot_splash.get_height() == 1672, "boot splash uses the approved portrait Title plate")
 	require(int(ProjectSettings.get_setting("display/window/handheld/orientation", -1)) == 1, "portrait orientation is locked and configured")
-	require(str(ProjectSettings.get_setting("application/boot_splash/image", "")) == WORKSHOP_BOOT_SPLASH_PATH, "boot splash setting uses the canonical Workshop overview plate")
+	require(str(ProjectSettings.get_setting("application/boot_splash/image", "")) == TITLE_BOOT_SPLASH_PATH, "boot splash setting uses the approved portrait Title plate")
 	var fallback := Catalog.creature("future_unmapped_creature")
 	require(fallback.is_empty() and BattleSpriteStage.sprite_path_for("future_unmapped_creature").ends_with("mossmunk_sprite_sheet.png"), "unknown future IDs retain the safe mascot visual fallback")
 	for definition in Catalog.CREATURES:
@@ -58,6 +57,7 @@ func _ready() -> void:
 	var armor_sequence := ArcaneForgeSequence.create(false, true)
 	armor_sequence.begin(); armor_sequence.advance(ArcaneForgeSequence.PRINT_COMPLETE_BPS); armor_sequence.request_commit(); armor_sequence.resolve_commit(true); armor_sequence.advance(ArcaneForgeSequence.RAW_HOLD_BPS)
 	require(armor_sequence.phase == ArcaneForgeSequence.AWAKENED, "armor print exits its full completed-part hold directly to transfer completion without creature awakening or departure")
+	frame_stage.free()
 	if failures.is_empty(): print("PASS: checkpoint6 Arcane Forge sequence and asset mappings")
 	call_deferred("finish")
 

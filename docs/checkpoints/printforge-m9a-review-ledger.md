@@ -210,6 +210,27 @@ write issue, not a missing UI font. Preserve that classification and exact logs.
 
 OS-delivered Android Back is still not established by desktop input evidence.
 
+Normal Forge full-map-v1 review (34 PNGs, manifest SHA-256
+`cec9ab54358e7bf8b2646cfa29dd38a2dc78b187ca090b274d1fbe016fec7c2f`,
+2026-09-04 23:26:29 CT): no P0, four P1s. At 99%, the raw Cinderpaw silhouette
+still reads complete; a visibly unrevealed final upper slice must persist until
+RAW_COMPLETE while keeping canonical bounds and the shared scan/nozzle datum.
+Raw Hold/Awakening/Departing incorrectly repeat `100% COMPLETE`; only Done should
+say COMPLETE. The 576 Failed capture still uses stale `CHECK INPUT`/complete copy
+despite a storage failure. Core IDLE offers Start while its blueprint cartridge is
+effectively blank. Without approved runtime core blueprint art it must use the
+truthful unavailable-art/native Back state; do not substitute a raw/completed image
+in the blueprint dock or bypass the M9C art-promotion gate. Largest-IDLE is not
+largest-silhouette print/hold/awakening evidence; those extra checks remain required.
+
+The reviewer passed the remaining normal scene composition: enclosure continuity,
+0/25/60 mask and bed anchoring, parked gantry, finite raw/living handoff and one
+departing subject, empty terminal bed, missing-art and suit-safe Back states, and
+caller/pause/resume composition. Root verified representative original-resolution
+frames and accepted the P1 corrections for implementation. Full-map-v1 is retained;
+replacement normal evidence must use full-map-v2. None of this establishes the
+remaining 150% text, high contrast, reduced motion, tall-screen or device gates.
+
 Root rechecked M8 atomicity v3 (PID 29508, exit 0), route-Back v3 (PID 45320,
 exit 0, all 18 rows), progressive (PID 21340, exit 0 reported) and lifecycle v2
 (PID 1232, exit 0). The atomicity fixture now uses the legal M9 Founder fixture
@@ -226,7 +247,110 @@ and restore that same root, never switch to `user://` or the player's default.
 that expected identity to the approved 0.8.7/code 103 while retaining every
 absence, approved-icon, arm64, portrait and zero-reserve assertion.
 
-- Remaining final diff/test/render review and maintainability refactor.
+Normal Forge full-map-v2 closes the four P1s with no remaining P0/P1. Root and
+read-only UI bind this verdict to manifest SHA-256
+`61CF9AEBB44D392793103E22685F10CB374BC17CC21712F154B8695A16BF6A0A`;
+40/40 PNG hashes match, plus one logical-only CommitOnceSkip record. The final
+upper slice stays withheld at 99%; intermediate phases use truthful nonterminal
+copy; Failed reports NOT SAVED; Core has a truthful unavailable-art/Back-only state.
+Worldcoil 60/99/full-raw/awakening fits the chamber with bed-aligned feet and no raw
+above the scan at 99. Stage-only Core frames do not approve production Core art.
+P2 only: the 720 Back label has tight left clearance. This review makes no claim for
+150% text, high contrast, reduced motion, tall Android, touch or commit semantics.
+The adjacent art review index exposes every reviewed normal image.
+
+The expected-price guard and facade-level unchanged-source/revision assertions are
+implemented and root reviewed. Unified rules and GameManager atomicity runs pass;
+remaining focused regression and accessibility evidence is still being collected.
+The no-ad expected identity, exact root-PNG exclusions and approved portrait Title
+splash are updated; package-level verification still requires the actual APK.
+
+Commerce/export focused validation uses pre-autoload E: storage under
+`build/evidence/m9a-runtime-20260904/commerce-validation/<suite>/` with explicit
+`engine.log`, `stdout.log` and `stderr.log`: unified-rules console 45188 / worker
+39328; atomicity 37440 / 44524; save-recovery 50392; card-acquisition 39272;
+no-ad 41320; export-boundary 30612. All exit 0; remaining four runs observed no
+separate worker, and no owned survivors were reported. The malformed-JSON and
+unavailable-storage diagnostics are intentional negative fixtures; certificate and
+shader-cache diagnostics remain separately identified. These are precommit results.
+
+Root accessibility source review caught nested `main.scaled_font` inside the
+already-scaling `main.label` factory in new/changed Forge and receipt/Market labels.
+Correct these scoped calls without shrinking the intended 150% size. Founder
+accessibility evidence must show the actual committed receipt, not mislabel Starter
+onboarding as Founder. Resize evidence must include a true logical-content change
+and safe-area change without a forced `main.render`, retaining one stage/job and
+correct bed/scan registration; 576-to-720 same-logical-base rebuild alone is not
+sufficient. These bounded checks/corrections are delegated to the sole runtime writer.
+
+Accessibility v3 review: manifest
+`916949AE3A229244EAAA379483278388543EF62043385B5ACAA70B57B9A87F65`,
+37/37 PNG identities match; P0 none, P1 hold. Forge at 150% clips Back/name/Loaded;
+Founder cream facts/page rails become white on cream and hide page information;
+Market cream labels lose contrast and PURCHASE clips; Archive cream header loses
+contrast; Deck Save/Pre-Print/Queue/Arcane labels remain undersized/low contrast.
+Root accepts a bounded surface-aware native-ink and concise-label correction, with
+full native accessibility text and retained intended large-text sizes, not new art.
+Use a new immutable v4 capture set and recheck affected normal management views.
+Forge HC/RM phase visuals, missing-layer safe state and tall safe-top chamber
+registration otherwise pass visual review. V3 resize has no focus owner and thus
+does not establish post-resize focus. No capture establishes physical Android input.
+
+Root rechecked the existing M8 APK's certificate for update continuity (not a new
+M9 APK audit): Android Debug certificate SHA-256
+`c26373b2320fa530be93f5b6d255a4c8e10e6aa4476e430dedb6106a4de865dc`;
+v2/v3 verified. The 2026-09-05 00:04:54 CT adb inventory remains empty; that command
+started the SDK's shared adb server PID 32196, not a Godot/editor process. Physical
+M9 install/launch/touch/OS Back remain BLOCKED, pending an authorized device.
+
+Root reviewed the non-headless Forward+ `real-input/founder-paid-v9-forwardplus`
+engine log, the original 576x1024 viewport proof PNG, and the current parsed-input
+test source. The all-three-starter and all-five-paid-pack completion assertions
+prevent the earlier partial-flow false PASS. The retained trace includes all five
+paid pack types, every ordered base/bonus receipt page, frozen-price confirmation,
+and actual Back/Resume/Keep targets. Console PID 57064, 2026-09-05
+00:28:59–00:29:20 CT, exit 0 and no separate worker/owned survivors were reported
+by the writer. Only `engine.log` exists in this run directory; do not invent
+separate stdout/stderr files. This is precommit desktop input evidence, not Android
+touch or OS Back evidence. The earlier paid Resume failure used an unstarted
+profile fixture; the corrected paid fixture is legally Founder-ready.
+
+The same investigation exposed a separate legitimate return-path risk: Main's
+physical overview Workshop renderer is gated on onboarding `complete`, while
+First Print IDLE/active Back may legitimately return with `starter_selected`.
+Root delegated a presentation-only correction and real-coordinate return/resume
+regression, preserving the established Back destination, selected starter and
+accepted job/stage. This must not be dismissed as the paid fixture issue or fixed
+by changing gameplay eligibility. The final navigation fixture must also include
+actual-coordinate Result Back, as already required by the release checklist.
+
+Final visual closure (2026-09-05): root and read-only UI pass the 19 original
+Forward+ supplemental7 images, manifest SHA-256
+`3A95A4177CD6F9984192CD9AFC57BF4CD212BF35FE2ABD3AE20161D1AE935276`.
+All paths/hashes are unique and all authority before/after hashes match. Founder,
+Market and Deck P1s close at normal/150%+HC+RM in both 576 and 720. Archive Level 7,
+normal Forge recipe copy, and actual focused 1080x2400 resize with synthetic safe-top
+48 pass. Combined with normal full-map-v2 and unaffected v4-final Forge/Archive/
+first-print-return rows, there are no remaining visual P0/P1s. Some 150% tile/palette
+names truncate (P2); full selected facts remain available. Supplemental5 is invalid
+because duplicate filenames overwrote captures; supplemental6 is Compatibility-only
+diagnostic evidence. Neither is release visual proof.
+
+The legitimate First Print Back bug is closed by rendering the approved physical
+Workshop for every eligible overview, including `starter_selected`. Actual idle
+Back/reopen and active Back/resume retain selected starter, accepted job and stage.
+Result Continue and Result Back are both actual-coordinate input cases. Final
+Forward+ navigation-v11 engine PID 44948 exited 0 and was cleaned up. The final7
+capture engine PID 30424 exited 0 and was cleaned up. PRE retains concise visible
+copy but full native `Save Pre-Print loadout` accessibility matching its callback.
+
+Root maintainability review is closed: shared Forge recipe/phase/ETA helpers remove
+duplicate logic; same-phase stage refresh avoids redundant resource/layout work;
+aperture-aligned stage geometry follows actual content resize without authority
+mutation; final owner disposal remains separate from persistent detach/resume.
+Frozen source is ready for the explicit owned-file candidate commit and final tests.
+
+- Candidate-commit regression reruns remain required.
 - Actual Android device Back/launch evidence: no device was attached at inventory.
 - Milestone commit, Android export, package/signing/hash verification, DriveFS copy
   and separately cloud-visible synchronization. None is claimed by this ledger.

@@ -5,12 +5,14 @@ extends Node
 ## real mounted Main rather than a static route surrogate.
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
+const M9_TEST_PROFILE_FACTORY := preload("res://tests/m9_test_profile_factory.gd")
 const UNIFIED_BATTLE_STATE := preload("res://scripts/battle/unified_battle_state.gd")
 const FORGE_SEQUENCE := preload("res://scripts/ui/arcane_forge_sequence.gd")
 
 var failures: Array[String] = []
 var exercised_rows: Dictionary = {}
 var executed_subcases: Dictionary = {}
+const TEST_ROOT := "E:/AI Projects/games/3d print battler/build/evidence/m9a-runtime-20260904/state/m8-route-back"
 
 # Locked rows 129–146.  The row id is deliberately emitted, so a smaller subset
 # cannot accidentally make this suite look complete.
@@ -46,8 +48,7 @@ func _ready() -> void:
 	get_tree().quit(0 if failures.is_empty() else 1)
 
 func _profile() -> Dictionary:
-	var profile: Dictionary = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
-	return RULES.print_starter(profile).profile
+	return M9_TEST_PROFILE_FACTORY.founder_ready("cinderpaw")
 
 func _mount() -> Dictionary:
 	var viewport := SubViewport.new()
@@ -212,7 +213,8 @@ func _focus_owner(main: Control, node_name: String) -> void:
 			return
 
 func _system(main: Control) -> void:
-	main.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	get_tree().root.propagate_notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	await get_tree().process_frame
 	await get_tree().process_frame
 
 func _prepare_result_retry(main: Control, profile: Dictionary, result_id: String) -> bool:
@@ -261,6 +263,8 @@ func _press_result_retry(main: Control, profile: Dictionary, result_id: String) 
 	return outcome
 
 func _run() -> void:
+	DirAccess.make_dir_recursive_absolute(TEST_ROOT)
+	SaveService.configure_test_paths(TEST_ROOT)
 	GameManager.profile = _profile()
 	var mounted := await _mount()
 	var main: Control = mounted.main
@@ -270,8 +274,11 @@ func _run() -> void:
 	main.screen = "title"; main.title_new_maker_confirmation = true; main.render(); await get_tree().process_frame
 	await _system(main)
 	require(main.screen == "title" and not main.title_new_maker_confirmation and JSON.stringify(GameManager.profile) == baseline, "M8 title New Maker confirmation Back cancels only the confirmation with zero mutation.")
-	main.dispatch_back()
-	require(main.screen == "title", "M8 title root Back is consumed and never falls through to Workshop.")
+	main.request_back()
+	require(main.screen == "title" and main.title_exit_confirmation, "M9 title root Back opens the explicit Exit or Stay decision without falling through to Workshop.")
+	await get_tree().process_frame
+	main.request_back()
+	require(main.screen == "title" and not main.title_exit_confirmation, "M9 title confirmation Back stays on the title route.")
 
 	# Starter inspector and Archive detail resolve their foremost detail only.
 	main.screen = "onboarding"; main.starter_inspector_id = "cinderpaw"; main.render(); await get_tree().process_frame
@@ -330,7 +337,9 @@ func _run() -> void:
 	var live_state := var_to_str(main.battle.serialize()) if main.battle != null else ""
 	var live_generation: int = int(main.unified_battle_coordinator.generation)
 	await _system(main)
-	require(main.screen == "unified_battle" and main.toast.contains("Finish or resolve this battle first") and main.battle != null and var_to_str(main.battle.serialize()) == live_state and main.unified_battle_coordinator.generation == live_generation, "M8 live battle consumes Android Back with a native non-abandon reason while preserving battle/coordinator state.")
+	require(main.screen == "unified_battle" and main.battle_back_confirmation and main.battle != null and var_to_str(main.battle.serialize()) == live_state and main.unified_battle_coordinator.generation == live_generation, "M9 live battle Back opens the guarded Resume or Concede decision without mutating battle state.")
+	await _system(main)
+	require(main.screen == "unified_battle" and not main.battle_back_confirmation, "M9 battle-modal Back dismisses the foreground decision without leaving or conceding.")
 	# Finished local battle is the explicit no-settlement exception: both Return
 	# forms can leave, while the nonlocal path above remains consumed.
 	main.battle.finished = true; main.battle_mode = "local"; main.battle_settlement_context.clear(); main.screen = "unified_battle"; main.render(); await get_tree().process_frame
@@ -350,7 +359,7 @@ func _run() -> void:
 	# from contaminating the second copy.
 	var result_fixture_profile: Dictionary = GameManager.profile.duplicate(true)
 	var retry_profile := _profile()
-	var blocked_root := ProjectSettings.globalize_path("user://m8_route_retry_blocked")
+	var blocked_root := TEST_ROOT.path_join("retry-blocked")
 	DirAccess.make_dir_recursive_absolute(blocked_root)
 	var blocked_parent := blocked_root.path_join("not_a_directory")
 	var blocker := FileAccess.open(blocked_parent, FileAccess.WRITE)
@@ -365,12 +374,12 @@ func _run() -> void:
 	var retry_failure_b: Dictionary = await _press_result_retry(main, retry_profile, "m8-retry-failure")
 	require(retry_failure_a == retry_failure_b, "M8 ResultRetry persistence-failure copies are byte-equivalent from identical fixtures.")
 	_subcase("18c-retry-failure-copy-a-b")
-	SaveService.configure_unified_playtest_paths()
+	SaveService.configure_test_paths(TEST_ROOT)
 	DirAccess.remove_absolute(blocked_parent)
 	DirAccess.remove_absolute(blocked_root)
 
-	var success_root_a := ProjectSettings.globalize_path("user://m8_route_retry_success_a")
-	var success_root_b := ProjectSettings.globalize_path("user://m8_route_retry_success_b")
+	var success_root_a := TEST_ROOT.path_join("retry-success-a")
+	var success_root_b := TEST_ROOT.path_join("retry-success-b")
 	DirAccess.make_dir_recursive_absolute(success_root_a)
 	DirAccess.make_dir_recursive_absolute(success_root_b)
 	var retry_success_before := JSON.stringify(retry_profile)
@@ -382,7 +391,7 @@ func _run() -> void:
 	var retry_success_b: Dictionary = await _press_result_retry(main, retry_profile, "m8-retry-success")
 	require(retry_success_a == retry_success_b and JSON.stringify(retry_profile) == retry_success_before, "M8 ResultRetry success copies are byte-equivalent from isolated identical fixtures without a second settlement in either copy.")
 	_subcase("18d-retry-success-copy-a-b")
-	SaveService.configure_unified_playtest_paths()
+	SaveService.configure_test_paths(TEST_ROOT)
 	DirAccess.remove_absolute(success_root_a.path_join("profile.json"))
 	DirAccess.remove_absolute(success_root_a.path_join("profile.backup.json"))
 	DirAccess.remove_absolute(success_root_a.path_join("journal.jsonl"))
@@ -480,13 +489,13 @@ func _run() -> void:
 	await _visible_system_pair(main, pair_profile, "committed result", func(): main.screen = "m3_result"; main.battle_mode = "training"; main.m3_result_state = "committed"; main.m3_result_receipt = {"result":"victory", "mode":"training", "coins":0, "xp":0}, "ResultContinue")
 	await _visible_system_pair(main, pair_profile, "duplicate result", func(): main.screen = "m3_result"; main.battle_mode = "training"; main.m3_result_state = "duplicate"; main.m3_result_receipt = {"result":"victory", "mode":"training", "duplicate":true}, "ResultContinue")
 	_row("M8-BK-17 result-committed-duplicate", "distinct committed and duplicate visible/system pairs"); _subcase("17a-committed"); _subcase("17b-duplicate")
-	await _visible_system_pair(main, pair_profile, "Forge PRINTING", func(): main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.advance_printer_for_test(4200), "ForgeActiveBack"); _subcase("05a-printing")
+	await _visible_system_pair(main, pair_profile, "Forge PRINTING", func(): main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.advance_printer_for_test(4200), "ArcaneForgeBack"); _subcase("05a-printing")
 	for phase_entry in [[FORGE_SEQUENCE.RAW_HOLD, "05a-raw-hold"], [FORGE_SEQUENCE.AWAKENING, "05a-awakening"], [FORGE_SEQUENCE.DEPARTING, "05a-departing"]]:
-		await _visible_system_pair(main, pair_profile, "Forge phase %s" % str(phase_entry[0]), func(): main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.printer_sequence.phase = phase_entry[0]; main.printer_sequence.progress_bps = 7000, "ForgeActiveBack")
+		await _visible_system_pair(main, pair_profile, "Forge phase %s" % str(phase_entry[0]), func(): main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.printer_sequence.phase = phase_entry[0]; main.printer_sequence.progress_bps = 7000, "ArcaneForgeBack")
 		_subcase(str(phase_entry[1]))
 	var raw_complete_setup := func(): main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.printer_sequence.phase = FORGE_SEQUENCE.RAW_COMPLETE; main.printer_sequence.progress_bps = 10000
-	_reset_pair(main, pair_profile); raw_complete_setup.call(); main.render(); await get_tree().process_frame; require(main.find_child("ForgeActiveBack", true, false) == null and main.find_child("ReturnAfterPrint", true, false) == null, "M8 RAW_COMPLETE exposes no visible Back or Return owner."); main.dispatch_back(); main.get_viewport().gui_release_focus(); var raw_shared := _canonical_back_snapshot(main)
-	_reset_pair(main, pair_profile); raw_complete_setup.call(); main.render(); await get_tree().process_frame; require(main.find_child("ForgeActiveBack", true, false) == null and main.find_child("ReturnAfterPrint", true, false) == null, "M8 RAW_COMPLETE system fixture exposes no visible Back or Return owner."); await _system(main); main.get_viewport().gui_release_focus(); var raw_system := _canonical_back_snapshot(main)
+	_reset_pair(main, pair_profile); raw_complete_setup.call(); main.render(); await get_tree().process_frame; var raw_back := main.find_child("ArcaneForgeBack", true, false) as Button; require(raw_back != null and raw_back.disabled and raw_back.tooltip_text.contains("temporarily unavailable"), "M9 RAW_COMPLETE exposes a disabled Back owner with its exact securing explanation."); main.request_back(); main.get_viewport().gui_release_focus(); var raw_shared := _canonical_back_snapshot(main)
+	_reset_pair(main, pair_profile); raw_complete_setup.call(); main.render(); await get_tree().process_frame; raw_back = main.find_child("ArcaneForgeBack", true, false) as Button; require(raw_back != null and raw_back.disabled, "M9 RAW_COMPLETE system fixture preserves the disabled Back owner."); await _system(main); main.get_viewport().gui_release_focus(); var raw_system := _canonical_back_snapshot(main)
 	require(raw_shared == raw_system and main.screen == "printer" and main.printer_sequence.phase == FORGE_SEQUENCE.RAW_COMPLETE and main.toast.contains("temporarily unavailable"), "M8 RAW_COMPLETE shared and Android Back retain identical securing state.")
 	_subcase("05b-raw-complete-shared-system")
 	await _visible_system_pair(main, pair_profile, "Forge AWAKENED Return", func(): main.screen = "workshop"; main.open_printer("cinderpaw"); main.begin_printer(); main.printer_sequence.phase = FORGE_SEQUENCE.AWAKENED, "ReturnAfterPrint"); _subcase("05c-awakened")

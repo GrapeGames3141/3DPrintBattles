@@ -2,12 +2,6 @@ class_name ArcaneForgeStage
 extends Control
 ## Purely visual Arcane Forge compositor. Profile and battle state never enter this node.
 
-const PRINTER_FRAME_PATHS := [
-	"res://assets/ui/arcane_forge_printer_frame_01.png",
-	"res://assets/ui/arcane_forge_printer_frame_02.png",
-	"res://assets/ui/arcane_forge_printer_frame_03.png",
-	"res://assets/ui/arcane_forge_printer_frame_04.png",
-]
 const CELL := Vector2i(384, 512)
 const TIERED_ARMOR_ROSTER := preload("res://scripts/ui/tiered_armor_roster.gd")
 # TIERED_ARMOR_ROSTER is the local alias for TieredArmorRoster.
@@ -23,10 +17,8 @@ var phase_progress_bps := 0
 var reduced_motion := false
 var high_contrast := false
 var elapsed := 0.0
-var printer_frames: Array[Texture2D] = []
 var raw: Texture2D
 var living: Texture2D
-var _last_frame_index := -1
 var equipment_preview: Control
 var _wireframe_clip: Control
 var _wireframe: TextureRect
@@ -37,12 +29,33 @@ var _last_printable_rect := Rect2()
 var _last_preview_band_limit := 0.0
 var _raw_alpha_bounds := Rect2()
 var _raw_alpha_bounds_ready := false
+var _living_alpha_bounds := Rect2()
+var _living_alpha_bounds_ready := false
 # M8 test-visible alpha-mask facts. These describe real retained source rows,
 # not merely the enclosing destination rectangle (which may have transparent
 # padding above the creature silhouette).
 var _last_opaque_source_bounds := Rect2()
 var _last_revealed_opaque_rows := 0
 var _last_unrevealed_opaque_rows := 0
+var _last_unrevealed_logical_pixels := 0.0
+var _last_scan_datum_y := 0.0
+
+# One source-of-truth design contract for the approved 941x1672 enclosed station.
+# The static plate and the dynamic compositor are both fitted by the same portrait
+# presenter, so these authored coordinates never depend on window raster size.
+const STATION_DESIGN_SIZE := Vector2(941.0, 1672.0)
+const STATION_CHAMBER := Rect2(114.0, 280.0, 594.0, 620.0)
+const STATION_BED := Rect2(178.0, 804.0, 466.0, 86.0)
+const STATION_PRINTABLE := Rect2(310.0, 540.0, 320.0, 264.0)
+const STATION_GUIDE_IDLE := Rect2(114.0, 280.0, 594.0, 168.0)
+const STATION_HEAD_IDLE := Rect2(406.0, 294.0, 128.0, 266.0)
+const STATION_HEAD_PARK := Rect2(132.0, 294.0, 128.0, 266.0)
+const CONTINUITY_GUIDE_PATH := "res://assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png"
+const CONTINUITY_HEAD_PATH := "res://assets/ui/physical_ui/forge-continuity/carriage-head-v1.png"
+
+var _continuity_station := false
+var _continuity_guide: Texture2D
+var _continuity_head: Texture2D
 
 func _ready() -> void:
 	# The portrait caller deliberately gives the forge more vertical room.
@@ -64,7 +77,16 @@ func configure(id: String, reduce_motion: bool, contrast: bool, armor_definition
 	reduced_motion = reduce_motion
 	high_contrast = contrast
 	_load_assets()
-	_last_frame_index = -1
+	_update_motion_processing()
+	queue_redraw()
+
+func set_continuity_station(enabled: bool) -> void:
+	if _continuity_station == enabled:
+		return
+	_continuity_station = enabled
+	if enabled:
+		_continuity_guide = CreatureSpriteCache.texture_for_path(CONTINUITY_GUIDE_PATH)
+		_continuity_head = CreatureSpriteCache.texture_for_path(CONTINUITY_HEAD_PATH)
 	_update_motion_processing()
 	queue_redraw()
 
@@ -80,46 +102,44 @@ func _update_motion_processing() -> void:
 	# Main advances awakening/departing by deterministic bps and calls
 	# set_preview_phase(). Only printing consumes this node's elapsed time for
 	# the moving carriage frame, so it is the only phase that needs _process.
-	set_process(not reduced_motion and phase == ArcaneForgeSequence.PRINTING)
+	# Main already owns the finite presentation clock. In the continuity station
+	# the compositor only redraws from that clock, so it cannot drift while a
+	# route is frozen, paused, or reattached.
+	set_process(not _continuity_station and not reduced_motion and phase == ArcaneForgeSequence.PRINTING)
 
 func set_presentation_time(seconds: float) -> void:
 	var next_time := maxf(0.0, seconds)
 	if elapsed == next_time: return
 	elapsed = next_time
-	var next_frame := printer_frame_index()
-	if next_frame != _last_frame_index:
-		_last_frame_index = next_frame
-		queue_redraw()
-
-func printer_frame_index() -> int:
-	if printer_frames.is_empty(): return 0
-	if reduced_motion or phase != ArcaneForgeSequence.PRINTING: return 0
-	# Ping-pong instead of looping across the print bed discontinuously.
-	var pattern := [0, 1, 2, 3, 2, 1]
-	return int(pattern[int(floor(elapsed * 2.4)) % pattern.size()])
+	queue_redraw()
 
 func _process(delta: float) -> void:
 	if reduced_motion or not is_visible_in_tree() or phase != ArcaneForgeSequence.PRINTING: return
 	elapsed += delta
-	var next_frame := printer_frame_index()
-	if next_frame != _last_frame_index:
-		_last_frame_index = next_frame
-		queue_redraw()
+	queue_redraw()
 
 func _load_assets() -> void:
-	printer_frames.clear()
-	for path in PRINTER_FRAME_PATHS:
-		var texture := CreatureSpriteCache.texture_for_path(path)
-		if texture != null: printer_frames.append(texture)
 	var definition := Catalog.creature(creature_id)
 	var raw_definition := ArmorCoreDefinitions.core_blueprint_definition(core_id) if not core_id.is_empty() else ProgressionRules.armor_def(armor_id)
 	var raw_path := str(raw_definition.get("raw_print", "")) if not armor_id.is_empty() else str(definition.get("raw_print", ""))
-	if raw_path.is_empty() or not ResourceLoader.exists(raw_path): raw_path = str(Catalog.creature("mossmunk").get("raw_print", ""))
-	raw = CreatureSpriteCache.texture_for_path(raw_path)
+	# A missing subject layer is a presentation fault, never permission to show a
+	# different creature or retired machine. The continuity owner exposes a safe
+	# caller-return surface instead of silently substituting Mossmunk.
+	raw = CreatureSpriteCache.texture_for_path(raw_path) if not raw_path.is_empty() and ResourceLoader.exists(raw_path) else null
 	_raw_alpha_bounds_ready = false
 	_raw_alpha_bounds = Rect2()
 	_refresh_raw_alpha_bounds()
-	living = CreatureSpriteCache.texture_for_creature(creature_id)
+	# Continuity presentation must never quietly substitute the cache's Mossmunk
+	# fallback. A missing selected creature layer is handled by the caller-safe
+	# surface, just like missing raw/carriage layers.
+	var living_path := str(definition.get("sprite_sheet", ""))
+	living = CreatureSpriteCache.texture_for_path(living_path) if armor_id.is_empty() and not living_path.is_empty() and ResourceLoader.exists(living_path) else null
+	_living_alpha_bounds_ready = false
+	_living_alpha_bounds = Rect2()
+	_refresh_living_alpha_bounds()
+
+func continuity_assets_ready() -> bool:
+	return raw != null and _continuity_guide != null and _continuity_head != null and (not armor_id.is_empty() or living != null)
 
 func _refresh_raw_alpha_bounds() -> void:
 	if raw == null:
@@ -145,6 +165,30 @@ func _refresh_raw_alpha_bounds() -> void:
 		_raw_alpha_bounds = Rect2(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 	_raw_alpha_bounds_ready = true
 
+func _refresh_living_alpha_bounds() -> void:
+	if living == null:
+		_living_alpha_bounds_ready = true
+		return
+	_living_alpha_bounds = _alpha_bounds_for_region(living, Rect2(0, 0, CELL.x, CELL.y))
+	_living_alpha_bounds_ready = true
+
+func _alpha_bounds_for_region(texture: Texture2D, source: Rect2) -> Rect2:
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return source
+	var min_x := int(source.end.x)
+	var min_y := int(source.end.y)
+	var max_x := -1
+	var max_y := -1
+	for y in range(int(source.position.y), int(source.end.y)):
+		for x in range(int(source.position.x), int(source.end.x)):
+			if image.get_pixel(x, y).a > 0.01:
+				min_x = mini(min_x, x); min_y = mini(min_y, y)
+				max_x = maxi(max_x, x); max_y = maxi(max_y, y)
+	if max_x < min_x or max_y < min_y:
+		return source
+	return Rect2(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+
 func _draw() -> void:
 	# This is a transparent stage compositor.  The authored Workshop plate owns
 	# the surrounding material; drawing a full canvas wash here made the printer
@@ -157,21 +201,21 @@ func _draw() -> void:
 	_last_opaque_source_bounds = Rect2()
 	_last_revealed_opaque_rows = 0
 	_last_unrevealed_opaque_rows = 0
-	var printer := printer_frames[mini(printer_frame_index(), printer_frames.size() - 1)] if not printer_frames.is_empty() else null
-	# Center a deliberately dominant printer chassis. The active forge has no
-	# separate glass void: the machine fills roughly 86% of the stage width and
-	# its existing brass build surface remains the anchor for all print layers.
+	_last_unrevealed_logical_pixels = 0.0
 	var printer_bounds := Rect2(size.x * 0.07, 0, size.x * 0.86, size.y)
 	if equipment_preview != null:
-		equipment_preview.visible = not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE and TIERED_ARMOR_ROSTER.has_master(creature_id)
+		# The approved continuity station owns an empty IDLE bed for every subject
+		# class. Its equipment palette would otherwise read as a completed print.
+		equipment_preview.visible = not _continuity_station and not armor_id.is_empty() and phase == ArcaneForgeSequence.IDLE and TIERED_ARMOR_ROSTER.has_master(creature_id)
 		equipment_preview.configure_creature(creature_id)
 		equipment_preview.configure_tier(armor_id if core_id.is_empty() else "standard")
 		equipment_preview.configure_core(core_id)
 		equipment_preview.position = Vector2(size.x * 0.74, 12)
 		equipment_preview.size = Vector2(112, 150)
-	var printer_rect := _fit_rect(printer, printer_bounds)
-	if printer != null: draw_texture_rect(printer, printer_rect, false)
-	var plate := Rect2(printer_rect.position.x + printer_rect.size.x * 0.28, printer_rect.position.y + printer_rect.size.y * 0.57, printer_rect.size.x * 0.50, printer_rect.size.y * 0.13)
+	var plate := Rect2(printer_bounds.position.x + printer_bounds.size.x * 0.28, printer_bounds.position.y + printer_bounds.size.y * 0.57, printer_bounds.size.x * 0.50, printer_bounds.size.y * 0.13)
+	if _continuity_station:
+		plate = _station_rect(STATION_BED)
+		_draw_continuity_hardware()
 	# The dock, not the bed, owns the complete pre-print identity.  Before Start
 	# the build plate is empty; a small local footprint is the only permitted cue.
 	# During PRINTING the raw source is progressively revealed below one datum.
@@ -183,7 +227,7 @@ func _draw() -> void:
 		_last_preview_band_limit = 0.0
 		_set_wireframe_split(Rect2(), Rect2(), false)
 		_draw_seed(plate)
-	elif phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING] or (not armor_id.is_empty() and phase == ArcaneForgeSequence.AWAKENED):
+	elif phase in [ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_COMPLETE, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING]:
 		_draw_raw(plate)
 	if armor_id.is_empty() and phase in [ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED]:
 		_draw_living(plate)
@@ -191,7 +235,9 @@ func _draw() -> void:
 	# High contrast marks only the functional build aperture.  The scan datum and
 	# progress rail already carry the other state cues; an outer printer frame was
 	# visually indistinguishable from a giant stock rectangle around the machine.
-	if high_contrast: draw_rect(plate.grow(2.0), Color.WHITE, false, 3.0)
+	# The enclosed plate already supplies a strong physical aperture edge. A white
+	# high-contrast outline turns the continuity bed into an inert target box.
+	if high_contrast and not _continuity_station: draw_rect(plate.grow(2.0), Color.WHITE, false, 3.0)
 	if phase != ArcaneForgeSequence.PRINTING or not armor_id.is_empty():
 		_set_wireframe_split(Rect2(), Rect2(), false)
 
@@ -201,10 +247,79 @@ func _fit_rect(texture: Texture2D, bounds: Rect2) -> Rect2:
 	var fitted := Vector2(texture.get_width(), texture.get_height()) * factor
 	return Rect2(bounds.position + (bounds.size - fitted) * 0.5, fitted)
 
+func _station_rect(design_rect: Rect2) -> Rect2:
+	var scale := size / STATION_DESIGN_SIZE
+	return Rect2(design_rect.position * scale, design_rect.size * scale)
+
+func _draw_continuity_hardware() -> void:
+	var translation := Vector2.ZERO
+	var head_target := STATION_HEAD_IDLE
+	if phase in [ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING, ArcaneForgeSequence.AWAKENED, ArcaneForgeSequence.FAILED]:
+		head_target = STATION_HEAD_PARK
+	elif phase == ArcaneForgeSequence.PRINTING:
+		# Both source-derived pieces share the same vertical registration. The scan
+		# datum comes from the exact alpha-aware/floor-quantized raw layout below;
+		# the nozzle tip is kept two logical pixels above it.
+		var scale_y := maxf(size.y / STATION_DESIGN_SIZE.y, 0.001)
+		var scan_y := _continuity_scan_y() / scale_y
+		# Match the visible nozzle tip, rather than the carriage crop edge, to the
+		# scan datum. The source's lower brass outline reads a few pixels inside the
+		# transparent crop at phone scale, so this keeps the visible gap at 1–3 px.
+		translation.y = scan_y + (7.0 / scale_y) - STATION_HEAD_IDLE.end.y
+		translation.x = 0.0 if reduced_motion else sin(elapsed * 2.2) * 76.0
+		head_target = Rect2(STATION_HEAD_IDLE.position + translation, STATION_HEAD_IDLE.size)
+	if _continuity_guide != null:
+		# The fixed cabinet posts retain their x registration. Only the whole rail
+		# assembly changes elevation; the head alone strokes along those rails.
+		var guide_target := Rect2(STATION_GUIDE_IDLE.position + Vector2(0, translation.y), STATION_GUIDE_IDLE.size)
+		draw_texture_rect(_continuity_guide, _station_rect(guide_target), false)
+	if _continuity_head != null:
+		draw_texture_rect(_continuity_head, _station_rect(head_target), false)
+
+func _continuity_scan_y() -> float:
+	var layout := _continuity_raw_layout()
+	if layout.is_empty():
+		return _plate_surface_y(_station_rect(STATION_BED))
+	var alpha_source: Rect2 = layout.alpha_source
+	var scale: Vector2 = layout.scale
+	var opaque: Rect2 = layout.opaque
+	# Use the same integer alpha rows as _draw_raw. This prevents the carriage
+	# from tracking a fractional datum that the visible print cannot occupy.
+	return floorf(opaque.end.y - float(_continuity_revealed_rows(alpha_source)) * scale.y)
+
+func _continuity_raw_layout() -> Dictionary:
+	if raw == null:
+		return {}
+	if not _raw_alpha_bounds_ready:
+		_refresh_raw_alpha_bounds()
+	var printable := _station_rect(STATION_PRINTABLE)
+	var raw_height := minf(printable.size.y, printable.size.x * float(raw.get_height()) / float(raw.get_width()))
+	var raw_width := raw_height * float(raw.get_width()) / float(raw.get_height())
+	var bed := _station_rect(STATION_BED)
+	var rect := Rect2(Vector2(bed.get_center().x - raw_width * 0.5, printable.end.y - raw_height), Vector2(raw_width, raw_height))
+	var alpha_source := _raw_alpha_bounds if _raw_alpha_bounds.size.x > 0.5 and _raw_alpha_bounds.size.y > 0.5 else Rect2(0, 0, raw.get_width(), raw.get_height())
+	var scale := Vector2(rect.size.x / float(raw.get_width()), rect.size.y / float(raw.get_height()))
+	var opaque := Rect2(rect.position + alpha_source.position * scale, alpha_source.size * scale)
+	# The opaque raft, not transparent PNG padding, meets the true bed surface.
+	rect.position.y += _plate_surface_y(bed) - opaque.end.y
+	opaque = Rect2(rect.position + alpha_source.position * scale, alpha_source.size * scale)
+	return {"rect":rect, "opaque":opaque, "alpha_source":alpha_source, "scale":scale}
+
+func _continuity_revealed_rows(alpha_source: Rect2) -> int:
+	var opaque_rows := maxi(1, int(alpha_source.size.y))
+	if phase != ArcaneForgeSequence.PRINTING:
+		return opaque_rows
+	var reveal := clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
+	var requested_rows := int(floor(float(opaque_rows) * float(reveal) / 10000.0))
+	# A single source row can raster below one logical pixel at phone scale and
+	# reveal a completed silhouette before RAW_COMPLETE. Keep a visible top slice
+	# withheld while preserving the canonical raw bounds and sequence timing.
+	var layout := _continuity_raw_layout()
+	var pixels_per_source_row := float(layout.get("scale", Vector2.ONE).y)
+	var guard_rows := maxi(1, int(ceili(4.0 / maxf(pixels_per_source_row, 0.001))))
+	return clampi(requested_rows, 0, opaque_rows - guard_rows)
+
 func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
-	if not armor_id.is_empty():
-		_draw_armor_part(plate, preview_alpha)
-		return
 	if raw == null: return
 	# The raw source has a small raft at its bottom. Align that raft to the actual
 	# plate surface and keep the physical print at about one fifth of printer height.
@@ -213,17 +328,28 @@ func _draw_raw(plate: Rect2, preview_alpha := 1.0) -> void:
 	# mask/alpha changes through the finite raw-hold and awakening handoff.
 	var raw_height := plate.size.y * 2.90
 	var rect := Rect2(Vector2(plate.get_center().x - raw_height * 0.5, _plate_surface_y(plate) - raw_height), Vector2(raw_height, raw_height))
+	if _continuity_station:
+		var continuity_layout := _continuity_raw_layout()
+		if continuity_layout.is_empty(): return
+		rect = continuity_layout.rect
 	if not _raw_alpha_bounds_ready: _refresh_raw_alpha_bounds()
 	var alpha_source := _raw_alpha_bounds if _raw_alpha_bounds.size.x > 0.5 and _raw_alpha_bounds.size.y > 0.5 else Rect2(0, 0, raw.get_width(), raw.get_height())
 	var scale := Vector2(rect.size.x / float(raw.get_width()), rect.size.y / float(raw.get_height()))
 	var opaque_rect := Rect2(rect.position + alpha_source.position * scale, alpha_source.size * scale)
+	if _continuity_station:
+		var continuity_layout := _continuity_raw_layout()
+		alpha_source = continuity_layout.alpha_source
+		scale = continuity_layout.scale
+		opaque_rect = continuity_layout.opaque
 	_last_printable_rect = opaque_rect
 	_last_opaque_source_bounds = alpha_source
 	var reveal := 10000 if phase != ArcaneForgeSequence.PRINTING else clampi((progress_bps * 10000) / ArcaneForgeSequence.PRINT_COMPLETE_BPS, 0, 10000)
+	_last_scan_datum_y = opaque_rect.end.y - opaque_rect.size.y * float(reveal) / 10000.0
 	var opaque_rows := maxi(1, int(alpha_source.size.y))
-	var revealed_rows := opaque_rows if reveal >= 10000 else clampi(int(floor(float(opaque_rows) * float(reveal) / 10000.0)), 0, opaque_rows - 1)
+	var revealed_rows := _continuity_revealed_rows(alpha_source) if _continuity_station else (opaque_rows if reveal >= 10000 else clampi(int(floor(float(opaque_rows) * float(reveal) / 10000.0)), 0, opaque_rows - 1))
 	_last_revealed_opaque_rows = revealed_rows
 	_last_unrevealed_opaque_rows = opaque_rows - revealed_rows
+	_last_unrevealed_logical_pixels = float(_last_unrevealed_opaque_rows) * scale.y
 	_last_solid_rect = Rect2()
 	_last_wireframe_rect = Rect2()
 	_last_scan_count = 0
@@ -325,7 +451,15 @@ func _draw_living(plate: Rect2) -> void:
 		var amount := float(phase_progress_bps) / 10000.0
 		# Clear diagonal departure visibly takes the living creature off the plate.
 		offset = Vector2(plate.size.x * amount, -height * 0.80 * amount)
-	var rect := Rect2(Vector2(plate.get_center().x - width * 0.5, _plate_surface_y(plate) - height) + offset, Vector2(width, height))
+	var rect := Rect2(Vector2(plate.get_center().x - width * 0.5, _plate_surface_y(plate) - height), Vector2(width, height))
+	if not _living_alpha_bounds_ready:
+		_refresh_living_alpha_bounds()
+	var scale := Vector2(rect.size.x / float(CELL.x), rect.size.y / float(CELL.y))
+	var opaque := Rect2(rect.position + _living_alpha_bounds.position * scale, _living_alpha_bounds.size * scale)
+	# The real sprite feet meet the same authored bed datum as the raw raft; do
+	# not anchor transparent atlas padding and leave a visible hover gap.
+	rect.position.y += _plate_surface_y(plate) - opaque.end.y
+	rect.position += offset
 	draw_texture_rect_region(living, rect, source, Color(1, 1, 1, alpha))
 
 func _plate_surface_y(plate: Rect2) -> float:

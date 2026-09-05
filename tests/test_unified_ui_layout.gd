@@ -7,6 +7,7 @@ const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const STATE := preload("res://scripts/battle/unified_battle_state.gd")
 var failures: Array[String] = []
+var configured_root := ""
 
 func require(value: bool, message: String) -> void:
 	if not value:
@@ -33,7 +34,11 @@ func _within_viewport(control: Control, viewport: Vector2) -> bool:
 	return rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= viewport.x and rect.end.y <= viewport.y
 
 func _configure_isolated_save_paths() -> void:
-	var root := "E:/AI Projects/games/3d print battler/tmp/m2-unified-layout"
+	configured_root = SaveService.profile_path.get_base_dir()
+	if not configured_root.replace("\\", "/").contains("/build/evidence/"):
+		require(false, "Unified UI layout test requires pre-autoload E: build/evidence QA storage; refusing fixture writes outside it.")
+		return
+	var root := configured_root.path_join("m2-unified-layout")
 	DirAccess.make_dir_recursive_absolute(root)
 	SaveService.configure_test_paths(root)
 
@@ -167,9 +172,8 @@ func _exercise(viewport: Vector2) -> void:
 	if bool(five_card_pack.get("ok", false)):
 		GameManager.profile = five_card_pack.profile
 		main.unified_reveal_page = 0
-		main.screen = "unified_market"
 		main.unified_market_tab = "packs"
-		main.render()
+		main._m3_open_pending_pack("unified_market")
 		await get_tree().process_frame
 		var pack_plate := main.find_child("M3PhysicalPackPlate", true, false) as Control
 		var reveal_grid := main.find_child("UnifiedPackRevealGrid", true, false) as Control
@@ -300,23 +304,24 @@ func _exercise(viewport: Vector2) -> void:
 	GameManager.profile = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
 	main.open_printer("cinderpaw")
 	await get_tree().process_frame
-	var starter_stage := main.find_child("FirstPrintEmptyBedProof", true, false) as Control
-	var starter_facts := main.find_child("FirstPrintDockedBlueprint", true, false) as Control
+	var starter_stage := main.find_child("ForgeContinuityChamber", true, false) as Control
+	var starter_facts := main.find_child("ForgeBlueprintCartridgeAperture", true, false) as Control
+	var starter_aperture := main.find_child("ForgeContinuityChamberAperture", true, false) as Control
 	var starter_begin := main.find_child("BeginCreaturePrint", true, false) as Control
 	var starter_back := main.find_child("ArcaneForgeBack", true, false) as Control
 	var starter_fact_rect := starter_facts.get_global_rect() if starter_facts != null else Rect2()
 	var starter_begin_rect := starter_begin.get_global_rect() if starter_begin != null else Rect2()
 	var starter_back_rect := starter_back.get_global_rect() if starter_back != null else Rect2()
-	require(not main.is_portrait_layout() or (main.find_child("FirstPrintR2PhysicalPlate", true, false) != null and starter_stage != null and starter_facts != null and main.find_child("FeedbackForgeStage", true, false) == null and main.find_child("ArcaneForgeStage", true, false) == null and starter_begin != null and starter_back != null and _within_viewport(starter_begin, viewport) and _within_viewport(starter_back, viewport) and starter_stage.get_global_rect().end.x < starter_fact_rect.position.x and not starter_fact_rect.intersects(starter_begin_rect) and not starter_fact_rect.intersects(starter_back_rect) and not starter_begin_rect.intersects(starter_back_rect)), "Portrait starter-selected Forge keeps an empty physical bed, external docked blueprint, and separate physical print/back plates at %s." % viewport)
+	require(not main.is_portrait_layout() or (main.find_child("ForgeContinuityStation", true, false) != null and starter_stage != null and starter_aperture != null and starter_facts != null and main.find_child("FeedbackForgeStage", true, false) == null and main.find_child("ArcaneForgeStage", true, false) == null and starter_begin != null and starter_back != null and _within_viewport(starter_aperture, viewport) and _within_viewport(starter_begin, viewport) and _within_viewport(starter_back, viewport) and starter_aperture.get_global_rect().end.x < starter_fact_rect.position.x and not starter_fact_rect.intersects(starter_begin_rect) and not starter_fact_rect.intersects(starter_back_rect) and not starter_begin_rect.intersects(starter_back_rect)), "Portrait starter-selected Forge keeps the attached enclosed chamber, external docked blueprint, and separate physical print/back plates at %s." % viewport)
 	main.printer_sequence.phase = ArcaneForgeSequence.PRINTING
 	main.printer_sequence.progress_bps = 6000
 	main.render()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var forge_heading := main.find_child("ForgeActiveHeading", true, false) as Control
-	var forge_coins := main.find_child("ForgeCoinBadge", true, false) as Control
-	var forge_progress := main.find_child("PrinterProgressBar", true, false) as ProgressBar
-	require(forge_heading != null and _within_viewport(forge_heading, viewport) and forge_coins != null and _within_viewport(forge_coins, viewport) and forge_progress != null and _within_viewport(forge_progress, viewport) and forge_progress.value > 0.0, "Active Forge keeps the bright top readout, real coin badge, and numeric layer progress in bounds at %s." % viewport)
+	var forge_layer := main.find_child("ForgeLayerInstrument", true, false) as Label
+	var forge_state := main.find_child("ForgeStateInstrument", true, false) as Label
+	var forge_coins := main.find_child("ForgeActionStatus", true, false) as Label
+	require(forge_layer != null and _within_viewport(forge_layer, viewport) and forge_state != null and _within_viewport(forge_state, viewport) and forge_coins != null and _within_viewport(forge_coins, viewport), "Active Forge keeps native layer, phase/ETA, and coin instruments in their authored wells at %s." % viewport)
 	# The image-led early returns must never bypass compatibility recovery.
 	var prior_profile := GameManager.profile.duplicate(true)
 	var prior_compatibility := GameManager.save_compatibility.duplicate(true)
@@ -348,11 +353,15 @@ func _exercise(viewport: Vector2) -> void:
 	await get_tree().process_frame
 
 func _ready() -> void:
-	var source := (MAIN.instantiate().get_script() as GDScript).source_code
+	var source := FileAccess.get_file_as_string("res://scripts/ui/main.gd")
 	var focus_source := source.substr(source.find("func focus_first_button"))
 	require(focus_source.find("StarterCardInspector") >= 0 and focus_source.find("StarterCardInspector") < focus_source.find("for node in find_children"), "Modal focus priority is evaluated before generic route traversal.")
 	_configure_isolated_save_paths()
+	if not failures.is_empty():
+		get_tree().quit(1)
+		return
 	for viewport in [Vector2(576, 1024), Vector2(720, 1280)]:
 		await _exercise(viewport)
 	if failures.is_empty(): print("PASS: v3 battle accessibility and responsive handoff matrix")
+	SaveService.configure_test_paths(configured_root)
 	get_tree().quit(0 if failures.is_empty() else 1)

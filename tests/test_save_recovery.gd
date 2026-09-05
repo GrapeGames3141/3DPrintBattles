@@ -1,23 +1,30 @@
 extends Node
-const ROOT := "E:/AI Projects/games/3d print battler/build/validation/checkpoint5-save-isolated"
 var failures: Array[String] = []
+var configured_root := ""
+var fixture_root := ""
 func require(value: bool, message: String) -> void:
 	if not value: failures.append(message); push_error(message)
 func _ready() -> void:
-	DirAccess.make_dir_recursive_absolute(ROOT)
-	SaveService.configure_test_paths(ROOT)
+	configured_root = SaveService.profile_path.get_base_dir()
+	if not configured_root.replace("\\", "/").contains("/build/evidence/"):
+		require(false, "Save recovery test requires pre-autoload E: build/evidence QA storage; refusing fixture writes outside it.")
+		call_deferred("finish")
+		return
+	fixture_root = configured_root.path_join("save-recovery")
+	DirAccess.make_dir_recursive_absolute(fixture_root)
+	SaveService.configure_test_paths(fixture_root)
 	for filename in ["profile.json", "profile.tmp.json", "profile.backup.json", "profile.backup.tmp.json", "journal.jsonl"]:
-		if FileAccess.file_exists(ROOT.path_join(filename)): DirAccess.remove_absolute(ROOT.path_join(filename))
+		if FileAccess.file_exists(fixture_root.path_join(filename)): DirAccess.remove_absolute(fixture_root.path_join(filename))
 	SaveService.commit_snapshot({"marker":"A","revision":1})
 	SaveService.commit_snapshot({"marker":"B","revision":2})
-	var primary := FileAccess.open(ROOT.path_join("profile.json"), FileAccess.WRITE); primary.store_string("{ truncated"); primary.close()
+	var primary := FileAccess.open(fixture_root.path_join("profile.json"), FileAccess.WRITE); primary.store_string("{ truncated"); primary.close()
 	var recovered := SaveService.load_profile()
 	require(str(recovered.get("marker", "")) == "A" and SaveService.recovery_status == "backup_recovered", "malformed primary recovers validated backup A")
 	SaveService.append_event("one", {}, 1); SaveService.append_event("two", {}, 2)
 	SaveService.acknowledge_events(1)
 	var once := SaveService.pending_events(); var twice := SaveService.pending_events()
 	require(once.size() == 1 and twice.size() == 1 and int(once[0].revision) == 2 and str(twice[0].operation_id) == str(once[0].operation_id), "journal acknowledgement is idempotent")
-	SaveService.reset_paths()
+	SaveService.configure_test_paths(configured_root)
 	if failures.is_empty(): print("PASS: checkpoint5 physical save backup recovery and journal acknowledgement")
 	call_deferred("finish")
 func finish() -> void: get_tree().quit(0 if failures.is_empty() else 1)
