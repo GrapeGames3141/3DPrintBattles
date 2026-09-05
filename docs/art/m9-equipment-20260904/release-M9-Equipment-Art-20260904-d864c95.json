@@ -1,0 +1,272 @@
+{
+  "release": "M9-Equipment-Art-20260904-d864c95",
+  "source_commit": "d864c95",
+  "scope": "Approved 2D source concepts plus reviewed raw-print and blueprint derivatives. Not runtime or 3D model completion.",
+  "images": [
+    {
+      "id": "standard_full_suit",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\standard-barding-completed-concept-v2.png",
+      "file": "standard_full_suit-completed-concept.png",
+      "bytes": 1723113,
+      "sha256": "8A6DE969B4950E24F7480B2F2D9C32D35E20C54C1DFB9EDA5CE2E095AAAC82B8"
+    },
+    {
+      "id": "standard_full_suit",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\standard-barding-raw-alpha-v2.png",
+      "file": "standard_full_suit-raw-print.png",
+      "bytes": 1823048,
+      "sha256": "D37E0C712C8D3456ABBD9B546C87D631C6BAB6FAD9E56AB18F840DA2FD4D7022"
+    },
+    {
+      "id": "standard_full_suit",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\standard-barding-blueprint-alpha-v1.png",
+      "file": "standard_full_suit-blueprint.png",
+      "bytes": 1762362,
+      "sha256": "4DA0105EE7559A15862674C7A03EB2040EDC52611892530A62EB9FB0E2A0B30C"
+    },
+    {
+      "id": "reinforced_full_suit",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\reinforced_full_suit-completed-source-v1.png",
+      "file": "reinforced_full_suit-completed-concept.png",
+      "bytes": 1854888,
+      "sha256": "E3E5F4E4DCEACC79C3497307B60AC37992CF2B9072F76CFE48248E1B9232C571"
+    },
+    {
+      "id": "reinforced_full_suit",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\reinforced_full_suit-raw-alpha-v1.png",
+      "file": "reinforced_full_suit-raw-print.png",
+      "bytes": 2045797,
+      "sha256": "F7E335FBD462469EE894AAF4491CC42CBC9DD4C274590C64E8279E598D89FCAB"
+    },
+    {
+      "id": "reinforced_full_suit",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\reinforced_full_suit-blueprint-alpha-v1.png",
+      "file": "reinforced_full_suit-blueprint.png",
+      "bytes": 1883032,
+      "sha256": "D4877E62CE765A09CB0F368AC903F7A23DCF803DEF2B5C52254A51F7D7EC75D0"
+    },
+    {
+      "id": "arcane_full_suit",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\arcane_full_suit-completed-source-v1.png",
+      "file": "arcane_full_suit-completed-concept.png",
+      "bytes": 1914894,
+      "sha256": "1C18D8D6B3BD63C74EBC4C54FCB199C74E049211C4B72777D4C64CC77AAB98D6"
+    },
+    {
+      "id": "arcane_full_suit",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\arcane_full_suit-raw-alpha-v1.png",
+      "file": "arcane_full_suit-raw-print.png",
+      "bytes": 2202194,
+      "sha256": "E0597D12B8A32C7896E7C2559F8D50485ED29E315858E96591094D4EB3003906"
+    },
+    {
+      "id": "arcane_full_suit",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\arcane_full_suit-blueprint-alpha-v1.png",
+      "file": "arcane_full_suit-blueprint.png",
+      "bytes": 1666363,
+      "sha256": "7E56FD54CC71CD4943D7A84F8F0EAA91C9FAE600D530D27BC76B0492EE014455"
+    },
+    {
+      "id": "masterwork_full_suit",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\masterwork_full_suit-completed-source-v1.png",
+      "file": "masterwork_full_suit-completed-concept.png",
+      "bytes": 1845280,
+      "sha256": "31372BF8AA605E5797CA1255918D9FED1C52928B3C02F3C586334BE3890C3950"
+    },
+    {
+      "id": "masterwork_full_suit",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\masterwork_full_suit-raw-alpha-v1.png",
+      "file": "masterwork_full_suit-raw-print.png",
+      "bytes": 1923350,
+      "sha256": "3285E5B5EC964F1B65FEF099FB9A020D22C5B41E59AB754456CEDB8BBC52F876"
+    },
+    {
+      "id": "masterwork_full_suit",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\masterwork_full_suit-blueprint-alpha-v1.png",
+      "file": "masterwork_full_suit-blueprint.png",
+      "bytes": 1799463,
+      "sha256": "2B9A06BEE1A5B2C0F8C4F6E613EF3EEBECFB167392BE9A04EB6C86DF34599850"
+    },
+    {
+      "id": "legendary_full_suit",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\legendary_full_suit-completed-source-v1.png",
+      "file": "legendary_full_suit-completed-concept.png",
+      "bytes": 1981584,
+      "sha256": "B7116DCA98191EFD7C525C1113D35E7DEB6CBE0329407590A8E15D350381537E"
+    },
+    {
+      "id": "legendary_full_suit",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\legendary_full_suit-raw-alpha-v1.png",
+      "file": "legendary_full_suit-raw-print.png",
+      "bytes": 2137933,
+      "sha256": "79A1C6B67A843ADCF06101B4C337942852B2172BD01CB6DA32A04756FE20B1A0"
+    },
+    {
+      "id": "legendary_full_suit",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\legendary_full_suit-blueprint-alpha-v1.png",
+      "file": "legendary_full_suit-blueprint.png",
+      "bytes": 1731860,
+      "sha256": "0D124907BFE789F36168A99CC24BBB10F9C21343782B502064F969976161CC78"
+    },
+    {
+      "id": "iron_gem",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-completed-source-v1.png",
+      "file": "iron_gem-completed-concept.png",
+      "bytes": 1978784,
+      "sha256": "438C78676229444493AC98038F7AB310E74D784644C38563D6DE7773F621FC38"
+    },
+    {
+      "id": "iron_gem",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-raw-alpha-v1.png",
+      "file": "iron_gem-raw-print.png",
+      "bytes": 2499720,
+      "sha256": "DE06034FE1B80AE866334840E730608B4F4419FD15F54BE7D5B82DA6075BCBE6"
+    },
+    {
+      "id": "iron_gem",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\iron_gem-blueprint-alpha-v1.png",
+      "file": "iron_gem-blueprint.png",
+      "bytes": 1132632,
+      "sha256": "B977A9E15626161E9AAAE36B823EDD388565521BE73F8ACD07B99FAB1950140F"
+    },
+    {
+      "id": "ember_gem",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\ember_gem-completed-source-v1.png",
+      "file": "ember_gem-completed-concept.png",
+      "bytes": 1215701,
+      "sha256": "8DD49B19F98699CF5F1C05F5674EB55E14C4A9B3CF779359B1FE3F006FB83C36"
+    },
+    {
+      "id": "ember_gem",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\ember_gem-raw-alpha-v1.png",
+      "file": "ember_gem-raw-print.png",
+      "bytes": 1572036,
+      "sha256": "D6790D73A9332DC9241E8F915C21BD593CBF3B75D4A502C35C5E32763AFCBECA"
+    },
+    {
+      "id": "ember_gem",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\ember_gem-blueprint-alpha-v1.png",
+      "file": "ember_gem-blueprint.png",
+      "bytes": 1176941,
+      "sha256": "2D19A3B91D7B6215C225F5C73B8347A16BCA7A9CFE2310CDBC9C187A9A5EC06F"
+    },
+    {
+      "id": "frost_gem",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\frost_gem-completed-source-v2.png",
+      "file": "frost_gem-completed-concept.png",
+      "bytes": 1712469,
+      "sha256": "9387231C4C728B751ED30AE38A139B3B60CC7F62EB9AA3D09F0445603ADCB7CE"
+    },
+    {
+      "id": "frost_gem",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\frost_gem-raw-alpha-v1.png",
+      "file": "frost_gem-raw-print.png",
+      "bytes": 2042125,
+      "sha256": "FAC4CFF249583AF3D4B2D7F20602593610238EBBDCCBF672DD34660AA7C2CCA3"
+    },
+    {
+      "id": "frost_gem",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\frost_gem-blueprint-alpha-v1.png",
+      "file": "frost_gem-blueprint.png",
+      "bytes": 1215679,
+      "sha256": "40A202196B0025EC4768271C507F92A4B7CEC4B44E26E8F59294A464DF6F2BDE"
+    },
+    {
+      "id": "storm_gem",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\storm_gem-completed-source-v2.png",
+      "file": "storm_gem-completed-concept.png",
+      "bytes": 1976007,
+      "sha256": "F0D60AFA16C806A938E9B5A70BAAEBF757D9DBE093860DB731F0B96E70423445"
+    },
+    {
+      "id": "storm_gem",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\storm_gem-raw-alpha-v1.png",
+      "file": "storm_gem-raw-print.png",
+      "bytes": 2065897,
+      "sha256": "2A98BF8FE91A362E1855BCEEF5E306832F574FE5F1AEEB856F31B9B646CCB637"
+    },
+    {
+      "id": "storm_gem",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\storm_gem-blueprint-alpha-v1.png",
+      "file": "storm_gem-blueprint.png",
+      "bytes": 1195981,
+      "sha256": "4EC691375E50ADEE59543C08FC1487FDF024EAC0F6E88479C631DBE245530AC2"
+    },
+    {
+      "id": "arcane_gem",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\arcane_gem-completed-source-v2.png",
+      "file": "arcane_gem-completed-concept.png",
+      "bytes": 1624346,
+      "sha256": "5581ED46A0C316096C03A9F543213AB403A3B1B27B705CC1D37612ABFD07D39E"
+    },
+    {
+      "id": "arcane_gem",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\arcane_gem-raw-alpha-v1.png",
+      "file": "arcane_gem-raw-print.png",
+      "bytes": 1683353,
+      "sha256": "8F4418F7C19605F86CB52A58097F48CFB1D0A185075B8EB6FC8C494784E5453A"
+    },
+    {
+      "id": "arcane_gem",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\arcane_gem-blueprint-alpha-v1.png",
+      "file": "arcane_gem-blueprint.png",
+      "bytes": 1353177,
+      "sha256": "5F65FDE62AC864FB16E5DE53CE5F163AEBC64BAA04A8F3150525E08363093A6B"
+    },
+    {
+      "id": "filament_ring",
+      "kind": "completed-concept",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-completed-source-v1.png",
+      "file": "filament_ring-completed-concept.png",
+      "bytes": 1580895,
+      "sha256": "2498BFF80C83C4E339047F976D3BF79E3A354455E75D7CE910CB49D4949A4202"
+    },
+    {
+      "id": "filament_ring",
+      "kind": "raw-print",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-raw-alpha-v1.png",
+      "file": "filament_ring-raw-print.png",
+      "bytes": 1938796,
+      "sha256": "ADC24CA34515616AE3BC234FBD2D9FC4AF8F895F8C885EA7F964233C6E1FBB65"
+    },
+    {
+      "id": "filament_ring",
+      "kind": "blueprint",
+      "source": "docs\\art\\m9-equipment-20260904\\family\\filament_ring-blueprint-alpha-v1.png",
+      "file": "filament_ring-blueprint.png",
+      "bytes": 1772744,
+      "sha256": "1F277938D007BD61C1148C7EC46603AB01F8FB0EB347E71C875F829879B5719E"
+    }
+  ]
+}
+
