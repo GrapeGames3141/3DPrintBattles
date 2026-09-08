@@ -1,0 +1,63 @@
+{
+  "startedAt": "2026-09-08T23:34:52.436Z",
+  "nodePid": 71432,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "browserPids": [
+    70184
+  ],
+  "browserPidQuery": {
+    "known": true,
+    "pids": [
+      70184
+    ]
+  },
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\m11-living-battles-20260908\\atlas-browser\\edge-user-data-2026-09-08T23-34-50-736Z",
+  "captureLabel": "r7",
+  "states": [
+    "equipment_fitting",
+    "reduced_motion_hc150"
+  ],
+  "sizes": [
+    {
+      "name": "941x1672",
+      "width": 941,
+      "height": 1672
+    },
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    },
+    {
+      "name": "720x1280",
+      "width": 720,
+      "height": 1280
+    }
+  ],
+  "cleanup": "persistent Edge context closed",
+  "conceptChecks": {
+    "kind": "concept-only DOM layout checks; not game evidence",
+    "ratios": {
+      "unitFont": 1.5,
+      "handFont": 1.5,
+      "backFont": 1.5,
+      "leverFont": 1.5,
+      "resourceFont": 1.5,
+      "statusFont": 1.5
+    },
+    "captionClearOfCreature": true,
+    "captionClearanceDesignPx": 28,
+    "captionAboveMatRim": true,
+    "backHitDesignPx": 80,
+    "leverHitDesignPx": 157,
+    "leverCaptionBottomDesignPx": 1612,
+    "pass": true
+  },
+  "finishedAt": "2026-09-08T23:35:05.015Z",
+  "browserPidsRemaining": [],
+  "browserPidQueryAfterClose": {
+    "known": true,
+    "pids": []
+  },
+  "userDataCleanup": "removed exact task-owned profile after Edge exited"
+}

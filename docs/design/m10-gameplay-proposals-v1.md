@@ -1,9 +1,9 @@
 # PrintForge M10 gameplay clarity proposals v1
 
-Status: **UNDER DISCUSSION following the user's 2026-09-08 printer-health question.
-The earlier x10 direct-hit rule was approved on 2026-09-04 but remains unimplemented;
-replacing it with 200 base printer HP is recommended below but is not yet approved.
-Priorities 1-6 also remain proposals and are not implementation authority.**
+Status: **APPROVED by the user on 2026-09-08. The 200-HP/+50-Chassis rule
+supersedes the earlier unimplemented x10 direct-hit decision. Priorities 1-6 are
+authorized only through the bounded M11 checkpoint in
+`docs/checkpoints/m11-living-print-battles-v1.md`.**
 
 Date: 2026-09-08
 
@@ -26,7 +26,7 @@ keep normal damage readable and lower the printer's health scale instead.
 
 ## Priority 0 — replace the unfinished x10 rule with a 200-HP printer scale
 
-Recommendation under discussion: supersede the unfinished x10 direct-hit approval
+Approved direction: supersede the unfinished x10 direct-hit approval
 with **200 base printer HP**, keep direct printer strikes at their normal integer
 damage, and scale every printer-health modifier to the same one-tenth basis. The
 current `Reinforced Chassis` is the only runtime printer-health modifier: it adds 500
@@ -233,18 +233,18 @@ core loop rather than documenting temporary friction.
 
 ## Decisions requested from the user
 
-1. Replace the unfinished x10 direct-hit rule with **200 base printer HP and +50
-   Reinforced Chassis**, subject to the same 30-match pacing gate (recommended)?
-2. Keep the current **40-card minimum** and add deterministic Recommended/Fill actions
-   without migrating existing decks (recommended)?
-3. Let queued creatures preselect stance and **auto-deploy leftmost, Attack by default**
-   (recommended), or retain the completion placement/mode modal?
-4. Queue armor/gems first and **choose the recipient only after print completes**
-   (recommended), retaining a Fitting Tray when no legal socket exists?
+1. **Approved:** replace the unfinished x10 rule with 200 base printer HP and +50
+   Reinforced Chassis, subject to the same 30-match pacing gate.
+2. **Approved:** preserve the 40-card minimum and existing legal decks above 40; add
+   deterministic Recommended/Fill actions without migrating ownership.
+3. **Approved:** queued creatures may preselect stance and auto-deploy leftmost,
+   Attack by default with Guard optional.
+4. **Approved:** queue armor/gems without a recipient, then choose one compatible
+   living creature after print; retain a Fitting Tray when none is eligible.
 
-Automatic slot-order combat with one optional focus mark is already the approved
-direction; Priority 4 proposes clearer forecast/order feedback, not a return to manual
-attack targeting. No implementation should begin for Priorities 1-6 until their new
-decisions are approved. The historical x10 authority remains the last approved pacing
-decision until the user explicitly approves replacing it; neither balance approach is
-part of the current alignment-only Android build.
+Automatic slot-order combat with one optional focus mark remains approved; Priority 4
+adds clearer forecast/order feedback, not manual attack targeting. The 2026-09-08 user
+message, “Do it,” approves these decisions and additionally requires visible battle
+print animations and a battlefield that reads as living printed creatures rather than
+cards. M11 remains responsible for implementation and evidence. None of these gameplay
+changes belongs to the completed M10 alignment-only Android build.

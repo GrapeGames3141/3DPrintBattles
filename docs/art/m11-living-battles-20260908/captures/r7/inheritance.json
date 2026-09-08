@@ -1,0 +1,14 @@
+{
+  "kind": "concept-only capture inheritance; not game evidence",
+  "inheritedFrom": "../r6",
+  "inheritedPngCount": 39,
+  "recaptured": [
+    "equipment_fitting-941x1672.png",
+    "equipment_fitting-576x1024.png",
+    "equipment_fitting-720x1280.png",
+    "reduced_motion_hc150-941x1672.png",
+    "reduced_motion_hc150-576x1024.png",
+    "reduced_motion_hc150-720x1280.png"
+  ],
+  "reason": "r7 changes only high-contrast caption and lever positions plus the equipment-fitting native status; all other r6 concept composites are byte-preserved inheritance."
+}
