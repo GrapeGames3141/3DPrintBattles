@@ -20,7 +20,10 @@ func _ready() -> void:
 			if entry is Dictionary: matrix_ids.append(str((entry as Dictionary).get("id", "")))
 			require(entry is Dictionary and entry.has("route") and entry.has("fixture_inputs") and entry.has("expected_profile_revision") and entry.has("expected_mutation_count") and entry.has("source_concept") and entry.has("output_pattern"), "Each M3 capture row carries truthful fixture, mutation, concept, and output metadata.")
 		require("M3-NV-01" in matrix_ids and "M3-NV-02" in matrix_ids and "M3-NV-03" in matrix_ids and "M3-NV-04" in matrix_ids and "M3-NV-05" in matrix_ids and "M3-AX-03" in matrix_ids, "M3 capture contract includes the completed, confirmation, fresh, settings-round-trip, and accessible Title/navigation proofs.")
-	var root := "E:/AI Projects/games/3d print battler/build/task-state/m3-runtime-20260831/test-save"
+	# The bootstrap reads --qa-save-root before this test scene mounts. Reuse that
+	# fresh directory instead of reconfiguring to historical shared M3 evidence.
+	var root := SaveService.profile_path.get_base_dir().replace("\\", "/")
+	require(not root.is_empty() and root != "user:", "M3 management fixture requires a pre-autoload isolated SaveService profile directory.")
 	DirAccess.make_dir_recursive_absolute(root)
 	SaveService.configure_test_paths(root)
 	GameManager.save_compatibility = {"compatible":true, "state":"ready", "message":""}
@@ -116,35 +119,50 @@ func _ready() -> void:
 	var deck_tray := main.find_child("M3OwnedCardRack", true, false) as ScrollContainer
 	var deck_inspector := main.find_child("DeckPhysicalInspector", true, false) as Control
 	var deck_clamps := main.find_child("M3PrePrintClamps", true, false) as Control
-	var deck_owned_tray := main.find_child("DeckOwnedArtTray", true, false) as ScrollContainer
+	var deck_owned_tray := main.find_child("DeckOwnedArtTray", true, false) as Control
 	var save_deck := main.find_child("SaveActiveDeck", true, false) as Button
 	var save_preprint := main.find_child("SavePrePrintLoadout", true, false) as Button
 	var deck_legality := main.find_child("DeckLegalityStatus", true, false) as Label
-	var deck_inspector_count := main.find_child("DeckInspectorCount", true, false) as Label
-	var deck_inspector_count_seat := main.find_child("DeckInspectorCountSeat", true, false) as Panel
 	var deck_inspector_sheet := main.find_child("DeckInspectorLooseParchment", true, false) as Panel
-	var active_deck_medallion: Button = null
+	var active_deck_medallion: Label = null
 	for medallion_variant in deck_slots.get_children() if is_instance_valid(deck_slots) else []:
-		var medallion := medallion_variant as Button
-		if is_instance_valid(medallion) and medallion.text.contains("40 · LEGAL"): active_deck_medallion = medallion
+		var medallion := medallion_variant as Label
+		if is_instance_valid(medallion) and medallion.text == "FORGE": active_deck_medallion = medallion
+	var active_deck_pick := main.find_child("ArchiveDeckSlotForge", true, false) as Button
 	var physical_keycaps := is_instance_valid(save_deck) and is_instance_valid(save_preprint) and save_deck.get_theme_stylebox("normal") is StyleBoxTexture and save_preprint.get_theme_stylebox("normal") is StyleBoxTexture
-	require(main.unified_deck_draft.size() >= 40 and deck_reason.is_empty() and is_instance_valid(save_deck) and not save_deck.disabled and physical_keycaps and is_instance_valid(deck_hud_coin) and deck_hud_coin.autowrap_mode == TextServer.AUTOWRAP_OFF and deck_hud_coin.custom_minimum_size.x >= 112.0 and main.find_child("DeckDynamicLegalityPlate", true, false) == null and is_instance_valid(active_deck_medallion) and active_deck_medallion.text.contains("Forge Deck\n40 · LEGAL") and active_deck_medallion.custom_minimum_size.y >= 56.0 and is_instance_valid(deck_legality) and deck_legality.text == "40 · LEGAL" and deck_legality.accessibility_name.contains("40 cards") and is_instance_valid(deck_inspector_count) and is_instance_valid(deck_inspector_count_seat) and deck_inspector_count.get_theme_color("font_color") == Color("f3e5c9") and is_instance_valid(deck_inspector_sheet) and deck_inspector_sheet.clip_contents, "M3 Deck removes generic cyan wells, applies full-size Foundry keycaps directly to Back/Save/Pre-Print, keeps concise accessible legality, and separates pale count ink from creature art on the square inspector sheet.")
+	require(main.unified_deck_draft.size() >= 40 and deck_reason.is_empty() and is_instance_valid(save_deck) and not save_deck.disabled and physical_keycaps and is_instance_valid(deck_hud_coin) and deck_hud_coin.autowrap_mode == TextServer.AUTOWRAP_OFF and deck_hud_coin.custom_minimum_size.x >= 112.0 and main.find_child("DeckDynamicLegalityPlate", true, false) == null and is_instance_valid(active_deck_medallion) and is_instance_valid(active_deck_pick) and active_deck_pick.custom_minimum_size.y >= 56.0 and str(active_deck_pick.get_meta("deck_legality_text", "")).contains("40 · LEGAL") and is_instance_valid(deck_legality) and deck_legality.text == "40\nLEGAL" and deck_legality.accessibility_name.contains("40 cards") and main.find_child("DeckInspectorCount", true, false) == null and is_instance_valid(deck_inspector_sheet) and deck_inspector_sheet.clip_contents, "M3 Deck keeps the visible Forge caption on its actual cream face while retaining separate accessible full-size slot targets and a readable contained legality fact.")
 	var deck_xp := main.find_child("DeckHudXp", true, false) as Label
 	require(is_instance_valid(deck_xp) and deck_xp.anchor_right < 0.56 and deck_xp.autowrap_mode == TextServer.AUTOWRAP_OFF, "M3 Deck keeps the XP HUD clear of the centered clipboard crest.")
 	require(is_instance_valid(deck_folio) and deck_folio.clip_contents and deck_folio.get_child_count() <= 8 and is_instance_valid(deck_art) and deck_art.texture != null and is_instance_valid(deck_slots) and int(deck_slots.anchor_left * 576.0) >= 428 and int(deck_slots.anchor_right * 576.0) <= 540, "M3 Deck seats up to eight exact-art representative cards in the top folio and all three slot medallions in the authored right rail.")
-	require(is_instance_valid(deck_tray) and deck_tray.clip_contents and deck_tray.get_v_scroll_bar().modulate.a == 0.0 and is_instance_valid(deck_inspector) and is_instance_valid(deck_clamps) and deck_clamps.get_child_count() >= 3 and is_instance_valid(deck_owned_tray) and deck_owned_tray.get_h_scroll_bar().modulate.a == 0.0, "M3 Deck uses clipped physical occurrence, inspector, clamp, and owned-art trays without generic scrollbars.")
+	require(is_instance_valid(deck_tray) and deck_tray.clip_contents and deck_tray.get_v_scroll_bar().modulate.a == 0.0 and is_instance_valid(deck_inspector) and is_instance_valid(deck_clamps) and deck_clamps.get_child_count() >= 3 and is_instance_valid(deck_owned_tray) and deck_owned_tray.clip_contents and deck_owned_tray.get_child_count() <= 5, "M3 Deck uses clipped physical occurrence, inspector, clamp, and exact five-cell owned-art trays without generic scrollbars.")
 	for node_name in ["DeckMinusCinderpaw", "DeckPlusCinderpaw", "DeckOccurrencePrevious", "DeckOccurrenceNext", "DeckOwnedPrevious", "DeckOwnedNext"]:
 		var deck_target := main.find_child(node_name, true, false) as Button
 		require(is_instance_valid(deck_target) and deck_target.custom_minimum_size.x >= 48.0 and deck_target.custom_minimum_size.y >= 48.0, "M3 Deck physical target %s meets the 48px minimum." % node_name)
 	var occurrence_plate := main.find_child("DeckOccurrencePlateCinderpaw", true, false) as Panel
 	var occurrence_copy := main.find_child("DeckOccurrenceCopyCinderpaw", true, false) as Label
 	var occurrence_select := main.find_child("DeckSelectCinderpaw", true, false) as Button
-	require(is_instance_valid(occurrence_plate) and is_instance_valid(occurrence_copy) and is_instance_valid(occurrence_select) and occurrence_copy.mouse_filter == Control.MOUSE_FILTER_IGNORE and occurrence_copy.text.contains("Cinderpaw") and occurrence_copy.anchor_left >= 0.22 and occurrence_copy.anchor_right <= 0.78 and occurrence_copy.anchor_bottom <= 0.33 and occurrence_select.get_theme_stylebox("normal") is StyleBoxFlat, "M3 Deck puts occurrence copy in an upper uninterrupted recess and keeps the center selector a transparent physical hit region rather than a brass rail behind glyphs.")
+	require(is_instance_valid(occurrence_plate) and is_instance_valid(occurrence_copy) and is_instance_valid(occurrence_select) and occurrence_copy.mouse_filter == Control.MOUSE_FILTER_IGNORE and occurrence_copy.text.contains("Cinderpaw") and occurrence_copy.anchor_left >= 0.22 and occurrence_copy.anchor_right <= 0.78 and occurrence_copy.anchor_top >= 0.10 and occurrence_copy.anchor_bottom >= 0.80 and occurrence_copy.vertical_alignment == VERTICAL_ALIGNMENT_CENTER and occurrence_select.get_theme_stylebox("normal") is StyleBoxFlat, "M3 Deck centers each occurrence title in the uninterrupted lane between its +/- owners.")
 	var first_clamp := main.find_child("PrePrintClamp1", true, false) as Button
 	var first_clamp_label := main.find_child("PrePrintClampLabel1", true, false) as Label
 	require(is_instance_valid(first_clamp) and first_clamp.custom_minimum_size.x >= 56.0 and is_instance_valid(first_clamp_label) and first_clamp_label.text.begins_with("Clamp 1\n") and first_clamp_label.text.contains("Empty") and first_clamp_label.autowrap_mode == TextServer.AUTOWRAP_OFF and first_clamp_label.anchor_bottom - first_clamp_label.anchor_top >= 0.28 and not first_clamp.disabled and first_clamp.tooltip_text.contains("Place"), "M3 Deck exposes an eligible empty clamp as a visible two-line 56px reachable physical placement action with a native reason.")
 	var bottom_deck_tile := main.find_child("DeckOwnedCardCinderpaw", true, false) as Button
 	require(is_instance_valid(bottom_deck_tile) and bottom_deck_tile.tooltip_text.contains("Cinderpaw") and bottom_deck_tile.accessibility_name.contains("Cinderpaw"), "M3 Deck exposes the full owned-tray card name through native tooltip and accessibility text when its compact visible label ellipsizes.")
+	var owned_cards: Array = []
+	for definition in RULES.all_cards():
+		if int(GameManager.profile.get("owned_cards", {}).get(str(definition.get("id", "")), 0)) > 0: owned_cards.append(definition)
+	var owned_page_count := maxi(1, ceili(owned_cards.size() / 5.0))
+	if owned_page_count > 1:
+		var owned_next := main.find_child("DeckOwnedNext", true, false) as Button
+		require(is_instance_valid(owned_next) and not owned_next.disabled, "M3 Deck exposes a live next-page owner when more than five owned cards exist.")
+		owned_next.emit_signal("pressed"); await get_tree().process_frame
+		require(int(main.get_meta("m3_deck_owned_page", 0)) == 1, "M3 Deck owned-card next action advances the registered five-cell page.")
+	for owned_page in owned_page_count:
+		main.set_meta("m3_deck_owned_page", owned_page); main.render(); await get_tree().process_frame
+		var expected_owned: Array = owned_cards.slice(owned_page * 5, mini(owned_cards.size(), owned_page * 5 + 5))
+		for expected_variant in expected_owned:
+			var expected_id := str((expected_variant as Dictionary).get("id", ""))
+			require(main.find_child("DeckOwnedCard" + expected_id.capitalize(), true, false) is Button, "M3 Deck page %d retains an inspectable owned-card target for %s." % [owned_page + 1, expected_id])
+	main.set_meta("m3_deck_owned_page", 0); main.render(); await get_tree().process_frame
 	main.unified_preprint_draft.append("cinderpaw")
 	require(main._m3_deck_is_dirty(), "M3 deck dirty state includes unsaved Pre-Print changes.")
 	main._m3_request_deck_exit(); await get_tree().process_frame

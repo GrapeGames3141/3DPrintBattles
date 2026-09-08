@@ -13,9 +13,9 @@ func render_settings(main: Control, surface: Control, margin: Callable, heading:
 	_settings_hud(main, host, caller)
 	var draft: Dictionary = main.m3_settings_draft
 	var text_plate := _settings_plate(main, "SettingsTextScalePlate", Rect2(0.222, 0.085, 0.285, 0.120)); host.add_child(text_plate)
-	var text_title: Label = main.label("TEXT SCALE", 13, Color("47331f")); text_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _settings_rect(text_title, Rect2(0.04, 0.28, 0.92, 0.30)); text_plate.add_child(text_title)
+	var text_title: Label = main.label("TEXT SCALE", 13, Color("47331f")); text_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; text_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_cream_ink(text_title); _settings_rect(text_title, Rect2(0.04, 0.28, 0.92, 0.30)); text_plate.add_child(text_title)
 	var text_dial := Control.new(); text_dial.name = "SettingsTextScaleDial"; _settings_rect(text_dial, Rect2(0.545, 0.085, 0.320, 0.120)); host.add_child(text_dial)
-	var text_value: Label = main.label("%d%%" % (int(draft.get("text_scale_bps", 10000)) / 100), 16, Color("f3e5c9")); text_value.name = "SettingsTextScaleValue"; text_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _settings_rect(text_value, Rect2(0.05, 0.04, 0.90, 0.28)); text_dial.add_child(text_value)
+	var text_value: Label = main.label("%d%%" % (int(draft.get("text_scale_bps", 10000)) / 100), 16, Color("f3e5c9")); text_value.name = "SettingsTextScaleValue"; text_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; text_value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_rect(text_value, Rect2(0.08, 0.24, 0.84, 0.26)); text_dial.add_child(text_value)
 	for index in 3:
 		var scale: int = [10000, 12500, 15000][index]; var button := _settings_transparent_button("SettingsText%d" % scale, "%d" % (scale / 100), main._m3_set_setting.bind("text_scale_bps", scale), int(draft.get("text_scale_bps", 10000)) == scale); _settings_rect(button, Rect2(0.03 + index * 0.325, 0.42, 0.30, 0.52)); button.custom_minimum_size = Vector2(48, 48); text_dial.add_child(button)
 	_settings_dial_row(main, host, "master_bps", "MASTER VOLUME", Rect2(0.222, 0.250, 0.646, 0.145), draft)
@@ -26,7 +26,7 @@ func render_settings(main: Control, surface: Control, margin: Callable, heading:
 	# deliberate content layer inside it so the three preview bands retain their
 	# authored positions rather than being stacked on top of one another.
 	var preview_content := Control.new(); preview_content.name = "SettingsLivePreviewContent"; preview_content.clip_contents = true; preview_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); preview.add_child(preview_content)
-	var sample: Label = main.label("LIVE PREVIEW · Forged for clear reading", 16, Color("47331f")); sample.name = "SettingsLivePreviewText"; sample.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; sample.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; sample.autowrap_mode = TextServer.AUTOWRAP_OFF; sample.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; _settings_rect(sample, Rect2(0.05, 0.064, 0.90, 0.296)); preview_content.add_child(sample)
+	var sample: Label = main.label("LIVE PREVIEW · Forged for clear reading", 14, Color("47331f")); sample.name = "SettingsLivePreviewText"; sample.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; sample.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; sample.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; sample.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING; _settings_cream_ink(sample); _settings_rect(sample, Rect2(0.05, 0.045, 0.90, 0.330)); preview_content.add_child(sample)
 	_settings_preview_audio(main, preview_content, "music_bps", "MUSIC", Rect2(0.08, 0.370, 0.84, 0.290), draft)
 	_settings_preview_audio(main, preview_content, "sfx_bps", "SFX", Rect2(0.08, 0.670, 0.84, 0.290), draft)
 	# Buttons centre their label within these exposed hardware hit zones by default;
@@ -51,7 +51,10 @@ func render_settings(main: Control, surface: Control, margin: Callable, heading:
 	for key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
 		cancel.add_theme_color_override(key, Color("ffffff") if key == "font_focus_color" else Color("f3e5c9"))
 	host.add_child(cancel)
-	var apply := _settings_transparent_button("SettingsApply", "APPLY", main._m3_apply_settings, true); _settings_rect(apply, Rect2(0.474, 0.900, 0.386, 0.080)); apply.custom_minimum_size = Vector2(56, 56); apply.tooltip_text = "Apply settings"; apply.accessibility_name = apply.tooltip_text; host.add_child(apply)
+	# The lower brass dial overlaps the left side of this navy key.  Keep the wide
+	# hit target, but seat its native caption in the uninterrupted right face.
+	var apply := _settings_transparent_button("SettingsApply", "", main._m3_apply_settings, true); _settings_rect(apply, Rect2(0.474, 0.900, 0.386, 0.080)); apply.custom_minimum_size = Vector2(56, 56); apply.tooltip_text = "Apply settings"; apply.accessibility_name = apply.tooltip_text; host.add_child(apply)
+	var apply_ink: Label = main.label("APPLY", 12, Color("f3e5c9")); apply_ink.name = "SettingsApplyInk"; apply_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; apply_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; apply_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; apply_ink.add_theme_color_override("font_color", Color("f3e5c9")); _settings_rect(apply_ink, Rect2(632.0 / 941.0, 1477.0 / 1672.0, 172.0 / 941.0, 107.0 / 1672.0)); host.add_child(apply_ink)
 
 func _settings_hud(main: Control, host: Control, caller: String) -> void:
 	var rail := Control.new(); rail.name = "SettingsCompactHud"; rail.anchor_left = 0.120; rail.anchor_top = 0.012; rail.anchor_right = 0.880; rail.anchor_bottom = 0.070; host.add_child(rail)
@@ -60,25 +63,34 @@ func _settings_hud(main: Control, host: Control, caller: String) -> void:
 
 func _settings_dial_row(main: Control, host: Control, key: String, title: String, rect: Rect2, draft: Dictionary) -> void:
 	var row := Control.new(); row.name = "SettingsMasterVolumeRow" if key == "master_bps" else "SettingsDial" + key.capitalize(); _settings_rect(row, rect); host.add_child(row)
-	var title_label: Label = main.label(title, 12, Color("47331f")); title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_rect(title_label, Rect2(0.02, 0.31, 0.44, 0.38)); row.add_child(title_label)
-	var value: Label = main.label("%d%%" % (int(draft.get(key, 5000)) / 100), 18, Color("f3e5c9")); value.name = "SettingsValue" + key; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_rect(value, Rect2(0.57, 0.16, 0.30, 0.30)); row.add_child(value)
-	var lower := _settings_transparent_button("SettingsLower" + key, "−", main._m3_adjust_setting.bind(key, -1)); _settings_rect(lower, Rect2(0.04, 0.54, 0.22, 0.40)); lower.custom_minimum_size = Vector2(48, 48); lower.add_theme_font_size_override("font_size", 20); lower.add_theme_color_override("font_color", Color("47331f")); lower.tooltip_text = "Lower %s" % title.to_lower(); lower.accessibility_name = lower.tooltip_text; row.add_child(lower)
-	var raise := _settings_transparent_button("SettingsRaise" + key, "+", main._m3_adjust_setting.bind(key, 1), true); _settings_rect(raise, Rect2(0.72, 0.54, 0.22, 0.40)); raise.custom_minimum_size = Vector2(48, 48); raise.add_theme_font_size_override("font_size", 20); raise.add_theme_color_override("font_color", Color("f3d995") if key == "master_bps" else Color("47331f")); raise.tooltip_text = "Raise %s" % title.to_lower(); raise.accessibility_name = raise.tooltip_text; row.add_child(raise)
+	var title_label: Label = main.label(title, 12, Color("47331f")); title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _settings_cream_ink(title_label); _settings_rect(title_label, Rect2(0.02, 0.31, 0.44, 0.38)); row.add_child(title_label)
+	var value: Label = main.label("%d%%" % (int(draft.get(key, 5000)) / 100), 18, Color("f3e5c9")); value.name = "SettingsValue" + key; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_rect(value, Rect2(0.59, 0.275, 0.27, 0.26)); row.add_child(value)
+	# Both volume actuators live in the lower quadrants of the same dial.  The
+	# previous left action sat on the parchment title plate and read as unrelated.
+	var lower := _settings_transparent_button("SettingsLower" + key, "−", main._m3_adjust_setting.bind(key, -1)); _settings_rect(lower, Rect2(0.57, 0.58, 0.14, 0.28)); lower.custom_minimum_size = Vector2(48, 48); lower.add_theme_font_size_override("font_size", 20); lower.add_theme_color_override("font_color", Color("f3e5c9")); lower.tooltip_text = "Lower %s" % title.to_lower(); lower.accessibility_name = lower.tooltip_text; row.add_child(lower)
+	var raise := _settings_transparent_button("SettingsRaise" + key, "+", main._m3_adjust_setting.bind(key, 1), true); _settings_rect(raise, Rect2(0.75, 0.58, 0.14, 0.28)); raise.custom_minimum_size = Vector2(48, 48); raise.add_theme_color_override("font_color", Color("f3d995") if key == "master_bps" else Color("f3e5c9")); raise.add_theme_font_size_override("font_size", 20); raise.tooltip_text = "Raise %s" % title.to_lower(); raise.accessibility_name = raise.tooltip_text; row.add_child(raise)
 
 func _settings_toggle_row(main: Control, host: Control, key: String, title: String, rect: Rect2, draft: Dictionary) -> void:
 	var suffix := "HighContrast" if key == "high_contrast" else "ReducedMotion"
 	var row := Control.new(); row.name = "SettingsToggle" + suffix; _settings_rect(row, rect); host.add_child(row)
-	var title_label: Label = main.label(title, 12, Color("47331f")); title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_rect(title_label, Rect2(0.03, 0.18, 0.48, 0.64)); row.add_child(title_label)
+	var title_label: Label = main.label(title.replace(" ", "\n"), 10, Color("47331f")); title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; title_label.autowrap_mode = TextServer.AUTOWRAP_OFF; title_label.clip_text = true; title_label.tooltip_text = title; title_label.accessibility_name = title; _settings_cream_ink(title_label); _settings_rect(title_label, Rect2(0.03, 0.10, 0.48, 0.80)); row.add_child(title_label)
 	var toggle := _settings_transparent_button("Settings" + suffix, "ON" if bool(draft.get(key, false)) else "OFF", main._m3_set_setting.bind(key, not bool(draft.get(key, false))), bool(draft.get(key, false)))
 	_settings_rect(toggle, Rect2(0.59, 0.15, 0.34, 0.70)); toggle.custom_minimum_size = Vector2(56, 48)
-	if not bool(draft.get(key, false)): toggle.add_theme_color_override("font_color", Color("47331f"))
+	_settings_cream_ink(toggle)
 	toggle.tooltip_text = "%s %s" % [title.capitalize(), "on" if bool(draft.get(key, false)) else "off"]; toggle.accessibility_name = toggle.tooltip_text; row.add_child(toggle)
 
 func _settings_preview_audio(main: Control, preview: Control, key: String, title: String, rect: Rect2, draft: Dictionary) -> void:
 	var row := Control.new(); row.name = "SettingsPreviewMusic" if key == "music_bps" else "SettingsPreviewSfx"; _settings_rect(row, rect); preview.add_child(row)
-	var value: Label = main.label("%s  %d%%" % [title, int(draft.get(key, 5000)) / 100], 11, Color("47331f")); value.name = "SettingsPreview" + title.capitalize() + "Value"; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_rect(value, Rect2(0.22, 0.08, 0.56, 0.84)); row.add_child(value)
-	var lower := _settings_transparent_button("SettingsLower" + key, "−", main._m3_adjust_setting.bind(key, -1)); _settings_rect(lower, Rect2(0.02, 0.07, 0.18, 0.86)); lower.custom_minimum_size = Vector2(48, 48); lower.add_theme_font_size_override("font_size", 20); lower.add_theme_color_override("font_color", Color("47331f")); lower.tooltip_text = "Lower %s volume" % title.to_lower(); lower.accessibility_name = lower.tooltip_text; row.add_child(lower)
-	var raise := _settings_transparent_button("SettingsRaise" + key, "+", main._m3_adjust_setting.bind(key, 1), true); _settings_rect(raise, Rect2(0.80, 0.07, 0.18, 0.86)); raise.custom_minimum_size = Vector2(48, 48); raise.add_theme_font_size_override("font_size", 20); raise.add_theme_color_override("font_color", Color("47331f")); raise.tooltip_text = "Raise %s volume" % title.to_lower(); raise.accessibility_name = raise.tooltip_text; row.add_child(raise)
+	var value: Label = main.label("%s  %d%%" % [title, int(draft.get(key, 5000)) / 100], 11, Color("47331f")); value.name = "SettingsPreview" + title.capitalize() + "Value"; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _settings_cream_ink(value); _settings_rect(value, Rect2(0.22, 0.08, 0.56, 0.84)); row.add_child(value)
+	var lower := _settings_transparent_button("SettingsLower" + key, "−", main._m3_adjust_setting.bind(key, -1)); _settings_rect(lower, Rect2(0.02, 0.07, 0.18, 0.86)); lower.custom_minimum_size = Vector2(48, 48); lower.add_theme_font_size_override("font_size", 20); _settings_cream_ink(lower); lower.tooltip_text = "Lower %s volume" % title.to_lower(); lower.accessibility_name = lower.tooltip_text; row.add_child(lower)
+	var raise := _settings_transparent_button("SettingsRaise" + key, "+", main._m3_adjust_setting.bind(key, 1), true); _settings_rect(raise, Rect2(0.80, 0.07, 0.18, 0.86)); raise.custom_minimum_size = Vector2(48, 48); raise.add_theme_font_size_override("font_size", 20); _settings_cream_ink(raise); raise.tooltip_text = "Raise %s volume" % title.to_lower(); raise.accessibility_name = raise.tooltip_text; row.add_child(raise)
+
+func _settings_cream_ink(control: Control) -> void:
+	# Main's high-contrast theme intentionally defaults labels to white.  These
+	# controls are all seated on actual cream paper, so apply their material ink
+	# last instead of letting the global dark-surface default erase them.
+	for key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+		control.add_theme_color_override(key, Color("000000"))
 
 func _settings_plate(main: Control, node_name: String, rect: Rect2) -> PanelContainer:
 	var plate := PanelContainer.new(); plate.name = node_name; _settings_rect(plate, rect); plate.add_theme_stylebox_override("panel", _settings_style(Color("ead9b7"), Color("79582f"), 2)); return plate

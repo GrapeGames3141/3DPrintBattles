@@ -134,11 +134,23 @@ func _occurrence_button(main: Control, card_id: String, add: bool) -> Button:
 func _assert_owned_fronts(main: Control, expected_cards: Array) -> void:
 	var unique_ids: Dictionary = _multiset(expected_cards)
 	var card_back := SUPPORT_CARD_VIEW.card_back_for_test()
-	for card_id_variant in unique_ids:
-		var card_id := str(card_id_variant)
-		var tile := main.find_child("DeckOwnedCard" + card_id.capitalize(), true, false) as Button
-		var art := tile.find_child("DeckCardCatalogArt", true, false) as TextureRect if tile != null else null
-		require(tile != null and art != null and art.texture != null and art.texture != card_back and CARD_VIEW.art_for_definition(RULES.card(card_id)) != card_back, "Deck exposes the real approved face for owned %s, never the concealed card back." % card_id)
+	var seen := {}
+	var page_count := maxi(1, ceili(unique_ids.size() / 5.0))
+	for page in page_count:
+		for card_id_variant in unique_ids:
+			var card_id := str(card_id_variant)
+			var tile := main.find_child("DeckOwnedCard" + card_id.capitalize(), true, false) as Button
+			if tile == null: continue
+			var art := tile.find_child("DeckCardCatalogArt", true, false) as TextureRect
+			require(art != null and art.texture != null and art.texture != card_back and CARD_VIEW.art_for_definition(RULES.card(card_id)) != card_back, "Deck exposes the real approved face for owned %s, never the concealed card back." % card_id)
+			seen[card_id] = true
+		if page < page_count - 1:
+			var next := _button(main, "DeckOwnedNext")
+			require(next != null and not next.disabled and await _tap(next, page % 2 == 0), "Owned tray page %d advances through its rendered Next target." % [page + 1])
+	for page in page_count - 1:
+		var previous := _button(main, "DeckOwnedPrevious")
+		require(previous != null and not previous.disabled and await _tap(previous, page % 2 == 1), "Owned tray page %d returns through its rendered Previous target." % [page_count - page])
+	require(seen.size() == unique_ids.size(), "Owned tray paging exposes every expected approved card front across its exact five-cell physical pages.")
 
 func _capture(main: Control, suffix: String) -> void:
 	await RenderingServer.frame_post_draw
@@ -198,7 +210,7 @@ func _run() -> void:
 	require(var_to_str(GameManager.profile) == authority_before_draft and _multiset(main.unified_deck_draft) == _multiset(expected_cards) and RULES.deck_reason(GameManager.profile, main.unified_deck_draft).is_empty(), "Forty local Deck edits preserve profile authority and reproduce the exact owned Founder multiset.")
 	var exhausted_plus := await _occurrence_button(main, first_id, true)
 	require(exhausted_plus != null and exhausted_plus.disabled, "Over-owned Add is disabled once the second-slot draft reaches the owned copy limit.")
-	_assert_owned_fronts(main, expected_cards)
+	await _assert_owned_fronts(main, expected_cards)
 	await _capture(main, "second-slot-legal")
 	var revision_before_save := int(GameManager.profile.get("revision", 0))
 	var save := _button(main, "SaveActiveDeck")

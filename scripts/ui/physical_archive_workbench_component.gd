@@ -226,6 +226,9 @@ func _deck_folio(main: Control, host: Control, selected_id: String) -> void:
 		var card: Dictionary = RULES.card(str(entries[index])); var tile := _deck_card_tile(card, main.unified_deck_draft.count(str(entries[index])), str(entries[index]) == selected_id); tile.name = "DeckFolioCard%02d" % (index + 1); var column := index % 4; var row := index / 4; _set_normalized_rect(tile, Rect2(0.018 + column * 0.244, 0.045 + row * 0.480, 0.222, 0.425)); tile.pressed.connect(func(): main.set_meta("m3_deck_selected_card_id", str(entries[index])); main.render()); folio.add_child(tile)
 
 func _deck_slot_medallions(main: Control, host: Control) -> void:
+	# Registered to DK-01's three cream slot faces at master x724..830,
+	# y233..272 /326..365 /415..455. The broad host supplies 56px hit bands;
+	# caption and hit centres are both mapped to those measured faces below.
 	var slots := Control.new(); slots.name = "ArchiveDeckSlots"; _set_normalized_rect(slots, Rect2(0.745, 0.080, 0.190, 0.240)); host.add_child(slots)
 	for index in RULES.DECK_SLOTS.size():
 		var slot: Dictionary = RULES.DECK_SLOTS[index]
@@ -244,11 +247,15 @@ func _deck_slot_medallions(main: Control, host: Control) -> void:
 		var pick := _deck_button("ArchiveDeckSlot" + id.capitalize(), "", main._m3_request_deck_slot.bind(id), active)
 		pick.autowrap_mode = TextServer.AUTOWRAP_OFF
 		pick.set_meta("deck_legality_text", live_status if active else "")
-		_set_normalized_rect(pick, Rect2(0.08, 0.03 + index * 0.323, 0.84, 0.275)); pick.custom_minimum_size = Vector2(56, 56); pick.tooltip_text = "Edit %s deck slot%s" % [slot_name, " · %s" % live_status if active else ""]; pick.accessibility_name = pick.tooltip_text; slots.add_child(pick)
-		var slot_ink: Label = main.label(compact_slot_name, 10, Color("172b3c")); slot_ink.name = "ArchiveDeckSlotInk" + id.capitalize(); slot_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; slot_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; slot_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; slot_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; slot_ink.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; slot_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(slot_ink, Rect2(0.16, 0.245 + index * 0.230, 0.68, 0.100)); slots.add_child(slot_ink)
+		var hit_rects := [Rect2(0.128, 0.186, 0.593, 0.216), Rect2(0.128, 0.418, 0.593, 0.216), Rect2(0.128, 0.642, 0.593, 0.216)]
+		var caption_rects := [Rect2(0.128, 0.247, 0.593, 0.097), Rect2(0.128, 0.479, 0.593, 0.097), Rect2(0.128, 0.701, 0.593, 0.100)]
+		_set_normalized_rect(pick, hit_rects[index]); pick.custom_minimum_size = Vector2(56, 56); pick.tooltip_text = "Edit %s deck slot%s" % [slot_name, " · %s" % live_status if active else ""]; pick.accessibility_name = pick.tooltip_text; slots.add_child(pick)
+		var slot_ink: Label = main.label(compact_slot_name, 10, Color("172b3c")); slot_ink.name = "ArchiveDeckSlotInk" + id.capitalize(); slot_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; slot_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; slot_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; slot_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; slot_ink.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; slot_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(slot_ink, caption_rects[index]); slots.add_child(slot_ink)
 
 func _deck_occurrence_tray(main: Control, host: Control, owned_cards: Array, selected_id: String) -> void:
-	var tray := ScrollContainer.new(); tray.name = "M3OwnedCardRack"; tray.clip_contents = true; tray.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; tray.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; _set_normalized_rect(tray, Rect2(0.083, 0.350, 0.624, 0.238)); tray.get_v_scroll_bar().modulate = Color(1, 1, 1, 0); tray.get_v_scroll_bar().mouse_filter = Control.MOUSE_FILTER_IGNORE; host.add_child(tray)
+	# Four complete 48px rows fit this leather rail.  Keep the fifth behind the
+	# existing scroll owner instead of leaving an accidental partial row on its lip.
+	var tray := ScrollContainer.new(); tray.name = "M3OwnedCardRack"; tray.clip_contents = true; tray.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; tray.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; _set_normalized_rect(tray, Rect2(0.083, 0.350, 0.624, 0.205)); tray.get_v_scroll_bar().modulate = Color(1, 1, 1, 0); tray.get_v_scroll_bar().mouse_filter = Control.MOUSE_FILTER_IGNORE; host.add_child(tray)
 	var rows := VBoxContainer.new(); rows.name = "DeckOccurrenceRows"; rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL; rows.add_theme_constant_override("separation", 4); tray.add_child(rows)
 	for definition_variant in owned_cards:
 		var definition: Dictionary = definition_variant; var id := str(definition.get("id", "")); var owned := int(GameManager.profile.get("owned_cards", {}).get(id, 0)); var row_shell := Panel.new(); row_shell.name = "DeckOccurrencePlate" + id.capitalize(); row_shell.custom_minimum_size = Vector2(0, 48); row_shell.add_theme_stylebox_override("panel", _deck_recess_style()); rows.add_child(row_shell); var row := HBoxContainer.new(); row.name = "DeckOccurrence" + id.capitalize(); row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); row.offset_left = 4; row.offset_right = -4; row.add_theme_constant_override("separation", 6); row_shell.add_child(row)
@@ -257,30 +264,35 @@ func _deck_occurrence_tray(main: Control, host: Control, owned_cards: Array, sel
 		# rail.  That leaves an uninterrupted native-copy band above the +/- hardware.
 		var select := Button.new(); select.name = "DeckSelect" + id.capitalize(); select.text = ""; select.flat = true; select.focus_mode = Control.FOCUS_ALL; CONTROLS.apply(select, "lever", id == selected_id, true); select.size_flags_horizontal = Control.SIZE_EXPAND_FILL; select.custom_minimum_size = Vector2(120, 48); select.tooltip_text = "Inspect %s" % str(definition.get("name", id)); select.accessibility_name = select.tooltip_text; select.pressed.connect(func(): main.set_meta("m3_deck_selected_card_id", id); main.render()); row.add_child(select)
 		var plus := _deck_button("DeckPlus" + id.capitalize(), "+", main._m3_change_deck_occurrence.bind(id, true), true); plus.custom_minimum_size = Vector2(48, 48); plus.add_theme_font_size_override("font_size", main.scaled_font(22)); plus.disabled = main.unified_deck_draft.count(id) >= owned; row.add_child(plus)
-		var copy: Label = main.label("%s  ×%d/%d" % [str(definition.get("name", id)), main.unified_deck_draft.count(id), owned], 9, Color("f3e5c9")); copy.name = "DeckOccurrenceCopy" + id.capitalize(); copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; copy.vertical_alignment = VERTICAL_ALIGNMENT_TOP; copy.autowrap_mode = TextServer.AUTOWRAP_OFF; copy.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; copy.mouse_filter = Control.MOUSE_FILTER_IGNORE; copy.z_index = 3; _set_normalized_rect(copy, Rect2(0.225, 0.035, 0.550, 0.285)); row_shell.add_child(copy)
+		# The occurrence title owns its own middle lane between the two 48px
+		# actuators.  Center it in that lane; anchoring it to the top made the
+		# name appear detached from the +/- action it describes.
+		var copy: Label = main.label("%s  ×%d/%d" % [str(definition.get("name", id)), main.unified_deck_draft.count(id), owned], 9, Color("f3e5c9")); copy.name = "DeckOccurrenceCopy" + id.capitalize(); copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; copy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; copy.autowrap_mode = TextServer.AUTOWRAP_OFF; copy.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; copy.mouse_filter = Control.MOUSE_FILTER_IGNORE; copy.z_index = 3; _set_normalized_rect(copy, Rect2(0.225, 0.120, 0.550, 0.760)); row_shell.add_child(copy)
 	var up := _deck_button("DeckOccurrencePrevious", "↑", func(): tray.scroll_vertical = maxi(0, tray.scroll_vertical - 104)); _set_normalized_rect(up, Rect2(0.055, 0.320, 0.070, 0.040)); up.custom_minimum_size = Vector2(48, 48); up.add_theme_font_size_override("font_size", main.scaled_font(22)); up.tooltip_text = "Scroll occurrence tray up"; up.accessibility_name = up.tooltip_text; host.add_child(up)
 	var down := _deck_button("DeckOccurrenceNext", "↓", func(): tray.scroll_vertical = mini(int(tray.get_v_scroll_bar().max_value), tray.scroll_vertical + 104)); _set_normalized_rect(down, Rect2(0.620, 0.320, 0.070, 0.040)); down.custom_minimum_size = Vector2(48, 48); down.add_theme_font_size_override("font_size", main.scaled_font(22)); down.tooltip_text = "Scroll occurrence tray down"; down.accessibility_name = down.tooltip_text; host.add_child(down)
 
 func _deck_inspector(main: Control, host: Control, selected_id: String, reason: String) -> void:
-	var inspector := Control.new(); inspector.name = "DeckPhysicalInspector"; inspector.clip_contents = true; _set_normalized_rect(inspector, Rect2(0.748, 0.350, 0.185, 0.205)); host.add_child(inspector)
+	# DK-01's right inspection pocket is the navy interior x728..831, y579..814.
+	var inspector := Control.new(); inspector.name = "DeckPhysicalInspector"; inspector.clip_contents = true; _set_normalized_rect(inspector, Rect2(0.7736, 0.3463, 0.1095, 0.1406)); host.add_child(inspector)
 	var card := RULES.card(selected_id)
 	if not card.is_empty():
+		# This is the dedicated right-hand inspection pocket.  It alone needs a
+		# native parchment inset; all inspector art and its count stay inside it.
+		_deck_inspector_parchment_sheet(inspector, Rect2(0.08, 0.04, 0.84, 0.58))
 		if str(card.get("type", "")) == "creature":
-			_deck_inspector_parchment_sheet(inspector, Rect2(0.08, 0.02, 0.84, 0.48))
-			_deck_blueprint_seat(inspector, "DeckInspectorBlueprintSeat", Rect2(0.08, 0.02, 0.84, 0.48))
-		var inspector_art := IMPRINT.add_catalog_art(inspector, "DeckInspectorCatalogArt", card, Rect2(0.16, 0.06, 0.68, 0.38), UNIFIED_CARD_VIEW.art_for_definition(card))
+			_deck_blueprint_seat(inspector, "DeckInspectorBlueprintSeat", Rect2(0.08, 0.04, 0.84, 0.58))
+		var inspector_art := IMPRINT.add_catalog_art(inspector, "DeckInspectorCatalogArt", card, Rect2(0.16, 0.09, 0.68, 0.43), UNIFIED_CARD_VIEW.art_for_definition(card))
 		_deck_apply_blueprint_ink(inspector_art, card)
-		# The count's fact seat is navy/brass hardware, so it always uses pale ink.
-		var count_ink := Color("f3e5c9")
-		var count_seat := Panel.new(); count_seat.name = "DeckInspectorCountSeat"; count_seat.mouse_filter = Control.MOUSE_FILTER_IGNORE; count_seat.add_theme_stylebox_override("panel", _deck_fact_style()); _set_normalized_rect(count_seat, Rect2(0.08, 0.50, 0.84, 0.13)); inspector.add_child(count_seat)
-		var count: Label = main.label("×%d deck" % main.unified_deck_draft.count(selected_id), 11, count_ink); count.name = "DeckInspectorCount"; count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _set_normalized_rect(count, Rect2(0.10, 0.51, 0.80, 0.11)); inspector.add_child(count)
-	var legal_text := "%d · %s" % [main.unified_deck_draft.size(), "LEGAL" if reason.is_empty() else reason]
-	var legal: Label = main.label(legal_text, 11, Color("f3e5c9") if reason.is_empty() else Color("ffd0c8")); legal.name = "DeckLegalityStatus"; legal.tooltip_text = "%d cards · %s" % [main.unified_deck_draft.size(), "legal" if reason.is_empty() else reason]; legal.accessibility_name = legal.tooltip_text; legal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; legal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; legal.autowrap_mode = TextServer.AUTOWRAP_OFF; legal.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; legal.z_index = 3; legal.add_theme_stylebox_override("normal", _deck_recess_style()); _set_normalized_rect(legal, Rect2(0.04, 0.70, 0.92, 0.18)); inspector.add_child(legal)
+	# The actual inspector pocket is only 63px wide at the portrait reference.
+	# Its selected-card count is already visible in the owned row and tray, so give
+	# this lower fact face to the untrimmed legal deck state instead.
+	var legal_text := "%d\n%s" % [main.unified_deck_draft.size(), "LEGAL" if reason.is_empty() else "CHECK"]
+	var legal: Label = main.label(legal_text, 9, Color("f3e5c9") if reason.is_empty() else Color("ffd0c8")); legal.name = "DeckLegalityStatus"; legal.tooltip_text = "%d cards · %s" % [main.unified_deck_draft.size(), "legal" if reason.is_empty() else reason]; legal.accessibility_name = legal.tooltip_text; legal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; legal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; legal.autowrap_mode = TextServer.AUTOWRAP_OFF; legal.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING; legal.z_index = 3; legal.add_theme_stylebox_override("normal", _deck_recess_style()); _set_normalized_rect(legal, Rect2(0.05, 0.640, 0.90, 0.300)); inspector.add_child(legal)
 	# The two lower-right physical wells are deliberately non-overlapping at 576px;
 	# both retain a true 48px global target rather than relying on a narrow label.
 	var save_rect := Rect2(0.730, 0.520, 0.118, 0.055)
-	# PRE-PRINT is a two-word native action; reserve its full readable keycap
-	# width instead of allowing Button minimum sizing to outgrow the visible well.
+	# The narrow right keycap retains a compact two-line native caption while its
+	# accessibility name keeps the full Pre-Print save action.
 	var preprint_rect := Rect2(0.850, 0.520, 0.140, 0.055)
 	# The transparent actions retain their large accessible hit areas.  Their small
 	# painted cream keycaps are narrower, so their native ink is independently
@@ -288,7 +300,7 @@ func _deck_inspector(main: Control, host: Control, selected_id: String, reason: 
 	var save := _deck_button("SaveActiveDeck", "", main._m3_save_deck, true); _deck_cream_ink(save); save.tooltip_text = "Save the active fixed deck"; save.accessibility_name = save.tooltip_text; _set_normalized_rect(save, save_rect); save.custom_minimum_size = Vector2(56, 56); save.disabled = not reason.is_empty(); save.z_index = 3; host.add_child(save)
 	var save_ink: Label = main.label("SAVE", 11, Color("172b3c")); save_ink.name = "SaveActiveDeckInk"; save_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; save_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; save_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; save_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; save_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(save_ink, Rect2(0.756, 0.520, 0.087, 0.055)); save_ink.z_index = 4; host.add_child(save_ink)
 	var save_pre := _deck_button("SavePrePrintLoadout", "", main._m3_save_preprints); _deck_cream_ink(save_pre); save_pre.tooltip_text = "Save Pre-Print loadout"; save_pre.accessibility_name = save_pre.tooltip_text; _set_normalized_rect(save_pre, preprint_rect); save_pre.custom_minimum_size = Vector2(56, 56); save_pre.z_index = 3; host.add_child(save_pre)
-	var pre_ink: Label = main.label("PRE", 10, Color("172b3c")); pre_ink.name = "SavePrePrintLoadoutInk"; pre_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; pre_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pre_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; pre_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; pre_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(pre_ink, Rect2(0.862, 0.520, 0.073, 0.055)); pre_ink.z_index = 4; host.add_child(pre_ink)
+	var pre_ink: Label = main.label("PRE\nSAVE", 8, Color("172b3c")); pre_ink.name = "SavePrePrintLoadoutInk"; pre_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; pre_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pre_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; pre_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; pre_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(pre_ink, Rect2(0.854, 0.512, 0.089, 0.071)); pre_ink.z_index = 4; host.add_child(pre_ink)
 
 func _deck_preprint_clamps(main: Control, host: Control) -> void:
 	var clamps := Control.new(); clamps.name = "M3PrePrintClamps"; _set_normalized_rect(clamps, Rect2(0.070, 0.604, 0.860, 0.203)); host.add_child(clamps)
@@ -302,7 +314,7 @@ func _deck_preprint_clamps(main: Control, host: Control) -> void:
 		# Reserve an uninterrupted two-line header before the blueprint aperture.
 		# At 150% the creature name remains a real visible second line rather than
 		# being clipped behind the clamp hardware.
-		var label: Label = main.label("Clamp %d\n%s" % [index + 1, clamp_name], 9, Color("47331f")); label.name = "PrePrintClampLabel%d" % (index + 1); label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.clip_text = true; label.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(label, Rect2(0.035 + index * 0.330, 0.045, 0.265, 0.290)); clamps.add_child(label)
+		var label: Label = main.label("Clamp %d\n%s" % [index + 1, clamp_name], 9, Color("47331f")); label.name = "PrePrintClampLabel%d" % (index + 1); label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.clip_text = true; label.mouse_filter = Control.MOUSE_FILTER_IGNORE; label.add_theme_color_override("font_color", Color("000000")); _set_normalized_rect(label, Rect2(0.035 + index * 0.330, 0.045, 0.265, 0.290)); clamps.add_child(label)
 		if not card_id.is_empty():
 			var clamp_card: Dictionary = RULES.card(card_id)
 			if str(clamp_card.get("type", "")) == "creature": _deck_blueprint_seat(clamps, "PrePrintClampSeat%d" % (index + 1), Rect2(0.065 + index * 0.330, 0.370, 0.210, 0.440))
@@ -310,12 +322,18 @@ func _deck_preprint_clamps(main: Control, host: Control) -> void:
 			_deck_apply_blueprint_ink(clamp_art, clamp_card)
 
 func _deck_owned_tray(main: Control, host: Control, owned_cards: Array, selected_id: String) -> void:
-	var tray := ScrollContainer.new(); tray.name = "DeckOwnedArtTray"; tray.clip_contents = true; tray.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; tray.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED; _set_normalized_rect(tray, Rect2(0.075, 0.830, 0.850, 0.115)); tray.get_h_scroll_bar().modulate = Color(1, 1, 1, 0); tray.get_h_scroll_bar().mouse_filter = Control.MOUSE_FILTER_IGNORE; host.add_child(tray)
-	var row := HBoxContainer.new(); row.name = "DeckOwnedArtRow"; row.custom_minimum_size = Vector2(maxi(1, owned_cards.size()) * 86, 0); row.add_theme_constant_override("separation", 6); tray.add_child(row)
-	for definition_variant in owned_cards:
-		var definition: Dictionary = definition_variant; var id := str(definition.get("id", "")); var tile := _deck_card_tile(definition, int(GameManager.profile.get("owned_cards", {}).get(id, 0)), id == selected_id); tile.name = "DeckOwnedCard" + id.capitalize(); tile.custom_minimum_size = Vector2(78, 104); tile.pressed.connect(func(): main.set_meta("m3_deck_selected_card_id", id); main.render()); row.add_child(tile)
-	var previous := _deck_button("DeckOwnedPrevious", "‹", func(): tray.scroll_horizontal = maxi(0, tray.scroll_horizontal - 180)); _set_normalized_rect(previous, Rect2(0.025, 0.850, 0.052, 0.062)); previous.custom_minimum_size = Vector2(48, 48); previous.add_theme_font_size_override("font_size", main.scaled_font(22)); host.add_child(previous)
-	var next := _deck_button("DeckOwnedNext", "›", func(): tray.scroll_horizontal = mini(int(tray.get_h_scroll_bar().max_value), tray.scroll_horizontal + 180)); _set_normalized_rect(next, Rect2(0.925, 0.850, 0.052, 0.062)); next.custom_minimum_size = Vector2(48, 48); next.add_theme_font_size_override("font_size", main.scaled_font(22)); host.add_child(next)
+	# DK-01 has five authored paper cells.  A free-running HBox put compact cards
+	# between those cells, so each page now registers one semantic card to one cell.
+	var tray := Control.new(); tray.name = "DeckOwnedArtTray"; tray.clip_contents = true; _set_normalized_rect(tray, Rect2(0.1275, 0.8176, 0.7365, 0.0981)); host.add_child(tray)
+	var pages := maxi(1, ceili(owned_cards.size() / 5.0))
+	var page := clampi(int(main.get_meta("m3_deck_owned_page", 0)), 0, pages - 1)
+	main.set_meta("m3_deck_owned_page", page)
+	var visible: Array = owned_cards.slice(page * 5, mini(owned_cards.size(), page * 5 + 5))
+	var cells := [Rect2(0.000, 0.0, 0.172, 1.0), Rect2(0.212, 0.0, 0.166, 1.0), Rect2(0.416, 0.0, 0.170, 1.0), Rect2(0.625, 0.0, 0.167, 1.0), Rect2(0.833, 0.0, 0.167, 1.0)]
+	for index in visible.size():
+		var definition: Dictionary = visible[index]; var id := str(definition.get("id", "")); var tile := _deck_card_tile(definition, int(GameManager.profile.get("owned_cards", {}).get(id, 0)), id == selected_id); tile.name = "DeckOwnedCard" + id.capitalize(); _set_normalized_rect(tile, cells[index]); tile.pressed.connect(func(): main.set_meta("m3_deck_selected_card_id", id); main.render()); tray.add_child(tile)
+	var previous := _deck_button("DeckOwnedPrevious", "‹", func(): main.set_meta("m3_deck_owned_page", maxi(0, page - 1)); main.render()); _set_normalized_rect(previous, Rect2(0.015, 0.850, 0.085, 0.062)); previous.custom_minimum_size = Vector2(48, 48); previous.add_theme_font_size_override("font_size", main.scaled_font(22)); previous.disabled = page <= 0; previous.tooltip_text = "Show earlier owned cards"; previous.accessibility_name = previous.tooltip_text; host.add_child(previous)
+	var next := _deck_button("DeckOwnedNext", "›", func(): main.set_meta("m3_deck_owned_page", mini(pages - 1, page + 1)); main.render()); _set_normalized_rect(next, Rect2(0.895, 0.850, 0.090, 0.062)); next.offset_right = -4; next.custom_minimum_size = Vector2(48, 48); next.add_theme_font_size_override("font_size", main.scaled_font(22)); next.disabled = page >= pages - 1; next.tooltip_text = "Show more owned cards"; next.accessibility_name = next.tooltip_text; host.add_child(next)
 
 func _deck_card_tile(card: Dictionary, copies: int, active := false) -> Button:
 	var tile := _deck_button("DeckCompactCard", "", Callable(), active); tile.clip_contents = true; CONTROLS.apply(tile, "lever", active, true); tile.tooltip_text = "%s · %d copies" % [str(card.get("name", "Card")), copies]; tile.accessibility_name = tile.tooltip_text
@@ -324,11 +342,11 @@ func _deck_card_tile(card: Dictionary, copies: int, active := false) -> Button:
 	# deck context. The approved navy card remains intact, but never floats alone
 	# as a sticker; support cards retain their existing treatment.
 	var ink := Color("47331f")
-	var name := Label.new(); name.name = "DeckCardName"; name.text = str(card.get("name", "Card")); name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; name.add_theme_font_size_override("font_size", 10); name.add_theme_color_override("font_color", ink); name.mouse_filter = Control.MOUSE_FILTER_IGNORE; name.z_index = 2; _set_normalized_rect(name, Rect2(0.10, 0.04, 0.80, 0.13)); tile.add_child(name)
-	if creature: _deck_blueprint_seat(tile, "DeckBlueprintSeat", Rect2(0.07, 0.16, 0.86, 0.66))
-	var art := IMPRINT.add_catalog_art(tile, "DeckCardCatalogArt", card, Rect2(0.15, 0.23, 0.70, 0.52), UNIFIED_CARD_VIEW.art_for_definition(card))
+	var name := Label.new(); name.name = "DeckCardName"; name.text = str(card.get("name", "Card")); name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; name.autowrap_mode = TextServer.AUTOWRAP_OFF; name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; name.add_theme_font_size_override("font_size", 10); name.add_theme_color_override("font_color", ink); name.mouse_filter = Control.MOUSE_FILTER_IGNORE; name.z_index = 2; _set_normalized_rect(name, Rect2(0.10, 0.045, 0.80, 0.135)); tile.add_child(name)
+	if creature: _deck_blueprint_seat(tile, "DeckBlueprintSeat", Rect2(0.07, 0.175, 0.86, 0.615))
+	var art := IMPRINT.add_catalog_art(tile, "DeckCardCatalogArt", card, Rect2(0.15, 0.225, 0.70, 0.500), UNIFIED_CARD_VIEW.art_for_definition(card))
 	_deck_apply_blueprint_ink(art, card)
-	var count := Label.new(); count.name = "DeckCardCopies"; count.text = "×%d" % copies; count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; count.add_theme_font_size_override("font_size", 10); count.add_theme_color_override("font_color", ink); count.mouse_filter = Control.MOUSE_FILTER_IGNORE; count.z_index = 2; _set_normalized_rect(count, Rect2(0.15, 0.84, 0.70, 0.10)); tile.add_child(count)
+	var count := Label.new(); count.name = "DeckCardCopies"; count.text = "×%d" % copies; count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; count.add_theme_font_size_override("font_size", 10); count.add_theme_color_override("font_color", ink); count.mouse_filter = Control.MOUSE_FILTER_IGNORE; count.z_index = 2; _set_normalized_rect(count, Rect2(0.15, 0.805, 0.70, 0.130)); tile.add_child(count)
 	return tile
 
 func _deck_button(node_name: String, value: String, action: Callable, active := false) -> Button:

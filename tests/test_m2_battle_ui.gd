@@ -2,6 +2,7 @@ extends Node
 
 const STAGE := preload("res://scripts/ui/physical_battlefield_stage.gd")
 const COMPONENT := preload("res://scripts/ui/unified_battle_screen_component.gd")
+const PRESENTER := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
 var failures: Array[String] = []
@@ -92,7 +93,7 @@ func _ready() -> void:
 	shell.unified_local_handoff = false; shell.render(); await get_tree().process_frame
 	require(shell.find_child("UnifiedHandAquafin", true, false) != null and shell.find_child("UnifiedHandCinderpaw", true, false) == null, "After Ready only the active local owner hand is visible and playable.")
 	var queue_hud := shell.find_child("PhysicalBattleHud0Resources", true, false) as Label
-	require(queue_hud != null and queue_hud.text == "130/400 filament · Queue 1\nHead: Cinderpaw · 1 turn left" and label_lines_fit(queue_hud, 6.0), "Player printer resource face exposes an explicit two-line FIFO head and remaining-turn readout without clipping.")
+	require(queue_hud != null and queue_hud.text == "F 130/400 · Q1\nCinderpaw · 1t" and label_lines_fit(queue_hud, 6.0), "Player printer resource face exposes an explicit two-line FIFO head and remaining-turn readout without clipping.")
 	hotseat.player(1).hand = ["cinderpaw"]; shell.unified_selected_card_id = "cinderpaw"; shell.unified_battle_coordinator.set_transient_focus(-1); shell.render(); await get_tree().process_frame
 	var selected_blueprint := shell.find_child("UnifiedSelectedCreatureBlueprint", true, false) as PanelContainer
 	var selected_art := shell.find_child("UnifiedSelectedCreatureBlueprintCard", true, false) as TextureRect
@@ -118,13 +119,75 @@ func _ready() -> void:
 		var selected_complete := selected_blueprint != null and selected_blueprint.clip_contents and selected_art != null and selected_art.texture != null and selected_copy != null and not selected_copy.text.is_empty() and selected_copy.get_global_rect().size.x > 0.0 and Rect2(Vector2.ZERO, size).encloses(selected_copy.get_global_rect())
 		var instruments_present := status_instrument != null and resource_hud != null and hand_rail != null and queue_print != null
 		var queue_touch_ok := queue_print != null and queue_print.custom_minimum_size.y >= 48.0
-		var hud_copy_ok := resource_hud != null and resource_hud.text == "130/400 filament · Queue 1\nHead: Cinderpaw · 1 turn left" and label_lines_fit(resource_hud, 6.0)
+		var hud_copy_ok := resource_hud != null and resource_hud.text == "F 130/400 · Q1\nCinderpaw · 1t" and label_lines_fit(resource_hud, 6.0)
 		var contained := Rect2(Vector2.ZERO, size).encloses(selected_rect)
 		var in_status_instrument := status_instrument != null and status_instrument.get_global_rect().encloses(selected_rect) and not status_instrument.visible and status_instrument.text.is_empty()
 		var clear_of_hud_hand_gap := resource_hud != null and selected_rect.end.y <= resource_hud.get_global_rect().position.y and hand_rail != null and selected_rect.end.y <= hand_rail.get_global_rect().position.y
 		var hand_focus := hand_card.get_theme_stylebox("focus") as StyleBoxFlat if hand_card != null else null
-		var separated_hand_focus := hand_focus != null and hand_focus.expand_margin_left >= 4.0 and hand_focus.expand_margin_right >= 4.0 and hand_focus.content_margin_left >= 10.0 and hand_focus.content_margin_right >= 10.0 and hand_rail != null and queue_print != null and hand_rail.get_global_rect().end.y < queue_print.get_global_rect().position.y
-		require(selected_complete and instruments_present and queue_touch_ok and hud_copy_ok and contained and in_status_instrument and clear_of_hud_hand_gap and separated_hand_focus, "Selected native-art blueprint is contained by the central status instrument with a padded hand focus ring and separate Queue rail at %dx%d (complete=%s instruments=%s queue48=%s hud_copy=%s contained=%s central=%s clear_gap=%s focus_gap=%s rect=%s)." % [int(size.x), int(size.y), str(selected_complete), str(instruments_present), str(queue_touch_ok), str(hud_copy_ok), str(contained), str(in_status_instrument), str(clear_of_hud_hand_gap), str(separated_hand_focus), str(selected_rect)])
+		var separated_hand_focus := hand_focus != null and hand_focus.expand_margin_left >= 4.0 and hand_focus.expand_margin_right >= 4.0 and hand_focus.content_margin_left >= 10.0 and hand_focus.content_margin_right >= 10.0 and hand_rail != null and queue_print != null and not hand_rail.get_global_rect().intersects(queue_print.get_global_rect()) and queue_print.get_global_rect().size.y >= 48.0
+		require(selected_complete and instruments_present and queue_touch_ok and hud_copy_ok and contained and in_status_instrument and clear_of_hud_hand_gap and separated_hand_focus, "Selected native-art blueprint is contained by the central status instrument with a padded hand focus ring and a separate non-overlapping Queue rail at %dx%d (complete=%s instruments=%s queue48=%s hud_copy=%s contained=%s central=%s clear_gap=%s focus_gap=%s rect=%s)." % [int(size.x), int(size.y), str(selected_complete), str(instruments_present), str(queue_touch_ok), str(hud_copy_ok), str(contained), str(in_status_instrument), str(clear_of_hud_hand_gap), str(separated_hand_focus), str(selected_rect)])
+	# All selected-card variants use the same narrow lower-left rail.  Exercise
+	# equipment, targeted spell, refill, and emergency-reprint choices at normal
+	# and 150% high-contrast text so a long legacy verb cannot widen into the hand.
+	hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]
+	hotseat.player(0).slots = [UnifiedBattleState._unit(RULES.card("cinderpaw")), null, null]
+	hotseat.player(1).queue = []
+	hotseat.player(1).graveyard = ["cinderpaw"]
+	hotseat.player(1).emergency_reprints = 1
+	for accessibility in [{"text_scale_bps":10000,"high_contrast":false,"reduced_motion":false}, {"text_scale_bps":15000,"high_contrast":true,"reduced_motion":true}]:
+		var accessibility_settings: Dictionary = accessibility
+		GameManager.profile.settings = accessibility_settings
+		for entry in [{"card":"iron_gem", "node":"UnifiedPlayQueueEquipment", "target":0}, {"card":"layer_melt", "node":"UnifiedPlayCastCard", "target":0}, {"card":"raw_filament", "node":"UnifiedPlayUseRefill", "target":-1}, {"card":"filament_ring", "node":"UnifiedPlayUseRefill", "target":-1}, {"card":"emergency_reprint_spell", "node":"UnifiedPlayCastCard", "target":0}]:
+			var scenario: Dictionary = entry
+			hotseat.player(1).hand = [str(scenario.get("card", ""))]
+			shell.unified_selected_card_id = str(scenario.get("card", ""))
+			shell.unified_selected_target = int(scenario.get("target", -1))
+			shell.size = Vector2(576, 1024)
+			shell.render()
+			await get_tree().process_frame
+			var action_name := str(scenario.get("node", ""))
+			var action_button := shell.find_child(action_name, true, false) as Button
+			var support_status := shell.find_child("PhysicalBattleStatus", true, false) as Label
+			var support_status_ok := support_status != null and support_status.visible and support_status.max_lines_visible == 2 and support_status.clip_text and support_status.text.split("\n").size() == 1 and label_text_fits(support_status, 6.0) and Rect2(Vector2.ZERO, Vector2(576, 1024)).encloses(support_status.get_global_rect())
+			var rail_compact: bool = _plan_action_rail_is_compact(shell, action_button)
+			var scenario_diagnostic: String = ""
+			if str(scenario.get("card", "")) == "iron_gem" and bool(accessibility_settings.get("high_contrast", false)):
+				var iron_gem := RULES.card("iron_gem")
+				var expected_instruction: String = "Queue equipment"
+				var expected_metadata: String = "%s · %d filament · %s · %s" % [str(iron_gem.get("name", "iron_gem")), int(iron_gem.get("filament_cost", iron_gem.get("cost", 0))), str(iron_gem.get("type", "blueprint")).capitalize(), str(iron_gem.get("text", "Use this blueprint."))]
+				var metadata_name_ok: bool = support_status != null and support_status.tooltip_text.contains(str(iron_gem.get("name", "iron_gem")))
+				var metadata_filament_ok: bool = support_status != null and support_status.tooltip_text.contains("%d filament" % int(iron_gem.get("filament_cost", iron_gem.get("cost", 0))))
+				var metadata_text_ok: bool = support_status != null and support_status.tooltip_text.contains(str(iron_gem.get("text", "Use this blueprint.")))
+				var metadata_accessibility_ok: bool = support_status != null and support_status.accessibility_name == support_status.tooltip_text
+				var metadata_ok: bool = support_status != null and support_status.tooltip_text == expected_metadata and metadata_name_ok and metadata_filament_ok and metadata_text_ok and metadata_accessibility_ok
+				var status_font: Font = support_status.get_theme_font("font") if support_status != null else null
+				var status_font_size: int = support_status.get_theme_font_size("font_size") if support_status != null else 0
+				var line_width: float = status_font.get_string_size(support_status.text, HORIZONTAL_ALIGNMENT_LEFT, -1, status_font_size).x if status_font != null and support_status != null else -1.0
+				var status_rect: Rect2 = support_status.get_global_rect() if support_status != null else Rect2()
+				support_status_ok = support_status_ok and support_status.text == expected_instruction and metadata_ok
+				scenario_diagnostic = " expected=%s actual=%s font=%d line_width=%.1f rect=%s height=%.1f rail_compact=%s text_fit=%s metadata(name=%s filament=%s text=%s a11y=%s exact=%s) expected_tooltip=%s tooltip=%s" % [expected_instruction, support_status.text if support_status != null else "<missing>", status_font_size, line_width, str(status_rect), status_rect.size.y, str(rail_compact), str(label_text_fits(support_status, 6.0)), str(metadata_name_ok), str(metadata_filament_ok), str(metadata_text_ok), str(metadata_accessibility_ok), str(support_status != null and support_status.tooltip_text == expected_metadata), expected_metadata, support_status.tooltip_text if support_status != null else "<missing>"]
+			require(rail_compact and support_status_ok, "Selected %s keeps every rail action inside the 96px physical action rail and its one-line state instruction inside the parchment seat at 576x1024 (text150=%s HC=%s).%s" % [str(scenario.get("card", "")), str(int(accessibility_settings.get("text_scale_bps", 10000)) >= 15000), str(bool(accessibility_settings.get("high_contrast", false))), scenario_diagnostic])
+	GameManager.profile.settings = {"text_scale_bps":10000,"high_contrast":false,"reduced_motion":false}
+	hotseat.player(1).hand = ["cinderpaw"]
+	hotseat.player(1).queue = [{"card_id":"cinderpaw", "remaining":1}]
+	shell.unified_selected_card_id = "cinderpaw"
+	shell.unified_selected_target = -1
+	# 576x1152 is the near-2:1 contain case. Derive the actual fractional fit
+	# from the same presenter rather than rounding the 941x1672 master to pixels.
+	# Every Plan owner must derive from that same composition rect, never the raw
+	# window anchors used by an older full-bleed-only layout.
+	GameManager.profile.settings = {"text_scale_bps":10000,"high_contrast":false,"reduced_motion":false}; hotseat.phase = "main"; hotseat.player(1).hand = ["cinderpaw"]; shell.unified_selected_card_id = "cinderpaw"; shell.size = Vector2(576, 1152); shell.render(); await get_tree().process_frame
+	var contain_frame := PRESENTER.composition_rect(Vector2(576, 1152), Vector2(941, 1672))
+	var contain_title := shell.find_child("UnifiedBattleHeading", true, false) as Label
+	var contain_back := shell.find_child("UnifiedBattleBack", true, false) as Button
+	var contain_hand := shell.find_child("PhysicalBattleHandScroll", true, false) as ScrollContainer
+	var contain_actions := shell.find_child("PhysicalBattlePlanActionScroll", true, false) as ScrollContainer
+	var contain_queue := shell.find_child("UnifiedPlayQueueCreature", true, false) as Button
+	var contain_row := shell.find_child("PhysicalBattlePlanActions", true, false) as VBoxContainer
+	var contain_cancel := contain_row.get_child(1) as Button if contain_row != null and contain_row.get_child_count() > 1 else null
+	var contain_lever := shell.find_child("UnifiedRunCycleLever", true, false) as Button
+	var contain_ok := contain_title != null and contain_back != null and contain_hand != null and contain_actions != null and contain_queue != null and contain_cancel != null and contain_lever != null and contain_frame.encloses(contain_title.get_global_rect()) and contain_frame.encloses(contain_back.get_global_rect()) and contain_frame.encloses(contain_hand.get_global_rect()) and contain_frame.encloses(contain_actions.get_global_rect()) and contain_frame.encloses(contain_lever.get_global_rect()) and not contain_hand.get_global_rect().intersects(contain_actions.get_global_rect()) and not contain_hand.get_global_rect().intersects(contain_lever.get_global_rect()) and contain_queue.get_global_rect().size.y >= 48.0 and contain_cancel.get_global_rect().size.y >= 48.0
+	require(contain_ok, "Near-2:1 contained battle maps heading, Back, hand, Queue/Cancel rail, and Run Cycle through the 576x1024 chassis without bottom/top bleed.")
 	shell.size = Vector2(1024, 1024); shell.render(); await get_tree().process_frame
 	hotseat.player(1).hand = ["aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin"]
 	hotseat.pending = {"kind":"place","seat":1,"unit":UnifiedBattleState._unit(RULES.card("aquafin"))}; hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]; shell.render(); await get_tree().process_frame
@@ -187,3 +250,25 @@ func label_lines_fit(label: Label, margin: float) -> bool:
 	for line in label.text.split("\n"):
 		if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - margin: return false
 	return rect.size.y >= font.get_height(font_size) * 2.0
+
+func label_text_fits(label: Label, margin: float) -> bool:
+	if label == null: return false
+	var font := label.get_theme_font("font")
+	var font_size := label.get_theme_font_size("font_size")
+	if font == null or font_size <= 0: return false
+	var rect := label.get_global_rect()
+	for line in label.text.split("\n"):
+		if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - margin: return false
+	return rect.size.y >= font.get_height(font_size)
+
+func _plan_action_rail_is_compact(shell: Control, primary: Button) -> bool:
+	var rail := shell.find_child("PhysicalBattlePlanActionScroll", true, false) as ScrollContainer
+	var row := shell.find_child("PhysicalBattlePlanActions", true, false) as VBoxContainer
+	var hand := shell.find_child("PhysicalBattleHandScroll", true, false) as ScrollContainer
+	if rail == null or row == null or hand == null or primary == null or row.get_child_count() == 0: return false
+	if row.get_child(0) != primary or primary.custom_minimum_size != Vector2(96, 48): return false
+	for child in row.get_children():
+		var action := child as Button
+		if action == null or action.custom_minimum_size != Vector2(96, 48): return false
+		if action.get_global_rect().size.x > rail.get_global_rect().size.x or action.get_global_rect().intersects(hand.get_global_rect()): return false
+	return primary.get_global_rect().size.y >= 48.0

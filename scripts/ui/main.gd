@@ -36,7 +36,7 @@ const M3_PHYSICAL_UI := preload("res://scripts/ui/m3_physical_ui_component.gd")
 const PHYSICAL_NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
 const PHYSICAL_CONTROL_FAMILY := preload("res://scripts/ui/physical_control_family.gd")
 const PHYSICAL_CATALOG_IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
-const REVIEW_BUILD_LABEL := "0.8.7-founder-navigation"
+const REVIEW_BUILD_LABEL := "0.8.9-ui-alignment"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
@@ -830,8 +830,9 @@ func _add_m1_r2_workshop_props(surface: Control) -> void:
 		surface.add_child(art)
 		var label_rect := M1_PHYSICAL_UI.workshop_label_rect(prop)
 		var high_contrast := bool(settings().get("high_contrast", false))
-		var native_ink: Color = prop.get("label_color", Color("071a25")) if not high_contrast else Color("000000")
-		var native_outline: Color = prop.get("label_outline", Color("fff1c8")) if not high_contrast else Color("ffffff")
+		var is_dark_supply_apron := str(prop.get("id", "")) == "supplies"
+		var native_ink: Color = prop.get("label_color", Color("071a25")) if (not high_contrast or is_dark_supply_apron) else Color("000000")
+		var native_outline: Color = prop.get("label_outline", Color("fff1c8")) if (not high_contrast or is_dark_supply_apron) else Color("ffffff")
 		var native_label := label(str(prop.label), int(prop.get("label_font_size", 10)), native_ink)
 		native_label.name = "WorkshopStationLabel%s" % _workshop_overview_hotspot_node_suffix(str(prop.id))
 		native_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -862,15 +863,15 @@ func render_feedback_workshop() -> void:
 	workshop_plate.content_layer().add_child(surface)
 	_feedback_progress_instrument(surface, "Workshop")
 	_add_m1_r2_workshop_props(surface)
-	var printer_label := label("PRINTER", 12, Color("071a25") if not bool(settings().get("high_contrast", false)) else Color("000000"))
-	printer_label.add_theme_color_override("font_color", Color("000000") if bool(settings().get("high_contrast", false)) else Color("071a25"))
+	var printer_label := label("PRINTER", 12, Color("9beaff") if not bool(settings().get("high_contrast", false)) else Color("ffffff"))
+	printer_label.add_theme_color_override("font_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("9beaff"))
 	printer_label.add_theme_color_override("font_outline_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("fff1c8"))
 	printer_label.add_theme_constant_override("outline_size", 1)
 	# The label is initialized before its late local contrast overrides.
 	printer_label.name = "WorkshopStationLabelPrinter"
 	surface.add_child(printer_label)
 	printer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	printer_label.add_theme_color_override("font_color", Color("000000") if bool(settings().get("high_contrast", false)) else Color("071a25"))
+	printer_label.add_theme_color_override("font_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("9beaff"))
 	printer_label.add_theme_color_override("font_outline_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("fff1c8"))
 	printer_label.add_theme_constant_override("outline_size", 1)
 	printer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -878,7 +879,9 @@ func render_feedback_workshop() -> void:
 	# The authored printer plaque supplies its own material face. Keep this native
 	# label transparent so it cannot become a generic cream button overlay.
 	printer_label.add_theme_stylebox_override("normal", workshop_hotspot_style())
-	printer_label.anchor_left = 0.36; printer_label.anchor_top = 0.48; printer_label.anchor_right = 0.64; printer_label.anchor_bottom = 0.535
+	# The lower rim is hardware, not a caption face.  Keep the printer label in the
+	# dark-glass band immediately above the bed where its light outline remains clear.
+	printer_label.anchor_left = 0.36; printer_label.anchor_top = 0.430; printer_label.anchor_right = 0.64; printer_label.anchor_bottom = 0.475
 	for hotspot in _physical_workshop_hotspots():
 		var button := _workshop_overview_hotspot_button(hotspot)
 		surface.add_child(button)
@@ -1654,13 +1657,15 @@ func render_m1_r2_starter_page() -> void:
 	free_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	free_status.anchor_left = 0.04; free_status.anchor_right = 0.96; free_status.anchor_top = 0.80; free_status.anchor_bottom = 0.86
 	content.add_child(free_status)
-	var previous := _visual_button("StarterPrevious", "PREVIOUS", func(): starter_page = posmod(starter_page - 1, choices.size()); render(), Color("587f90"))
+	# The illustrated desk already owns the left/right chevrons. Native controls
+	# preserve the larger accessible target without painting duplicate words on them.
+	var previous := _visual_button("StarterPrevious", "", func(): starter_page = posmod(starter_page - 1, choices.size()); render(), Color("587f90"))
 	previous.custom_minimum_size = Vector2(48, 48)
 	M1_PHYSICAL_UI.place_design(previous, Rect2(22, 920, 185, 105))
 	previous.accessibility_name = "Previous starter blueprint"
 	M1_PHYSICAL_UI.apply_cream_action(previous)
 	surface.add_child(previous)
-	var next := _visual_button("StarterNext", "NEXT", func(): starter_page = posmod(starter_page + 1, choices.size()); render(), Color("587f90"))
+	var next := _visual_button("StarterNext", "", func(): starter_page = posmod(starter_page + 1, choices.size()); render(), Color("587f90"))
 	next.custom_minimum_size = Vector2(48, 48)
 	M1_PHYSICAL_UI.place_design(next, Rect2(733, 920, 186, 105))
 	surface.add_child(next)
@@ -1704,7 +1709,12 @@ func render_m1_r2_starter_page() -> void:
 		socket.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		socket.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		socket.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		M1_PHYSICAL_UI.place_design(socket, Rect2(250 + index * 150, 1480, 100, 100))
+		# Keep the transparent blueprint ink inside each circular socket instead of
+		# letting the source canvas reach across the brass rim.
+		# These are the three measured inner-circle centers in the starter master.
+		# Their 186px pitch is intentionally wider than the carousel's old 150px
+		# spacing, which had pushed Voltwig out onto the left brass rim.
+		M1_PHYSICAL_UI.place_design(socket, Rect2(250 + index * 186, 1516, 68, 68))
 		surface.add_child(socket)
 	if not starter_inspector_id.is_empty(): render_starter_inspector()
 

@@ -12,7 +12,7 @@ const FORGE_SEQUENCE := preload("res://scripts/ui/arcane_forge_sequence.gd")
 var failures: Array[String] = []
 var exercised_rows: Dictionary = {}
 var executed_subcases: Dictionary = {}
-const TEST_ROOT := "E:/AI Projects/games/3d print battler/build/evidence/m9a-runtime-20260904/state/m8-route-back"
+var test_root := ""
 
 # Locked rows 129–146.  The row id is deliberately emitted, so a smaller subset
 # cannot accidentally make this suite look complete.
@@ -49,6 +49,14 @@ func _ready() -> void:
 
 func _profile() -> Dictionary:
 	return M9_TEST_PROFILE_FACTORY.founder_ready("cinderpaw")
+
+func _fresh_test_root() -> String:
+	# The project bootstrap reads --qa-save-root before this scene is mounted.
+	# Reuse that already-isolated profile directory rather than reconfiguring this
+	# full Back matrix to a historical shared evidence root.
+	var root := SaveService.profile_path.get_base_dir().replace("\\", "/")
+	require(not root.is_empty() and root != "user:", "M8 Back contract requires a pre-autoload isolated SaveService profile directory.")
+	return root
 
 func _mount() -> Dictionary:
 	var viewport := SubViewport.new()
@@ -263,8 +271,9 @@ func _press_result_retry(main: Control, profile: Dictionary, result_id: String) 
 	return outcome
 
 func _run() -> void:
-	DirAccess.make_dir_recursive_absolute(TEST_ROOT)
-	SaveService.configure_test_paths(TEST_ROOT)
+	test_root = _fresh_test_root()
+	DirAccess.make_dir_recursive_absolute(test_root)
+	SaveService.configure_test_paths(test_root)
 	GameManager.profile = _profile()
 	var mounted := await _mount()
 	var main: Control = mounted.main
@@ -359,7 +368,7 @@ func _run() -> void:
 	# from contaminating the second copy.
 	var result_fixture_profile: Dictionary = GameManager.profile.duplicate(true)
 	var retry_profile := _profile()
-	var blocked_root := TEST_ROOT.path_join("retry-blocked")
+	var blocked_root := test_root.path_join("retry-blocked")
 	DirAccess.make_dir_recursive_absolute(blocked_root)
 	var blocked_parent := blocked_root.path_join("not_a_directory")
 	var blocker := FileAccess.open(blocked_parent, FileAccess.WRITE)
@@ -374,12 +383,12 @@ func _run() -> void:
 	var retry_failure_b: Dictionary = await _press_result_retry(main, retry_profile, "m8-retry-failure")
 	require(retry_failure_a == retry_failure_b, "M8 ResultRetry persistence-failure copies are byte-equivalent from identical fixtures.")
 	_subcase("18c-retry-failure-copy-a-b")
-	SaveService.configure_test_paths(TEST_ROOT)
+	SaveService.configure_test_paths(test_root)
 	DirAccess.remove_absolute(blocked_parent)
 	DirAccess.remove_absolute(blocked_root)
 
-	var success_root_a := TEST_ROOT.path_join("retry-success-a")
-	var success_root_b := TEST_ROOT.path_join("retry-success-b")
+	var success_root_a := test_root.path_join("retry-success-a")
+	var success_root_b := test_root.path_join("retry-success-b")
 	DirAccess.make_dir_recursive_absolute(success_root_a)
 	DirAccess.make_dir_recursive_absolute(success_root_b)
 	var retry_success_before := JSON.stringify(retry_profile)
@@ -391,7 +400,7 @@ func _run() -> void:
 	var retry_success_b: Dictionary = await _press_result_retry(main, retry_profile, "m8-retry-success")
 	require(retry_success_a == retry_success_b and JSON.stringify(retry_profile) == retry_success_before, "M8 ResultRetry success copies are byte-equivalent from isolated identical fixtures without a second settlement in either copy.")
 	_subcase("18d-retry-success-copy-a-b")
-	SaveService.configure_test_paths(TEST_ROOT)
+	SaveService.configure_test_paths(test_root)
 	DirAccess.remove_absolute(success_root_a.path_join("profile.json"))
 	DirAccess.remove_absolute(success_root_a.path_join("profile.backup.json"))
 	DirAccess.remove_absolute(success_root_a.path_join("journal.jsonl"))

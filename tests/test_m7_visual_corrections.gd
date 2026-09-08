@@ -74,8 +74,6 @@ func _deck_material_and_targets(main: Control) -> void:
 	var save := main.find_child("SaveActiveDeck", true, false) as Button
 	var preprint := main.find_child("SavePrePrintLoadout", true, false) as Button
 	var inspector_sheet := main.find_child("DeckInspectorLooseParchment", true, false) as Panel
-	var inspector_count := main.find_child("DeckInspectorCount", true, false) as Label
-	var inspector_count_seat := main.find_child("DeckInspectorCountSeat", true, false) as Panel
 	var inspector_art := main.find_child("DeckInspectorCatalogArt", true, false) as TextureRect
 	var legality := main.find_child("DeckLegalityStatus", true, false) as Label
 	var parchment := true
@@ -90,8 +88,8 @@ func _deck_material_and_targets(main: Control) -> void:
 			treated_blueprints += 1
 			deck_ink = deck_ink and deck_art.material is ShaderMaterial
 	var keycaps := back != null and save != null and preprint != null and back.get_theme_stylebox("normal") is StyleBoxTexture and save.get_theme_stylebox("normal") is StyleBoxTexture and preprint.get_theme_stylebox("normal") is StyleBoxTexture
-	var count_is_separate := inspector_count != null and inspector_count_seat != null and inspector_art != null and not inspector_count.get_global_rect().intersects(inspector_art.get_global_rect()) and (inspector_count_seat.get_theme_stylebox("panel") as StyleBoxFlat).bg_color.a > 0.5
-	require(not seats.is_empty() and parchment and treated_blueprints > 0 and deck_ink and inspector_sheet != null and inspector_sheet.clip_contents and inspector_sheet.get_theme_stylebox("panel") is StyleBoxFlat and keycaps and count_is_separate and legality != null and legality.text == "40 · LEGAL" and legality.accessibility_name.contains("40 cards") and back != null and save != null and preprint != null and back.get_global_rect().size.x >= 48.0 and back.get_global_rect().size.y >= 48.0 and save.get_global_rect().size.x >= 48.0 and save.get_global_rect().size.y >= 48.0 and preprint.get_global_rect().size.x >= 48.0 and preprint.get_global_rect().size.y >= 48.0, "test_m7_deck_blueprint_material_and_targets keeps blueprint seats transparent over authored parchment, uses one square clipped inspector sheet plus a separate readable count fact, and applies full-size Foundry keycaps to Back, Save, and Pre-Print.")
+	var legality_is_untrimmed := legality != null and legality.text == "40\nLEGAL" and legality.get_global_rect().size.y >= 34.0
+	require(not seats.is_empty() and parchment and treated_blueprints > 0 and deck_ink and inspector_sheet != null and inspector_sheet.clip_contents and inspector_sheet.get_theme_stylebox("panel") is StyleBoxFlat and keycaps and legality_is_untrimmed and legality.accessibility_name.contains("40 cards") and back != null and save != null and preprint != null and back.get_global_rect().size.x >= 48.0 and back.get_global_rect().size.y >= 48.0 and save.get_global_rect().size.x >= 48.0 and save.get_global_rect().size.y >= 48.0 and preprint.get_global_rect().size.x >= 48.0 and preprint.get_global_rect().size.y >= 48.0, "test_m7_deck_blueprint_material_and_targets keeps blueprint seats transparent over authored parchment, gives its compact inspector a readable legality fact, and applies full-size Foundry keycaps to Back, Save, and Pre-Print.")
 
 func _workshop_hits(main: Control) -> void:
 	main.screen = "workshop"

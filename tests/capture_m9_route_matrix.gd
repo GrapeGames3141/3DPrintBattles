@@ -9,13 +9,15 @@ const TEST_PROFILES := preload("res://tests/m9_test_profile_factory.gd")
 const BATTLE_STATE := preload("res://scripts/battle/unified_battle_state.gd")
 const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
 
-const ROUTES := ["title", "workshop", "starter", "first_print", "active_forge", "founder_page_1", "founder_page_3", "founder_recovery", "archive", "deck", "market", "settings", "result", "battle_exit"]
+const ROUTES := ["title", "workshop", "starter", "first_print", "active_forge", "founder_page_1", "founder_page_3", "founder_recovery", "archive", "deck", "market", "settings", "result", "battle_plan", "battle_selected_queue", "battle_exit"]
 const PRODUCTION_BASE := Vector2i(576, 1024)
 
 var main: Control
 var route_id := ""
 var capture_size := Vector2i(576, 1024)
 var app_root: Window
+var safe_top_inset := 0.0
+var selected_card_override := ""
 
 func _init() -> void:
 	call_deferred("_run")
@@ -30,6 +32,12 @@ func _run() -> void:
 		return
 	if args.size() >= 3:
 		capture_size = Vector2i(int(args[1]), int(args[2]))
+	for argument in args:
+		var value := str(argument)
+		if value.begins_with("--safe-top="):
+			safe_top_inset = maxf(0.0, float(value.trim_prefix("--safe-top=")))
+		elif value.begins_with("--selected-card="):
+			selected_card_override = value.trim_prefix("--selected-card=")
 	if capture_size.x < 320 or capture_size.y < 560:
 		push_error("M9 capture needs a portrait surface, got %s." % capture_size)
 		get_tree().quit(1)
@@ -53,6 +61,9 @@ func _run() -> void:
 	GameManager.profile.forge_coins = 1200
 	_apply_accessibility_flags(args)
 	main = MAIN.instantiate()
+	# Capture-only presentation fixture.  Main already owns the safe-content
+	# boundary; this only supplies an explicit, logged synthetic top inset.
+	main.set_meta("presentation_safe_top_inset", safe_top_inset)
 	app_root.add_child(main)
 	await _prepare_route()
 	await get_tree().process_frame
@@ -80,7 +91,8 @@ func _run() -> void:
 		push_error("Could not write M9 route capture: %s" % output)
 		get_tree().quit(1)
 		return
-	print("M9_ROUTE_CAPTURE route=%s size=%s output=%s" % [route_id, capture_size, output])
+	print("M9_ROUTE_CAPTURE route=%s size=%s safe_top=%0.1f output=%s" % [route_id, capture_size, safe_top_inset, output])
+	print("M9_ROUTE_MANIFEST route=%s logical=%s physical=%s safe_top=%0.1f text150=%s high_contrast=%s reduced_motion=%s output=%s" % [route_id, PRODUCTION_BASE, capture_size, safe_top_inset, str("--text150" in args), str("--high-contrast" in args), str("--reduced-motion" in args), output])
 	main.get_parent().remove_child(main)
 	main.free()
 	CONTROLS.release_cached_resources()
@@ -136,8 +148,20 @@ func _prepare_route() -> void:
 		"settings": main.screen = "settings"; main.settings_return_screen = "workshop"
 		"result":
 			main.screen = "m3_result"; main.m3_result_state = "committed"; main.m3_result_receipt = {"result": "victory", "mode": "training", "coins": 25, "xp": 10}
-		"battle_exit":
-			main.battle = BATTLE_STATE.create(["cinderpaw"], ["aquafin"], 61)
+		"battle_plan", "battle_exit", "battle_selected_queue":
+			var selected_card := selected_card_override if route_id == "battle_selected_queue" and not selected_card_override.is_empty() else "cinderpaw"
+			main.battle = BATTLE_STATE.create([selected_card], ["aquafin"], 61)
+			main.battle.phase = "main"
+			if route_id == "battle_selected_queue":
+				main.battle.player(0).queue = [{"card_id":"cinderpaw", "remaining":1}]
+				main.battle.player(0).hand = [selected_card]
+				main.unified_selected_card_id = selected_card
+				if selected_card == "iron_gem":
+					main.battle.player(0).slots = [BATTLE_STATE._unit(RULES.card("cinderpaw")), null, null]
+					main.unified_selected_target = 0
+				elif selected_card == "emergency_reprint_spell":
+					main.battle.player(0).graveyard = ["cinderpaw"]
+					main.unified_selected_target = 0
 			main.battle_mode = "training"; main.battle_settlement_context = {"mode": "training"}; main.unified_battle_coordinator.configure(main.battle, 0); main.screen = "unified_battle"
 	_apply_accessibility_flags(OS.get_cmdline_user_args())
 	main.render()
@@ -162,7 +186,7 @@ func _owner() -> Button:
 		"deck", "market": return main.find_child("UnifiedFoundryWorkshopReturn", true, false) as Button
 		"settings": return main.find_child("SettingsCancel", true, false) as Button
 		"result": return main.find_child("ResultContinue", true, false) as Button
-		"battle_exit": return main.find_child("UnifiedBattleBack", true, false) as Button
+		"battle_plan", "battle_selected_queue", "battle_exit": return main.find_child("UnifiedBattleBack", true, false) as Button
 	return null
 
 func _pack_card_target(card_name: String) -> Button:
@@ -201,7 +225,7 @@ func _expected_action_result() -> bool:
 		"active_forge": return main.screen == "workshop" and main.printer_sequence != null
 		"founder_page_1", "founder_page_3": return main.screen == "workshop" and not (GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).is_empty()
 		"archive", "deck", "market", "settings", "result": return main.screen == "workshop"
-		"battle_exit": return main.battle_back_confirmation
+		"battle_plan", "battle_selected_queue", "battle_exit": return main.battle_back_confirmation
 	return false
 
 func _tap(target: Button) -> bool:
