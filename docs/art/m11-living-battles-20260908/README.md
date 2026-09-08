@@ -26,6 +26,7 @@ and a guided first bot battle. See the
 - [Portable screenshot index](review-index.html) — the selected candidate for user review.
 - [Text-free generated floor master](battle-continuous-floor-master-v1.png).
 - [Exact ImageGen prompt and provenance](PROMPTS.md).
+- [Verified concept-only DriveFS delivery](DELIVERY.md) — cloud sync unconfirmed; no new APK.
 - [QA reference-image index](QA-REFERENCES.md).
 - `captures/r7/` is the selected 15-state set at 941x1672, 576x1024 and 720x1280.
 

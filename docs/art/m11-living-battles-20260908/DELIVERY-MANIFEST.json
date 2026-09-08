@@ -1,0 +1,323 @@
+{
+  "Kind": "Concept-only DriveFS delivery; not APK",
+  "SourceCommit": "6c6ba644a2dd531b4c512850c0af8ae5e161df92",
+  "SourceRoot": "E:\\AI Projects\\games\\3d print battler\\docs\\art\\m11-living-battles-20260908",
+  "DestinationRoot": "H:\\My Drive\\AI Projects\\PrintForge\\M11-Living-Battle-Concepts-20260908-6c6ba64",
+  "FileCount": 52,
+  "TotalBytes": 66431264,
+  "CloudSynchronization": "Not independently confirmed",
+  "VerifiedFiles": [
+    {
+      "RelativePath": "README.md",
+      "Bytes": 1805,
+      "SHA256": "6EFD812E95D9FA83D096E6312D733E4CE645123F69154664B0EF693A81571758",
+      "Verified": true
+    },
+    {
+      "RelativePath": "review-index.html",
+      "Bytes": 2377,
+      "SHA256": "B096841A01C4B8F75DFF8F596BC4D89845B2E8FB60A49DA428BE0524C5F2A2A8",
+      "Verified": true
+    },
+    {
+      "RelativePath": "battle-continuous-floor-master-v1.png",
+      "Bytes": 2059907,
+      "SHA256": "0E5A00D26A2EF3D01425EF812B49BD9B3EB43CCCFAAF1FD8535C165E5D7B2259",
+      "Verified": true
+    },
+    {
+      "RelativePath": "PROMPTS.md",
+      "Bytes": 2634,
+      "SHA256": "40763DCA022ED32FDB3D451D8C8D94FA808D09B8A113C11B49B1126A6B45FDC4",
+      "Verified": true
+    },
+    {
+      "RelativePath": "REVIEW.md",
+      "Bytes": 4641,
+      "SHA256": "78DB908FF01E9B842E350E6E8869B0D9B08F173A4DCDF0883CD6A7E82C0E2FCB",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\awaken_in_chamber-576x1024.png",
+      "Bytes": 841393,
+      "SHA256": "759391F10CFC5142ED4C831D27680008149D4C471C1ABEF55325F427162FB583",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\awaken_in_chamber-720x1280.png",
+      "Bytes": 1237506,
+      "SHA256": "C93F422DF169C00D358CABEDC9D92051B49EE12D726B7A7E66634DEB846B2825",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\awaken_in_chamber-941x1672.png",
+      "Bytes": 2145359,
+      "SHA256": "F51C8EB93634241199DE3C719070631153DC1C8DBEBF95C967B1BC91435FD923",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\creature_contact-576x1024.png",
+      "Bytes": 898348,
+      "SHA256": "1AF22D7519ABBA5465F61774822F8D090486565BB826FAA5555539984DEF5659",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\creature_contact-720x1280.png",
+      "Bytes": 1317268,
+      "SHA256": "6144B1E9DBB93E758485B1275FF02354AA6A7D78EC0864A058FE0C82E87DD7F4",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\creature_contact-941x1672.png",
+      "Bytes": 2262407,
+      "SHA256": "41A476A47A17BD9216D3538DD66E88536D659D2AEEC701CB32073F1435269276",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\empty_plan-576x1024.png",
+      "Bytes": 835794,
+      "SHA256": "C35E4BD15CB60BE37DAC1D6D462584ABF104E048C1B2CBC4B6BA3FD50B725D53",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\empty_plan-720x1280.png",
+      "Bytes": 1228876,
+      "SHA256": "8E19410184B9D202834F18098FDFD6DCA78F03502AFCEBAB73A42B62BBB38F9C",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\empty_plan-941x1672.png",
+      "Bytes": 2133613,
+      "SHA256": "29D021E6A8C3E661B5FE1745824CD40C480691C1024AD67DD23D814040F04FA7",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\equipment_fitting-576x1024.png",
+      "Bytes": 887576,
+      "SHA256": "A7055583A44EB84197614CDA16555CDC3E5110019165FB7F98A83AFD58967FD8",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\equipment_fitting-720x1280.png",
+      "Bytes": 1300573,
+      "SHA256": "82B4472AFADE7D3961DE42D24D8049EC6E431CCE95FB6015CEEE927C3C87CE77",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\equipment_fitting-941x1672.png",
+      "Bytes": 2241684,
+      "SHA256": "3A35B6BCD4A7D960795454AD2C489F1EE47A977652556ECE2DF07F0898EDC929",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\inheritance.json",
+      "Bytes": 561,
+      "SHA256": "FBDD979FFF320CDE0D6826E370932FF9A327AB0BED70BEC5BAADBD48B9C4270C",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\launch_from_chamber-576x1024.png",
+      "Bytes": 840854,
+      "SHA256": "0E244404856399628115047AED0EECA5D339C24964038A7366ADF07F6AE4D8D0",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\launch_from_chamber-720x1280.png",
+      "Bytes": 1237208,
+      "SHA256": "187536680FD7131F52CFD62B74A36EDB9E5924D271FD375E51850A7DFFA52492",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\launch_from_chamber-941x1672.png",
+      "Bytes": 2145576,
+      "SHA256": "69E42A5865E1D10B3E0F247317F07A322DD4FB84D36062384CB4DBAB2351FD97",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\mat_entry-576x1024.png",
+      "Bytes": 842078,
+      "SHA256": "A1A0E35B5514C59AB51D8CDD5D97F1E65196D042E977C9873CAB9095B0328613",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\mat_entry-720x1280.png",
+      "Bytes": 1237361,
+      "SHA256": "BF2890890DF30EC8EF3DEC79B0D4B8B7261B9A809CD43C812509C9C4F9F0707C",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\mat_entry-941x1672.png",
+      "Bytes": 2145474,
+      "SHA256": "97A7458D63B2E485987A61553D7F41D35C4B61EA84D7236A9219C89C8A8243A5",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\populated-576x1024.png",
+      "Bytes": 898632,
+      "SHA256": "7764F8416CD599F716EA5377A389E40422829BF2DF94EBA6DCC076503ACE1FDD",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\populated-720x1280.png",
+      "Bytes": 1317443,
+      "SHA256": "77C58E3D88ACD6A4BBB220BD4799DE58BF1FBDAE39890EC93717EA546E06E436",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\populated-941x1672.png",
+      "Bytes": 2260445,
+      "SHA256": "4255C561C6108EAFADB4209B4789D6501BB5B82105ACCAB782A7C37559FFA2A2",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\print_early-576x1024.png",
+      "Bytes": 838978,
+      "SHA256": "2B84300BE81AD4E83FBEC7C7E356363446512C18B40B09FEE4B3FC8A6FD1D8EA",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\print_early-720x1280.png",
+      "Bytes": 1233385,
+      "SHA256": "F8A33E994EEA369349CC87658E960CAA9D514EFE18021A1336FA5017BF956001",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\print_early-941x1672.png",
+      "Bytes": 2139368,
+      "SHA256": "CF28716F2A44E70767F96CA7294B467650D33EEA4DF6E445D887933ACB9A3551",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\print60-576x1024.png",
+      "Bytes": 839825,
+      "SHA256": "C01FDE712B1A86135ABE6DB8D989A2DE62E948851BBEBABD76A3ACBA9A67E2B1",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\print60-720x1280.png",
+      "Bytes": 1235308,
+      "SHA256": "2ED6E04AFC6FDEFA194DDED49ABB685D2D94F458AE79A211467AAADD8A6AD337",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\print60-941x1672.png",
+      "Bytes": 2142624,
+      "SHA256": "90A0A1078D4FC66B94F6F6B1A3F0D6CDE87D359EDD4BE3CCF1C8F4BA91166DAC",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\printer_contact-576x1024.png",
+      "Bytes": 867977,
+      "SHA256": "2399022B9741642B38A6AE0105DBC8A404B43D8CFC49E2238E7E74E605697DD1",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\printer_contact-720x1280.png",
+      "Bytes": 1277202,
+      "SHA256": "4DF9A87FF8621AAC3FE6D34D985F0A3290E9F2EF62094A14B72531C79A0A2A53",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\printer_contact-941x1672.png",
+      "Bytes": 2201156,
+      "SHA256": "68A90E570B44B4C13BFFCD85B8CA1EDEE86A818FE1C6B7A00D0BD85AE5A2AB3B",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\raw_complete-576x1024.png",
+      "Bytes": 839984,
+      "SHA256": "D3961F72E8C72353A3997EAE7DA2CC0B2A533F52FA0C48AC42FAE391C1C1BFB3",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\raw_complete-720x1280.png",
+      "Bytes": 1235355,
+      "SHA256": "662BAB16A92AE0D5ECD1018FF2F2420A5776F16B727B68DE25EF19C063BC9557",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\raw_complete-941x1672.png",
+      "Bytes": 2142504,
+      "SHA256": "6E257655876A9384B829AA48A4C64315C25721FA201C9FCA79ACA895FCFAA4A5",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\reduced_motion_hc150-576x1024.png",
+      "Bytes": 900713,
+      "SHA256": "EA99DE638A646FC15DAFE8187D9A85855A44E7C1E1CBE29C9C46FF0797BC8F82",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\reduced_motion_hc150-720x1280.png",
+      "Bytes": 1319796,
+      "SHA256": "D387932E1F126CABDE18890A58D635D6A8F69045C0CD74B2FE54B9F80187DD29",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\reduced_motion_hc150-941x1672.png",
+      "Bytes": 2249101,
+      "SHA256": "4AC98B6B9365F38FEC93A66E0550463E7F0D740544A87E820004F7D5965D7A96",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\render-ledger.json",
+      "Bytes": 1521,
+      "SHA256": "CE086F5771CC64B96032954744814093D48DBCFE32D8222B03E7825E7BBADB1D",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\rival_print-576x1024.png",
+      "Bytes": 840573,
+      "SHA256": "07DBB22B72A7431B31825BBCC4AC97FDCA50DABB8CAAEACA305DF3AB94FF19A6",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\rival_print-720x1280.png",
+      "Bytes": 1236217,
+      "SHA256": "B5DA9BC1B2B0A1532E423D53F01F5307B307144DD6D10CD07A0E927492E28CA3",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\rival_print-941x1672.png",
+      "Bytes": 2142986,
+      "SHA256": "91889DE43717A5E39B98FF56067A60DF714B35E8FEE6995991331CAC8BABFBE3",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\selected_plan-576x1024.png",
+      "Bytes": 835782,
+      "SHA256": "319B100B31E457ADE324B4D203BC46E5F9784DBA073027741AA84808DEF79871",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\selected_plan-720x1280.png",
+      "Bytes": 1228611,
+      "SHA256": "48BDEC53C91E5AFFEB1CA5584F337B262B153F4A16AEABB954119E6A2248DC20",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\selected_plan-941x1672.png",
+      "Bytes": 2132780,
+      "SHA256": "9106023434BA832EE67C79707290D3FA9521E3A572CBEC329830CD9F0549E15E",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\step_off_corridor-576x1024.png",
+      "Bytes": 840861,
+      "SHA256": "95747E45C8B35A1020017CE96E45AB26259FCEBCFF27FCC16A40B6CED96ABAAB",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\step_off_corridor-720x1280.png",
+      "Bytes": 1236651,
+      "SHA256": "6371786606646B5EA2401F10F5370AEB4D63FF4CB9EAB0CD68DBE1139ED434AA",
+      "Verified": true
+    },
+    {
+      "RelativePath": "captures\\r7\\step_off_corridor-941x1672.png",
+      "Bytes": 2144613,
+      "SHA256": "2D61840615C1F7968B3DD7C79A715FD9BB23E57E9C15BF37F57D61D7EC310D4D",
+      "Verified": true
+    }
+  ]
+}
