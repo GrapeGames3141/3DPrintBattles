@@ -1,7 +1,7 @@
 # PrintForge M10 UI alignment repair checkpoint v1
 
-Status: **SOURCE AND CHANGED-ROUTE VISUAL GATE PASS; Android 0.8.9 / code 105
-packaging and Drive delivery pending**
+Status: **Android 0.8.9 / code 105 built, verified, and delivered to DriveFS;
+cloud synchronization unconfirmed; physical-device acceptance not performed**
 
 Date: 2026-09-08
 
@@ -291,8 +291,8 @@ are not valid runtime gates and contribute no acceptance claim.
 
 The progressive-reveal run retains an `AudioStreamGeneratorPlayback` exit leak after
 WASAPI falls back to the Dummy audio host. The focused behavior passes, but validation
-is not stderr/teardown-clean and M10 includes no runtime audio fix. No M10 APK has been
-produced and no M10 file has been copied to DriveFS or confirmed cloud-visible.
+is not stderr/teardown-clean and M10 includes no runtime audio fix. Android delivery
+followed the source gate and is recorded below; it does not erase these limitations.
 
 Maintainability review: native Battle seats now share the existing portrait composition
 transform; secondary Battle actions share one width/font/accessibility helper; Settings
@@ -300,6 +300,47 @@ parchment ink has one local override helper; the Deck owns exactly five measured
 cells per page. No duplicate gameplay authority, save schema, asset family, or per-frame
 texture allocation was introduced by this repair. Other untracked art/import files are
 preserved outside this checkpoint.
+
+## Android and Drive delivery — 2026-09-08
+
+Source commit: `9ae3cb63b84f515f148432b338d2450cb36b202c` on
+`spike/printforge-physical-ui`. Final read-only review also passes the frozen
+`root-final/battle-equipment-hc576-r4/capture.png` and
+`root-final/battle-creature576-release/capture.png`.
+
+Artifact: `PrintForge-Legends-0.8.9-ui-alignment-arm64-9ae3cb63b84f.apk`.
+
+- Version `0.8.9-ui-alignment`, code 105, package
+  `com.tak.printforge.legends.playtest`, arm64 only, portrait, no ads.
+- 241,317,617 bytes; SHA-256
+  `E068A9B9E9D5CB89AEFA7961EFF0F0046DC9E294A9FE96F3123750B37704F381`.
+- Same signing certificate as 0.8.8; v2/v3 signatures and 16 KB ZIP alignment pass.
+- Static metadata, launcher, expected runtime art, exclusion/ad scan, and all 15
+  stock DEX/native dependencies pass. Legacy AAPT cannot parse a template-injected
+  feature boolean; AAPT2 succeeds. The optional themed-icon resource warning also
+  occurs in the previous 0.8.8 APK and remains recorded, not silently repaired.
+- Six actual source/shipped-runtime package probes pass. Both expose 57 face-up
+  catalog cards; both rendered 576x1024 and 720x1280 flows complete real Deck edits,
+  owned-card paging, save/activate/reload, and bot opening with the exact multiset.
+  All 611 extracted runtime entries (211,100,855 bytes) remain unchanged by size/SHA
+  after testing; the signed APK hash also remains unchanged.
+- Export PID 52860 exited 0. Probe PIDs 46392, 1608, 68052, 58416, 67252, and 65276
+  all exited 0; no task-owned Godot or error-dialog survivors remained. The first
+  restricted export (PID 69660) failed cache-directory access and was cleaned;
+  the authorized retry used the existing E: portable tool cache, without ACL edits.
+
+APK and `README-0.8.9-ui-alignment-9ae3cb63b84f.md` were copied without overwriting
+any prior release to `H:\My Drive\AI Projects\PrintForge`. Both destination sizes
+and SHA-256 values equal their E: originals. README: 4,066 bytes, SHA-256
+`5D7F14BBD509552A106629DA88EBD7589C6868A390BD5B0DA9A065E545C92076`.
+
+Evidence: `build/evidence/m10-ui-alignment-20260908/release-9ae3cb63b84f`,
+`build/evidence/m10-apk-9ae3cb6/post-run-integrity.json`, and the capture index
+`build/evidence/m10-ui-alignment-20260908/INDEX.md`.
+
+Cloud-visible synchronization is unconfirmed: local DriveFS verification is not an
+upload confirmation. No phone installation, phone save mutation, or physical Android
+acceptance result is claimed. Printer HP and damage remain unchanged.
 
 ## Explicit non-goals
 
