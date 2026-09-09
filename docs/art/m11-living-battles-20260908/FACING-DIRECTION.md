@@ -27,9 +27,12 @@ directional-art supplement; it does not revoke the r7 steampunk UI/layout approv
   byte-identical UI preservation, running Godot, or working animation. Regenerated
   labels and hardware are not approved runtime replacements. Runtime retains the
   exact text-free r7 floor and native controls.
-- Human approval of the new inferred front/rear assets is pending. No directional
-  sprite has been promoted. Approved receipt/animation infrastructure may proceed
-  independently, but directional art and final visual sign-off remain gated.
+- Human direction approval: **PASS, 2026-09-08**. The user explicitly approved the
+  facing-inward rule shown here: friendly backs aim up-board and rival fronts aim
+  down-board. This approves the production direction brief, not the proof composite's
+  regenerated UI/hardware as runtime art. No directional sprite has yet been promoted;
+  source-preserving front/rear assets and runtime animation evidence remain required.
+  This visual approval changes no combat targeting, Guard behavior, or pacing rule.
 
 The existing sheets provide four idle and four action poses from one side-biased
 view. Production needs matching front/rear directional idle/action resources, not
@@ -40,11 +43,12 @@ attack direction and 576/720 portrait captures before integration approval.
 The historical Cinderpaw inferred raw turnaround is not approved hidden-anatomy or
 finished-material authority. Rear details in this proof are inferred candidates.
 
-## Read-only UI review
+## Read-only UI review and human direction approval
 
 No P0/P1 for **human direction approval**: opposing rows clearly confront one
 another, all three species stay identifiable and grounded, and captions remain
-unobscured. This verdict is not runtime approval. Nonblocking production polish:
+unobscured. The user then approved that direction on 2026-09-08. This verdict is not
+runtime-sprite approval. Nonblocking production polish:
 restrained 10-15 degree inward yaw in outer lanes, a slight one-eye/cheek reveal
 without turning friendly bodies sideways, and normalize body mass against r7.
 Retain matched foot baselines. Do not inherit regenerated UI details or substitute

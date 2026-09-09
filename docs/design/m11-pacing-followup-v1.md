@@ -7,6 +7,10 @@ Date: 2026-09-08
 This records the corrected 200-HP pacing result and a read-only counterfactual. It
 authorizes no runtime, balance, card, AI, save, or reward change.
 
+The separately approved facing-inward visual direction—friendly backs aimed up-board,
+rival fronts aimed down-board—does not approve Guard-only blocking, target-policy
+changes, or any other pacing rule.
+
 ## Final evidence
 
 Source: `build/evidence/m11-a-20260908/pacing-r4/qa-save/m11-pacing-results.json`.
@@ -32,6 +36,32 @@ Printer HP alone cannot fix the measured delay because current authority forbids
 printer target while any defender exists. Nineteen of the initial 30 traces did not
 reach their first legal printer strike by round 30; reducing post-exposure HP cannot
 move that opening contact.
+
+## Policy coverage and limits
+
+The r4 result is an actual result for the current shipped bot policy, but it is not a
+balanced sample of every legal player tactic:
+
+- `_main_intent` never returns a spell. Across the 30 recorded traces, 1,888 card-play
+  intents include 1,167 creatures, 181 equipment, 360 filament, 90 traps, and 90
+  upgrades, but **zero spells**. Every authored Founder deck includes Layer Melt,
+  Print Jam, Spool Drain, Forge Surge, Emergency Reprint, and Blueprint Thief. Layer
+  Melt can deal 150 creature damage and Forge Surge can strengthen a living attacker;
+  the others can alter queue, filament, or creature supply. Some would accelerate
+  clearance and some could add delay, so their net pacing effect is unmeasured.
+- The AI emits zero `activate_ability` intents, but this does not currently omit a live
+  catalog option: all 24 catalog creatures use automatic `attack`-trigger abilities
+  and none has a `main` trigger. Those authored attack abilities already resolve
+  through normal attacks.
+- All 1,167 recorded creature plays omit a stance and therefore use default Attack;
+  the traces contain zero Guard queues and zero `switch_mode` intents. `_attack_intent`
+  always targets the first occupied defender before the printer.
+
+These limits do not invalidate the slow result: this is the real bot policy players
+currently face, and that policy produces 41–100-round games. They do mean the matrix
+cannot by itself establish how a player or representative policy using offensive
+spells and Guard choices would pace. Changing spell use, stance choice, or target
+priority is an AI-policy change and is not authorized by this diagnostic.
 
 ## Next product decision — separate bounded rule experiment
 
@@ -64,6 +94,13 @@ printer pressure may occur while Attack creatures remain on the field. It is not
 approved. Its central risk is reducing creature-on-creature combat into a printer race,
 so any authorized comparison must report creature hits and printer hits as well as
 round count and must be discarded if it undermines the living-creature fight promise.
+With the current bot unchanged, the comparison also has no clean interpretation: if
+its explicit first-defender target remains authoritative, Guard-only blocking changes
+nothing; if the new rule forces printer targeting whenever no Guard exists, both bots'
+all-Attack policy removes nearly all creature fights. Teaching the bot to choose Guard
+would be a second, separate policy decision. Therefore Guard-only blocking should not
+be endorsed or measured until its target semantics and policy boundary are explicitly
+approved together.
 
 The nonnegotiable design boundary is unchanged: printed whimsical creatures awaken
 and visibly fight, combat remains an automatic cycle without extra manual phases, and

@@ -55,6 +55,12 @@ func render_fullscreen(shell: Control) -> void:
 	var viewer_seat := _viewer_seat(shell, battle)
 	var public_view := _physical_public_view(shell, battle, viewer_seat)
 	if _stage == null or not is_instance_valid(_stage): _stage = STAGE.new()
+	var contact_callback := Callable(self, "_on_attack_contact").bind(shell)
+	if not _stage.attack_contact.is_connected(contact_callback):
+		_stage.attack_contact.connect(contact_callback)
+	var finished_callback := Callable(self, "_on_presentation_finished").bind(shell)
+	if not _stage.presentation_finished.is_connected(finished_callback):
+		_stage.presentation_finished.connect(finished_callback)
 	if _stage.get_parent() != null: _stage.get_parent().remove_child(_stage)
 	_stage.name = "PhysicalBattlefieldStage"
 	_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -73,6 +79,9 @@ func render_fullscreen(shell: Control) -> void:
 	var back: Button = shell.make_button("Back", shell.request_back, Color("526e93")); back.name = "UnifiedBattleBack"; NAVIGATION.configure_back(back, "battle pause", Vector2(56, 56)); back.tooltip_text = "Pause battle or choose to concede"; back.accessibility_name = back.tooltip_text; _place_on_battle_chassis(shell, back, BACK_SEAT); shell.add_child(back)
 	if bool(shell.battle_back_confirmation):
 		_add_back_choice(shell, battle)
+		return
+	if bool(battle.finished) and not str(shell.unified_battle_presentation.get("kind", "")).is_empty():
+		_add_status(shell, "Final contact resolving · controls locked")
 		return
 	if bool(battle.finished):
 		if not shell.battle_settlement_context.is_empty() and not bool(shell.battle_settlement_finished): shell.call_deferred("_settle_finished_unified_battle")
@@ -93,7 +102,12 @@ func render_fullscreen(shell: Control) -> void:
 	if not presentation_kind.is_empty():
 		var receipt: Dictionary = shell.unified_battle_presentation
 		var attack_copy := "%s → %s · %d damage · armor %d→%d" % [str((receipt.get("source", {}) as Dictionary).get("name", "Attacker")), str((receipt.get("target", {}) as Dictionary).get("name", "Target")), int(receipt.get("damage", 0)), int(receipt.get("armor_before", 0)), int(receipt.get("armor_after", 0))]
-		_add_status(shell, "Awakening · Step-off" if presentation_kind == "deploy" else attack_copy if presentation_kind == "attack" else "Print resolving · controls locked")
+		var work: Array = receipt.get("print_events", []) if receipt.get("print_events", []) is Array else []
+		var print_copy := "Print resolving · controls locked"
+		if not work.is_empty() and work[0] is Dictionary:
+			var first_work: Dictionary = work[0]
+			print_copy = "Printing %s · %d layers" % [str(RULES.card(str(first_work.get("card_id", ""))).get("name", "blueprint")), int(first_work.get("remaining_before", 0))]
+		_add_status(shell, "Awakening · Step-off" if presentation_kind == "deploy" else attack_copy if presentation_kind == "attack" else print_copy)
 		return
 	if str(public_view.get("phase", "")) == "draw": shell.call_deferred("_enter_unified_plan")
 	if str(public_view.get("phase", "")) == "main": _add_plan_overlay(shell, active)
@@ -129,6 +143,39 @@ func _viewer_seat(shell: Control, battle) -> int:
 
 func _physical_public_view(shell: Control, battle, viewer_seat: int) -> Dictionary:
 	var view: Dictionary = shell.unified_battle_coordinator.public_snapshot_for(viewer_seat)
+	# Authority has already resolved the receipt, but its old defender and printer
+	# values remain the visible truth until the finite contact beat lands.
+	var receipt: Dictionary = shell.unified_battle_presentation if shell.unified_battle_presentation is Dictionary else {}
+	if str(receipt.get("kind", "")) == "attack" and not bool(receipt.get("contact_reached", false)):
+		var actor := int(receipt.get("actor", -1))
+		var target_slot := int(receipt.get("target_slot", -1))
+		var players: Array = view.get("players", []) if view.get("players", []) is Array else []
+		var defender_seat := 1 - actor
+		if defender_seat >= 0 and defender_seat < players.size() and players[defender_seat] is Dictionary:
+			var defender: Dictionary = players[defender_seat]
+			if target_slot >= 0:
+				var slots: Array = defender.get("slots", []) if defender.get("slots", []) is Array else []
+				if target_slot < slots.size(): slots[target_slot] = receipt.get("target", {})
+				defender["slots"] = slots
+			else:
+				var printer: Dictionary = defender.get("printer", {}) if defender.get("printer", {}) is Dictionary else {}
+				printer["hp"] = int(receipt.get("printer_hp_before", printer.get("hp", 0)))
+				defender["printer"] = printer
+			players[defender_seat] = defender
+			view["players"] = players
+	# Authority can consume multiple FIFO jobs before emitting one public receipt.
+	# During the first finite print beat, keep the native queue gauge aligned with
+	# that displayed job instead of jumping to a terminal later queue head.
+	var work: Array = receipt.get("print_events", []) if receipt.get("print_events", []) is Array else []
+	if not work.is_empty() and work[0] is Dictionary:
+		var first_work: Dictionary = work[0]
+		var print_seat := int(first_work.get("seat", receipt.get("actor", -1)))
+		var players: Array = view.get("players", []) if view.get("players", []) is Array else []
+		if print_seat >= 0 and print_seat < players.size() and players[print_seat] is Dictionary:
+			var printer_owner: Dictionary = players[print_seat]
+			printer_owner["queue"] = [{"card_id":str(first_work.get("card_id", "")), "remaining":maxi(0, int(first_work.get("remaining_before", first_work.get("remaining_after", 0)))), "job_id":str(first_work.get("job_id", ""))}]
+			players[print_seat] = printer_owner
+			view["players"] = players
 	# The player holding the device always owns the lower instruments.  Authority
 	# seat numbers remain untouched; only the redacted presentation ordering swaps.
 	if viewer_seat == 1:
@@ -141,10 +188,39 @@ func _physical_public_view(shell: Control, battle, viewer_seat: int) -> Dictiona
 			view["pending"] = pending
 	return view
 
+func _on_attack_contact(shell: Control) -> void:
+	if str(shell.unified_battle_presentation.get("kind", "")) != "attack": return
+	shell.unified_battle_presentation["contact_reached"] = true
+	# Stage emits from _process.  Never detach/reparent that same stage while its
+	# frame callback is on the stack; defer the narrow native HUD refresh instead.
+	shell.call_deferred("render")
+
+func _on_presentation_finished(token: int, shell: Control) -> void:
+	# The stage signal is emitted from the same finite progression used to draw
+	# print, awaken, deploy, and contact.  Keep Main as the sole coordinator ack
+	# owner while refusing any obsolete stage instance or receipt token.
+	if token != int(shell.unified_battle_presentation.get("token", -1)): return
+	# Settlement renders the next shell state.  As above, leave the emitting stage
+	# process callback before it removes and reattaches the persistent stage node.
+	shell.call_deferred("_settle_unified_battle_presentation", token)
+
 func _physical_receipt(shell: Control, receipt: Dictionary, viewer_seat: int) -> Dictionary:
 	var physical := receipt.duplicate(true)
-	if viewer_seat == 1 and physical.has("actor"):
-		physical["actor"] = 0 if int(physical.actor) == 1 else 1
+	if viewer_seat == 1:
+		if physical.has("actor"): physical["actor"] = 0 if int(physical.actor) == 1 else 1
+		if physical.has("target_seat"): physical["target_seat"] = 0 if int(physical.target_seat) == 1 else 1
+		for key in ["print_events", "deployments"]:
+			var seated: Array = physical.get(key, []) if physical.get(key, []) is Array else []
+			for entry in seated:
+				if entry is Dictionary and (entry as Dictionary).has("seat"):
+					(entry as Dictionary)["seat"] = 0 if int((entry as Dictionary).seat) == 1 else 1
+	var work: Array = physical.get("print_events", []) if physical.get("print_events", []) is Array else []
+	if not work.is_empty() and work[0] is Dictionary:
+		physical["print_card_id"] = str((work[0] as Dictionary).get("card_id", ""))
+		physical["print_job_id"] = str((work[0] as Dictionary).get("job_id", ""))
+	var deployments: Array = physical.get("deployments", []) if physical.get("deployments", []) is Array else []
+	if physical.get("print_card_id", "").is_empty() and not deployments.is_empty() and deployments[0] is Dictionary:
+		physical["print_card_id"] = str((deployments[0] as Dictionary).get("card_id", ""))
 	physical["reduced_motion"] = bool(shell.settings().get("reduced_motion", false))
 	return physical
 

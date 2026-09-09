@@ -29,7 +29,7 @@ const UNIFIED_RULES := preload("res://scripts/core/unified_rules.gd")
 const UNIFIED_CARD_VIEW := preload("res://scripts/ui/unified_card_view.gd")
 const PORTRAIT_PRESENTATION_BOUNDARY := preload("res://scripts/ui/portrait_presentation_boundary.gd")
 const CREATURE_SPRITE_CACHE := preload("res://scripts/ui/creature_sprite_cache.gd")
-const BATTLE_MOVE_VFX := preload("res://scripts/ui/battle_move_vfx.gd")
+const BATTLE_PRESENTATION_SEQUENCE := preload("res://scripts/ui/battle_presentation_sequence.gd")
 const PHYSICAL_PORTRAIT_PLATE := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
 const M1_PHYSICAL_UI := preload("res://scripts/ui/m1_physical_ui_component.gd")
 const M3_PHYSICAL_UI := preload("res://scripts/ui/m3_physical_ui_component.gd")
@@ -90,6 +90,7 @@ var unified_arrival_presented: Dictionary = {}
 # Visual receipts are deliberately separate from UnifiedBattleState.  They only
 # exist after an accepted intent and contain stage-safe public creature IDs.
 var unified_battle_presentation: Dictionary = {"kind":"", "actor":0, "token":0}
+var _unified_presentation_sequence := BATTLE_PRESENTATION_SEQUENCE.new()
 var unified_page := 0
 var unified_deck_draft: Array = []
 var unified_preprint_draft: Array = []
@@ -224,17 +225,21 @@ func _present_unified_battle_event(event: Dictionary) -> void:
 	# Keep the whole public receipt.  The physical stage needs the exact source
 	# and target slots (and public pre-action units) to animate causally; reducing
 	# it to a generic left/right pair made every attack appear static.
-	unified_battle_presentation = event.duplicate(true)
+	unified_battle_presentation = _unified_presentation_sequence.begin(event, token, bool(settings().get("reduced_motion", false)))
 	unified_battle_presentation["kind"] = str(event.get("kind", ""))
 	unified_battle_presentation["actor"] = int(event.get("actor", 0))
 	unified_battle_presentation["token"] = token
 	unified_battle_presentation["generation"] = int(event.get("generation", unified_battle_coordinator.generation))
-	_schedule_unified_presentation_settlement(token, str(event.get("kind", "")))
+	# The mounted battlefield stage owns this receipt's finite clock and invokes
+	# _settle_unified_battle_presentation only after it has displayed the final
+	# beat.  A parallel wall timer could acknowledge a heavy first frame before
+	# the raw print or contact ever became visible.
 
 func _reset_unified_battle_presentation() -> void:
 	# Advance the serial on reset as well: a timer from a prior battle can never
 	# settle a newly launched battle that happens to have the same event count.
 	unified_battle_presentation = {"kind":"", "actor":0, "token":int(unified_battle_presentation.get("token", 0)) + 1}
+	_unified_presentation_sequence.finish()
 
 func _leave_unified_battle() -> void:
 	unified_battle_coordinator.invalidate_generation()
@@ -246,37 +251,26 @@ func _leave_unified_battle() -> void:
 	screen = "workshop"
 	render()
 
-func _unified_presentation_wait_seconds(kind: String) -> float:
-	if bool(settings().get("reduced_motion", false)): return 0.0
-	return _unified_presentation_duration(kind) + 0.10
-
-func _unified_presentation_duration(kind: String) -> float:
-	if kind == "deploy": return BATTLE_MOVE_VFX.event_duration("deploy")
-	match kind:
-		"print": return 0.78
-		"attack", "ability": return 0.62
-		"defend": return 0.42
-		"card": return 0.52
-		"switch": return 0.48
-	return 0.0
-
-func _schedule_unified_presentation_settlement(token: int, kind: String) -> void:
-	if kind.is_empty() or not is_inside_tree(): return
-	var delay := _unified_presentation_duration(kind) + 0.02
-	if bool(settings().get("reduced_motion", false)): delay = 0.0
-	var timer := get_tree().create_timer(delay)
-	timer.timeout.connect(_settle_unified_battle_presentation.bind(token))
-
 func _settle_unified_battle_presentation(token: int) -> void:
 	# Token matching prevents a delayed timer from clearing a newer player action,
 	# a subsequent AI receipt, or a completely new battle after leaving the arena.
 	if battle == null or token != int(unified_battle_presentation.get("token", -1)) or str(unified_battle_presentation.get("kind", "")).is_empty(): return
 	if int(unified_battle_presentation.get("generation", -1)) != unified_battle_coordinator.generation: return
+	if not _unified_presentation_sequence.matches(token, int(unified_battle_presentation.get("generation", -1)), int(unified_battle_presentation.get("presentation_serial", -1))): return
 	# Ack only the receipt that is still visible; a late timer from a replaced
 	# match or newer action cannot unlock a different coordinator request.
 	unified_battle_coordinator.acknowledge_presentation(int(unified_battle_presentation.get("generation", -1)))
 	unified_battle_presentation = {"kind":"", "actor":0, "token":token}
+	_unified_presentation_sequence.finish()
 	if screen == "unified_battle": render()
+	# A terminal receipt still owns its contact beat.  Result settlement is only
+	# allowed after this matching acknowledgement has cleared the visible event.
+	if battle != null and bool(battle.finished):
+		unified_ai_pending = false
+		unified_ai_steps = 0
+		if screen == "unified_battle": call_deferred("_settle_finished_unified_battle")
+	elif unified_battle_coordinator.cycle_active: call_deferred("_continue_unified_run_cycle", unified_battle_coordinator.generation)
+	elif unified_ai_pending: call_deferred("_run_unified_ai", unified_battle_coordinator.generation)
 
 func _ready() -> void:
 	print("PRINTFORGE_STARTUP marker=ui_ready renderer=%s platform=%s" % [RenderingServer.get_current_rendering_method(), OS.get_name()])
@@ -4241,9 +4235,9 @@ func _handle_unified_cycle_result(result: Dictionary) -> void:
 func _continue_unified_run_cycle(token: int) -> void:
 	if token != unified_battle_coordinator.generation: return
 	if battle == null: return
-	if unified_battle_coordinator.presentation_active:
-		await get_tree().create_timer(_unified_presentation_wait_seconds(str(unified_battle_presentation.get("kind", "")))).timeout
-		unified_battle_coordinator.acknowledge_presentation(token)
+	# The receipt sequence timer is the sole acknowledgment owner. It requeues
+	# this continuation after its matching visual beat has rendered.
+	if unified_battle_coordinator.presentation_active: return
 	if token != unified_battle_coordinator.generation: return
 	var result := unified_battle_coordinator.advance_run_cycle(int(battle.active_seat), token)
 	_handle_unified_cycle_result(result)
@@ -4274,12 +4268,11 @@ func _run_unified_ai(token := -1) -> void:
 				# and stale deferred callbacks never consume the safety budget.
 				unified_ai_steps += 1
 				_present_unified_battle_event(result.get("receipt", {}) as Dictionary)
-				if unified_battle_coordinator.presentation_active:
-					await get_tree().create_timer(_unified_presentation_wait_seconds(str(unified_battle_presentation.get("kind", "")))).timeout
-					unified_battle_coordinator.acknowledge_presentation(unified_battle_coordinator.generation)
 				unified_ai_pending = not battle.finished and int(battle.active_seat) == 1
-				if unified_ai_pending: call_deferred("_run_unified_ai", token)
-				else: unified_ai_steps = 0
+				if unified_ai_pending and not unified_battle_coordinator.presentation_active:
+					call_deferred("_run_unified_ai", token)
+				elif not unified_ai_pending:
+					unified_ai_steps = 0
 	else:
 		unified_ai_pending = false
 		unified_ai_steps = 0

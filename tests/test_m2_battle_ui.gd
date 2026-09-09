@@ -16,11 +16,10 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var sprite := stage.find_child("LivingPrintSlot0", true, false) as TextureRect
 	var stable_atlas := sprite.texture
-	var start := sprite.position
 	await get_tree().create_timer(0.12).timeout
-	require(sprite.position != start and is_same(sprite.texture, stable_atlas), "Attack receipt moves only its source-slot sprite during the finite window without reallocating its slot atlas.")
+	require(not sprite.visible and (stage.find_child("BattleContactPeakOverlay", true, false) as TextureRect).visible and is_same(sprite.texture, stable_atlas), "Attack receipt transfers one source print into the finite contact overlay without reallocating its home atlas.")
 	await get_tree().create_timer(0.8).timeout
-	require(sprite.position.is_zero_approx(), "Finite attack presentation settles once at the slot origin.")
+	require(sprite.visible and sprite.position.is_zero_approx(), "Finite attack presentation returns to one settled source sprite.")
 	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}]},{"slots":[null,null,null]}]}, {"kind":"attack","actor":0,"source_slot":0,"target_slot":0,"target":{"card_id":"aquafin","name":"Aquafin","hp":0},"generation":2})
 	await get_tree().create_timer(0.10).timeout
 	require((stage.find_child("LivingPrintSlot3", true, false) as TextureRect).visible, "A defeated defender remains visible through attack contact.")
@@ -30,34 +29,30 @@ func _ready() -> void:
 	require((stage.find_child("BattleFocusRing3", true, false) as Panel).visible and (stage.find_child("BattleSelectionRing0", true, false) as Panel).visible, "Rival focus and friendly selection rings persist together after rerender.")
 	stage.set_focus(-1, -1); await get_tree().process_frame
 	require(not (stage.find_child("BattleFocusRing3", true, false) as Panel).visible and (stage.find_child("BattleSelectionRing0", true, false) as Panel).visible, "Friendly selection remains visible when no rival focus exists.")
-	stage.configure({"players":[{"slots":[null,null,null]},{"slots":[null,null,null],"hand_count":2}]}, {"kind":"print","actor":0,"card_id":"cinderpaw","generation":3})
+	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","job_id":"m11-job-a","name":"Cinderpaw","hp":100},null,null]},{"slots":[null,null,null],"hand_count":2}]}, {"kind":"print","actor":0,"generation":3,"token":3,"presentation_token":3,"presentation_duration":1.50,"print_events":[{"event":"complete","seat":0,"job_id":"m11-job-a","card_id":"cinderpaw","remaining_before":1,"remaining_after":0,"total_work":1}],"deployments":[{"event":"deployed","seat":0,"slot":0,"job_id":"m11-job-a","card_id":"cinderpaw"}],"presentation_beats":[{"kind":"print","duration":0.78,"work":{"event":"complete","seat":0,"job_id":"m11-job-a","card_id":"cinderpaw","remaining_before":1,"remaining_after":0,"total_work":1},"job_id":"m11-job-a","seat":0,"card_id":"cinderpaw"},{"kind":"deploy","duration":0.72,"deployment":{"event":"deployed","seat":0,"slot":0,"job_id":"m11-job-a","card_id":"cinderpaw"},"job_id":"m11-job-a","seat":0,"card_id":"cinderpaw"}]})
 	await get_tree().process_frame
 	var raw := stage.find_child("BattlePrinterSolidRaw0", true, false) as TextureRect
 	var schematic := stage.find_child("BattlePrinterSchematic0", true, false) as TextureRect
-	require(raw != null and schematic != null and raw.visible and schematic.visible and (stage.find_child("BattlePrinterClip0", true, false) as Control).clip_contents, "Printer has clipped raw-solid and shader-schematic construction layers.")
+	require(raw != null and schematic != null and raw.visible and schematic.visible and not (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible and (stage.find_child("BattlePrinterClip0", true, false) as Control).clip_contents, "Sequence-backed printing has clipped raw-solid and shader-schematic layers while the completed creature remains hidden until its own arrival.")
 	var stable_raw := raw.texture
 	await get_tree().process_frame
 	require(is_same(raw.texture, stable_raw), "Printer raw-print texture is cached across visual sync frames.")
-	stage.configure({"players":[{"slots":[null,null,null]},{"slots":[null,null,null],"hand_count":2}],"pending":{"kind":"place","seat":0,"unit":{"card_id":"cinderpaw"}}}, {"kind":"print","actor":0,"card_id":"cinderpaw","generation":3})
-	await get_tree().create_timer(0.9).timeout
-	require(raw.visible, "A completed creature raw print remains in its printer while placement is pending.")
-	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}],"hand":[]},{"slots":[null,null,null],"hand_count":2}]}, {"kind":"deploy","actor":0,"card_id":"cinderpaw","target_slot":0,"generation":4})
+	await get_tree().create_timer(0.90).timeout
 	await get_tree().create_timer(0.35).timeout
-	require((stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and not (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible and not raw.visible and not schematic.visible, "Deploy transfers single ownership from chamber layers to the interpolating print.")
+	require((stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and not (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible and not raw.visible and not schematic.visible, "The same receipt transfers ownership from chamber layers to its interpolating print without a manual placement pause.")
 	await get_tree().create_timer(0.55).timeout
-	require(not (stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "Deploy settles to exactly one living slot sprite.")
+	require(not (stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "The finite receipt sequence settles to exactly one living slot sprite.")
 	stage.configure({"players":[{"slots":[{"card_id":"mossmunk","name":"Mossmunk","hp":100}],"hand":[]},{"slots":[null,null,null],"hand_count":1}]}, {"kind":"deploy","actor":0,"card_id":"mossmunk","target_slot":0,"reduced_motion":true,"generation":5})
 	await get_tree().process_frame
 	require(not (stage.find_child("BattleDeploySprite", true, false) as TextureRect).visible and (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "Reduced motion settles deploy directly without a duplicate flash.")
 	stage.configure({"players":[{"slots":[{"card_id":"cinderpaw","name":"Cinderpaw","hp":100}],"hand":[]},{"slots":[null,null,null],"hand_count":1}]}, {"kind":"attack","actor":0,"source_slot":0,"target_slot":-1,"printer_target":true,"generation":6})
 	await get_tree().process_frame
-	var printer_attack_start := (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).position
 	await get_tree().create_timer(0.14).timeout
-	require((stage.find_child("LivingPrintSlot0", true, false) as TextureRect).position != printer_attack_start, "A printer-target attack lunges the correct source living print toward the opposing printer.")
+	require((stage.find_child("BattleContactPeakOverlay", true, false) as TextureRect).visible and not (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "A printer-target attack gives one source print ownership to the finite source-to-printer contact overlay.")
 	await get_tree().create_timer(0.8).timeout
-	require((stage.find_child("LivingPrintSlot0", true, false) as TextureRect).position.is_zero_approx(), "Printer-target lunge returns to its origin after the finite contact.")
-	var lip := stage.find_child("BattleSlotLip0", true, false) as ColorRect
-	require(lip != null and lip.z_index > (stage.find_child("LivingPrintSlot0", true, false) as TextureRect).z_index, "Native lower lip is z-ordered above the living-print feet.")
+	require((stage.find_child("LivingPrintSlot0", true, false) as TextureRect).visible, "Printer-target contact returns ownership to the single settled source print.")
+	var shadow := stage.find_child("BattleGroundShadow0", true, false) as Panel
+	require(shadow != null and shadow.visible and stage.find_child("BattleSlotLip0", true, false) == null, "Living prints use grounded shadows on the open floor, never retired card-lip hardware above their feet.")
 	require((stage.find_child("BattlePrinterScanLine0", true, false) as ColorRect).name == "BattlePrinterScanLine0", "Printer owns a native cyan scan-line control at the solid/schematic split.")
 	require(COMPONENT.new() != null, "Physical battle component loads.")
 	var profile := RULES.ensure(ProfileRules.new_profile()); profile = RULES.choose_starter(profile, "cinderpaw").profile; profile = RULES.print_starter(profile).profile; GameManager.profile = profile
@@ -190,12 +185,9 @@ func _ready() -> void:
 	require(contain_ok, "Near-2:1 contained battle maps heading, Back, hand, Queue/Cancel rail, and Run Cycle through the 576x1024 chassis without bottom/top bleed.")
 	shell.size = Vector2(1024, 1024); shell.render(); await get_tree().process_frame
 	hotseat.player(1).hand = ["aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin", "aquafin"]
-	hotseat.pending = {"kind":"place","seat":1,"unit":UnifiedBattleState._unit(RULES.card("aquafin"))}; hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]; shell.render(); await get_tree().process_frame
-	var locked_anchor := shell.find_child("PhysicalBattleAnchor0_0", true, false) as Button
-	var open_choice := shell.find_child("UnifiedPendingPlaceSlot2Attack", true, false) as Button
-	require(locked_anchor != null and locked_anchor.disabled and open_choice != null and not open_choice.disabled and shell.find_child("UnifiedPendingPlaceSlot1Attack", true, false) == null, "Required placement locks base anchors and creates choices only on open physical anchors.")
-	var anchor_focus := locked_anchor.get_theme_stylebox("focus") as StyleBoxFlat if locked_anchor != null else null
-	require(anchor_focus != null and anchor_focus.bg_color.a <= .08 and anchor_focus.border_width_top >= 3 and anchor_focus.border_width_right >= 3 and anchor_focus.border_width_bottom >= 3 and anchor_focus.border_width_left >= 3, "Anchor keyboard focus is a transparent-center four-edge outline, never an opaque sprite cover.")
+	# M11 auto-deploy retires the player-facing pending-place choice.  The checked
+	# M11 integration fixture covers leftmost deployment and its finite arrival;
+	# retain this component suite for live anchor and equipment focus behavior.
 	hotseat.pending = {"kind":"attach","seat":1,"card_id":"iron_gem","holding_index":0}; hotseat.phase = "print"; hotseat.player(1).slots = [UnifiedBattleState._unit(RULES.card("aquafin")), null, null]; shell.render(); await get_tree().process_frame
 	var held_token := shell.find_child("UnifiedHeldEquipmentToken", true, false) as PanelContainer
 	var attach_choice := shell.find_child("UnifiedPendingAttachSlot1", true, false) as Button

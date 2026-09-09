@@ -44,6 +44,25 @@ static func validation_errors() -> Array[String]:
 		if not dimensions_match or not crop_match or int(cartridge.get("bytes", 0)) != 2161030: failures.append("M1 blueprint cartridge dimensions, crop, or byte identity is invalid.")
 		if str(cartridge.get("sha256", "")) != "66F50A5B85B45762C602556FF32A847D2BE72D03D59443845460C0DEA5AF4367": failures.append("M1 blueprint cartridge SHA-256 identity is invalid.")
 		if str(provenance.get("prompt_status", "")) != "reconstructed-from-approved-brief": failures.append("M1 cartridge provenance must disclose reconstructed prompt status.")
+	var m11: Dictionary = manifest.get("m11_living_battle", {}) if manifest.get("m11_living_battle", {}) is Dictionary else {}
+	var m11_identity := {
+		"continuous_floor":[2059907,"0E5A00D26A2EF3D01425EF812B49BD9B3EB43CCCFAAF1FD8535C165E5D7B2259",false],
+		"iron_gem_completed":[1663942,"A9505932FC06C0C0A50C32EC3ED6E84279FC2A86595988FDFD9F0FE8AE16915C",true],
+		"iron_gem_raw":[2499720,"DE06034FE1B80AE866334840E730608B4F4419FD15F54BE7D5B82DA6075BCBE6",true],
+		"iron_gem_blueprint":[1132632,"B977A9E15626161E9AAAE36B823EDD388565521BE73F8ACD07B99FAB1950140F",true]
+	}
+	for key in m11_identity:
+		var entry: Dictionary = m11.get(str(key), {}) if m11.get(str(key), {}) is Dictionary else {}
+		if entry.is_empty():
+			failures.append("M11 manifest is missing %s." % str(key))
+			continue
+		for field in ["runtime_path", "source_path", "dimensions", "bytes", "sha256", "alpha_expected", "runtime_role", "provenance"]:
+			if not entry.has(field): failures.append("M11 %s is missing %s." % [str(key), field])
+		var expected: Array = m11_identity[key]
+		var dimensions: Array = entry.get("dimensions", []) if entry.get("dimensions", []) is Array else []
+		var expected_dimensions := Vector2i(941, 1672) if str(key) == "continuous_floor" else Vector2i(1254, 1254) if str(key) == "iron_gem_completed" else Vector2i(1600, 1600)
+		if not FileAccess.file_exists(str(entry.get("runtime_path", ""))) or not FileAccess.file_exists(str(entry.get("source_path", ""))): failures.append("Missing promoted M11 asset: %s" % str(key))
+		if dimensions.size() != 2 or int(dimensions[0]) != expected_dimensions.x or int(dimensions[1]) != expected_dimensions.y or int(entry.get("bytes", 0)) != int(expected[0]) or str(entry.get("sha256", "")) != str(expected[1]) or bool(entry.get("alpha_expected", false)) != bool(expected[2]): failures.append("M11 %s identity is invalid." % str(key))
 	var m3: Dictionary = manifest.get("m3_physical_ui", {}) if manifest.get("m3_physical_ui", {}) is Dictionary else {}
 	var m3_identity := {
 		"archive_grid":[2534630,"CB86C63DAB77D6F6CF028426CC0A98F6B74B01ED926A98A35A4C1EBD301D2B16"],

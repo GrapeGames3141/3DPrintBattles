@@ -55,6 +55,48 @@
       "rejected_alternatives": ["battle foreground RGB attempts", "baked dynamic text or units"]
     }
   },
+  "m11_living_battle": {
+    "continuous_floor": {
+      "runtime_path": "res://assets/ui/physical_ui/m11/battle-continuous-floor-master-v1.png",
+      "source_path": "res://docs/art/m11-living-battles-20260908/battle-continuous-floor-master-v1.png",
+      "dimensions": [941, 1672],
+      "bytes": 2059907,
+      "sha256": "0E5A00D26A2EF3D01425EF812B49BD9B3EB43CCCFAAF1FD8535C165E5D7B2259",
+      "alpha_expected": false,
+      "runtime_role": "M11 living-print battle floor only; creatures, printer progress, controls, and dynamic text remain native.",
+      "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "user-approved r7 battle atlas runtime promotion", "approval_date": "2026-09-08", "approval_source": "Exact r7 M11 battle-art approval"}
+    },
+    "iron_gem_completed": {
+      "runtime_path": "res://assets/ui/physical_ui/m11/iron-gem-completed-transparent-imagegen-v1.png",
+      "source_path": "res://docs/art/m11-living-battles-20260908/iron-gem-completed-transparent-imagegen-v1.png",
+      "dimensions": [1254, 1254],
+      "bytes": 1663942,
+      "sha256": "A9505932FC06C0C0A50C32EC3ED6E84279FC2A86595988FDFD9F0FE8AE16915C",
+      "alpha_expected": true,
+      "runtime_role": "Approved completed Iron Gem fitting presentation only; item state and attachment controls remain native.",
+      "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "selected approved M11 fitting derivative", "approval_date": "2026-09-08", "approval_source": "M11 r7 equipment fitting review"}
+    },
+    "iron_gem_raw": {
+      "runtime_path": "res://assets/ui/physical_ui/m11/iron-gem-raw-alpha-v1.png",
+      "source_path": "res://docs/art/m9-equipment-20260904/family/iron_gem-raw-alpha-v1.png",
+      "dimensions": [1600, 1600],
+      "bytes": 2499720,
+      "sha256": "DE06034FE1B80AE866334840E730608B4F4419FD15F54BE7D5B82DA6075BCBE6",
+      "alpha_expected": true,
+      "runtime_role": "Approved Iron Gem raw print for M11 battle printer continuity.",
+      "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "previously approved equipment family", "approval_date": "2026-09-04", "approval_source": "M9 equipment asset review"}
+    },
+    "iron_gem_blueprint": {
+      "runtime_path": "res://assets/ui/physical_ui/m11/iron-gem-blueprint-alpha-v1.png",
+      "source_path": "res://docs/art/m9-equipment-20260904/family/iron_gem-blueprint-alpha-v1.png",
+      "dimensions": [1600, 1600],
+      "bytes": 1132632,
+      "sha256": "B977A9E15626161E9AAAE36B823EDD388565521BE73F8ACD07B99FAB1950140F",
+      "alpha_expected": true,
+      "runtime_role": "Approved Iron Gem blueprint for M11 fitting handoff and inspection.",
+      "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "previously approved equipment family", "approval_date": "2026-09-04", "approval_source": "M9 equipment asset review"}
+    }
+  },
   "m3_physical_ui": {
     "archive_grid": {"runtime_path":"res://assets/ui/physical_ui/m3/CO-01-archive-folio-grid-text-free-v4.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/CO-01-archive-folio-grid-text-free-v4.png","dimensions":[941,1672],"bytes":2534630,"sha256":"CB86C63DAB77D6F6CF028426CC0A98F6B74B01ED926A98A35A4C1EBD301D2B16","alpha_expected":false,"runtime_role":"Collection folio static material plate; all cards and labels are native.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
     "archive_detail": {"runtime_path":"res://assets/ui/physical_ui/m3/CO-02-archive-folio-detail-text-free-v3.png","source_path":"res://docs/art/printforge-physical-ui-spike-20260830/m3-atlas-r2/CO-02-archive-folio-detail-text-free-v3.png","dimensions":[941,1672],"bytes":2492522,"sha256":"F89CB8F9CAF84B292BE12E2422A66F0464A3CEC1EE2A0E7A9A7B12786D3E2CBC","alpha_expected":false,"runtime_role":"Archive inspector composition source.","provenance":{"generator":"OpenAI ImageGen","prompt_status":"approved runtime-master","approval_date":"2026-08-31","approval_source":"M3 atlas gate"}},
