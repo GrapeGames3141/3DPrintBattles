@@ -9,7 +9,7 @@ const TEST_PROFILES := preload("res://tests/m9_test_profile_factory.gd")
 const BATTLE_STATE := preload("res://scripts/battle/unified_battle_state.gd")
 const CONTROLS := preload("res://scripts/ui/physical_control_family.gd")
 
-const ROUTES := ["title", "workshop", "starter", "first_print", "active_forge", "founder_page_1", "founder_page_3", "founder_recovery", "archive", "deck", "market", "settings", "result", "battle_plan", "battle_selected_queue", "battle_exit"]
+const ROUTES := ["title", "workshop", "starter", "first_print", "active_forge", "founder_page_1", "founder_page_3", "founder_recovery", "founder_available", "archive", "deck", "market", "settings", "result", "battle_plan", "battle_selected_queue", "battle_exit"]
 const PRODUCTION_BASE := Vector2i(576, 1024)
 
 var main: Control
@@ -18,6 +18,10 @@ var capture_size := Vector2i(576, 1024)
 var app_root: Window
 var safe_top_inset := 0.0
 var selected_card_override := ""
+var focus_node := ""
+var press_node := ""
+var rival_turn := false
+var pressed_capture_target: Control
 
 func _init() -> void:
 	call_deferred("_run")
@@ -38,6 +42,12 @@ func _run() -> void:
 			safe_top_inset = maxf(0.0, float(value.trim_prefix("--safe-top=")))
 		elif value.begins_with("--selected-card="):
 			selected_card_override = value.trim_prefix("--selected-card=")
+		elif value.begins_with("--focus-node="):
+			focus_node = value.trim_prefix("--focus-node=")
+		elif value.begins_with("--press-node="):
+			press_node = value.trim_prefix("--press-node=")
+		elif value == "--rival-turn":
+			rival_turn = true
 	if capture_size.x < 320 or capture_size.y < 560:
 		push_error("M9 capture needs a portrait surface, got %s." % capture_size)
 		get_tree().quit(1)
@@ -81,6 +91,9 @@ func _run() -> void:
 		push_error("Battle exit capture could not reopen its foreground decision.")
 		get_tree().quit(1)
 		return
+	if not await _apply_capture_control_state():
+		get_tree().quit(1)
+		return
 	var image := app_root.get_viewport().get_texture().get_image()
 	if image == null or image.get_size() != capture_size:
 		push_error("M9 rendered capture surface was unavailable or wrong size for %s." % route_id)
@@ -93,6 +106,7 @@ func _run() -> void:
 		return
 	print("M9_ROUTE_CAPTURE route=%s size=%s safe_top=%0.1f output=%s" % [route_id, capture_size, safe_top_inset, output])
 	print("M9_ROUTE_MANIFEST route=%s logical=%s physical=%s safe_top=%0.1f text150=%s high_contrast=%s reduced_motion=%s output=%s" % [route_id, PRODUCTION_BASE, capture_size, safe_top_inset, str("--text150" in args), str("--high-contrast" in args), str("--reduced-motion" in args), output])
+	await _release_capture_press()
 	main.get_parent().remove_child(main)
 	main.free()
 	CONTROLS.release_cached_resources()
@@ -103,11 +117,20 @@ func _run() -> void:
 func _fresh_founder_receipt() -> void:
 	var founder: Dictionary = RULES.print_starter(RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile).profile
 	GameManager.profile = founder
+	# The receipt commit copies the profile. Apply capture accessibility before
+	# that transition so the restored committed receipt cannot discard it.
+	_apply_accessibility_flags(OS.get_cmdline_user_args())
 	var opened := GameManager.claim_next_starter_pack("workshop", {"caller": "workshop"})
 	if not bool(opened.get("ok", false)):
 		push_error("Founder receipt fixture could not atomically open.")
 		return
 	main._m3_open_pending_pack("workshop")
+
+func _fresh_founder_available() -> void:
+	# Deliberately stop after the free starter print: the Workshop ticket must
+	# advertise an available Founder pack without manufacturing a pending receipt.
+	GameManager.profile = RULES.print_starter(RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile).profile
+	_apply_accessibility_flags(OS.get_cmdline_user_args())
 
 func _prepare_route() -> void:
 	if not is_instance_valid(main): return
@@ -142,6 +165,9 @@ func _prepare_route() -> void:
 				if not await _tap(main.find_child("UnifiedPackRevealNext", true, false) as Button): return
 			elif route_id == "founder_recovery":
 				main._m3_back_from_pack()
+		"founder_available":
+			_fresh_founder_available()
+			main.screen = "workshop"; main.workshop_view = "overview"
 		"archive": main.screen = "unified_library"
 		"deck": main.screen = "unified_deck"
 		"market": main.screen = "unified_market"
@@ -152,6 +178,8 @@ func _prepare_route() -> void:
 			var selected_card := selected_card_override if route_id == "battle_selected_queue" and not selected_card_override.is_empty() else "cinderpaw"
 			main.battle = BATTLE_STATE.create([selected_card], ["aquafin"], 61)
 			main.battle.phase = "main"
+			if rival_turn:
+				main.battle.active_seat = 1
 			if route_id == "battle_selected_queue":
 				main.battle.player(0).queue = [{"card_id":"cinderpaw", "remaining":1}]
 				main.battle.player(0).hand = [selected_card]
@@ -165,6 +193,18 @@ func _prepare_route() -> void:
 			main.battle_mode = "training"; main.battle_settlement_context = {"mode": "training"}; main.unified_battle_coordinator.configure(main.battle, 0); main.screen = "unified_battle"
 	_apply_accessibility_flags(OS.get_cmdline_user_args())
 	main.render()
+	if route_id in ["founder_page_1", "founder_page_3"] and "--text150" in OS.get_cmdline_user_args():
+		var keep_label := main.find_child("PackKeepLabel", true, false) as Label
+		if int(main.settings().get("text_scale_bps", 0)) != 15000 or keep_label == null or keep_label.get_theme_font_size("font_size") < 18:
+			push_error("Founder text150 fixture lost accessibility scale before rendering PackKeepLabel.")
+	elif route_id == "founder_recovery" and "--text150" in OS.get_cmdline_user_args():
+		var resume_pack := main.find_child("WorkshopResumePendingPack", true, false) as Button
+		if main.screen != "workshop" or int(main.settings().get("text_scale_bps", 0)) != 15000 or resume_pack == null or resume_pack.get_theme_font_size("font_size") < 18:
+			push_error("Founder recovery text150 fixture lost Workshop Resume Pack accessibility state.")
+	elif route_id == "founder_available" and "--text150" in OS.get_cmdline_user_args():
+		var open_pack := main.find_child("WorkshopOpenFounderPack", true, false) as Button
+		if main.screen != "workshop" or int(main.settings().get("text_scale_bps", 0)) != 15000 or open_pack == null or open_pack.text != "OPEN\nPACK 1/3" or open_pack.get_theme_font_size("font_size") < 18:
+			push_error("Founder available text150 fixture lost the compact accessible Workshop ticket.")
 
 func _apply_accessibility_flags(args: Array) -> void:
 	var settings: Dictionary = GameManager.profile.get("settings", {})
@@ -172,6 +212,62 @@ func _apply_accessibility_flags(args: Array) -> void:
 	if "--high-contrast" in args: settings.high_contrast = true
 	if "--reduced-motion" in args: settings.reduced_motion = true
 	GameManager.profile.settings = settings
+
+func _apply_capture_control_state() -> bool:
+	if not focus_node.is_empty():
+		var focus_target := main.find_child(focus_node, true, false) as Control
+		if focus_target == null or focus_target.focus_mode == Control.FOCUS_NONE:
+			push_error("Capture focus node is not a focusable control: %s" % focus_node)
+			return false
+		focus_target.grab_focus()
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		if not focus_target.has_focus():
+			push_error("Capture focus node did not own focus: %s" % focus_node)
+			return false
+	if not press_node.is_empty():
+		var press_target := main.find_child(press_node, true, false) as Button
+		if press_target == null or press_target.disabled:
+			push_error("Capture press node is unavailable: %s" % press_node)
+			return false
+		var point := press_target.get_global_rect().get_center()
+		var move := InputEventMouseMotion.new(); move.position = point; move.global_position = point
+		app_root.get_viewport().push_input(move)
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		if app_root.get_viewport().gui_get_hovered_control() != press_target:
+			var hovered := app_root.get_viewport().gui_get_hovered_control()
+			push_error("Capture press node is obstructed: target=%s hovered=%s." % [press_target.name, hovered.name if hovered != null else "<none>"])
+			return false
+		var down := InputEventMouseButton.new(); down.position = point; down.global_position = point; down.button_index = MOUSE_BUTTON_LEFT; down.pressed = true
+		app_root.get_viewport().push_input(down)
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		if not press_target.is_pressed():
+			push_error("Capture press node did not retain its native pressed state: %s" % press_target.name)
+			return false
+		if press_target.name == "UnifiedRunCycleLever":
+			var insert := main.find_child("UnifiedRunCycleApertureInsert", true, false) as TextureRect
+			var caption := main.find_child("UnifiedRunCycleCaption", true, false) as Label
+			if insert == null or caption == null or insert.modulate.r >= 0.8 or caption.modulate.r >= 0.9:
+				push_error("Capture Run Cycle press did not darken the existing aperture and caption after the held viewport down event.")
+				return false
+		pressed_capture_target = press_target
+	return true
+
+func _release_capture_press() -> void:
+	if not is_instance_valid(pressed_capture_target): return
+	# Releasing at the mount center would activate the captured Run Cycle during
+	# teardown. Move and release outside its hit rect so this is a cancelled
+	# visual press only, then let the GUI clear its pressed state before freeing.
+	var outside := Vector2(-24, -24)
+	var move := InputEventMouseMotion.new(); move.position = outside; move.global_position = outside
+	app_root.get_viewport().push_input(move)
+	await get_tree().process_frame
+	var up := InputEventMouseButton.new(); up.position = outside; up.global_position = outside; up.button_index = MOUSE_BUTTON_LEFT; up.pressed = false
+	app_root.get_viewport().push_input(up)
+	await get_tree().process_frame
+	pressed_capture_target = null
 
 func _owner() -> Button:
 	match route_id:
@@ -181,7 +277,7 @@ func _owner() -> Button:
 		"first_print": return main.find_child("ArcaneForgeBack", true, false) as Button
 		"active_forge": return main.find_child("ArcaneForgeBack", true, false) as Button
 		"founder_page_1", "founder_page_3": return main.find_child("UnifiedPackRevealBack", true, false) as Button
-		"founder_recovery": return main.find_child("WorkshopBack", true, false) as Button
+		"founder_recovery", "founder_available": return main.find_child("WorkshopBack", true, false) as Button
 		"archive": return main.find_child("ArchiveArchBack", true, false) as Button
 		"deck", "market": return main.find_child("UnifiedFoundryWorkshopReturn", true, false) as Button
 		"settings": return main.find_child("SettingsCancel", true, false) as Button
@@ -220,7 +316,7 @@ func _prove_live_owner() -> bool:
 func _expected_action_result() -> bool:
 	match route_id:
 		"title": return main.title_exit_confirmation
-		"workshop", "starter", "founder_recovery": return main.screen == "title"
+		"workshop", "starter", "founder_recovery", "founder_available": return main.screen == "title"
 		"first_print": return main.screen == "workshop" and str(GameManager.profile.get("onboarding", {}).get("state", "")) == "starter_selected"
 		"active_forge": return main.screen == "workshop" and main.printer_sequence != null
 		"founder_page_1", "founder_page_3": return main.screen == "workshop" and not (GameManager.profile.get("pending_pack_reveal", {}) as Dictionary).is_empty()

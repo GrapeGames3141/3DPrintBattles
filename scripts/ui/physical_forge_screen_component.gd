@@ -78,7 +78,7 @@ static func _definition_static(main: Control) -> Dictionary:
 
 static func _phase_text_static(phase: String) -> String:
 	match phase:
-		ArcaneForgeSequence.IDLE: return "READY"
+		ArcaneForgeSequence.IDLE: return "STATUS"
 		ArcaneForgeSequence.PRINTING: return "PRINTING"
 		ArcaneForgeSequence.RAW_COMPLETE: return "SECURING"
 		ArcaneForgeSequence.RAW_HOLD: return "RAW HOLD"
@@ -90,7 +90,7 @@ static func _phase_text_static(phase: String) -> String:
 
 static func _eta_text_static(main: Control) -> String:
 	if main.printer_sequence.phase == ArcaneForgeSequence.IDLE:
-		return "READY NOW"
+		return "READY"
 	if main.printer_sequence.phase == ArcaneForgeSequence.RAW_COMPLETE:
 		return "RECORD PENDING"
 	if main.printer_sequence.phase == ArcaneForgeSequence.FAILED:
@@ -224,6 +224,7 @@ func _add_cartridge_readout(main: Control, content: Control) -> void:
 	var blueprint_host := Control.new()
 	blueprint_host.name = "ForgeBlueprintCartridgeAperture"
 	blueprint_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blueprint_host.clip_contents = true
 	# This is the exact existing First Print parchment face, kept clipped so the
 	# approved transparent blueprint ink never spills onto the navy cartridge.
 	_place(blueprint_host, Rect2(793, 380, 94, 236))
@@ -253,8 +254,11 @@ func _add_actions(main: Control, content: Control) -> void:
 		back.text = "SECURING"
 		back.tooltip_text = "Forge record is securing. Back is temporarily unavailable until the commit resolves."
 		back.accessibility_name = back.tooltip_text
-	_place(back, Rect2(70, 1362, 220, 112))
+	_place(back, Rect2(82, 1340, 250, 180))
+	var back_copy := back.text
+	back.text = ""
 	content.add_child(back)
+	_add_action_ink(main, content, "ArcaneForgeBackInk", back_copy, Rect2(101, 1369, 212, 121))
 	match sequence.phase:
 		ArcaneForgeSequence.IDLE:
 			var start := _button(main, "BeginCreaturePrint", "START\n%s" % _price_text(main), main.begin_printer, "wide")
@@ -266,9 +270,12 @@ func _add_actions(main: Control, content: Control) -> void:
 				start.tooltip_text = "Choose a learned creature blueprint before starting."
 			elif not affordable:
 				start.tooltip_text = "You need %d Forge Coins to start this print." % main.printer_price
-			_place(start, Rect2(356, 1362, 230, 112))
+			var start_copy := start.text
+			start.text = ""
+			_place(start, Rect2(352, 1340, 248, 180))
 			content.add_child(start)
-			var ready_text := "%d FC" % int(GameManager.profile.get("forge_coins", 0))
+			_add_action_ink(main, content, "BeginCreaturePrintInk", start_copy, Rect2(356, 1378, 230, 96))
+			var ready_text := "BALANCE\n%d FC" % int(GameManager.profile.get("forge_coins", 0))
 			if not eligible:
 				ready_text = "CHOOSE\nBLUEPRINT"
 			elif not affordable:
@@ -276,16 +283,19 @@ func _add_actions(main: Control, content: Control) -> void:
 			var ready := _native_label(main, ready_text, 11, Color("172b3c"))
 			ready.name = "ForgeActionStatus"
 			ready.tooltip_text = start.tooltip_text if start.disabled else "Available Forge Coins: %d" % int(GameManager.profile.get("forge_coins", 0))
-			_place(ready, Rect2(653, 1382, 214, 72))
+			_place(ready, Rect2(647, 1370, 186, 118))
 			content.add_child(ready)
 		ArcaneForgeSequence.PRINTING, ArcaneForgeSequence.RAW_HOLD, ArcaneForgeSequence.AWAKENING, ArcaneForgeSequence.DEPARTING:
 			var skip := _button(main, "SkipPrinterAnimation", "SKIP", main.skip_printer, "wide")
 			skip.accessibility_name = "Skip the current Forge presentation without bypassing its commit"
-			_place(skip, Rect2(356, 1362, 230, 112))
+			var skip_copy := skip.text
+			skip.text = ""
+			_place(skip, Rect2(352, 1340, 248, 180))
 			content.add_child(skip)
-			var active := _native_label(main, "%d FC" % int(GameManager.profile.get("forge_coins", 0)), 11, Color("172b3c"))
+			_add_action_ink(main, content, "SkipPrinterAnimationInk", skip_copy, Rect2(356, 1378, 230, 96))
+			var active := _native_label(main, "BALANCE\n%d FC" % int(GameManager.profile.get("forge_coins", 0)), 11, Color("172b3c"))
 			active.name = "ForgeActionStatus"
-			_place(active, Rect2(653, 1382, 214, 72))
+			_place(active, Rect2(647, 1370, 186, 118))
 			content.add_child(active)
 		ArcaneForgeSequence.AWAKENED:
 			var primary_callback: Callable = main.return_to_printer_picker
@@ -294,32 +304,38 @@ func _add_actions(main: Control, content: Control) -> void:
 				primary_callback = main._open_next_starter_pack
 				primary_text = "OPEN\nPACK"
 			var done := _button(main, "ForgeTerminalPrimary", primary_text, primary_callback, "wide")
-			_place(done, Rect2(356, 1362, 230, 112))
+			var done_copy := done.text; done.text = ""
+			_place(done, Rect2(352, 1340, 248, 180))
 			content.add_child(done)
+			_add_action_ink(main, content, "ForgeTerminalPrimaryInk", done_copy, Rect2(356, 1378, 230, 96))
 			var returned := _button(main, "ReturnAfterPrint", "RETURN", main.request_back, "binding")
-			_place(returned, Rect2(653, 1362, 214, 112))
+			var returned_copy := returned.text; returned.text = ""
+			_place(returned, Rect2(624, 1340, 254, 180))
 			content.add_child(returned)
+			_add_action_ink(main, content, "ReturnAfterPrintInk", returned_copy, Rect2(647, 1370, 186, 118))
 		ArcaneForgeSequence.FAILED:
 			var retry := _button(main, "ReturnFailedPrint", "RETURN", main.request_back, "wide")
 			retry.accessibility_name = "Return after failed Forge print. %s" % main.printer_failure
 			retry.tooltip_text = retry.accessibility_name
-			_place(retry, Rect2(356, 1362, 230, 112))
+			var retry_copy := retry.text; retry.text = ""
+			_place(retry, Rect2(352, 1340, 248, 180))
 			content.add_child(retry)
+			_add_action_ink(main, content, "ReturnFailedPrintInk", retry_copy, Rect2(356, 1378, 230, 96))
 			var failed := _native_label(main, _compact_failure_text(main.printer_failure), 11, Color("172b3c"))
 			failed.name = "ForgeStationStatus"
 			failed.tooltip_text = main.printer_failure
-			_place(failed, Rect2(653, 1382, 214, 72))
+			_place(failed, Rect2(647, 1370, 186, 118))
 			content.add_child(failed)
 		ArcaneForgeSequence.RAW_COMPLETE:
 			# The legal commit boundary is still in flight. Do not falsely call the
 			# record secure until Main has resolved the existing transaction.
 			var securing := _native_label(main, "SECURING\nRECORD", 11, Color("172b3c"))
 			securing.name = "ForgeStationStatus"
-			_place(securing, Rect2(653, 1382, 214, 72))
+			_place(securing, Rect2(647, 1370, 186, 118))
 			content.add_child(securing)
 		_:
 			var secure := _native_label(main, "RECORD SECURE", 11, Color("172b3c"))
-			_place(secure, Rect2(653, 1382, 214, 72))
+			_place(secure, Rect2(647, 1370, 186, 118))
 			content.add_child(secure)
 
 func _price_text(main: Control) -> String:
@@ -349,6 +365,15 @@ func _native_label(main: Control, text: String, font_size: int, color: Color) ->
 	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	result.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return result
+
+func _add_action_ink(main: Control, content: Control, node_name: String, text: String, rect: Rect2) -> Label:
+	var ink := _native_label(main, text, 12, Color("172b3c"))
+	ink.name = node_name
+	ink.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	ink.clip_text = true
+	_place(ink, rect)
+	content.add_child(ink)
+	return ink
 
 func _button(main: Control, node_name: String, text: String, callback: Callable, kind: String) -> Button:
 	var result: Button = main._visual_button(node_name, text, callback, Color("f3e5c9"), true)

@@ -4,6 +4,7 @@ extends RefCounted
 ## lever; phase names are status only and never player-operated controls.
 
 const RULES := preload("res://scripts/core/unified_rules.gd")
+const BATTLE_STATE := preload("res://scripts/battle/unified_battle_state.gd")
 const STAGE := preload("res://scripts/ui/physical_battlefield_stage.gd")
 const NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
 const CONTROL_FAMILY := preload("res://scripts/ui/physical_control_family.gd")
@@ -19,8 +20,14 @@ const TITLE_LARGE_SEAT := Rect2(.15, .002, .70, .063)
 const BACK_SEAT := Rect2(.02, .004, .11, .061)
 const HAND_SEAT := Rect2(.224, .885, .482, .080)
 const ACTION_SEAT := Rect2(.015, .885, .190, .100)
-const LEVER_SEAT := Rect2(.76, .875, .20, .095)
-const LEVER_LARGE_SEAT := Rect2(.76, .870, .20, .100)
+const LEVER_SEAT := Rect2(.795, .873, .181, .102)
+const LEVER_LARGE_SEAT := LEVER_SEAT
+# The full square mount remains the hit owner.  The insert and its short native
+# caption are fitted only to the measured 576px dark aperture (x478..543,
+# y920..970), so neither repaints the pictured brass rim.
+const LEVER_INSERT_SEAT := Rect2(.830, .897, .116, .050)
+const LEVER_INSERT_PATH := "res://assets/ui/physical_ui/m11/battle-lever-inner-aperture-v1.png"
+const LEVER_INSERT_CROP := Rect2i(40, 8, 1042, 1158)
 var _stage: PhysicalBattlefieldStage
 var _overflow_selected: Array[int] = []
 var _overflow_signature := ""
@@ -37,7 +44,8 @@ func render_preflight(shell: Control) -> void:
 	var legal := legality_reason.is_empty()
 	var preflight := bool(shell.get_meta("battle_preflight", false))
 	var legality_copy := "Legal deck %d/40" % deck.size() if legal else legality_reason
-	var copy := "Battle Preflight\n%s · Preprints %d/3\nYour printer: 2,000 HP · Rival: 2,000 HP" % [legality_copy, preprints.size()] if preflight else "Challenge Board\nFirst Layers training\nPublic rival printer: 2,000 HP\nInspect the battle setup"
+	var printer_hp := BATTLE_STATE.BASE_PRINTER_HP
+	var copy := "Battle Preflight\n%s · Preprints %d/3\nYour printer: %d HP · Rival: %d HP" % [legality_copy, preprints.size(), printer_hp, printer_hp] if preflight else "Challenge Board\nFirst Layers training\nPublic rival printer: %d HP\nInspect the battle setup" % printer_hp
 	# Challenge copy and its physical decision keys occupy deliberately separate
 	# material bands.  The prior short plate allowed multi-line facts to cross the
 	# button texture at phone scale.
@@ -80,6 +88,18 @@ func render_fullscreen(shell: Control) -> void:
 	if bool(shell.battle_back_confirmation):
 		_add_back_choice(shell, battle)
 		return
+	var presentation_kind := str(shell.unified_battle_presentation.get("kind", ""))
+	var pending_for_lever: Dictionary = public_view.get("pending", {}) if public_view.get("pending", {}) is Dictionary else {}
+	var coordinator_locked := bool(shell.unified_battle_coordinator.presentation_active) or bool(shell.unified_battle_coordinator.in_flight) or bool(shell.unified_battle_coordinator.cycle_active)
+	var locked_for_lever := not presentation_kind.is_empty() or coordinator_locked or bool(shell.unified_ai_pending) or bool(shell.unified_local_handoff) or not pending_for_lever.is_empty()
+	var run_cycle_enabled := not bool(battle.finished) and not locked_for_lever and str(public_view.get("phase", "")) == "main" and (str(shell.battle_mode) == "local" or int(battle.active_seat) == 0)
+	var run_cycle_reason := "Run Cycle. Resolve printing, attacks, and collection."
+	if not pending_for_lever.is_empty(): run_cycle_reason = "Resolve the required battle choice before running the cycle."
+	elif not presentation_kind.is_empty() or coordinator_locked: run_cycle_reason = "Run Cycle is unavailable while this battle event resolves."
+	elif bool(shell.unified_local_handoff): run_cycle_reason = "Pass the device to the active player before running the cycle."
+	elif bool(shell.unified_ai_pending): run_cycle_reason = "Rival printer is resolving a checked action."
+	elif str(shell.battle_mode) != "local" and int(battle.active_seat) != 0: run_cycle_reason = "Rival printer is taking its checked turn."
+	_add_run_cycle_mount(shell, run_cycle_enabled, run_cycle_reason)
 	if bool(battle.finished) and not str(shell.unified_battle_presentation.get("kind", "")).is_empty():
 		_add_status(shell, "Final contact resolving · controls locked")
 		return
@@ -98,7 +118,6 @@ func render_fullscreen(shell: Control) -> void:
 		_add_decision_overlay(shell, active, pending if not pending.is_empty() else {"kind":"overflow"}); return
 	if str(shell.toast).contains("snapshot restored"):
 		_add_status(shell, str(shell.toast)); return
-	var presentation_kind := str(shell.unified_battle_presentation.get("kind", ""))
 	if not presentation_kind.is_empty():
 		var receipt: Dictionary = shell.unified_battle_presentation
 		var attack_copy := "%s → %s · %d damage · armor %d→%d" % [str((receipt.get("source", {}) as Dictionary).get("name", "Attacker")), str((receipt.get("target", {}) as Dictionary).get("name", "Target")), int(receipt.get("damage", 0)), int(receipt.get("armor_before", 0)), int(receipt.get("armor_after", 0))]
@@ -136,7 +155,7 @@ func _add_back_choice(shell: Control, battle) -> void:
 	shell.call_deferred("_deferred_focus_if_ready", resume.get_instance_id())
 	var dismiss: Button = shell.make_button("Back", shell.request_back, Color("526e93")); dismiss.name = "UnifiedBattleExitBack"; NAVIGATION.configure_back(dismiss, "battle pause", Vector2(56,56)); _place_on_battle_chassis(shell, dismiss, BACK_SEAT); dismiss.z_index = 21; shell.add_child(dismiss)
 	if not bot_turn:
-		var concede: Button = shell.make_button("Concede", shell._concede_unified_battle, Color("a86b2e")); concede.name = "UnifiedBattleConcede"; concede.custom_minimum_size = Vector2(0,56); CONTROL_FAMILY.apply(concede, "lever"); body.add_child(concede)
+		var concede: Button = shell.make_button("Concede", shell._concede_unified_battle, Color("a86b2e")); concede.name = "UnifiedBattleConcede"; concede.custom_minimum_size = Vector2(0,56); CONTROL_FAMILY.apply(concede, "wide"); body.add_child(concede)
 
 func _viewer_seat(shell: Control, battle) -> int:
 	return int(battle.active_seat) if str(shell.battle_mode) == "local" else 0
@@ -243,9 +262,11 @@ func _add_hud(shell: Control, public_view: Dictionary) -> void:
 		var queue: Array = player.get("queue", []) if player.get("queue", []) is Array else []
 		var head_name := str(RULES.card(str((queue[0] as Dictionary).get("card_id", ""))).get("name", "—")) if not queue.is_empty() else "—"
 		var remaining := int((queue[0] as Dictionary).get("remaining", 0)) if not queue.is_empty() else 0
-		var resource_copy := "F %d/%d · Q%d" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size()]
-		if seat == 0 and not large_text: resource_copy += "\n%s · %dt" % [head_name if not queue.is_empty() else "Idle", remaining]
-		var resources: Label = shell.label(resource_copy, 7 if large_text else 9, parchment_ink); resources.name = "PhysicalBattleHud%dResources" % seat; resources.mouse_filter = Control.MOUSE_FILTER_IGNORE; resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; resources.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; resources.autowrap_mode = TextServer.AUTOWRAP_OFF; resources.clip_text = true; resources.tooltip_text = "Filament %d of %d · Queue %d · Head %s · %d turn%s left" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size(), head_name, remaining, "" if remaining == 1 else "s"]; resources.accessibility_name = resources.tooltip_text; resources.add_theme_color_override("font_color", parchment_ink); _place_on_battle_chassis(shell, resources, resource_rect); shell.add_child(resources)
+		# The lower player gauge is only 35 logical pixels high. Two native labels
+		# have a 23px minimum line box here, so a compact combined readout is the
+		# only honest way to preserve readable 12px ink without crossing its rim.
+		var resource_copy := "F%d/%d·Q%d" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size()] if large_text else ("F%d %s %dt" % [int(player.get("filament", 0)), head_name if not queue.is_empty() else "Idle", remaining])
+		var resources: Label = shell.label(resource_copy, 12, parchment_ink); resources.name = "PhysicalBattleHud%dResources" % seat; resources.mouse_filter = Control.MOUSE_FILTER_IGNORE; resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; resources.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; resources.autowrap_mode = TextServer.AUTOWRAP_OFF; resources.clip_text = true; resources.tooltip_text = "Filament %d of %d · Queue %d · Head %s · %d turn%s left" % [int(player.get("filament", 0)), int(player.get("filament_max", 400)), queue.size(), head_name, remaining, "" if remaining == 1 else "s"]; resources.accessibility_name = resources.tooltip_text; resources.add_theme_color_override("font_color", parchment_ink); _place_on_battle_chassis(shell, resources, resource_rect); shell.add_child(resources)
 
 func _place_on_battle_chassis(shell: Control, node: Control, normalized_seat: Rect2) -> void:
 	# The battlefield art uses contain-fit below 2.05 portrait aspect and full fill
@@ -351,11 +372,72 @@ func _add_plan_overlay(shell: Control, active: Dictionary) -> void:
 		_add_plan_rail_action(shell, row, "PhysicalBattleSwitchMode", "MODE", shell._submit_unified_intent.bind({"type":"switch_mode","slot":selected_slot,"mode":"defense" if str(unit.get("mode", "attack")) == "attack" else "attack"}), "Switch selected creature mode.", Color("526e93"))
 	if int(active.get("emergency_reprints", 0)) > 0 and not (active.get("graveyard", []) as Array).is_empty():
 		_add_plan_rail_action(shell, row, "", "RE\nPRINT", shell._submit_unified_intent.bind({"type":"upgrade_reprint","graveyard_index":0}), "Emergency reprint the first eligible creature.", Color("526e93"))
-	# Leave a real 8px inset in the pictured brass mount even when the minimum
-	# touch height wins over anchors at a small portrait viewport.
-	var lever: Button = shell.make_button("Run\nCycle" if large_text else "Run Cycle", shell._start_unified_run_cycle, Color("a86b2e")); lever.name = "UnifiedRunCycleLever"; lever.custom_minimum_size = Vector2(0, 56); lever.accessibility_name = "Run Cycle. Resolve printing, attacks, and collection."; lever.focus_mode = Control.FOCUS_ALL; _place_on_battle_chassis(shell, lever, LEVER_LARGE_SEAT if large_text else LEVER_SEAT); lever.add_theme_font_size_override("font_size", shell.scaled_font(10) if large_text else shell.scaled_font(15)); shell.add_child(lever)
 	if not str(shell.unified_selected_card_id).is_empty() and str(shell.unified_selected_card_id) in (active.get("hand", []) as Array):
 		_add_selected_card_controls(shell, active)
+
+func _add_run_cycle_mount(shell: Control, enabled: bool, reason: String) -> void:
+	# The square brass mount in the floor is the one physical control. Its opaque
+	# insert is constrained to the measured dark aperture; no generic keycap is
+	# allowed to repaint or compete with that pictured hardware.
+	var lever := Button.new()
+	lever.name = "UnifiedRunCycleLever"
+	lever.text = ""
+	lever.flat = true
+	lever.focus_mode = Control.FOCUS_ALL
+	lever.custom_minimum_size = Vector2(56, 56)
+	lever.tooltip_text = reason
+	lever.accessibility_name = lever.tooltip_text
+	lever.disabled = not enabled
+	lever.z_index = 1
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		lever.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	lever.add_theme_stylebox_override("focus", _lever_focus_style())
+	if enabled:
+		lever.pressed.connect(shell._start_unified_run_cycle)
+	_place_on_battle_chassis(shell, lever, LEVER_LARGE_SEAT if int(shell.settings().get("text_scale_bps", 10000)) >= 15000 else LEVER_SEAT)
+	shell.add_child(lever)
+	var insert := TextureRect.new()
+	insert.name = "UnifiedRunCycleApertureInsert"
+	var source := ResourceLoader.load(LEVER_INSERT_PATH) as Texture2D
+	if source != null:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = source
+		atlas.region = LEVER_INSERT_CROP
+		insert.texture = atlas
+	insert.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	insert.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	insert.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if not enabled: insert.modulate = Color(0.52, 0.52, 0.52, 0.82)
+	_place_on_battle_chassis(shell, insert, LEVER_INSERT_SEAT)
+	shell.add_child(insert)
+	# The physical aperture has room for one readable word at 150% text, not two
+	# lines.  The complete action remains native on the mount's tooltip and
+	# accessibility name.
+	var caption: Label = shell.label("RUN" if enabled else "WAIT", 12, Color("f3e5c9"))
+	caption.name = "UnifiedRunCycleCaption"
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	caption.autowrap_mode = TextServer.AUTOWRAP_OFF
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.z_index = 2
+	caption.add_theme_color_override("font_color", Color("ffffff") if bool(shell.settings().get("high_contrast", false)) else Color("f3e5c9"))
+	_place_on_battle_chassis(shell, caption, Rect2(.833, .922, .114, .024))
+	shell.add_child(caption)
+	if enabled:
+		# The press belongs to the full pictured mount, but its feedback belongs in
+		# the existing dark aperture. Darkening the insert on button_down gives the
+		# captured/real press a visible acknowledgement without a second frame.
+		lever.button_down.connect(func(): insert.modulate = Color(0.72, 0.72, 0.72, 1.0); caption.modulate = Color(0.82, 0.82, 0.82, 1.0))
+		lever.button_up.connect(func(): insert.modulate = Color.WHITE; caption.modulate = Color.WHITE)
+
+func _lever_focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.72, 0.78, 0.06)
+	style.border_color = Color("ffffff")
+	style.set_border_width_all(3)
+	style.corner_radius_top_left = 8; style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8; style.corner_radius_bottom_right = 8
+	return style
 
 func _add_plan_rail_action(shell: Control, row: VBoxContainer, node_name: String, visible_copy: String, action: Callable, tooltip: String, color: Color, disabled := false, primary := false) -> Button:
 	# Every action shares the 96px lower-left key rail. Keep the short visual verb
@@ -364,6 +446,9 @@ func _add_plan_rail_action(shell: Control, row: VBoxContainer, node_name: String
 	var button: Button = shell.make_button(visible_copy, action, color)
 	if not node_name.is_empty(): button.name = node_name
 	button.custom_minimum_size = Vector2(96, 48)
+	# The compact action rail needs the same physical face as the surrounding
+	# Battle controls, not Main's generic multicolour keycap.
+	CONTROL_FAMILY.apply(button, "wide")
 	button.add_theme_font_size_override("font_size", shell.scaled_font(10))
 	button.tooltip_text = tooltip
 	button.accessibility_name = tooltip

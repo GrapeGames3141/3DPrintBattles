@@ -79,12 +79,46 @@ func _market_page_shuttle(main: Control, host: Control, page: int, pages: int) -
 
 func _market_selector_bank(main: Control, host: Control, tab: String) -> void:
 	var bank := Control.new(); bank.name = "V3MarketTabs"; _set_normalized_rect(bank, Rect2(0.305, 0.640, 0.420, 0.125)); host.add_child(bank)
-	for index in [["blueprints", "Plans"], ["cards", "Cards"], ["packs", "Packs"], ["upgrades", "Forge"], ["cosmetics", "Style"]].size():
-		var entry: Array = [["blueprints", "Plans"], ["cards", "Cards"], ["packs", "Packs"], ["upgrades", "Forge"], ["cosmetics", "Style"]][index]
-		var id := str(entry[0]); var visible_label := str(entry[1]); var spoken_label := "Blueprints" if id == "blueprints" else visible_label
+	# Levers remain the only hit owners. Their captions sit on this attached rail,
+	# clear of both moving hardware and the receipt seam.
+	var caption_rail := NinePatchRect.new(); caption_rail.name = "MarketCategoryCaptionRail"; caption_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rail_source := ResourceLoader.load("res://assets/ui/physical_ui/live-correction-r1/controls/wide_parchment_tab/normal.png") as Texture2D
+	caption_rail.texture = rail_source
+	caption_rail.patch_margin_left = 16; caption_rail.patch_margin_right = 16
+	caption_rail.patch_margin_top = 16; caption_rail.patch_margin_bottom = 16
+	caption_rail.draw_center = true; caption_rail.clip_contents = true
+	_set_normalized_rect(caption_rail, Rect2(172.0 / 576.0, 776.0 / 1024.0, 1024.0 / 576.0, 152.0 / 1024.0))
+	caption_rail.scale = Vector2(0.25, 0.25)
+	host.add_child(caption_rail)
+	# The physical rail is authored at four-times resolution and is therefore
+	# scaled down.  Keep native copy outside that decorative scale so its 12/18px
+	# accessibility sizes remain readable instead of inheriting a .25 transform.
+	var caption_ink := Control.new()
+	caption_ink.name = "MarketCategoryCaptionInk"
+	caption_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption_ink.clip_contents = true
+	_set_normalized_rect(caption_ink, Rect2(180.0 / 576.0, 776.0 / 1024.0, 240.0 / 576.0, 38.0 / 1024.0))
+	host.add_child(caption_ink)
+	# Five 48px selector columns cannot carry the long catalog names at 18px.
+	# Keep their compact native nouns readable while tooltip/accessibility preserves
+	# the full category name and the existing category IDs/callbacks stay unchanged.
+	var entries := [["blueprints", "Plan", "Blueprints"], ["cards", "Card", "Cards"], ["packs", "Pack", "Card Packs"], ["upgrades", "Mod", "Printer Upgrades"], ["cosmetics", "Skin", "Cosmetics"]]
+	for index in entries.size():
+		var entry: Array = entries[index]
+		var id := str(entry[0]); var visible_label := str(entry[1]); var spoken_label := str(entry[2])
 		var button := _market_button("MarketTab" + id.capitalize(), "", func(): main.unified_market_tab = id; main.set_meta("m3_market_page", 0); main.set_meta("m3_market_selected_offer_key", ""); main.m3_market_confirmation.clear(); main.render(), id == tab)
-		_set_normalized_rect(button, Rect2(index * 0.20, 0.06, 0.20, 0.82)); button.custom_minimum_size = Vector2(48, 48); button.tooltip_text = "Browse %s" % spoken_label; button.accessibility_name = button.tooltip_text; bank.add_child(button)
-		var caption: Label = main.label(visible_label, 8, Color("f3e5c9")); caption.name = "MarketTabCaption" + id.capitalize(); caption.mouse_filter = Control.MOUSE_FILTER_IGNORE; caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; caption.autowrap_mode = TextServer.AUTOWRAP_OFF; caption.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; _set_normalized_rect(caption, Rect2(index * 0.20, 0.98, 0.20, 0.20)); bank.add_child(caption)
+		_set_normalized_rect(button, Rect2(index * 0.20, 0.06, 0.20, 1.20)); button.flat = false; button.custom_minimum_size = Vector2(48, 48); button.tooltip_text = "Browse %s" % spoken_label; button.accessibility_name = button.tooltip_text; bank.add_child(button)
+		var caption: Label = main.label(visible_label, 12, Color("172b3c")); caption.name = "MarketTabCaption" + id.capitalize(); caption.mouse_filter = Control.MOUSE_FILTER_IGNORE; caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; caption.autowrap_mode = TextServer.AUTOWRAP_OFF; caption.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; caption.add_theme_color_override("font_color", Color.BLACK if bool(main.settings().get("high_contrast", false)) else Color("172b3c")); _set_normalized_rect(caption, Rect2(index * 0.20, 0.00, 0.20, 1.00)); caption_ink.add_child(caption)
+		var underline := ColorRect.new()
+		underline.name = "MarketTabInk" + id.capitalize() + "Underline"
+		underline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var selected_color := Color.BLACK if bool(main.settings().get("high_contrast", false)) else Color("172b3c")
+		var focus_color := Color.WHITE if bool(main.settings().get("high_contrast", false)) else Color("65e3ff")
+		underline.color = selected_color if id == tab else Color(0, 0, 0, 0)
+		_set_normalized_rect(underline, Rect2(index * 0.20 + 0.04, 34.0 / 38.0, 0.12, 2.0 / 38.0))
+		caption_ink.add_child(underline)
+		button.focus_entered.connect(func(): underline.color = focus_color)
+		button.focus_exited.connect(func(): underline.color = selected_color if id == main.unified_market_tab else Color(0, 0, 0, 0))
 
 func _market_detail_bays(main: Control, host: Control, offer: Dictionary) -> void:
 	var detail := Control.new(); detail.name = "MarketSelectedOfferBay"; detail.clip_contents = true; _set_normalized_rect(detail, Rect2(0.032, 0.652, 0.260, 0.190)); host.add_child(detail)
@@ -107,10 +141,9 @@ func _market_detail_bays(main: Control, host: Control, offer: Dictionary) -> voi
 		var submit := _market_button("M3MarketConfirmPurchase", "CONFIRM", main._m3_confirm_market_purchase, true); _set_normalized_rect(submit, Rect2(0.05, 0.54, 0.90, 0.25)); submit.custom_minimum_size = Vector2(56, 56); submit.disabled = main.m3_action_in_flight; submit.tooltip_text = "Confirm this exact market order"; submit.accessibility_name = submit.tooltip_text; _market_decision_ink(submit); confirm.add_child(submit)
 		var cancel := _market_button("M3MarketCancelPurchase", "CANCEL ORDER", main.request_back); _set_normalized_rect(cancel, Rect2(0.05, 0.80, 0.90, 0.20)); cancel.custom_minimum_size = Vector2(48, 48); cancel.disabled = main.m3_action_in_flight; cancel.tooltip_text = "Order is being recorded. Please wait for this receipt." if main.m3_action_in_flight else "Cancel this order and remain in Market"; cancel.accessibility_name = cancel.tooltip_text; _market_decision_ink(cancel); confirm.add_child(cancel)
 	else:
-		var price: Label = main.label("%d COINS" % int(offer.get("price", 0)), 12, Color("f3d995")); price.name = "MarketExactPrice"; price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; _set_normalized_rect(price, Rect2(0.06, 0.15, 0.88, 0.20)); purchase.add_child(price)
-		# AVAILABLE occupies the navy purchase hardware, unlike the parchment
-		# consequence slip below. Keep its pale native ink in every contrast mode.
-		var status: Label = main.label(_market_offer_cue(id), 10, Color("f3e5c9")); status.name = "MarketPurchaseStatus"; status.add_theme_color_override("font_color", Color("f3e5c9")); status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; status.autowrap_mode = TextServer.AUTOWRAP_OFF; status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; _set_normalized_rect(status, Rect2(0.06, 0.31, 0.88, 0.16)); purchase.add_child(status)
+		# Price and availability share one centered instrument block on the right
+		# purchase well, rather than two left-biased rows.
+		var price: Label = main.label("%d COINS\n%s" % [int(offer.get("price", 0)), _market_offer_cue(id)], 12, Color("f3d995")); price.name = "MarketExactPrice"; price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; price.autowrap_mode = TextServer.AUTOWRAP_OFF; price.tooltip_text = "%d Forge Coins · %s" % [int(offer.get("price", 0)), _market_offer_cue(id)]; price.accessibility_name = price.tooltip_text; _set_normalized_rect(price, Rect2(0.288, 0.190, 0.669, 0.230)); purchase.add_child(price)
 		# The lower-right square plate is the purchase affordance.  Keep the native
 		# label and hit target inside that plate rather than below it on the cabinet.
 		var buy := _market_button("MarketPurchaseSelected", "BUY", main._m3_request_market_purchase.bind(str(main.unified_market_tab), id, int(offer.get("price", 0)), str(offer.get("consequence", ""))), true); _set_normalized_rect(buy, Rect2(0.44, 0.50, 0.36, 0.23)); buy.custom_minimum_size = Vector2(56, 56); buy.add_theme_font_size_override("font_size", main.scaled_font(13)); buy.disabled = main.m3_action_in_flight; buy.tooltip_text = "Purchase %s for %d Forge Coins" % [str(offer.get("name", id)), int(offer.get("price", 0))]; buy.accessibility_name = buy.tooltip_text; _market_decision_ink(buy); purchase.add_child(buy)
@@ -226,8 +259,8 @@ func render_pack(main: Control, surface: Control, margin: Callable, heading: Cal
 	# remains visible and is the transparent hit target below.
 	# Main.label applies the player's text scale. Keep this design size unscaled
 	# here so the physical pack label stays contained at the 150% accessibility mode.
-	var keep_label: Label = main.label("KEEP\nCARDS", 13, Color("f3d995")); keep_label.name = "PackKeepLabel"; keep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; keep_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; keep_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; keep_label.mouse_filter = Control.MOUSE_FILTER_IGNORE; keep_label.anchor_left = 0.650; keep_label.anchor_top = 0.858; keep_label.anchor_right = 0.890; keep_label.anchor_bottom = 0.948; surface.add_child(keep_label)
-	var keep := _pack_physical_action("UnifiedPackRevealKeepCards", main._keep_unified_pack_cards); keep.anchor_left = 0.650; keep.anchor_top = 0.858; keep.anchor_right = 0.890; keep.anchor_bottom = 0.948; keep.custom_minimum_size = Vector2(56, 56); keep.tooltip_text = "Keep this committed receipt"; keep.accessibility_name = keep.tooltip_text; surface.add_child(keep)
+	var keep_label: Label = main.label("KEEP CARDS", 12, Color("f3d995")); keep_label.name = "PackKeepLabel"; keep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; keep_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; keep_label.autowrap_mode = TextServer.AUTOWRAP_OFF; keep_label.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_normalized_rect(keep_label, Rect2(392.0 / 576.0, 933.0 / 1024.0, 130.0 / 576.0, 31.0 / 1024.0)); surface.add_child(keep_label)
+	var keep := _pack_physical_action("UnifiedPackRevealKeepCards", main._keep_unified_pack_cards); _set_normalized_rect(keep, Rect2(381.0 / 576.0, 843.0 / 1024.0, 151.0 / 576.0, 137.0 / 1024.0)); keep.custom_minimum_size = Vector2(56, 56); keep.tooltip_text = "Keep this committed receipt"; keep.accessibility_name = keep.tooltip_text; surface.add_child(keep)
 	var caller := str(main.m3_pack_return_context.get("caller", main.m3_pack_return_screen)).capitalize()
 	var back := _pack_button("UnifiedPackRevealBack", "BACK", main.request_back); _set_normalized_rect(back, Rect2(0.020, 0.014, 0.170, 0.066)); NAVIGATION.configure_back(back, caller, Vector2(72, 56)); CONTROLS.apply(back, "wide"); surface.add_child(back)
 

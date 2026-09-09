@@ -15,11 +15,12 @@ func render(main: Control, surface: Control, margin: Callable, heading: Callable
 	var mode := _label(_mode_copy(receipt, state), 11, Color("65472b")); mode.name = "M3ResultReceiptMode"; mode.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; mode.anchor_left = 0.175; mode.anchor_top = 0.230; mode.anchor_right = 0.825; mode.anchor_bottom = 0.265; surface.add_child(mode)
 	var host := Control.new(); host.name = "M3ResultAuthoritativeValues"; host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); surface.add_child(host)
 	var facts := _receipt_facts(receipt)
-	for index in mini(BAYS.size(), facts.size()):
-		var bay := Control.new(); bay.name = "M3ResultBay%02d" % (index + 1); bay.clip_contents = true; _set_rect(bay, BAYS[index]); host.add_child(bay); _render_fact(bay, facts[index])
+	for index in BAYS.size():
+		var fact: Dictionary = facts[index] if index < facts.size() else {"label":"OPTIONAL", "value":"—", "tooltip":"No additional reward"}
+		var bay := Control.new(); bay.name = "M3ResultBay%02d" % (index + 1); bay.clip_contents = true; _set_rect(bay, BAYS[index]); host.add_child(bay); _render_fact(bay, fact)
 	# Native text is seated over the upper face of the left dial; the button itself
 	# stays transparent so the approved brass hardware remains visible.
-	var continue_label := _label("CONTINUE", 14, Color("47331f")); continue_label.name = "ResultContinueLabel"; continue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; continue_label.anchor_left = 0.182; continue_label.anchor_top = 0.790; continue_label.anchor_right = 0.470; continue_label.anchor_bottom = 0.842; surface.add_child(continue_label)
+	var continue_label := _label("CONTINUE", 14, Color("47331f"), true); continue_label.name = "ResultContinueLabel"; continue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; continue_label.anchor_left = 0.161; continue_label.anchor_top = 0.812; continue_label.anchor_right = 0.491; continue_label.anchor_bottom = 0.887; surface.add_child(continue_label)
 	var continue_button := _physical_button("ResultContinue", main.dispatch_back); continue_button.anchor_left = 0.080; continue_button.anchor_top = 0.785; continue_button.anchor_right = 0.575; continue_button.anchor_bottom = 0.950; continue_button.custom_minimum_size = Vector2(56, 56); continue_button.tooltip_text = "Continue to Workshop"; continue_button.accessibility_name = continue_button.tooltip_text; continue_button.disabled = state not in ["committed", "duplicate"] or main.battle_mode == "local"; surface.add_child(continue_button)
 	if state == "error":
 		var retry_label := _label("RETRY", 13, Color("f3d995")); retry_label.name = "ResultRetryLabel"; retry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; retry_label.anchor_left = 0.675; retry_label.anchor_top = 0.770; retry_label.anchor_right = 0.875; retry_label.anchor_bottom = 0.805; surface.add_child(retry_label)
@@ -106,7 +107,7 @@ func _whole(value: Variant) -> String:
 	return str(value)
 
 func _render_fact(bay: Control, fact: Dictionary) -> void:
-	var label := _label(str(fact.get("label", "REWARD")), 10, Color("65472b")); label.name = "M3ResultBayLabel"; label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_rect(label, Rect2(0.06, 0.08, 0.88, 0.22)); bay.add_child(label)
+	var label := _label(str(fact.get("label", "REWARD")), 10, Color("65472b")); label.name = "M3ResultBayLabel"; label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; label.tooltip_text = str(fact.get("tooltip", "")); label.accessibility_name = label.tooltip_text if not label.tooltip_text.is_empty() else label.text; _set_rect(label, Rect2(0.06, 0.08, 0.88, 0.22)); bay.add_child(label)
 	var drop_id := str(fact.get("drop_id", ""))
 	if not drop_id.is_empty() and not RULES.card(drop_id).is_empty():
 		var card := RULES.card(drop_id)
@@ -116,13 +117,20 @@ func _render_fact(bay: Control, fact: Dictionary) -> void:
 			var art := TextureRect.new(); art.name = "M3ResultDropArt"; art.texture = UNIFIED_CARD_VIEW.art_for_definition(card); art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; art.mouse_filter = Control.MOUSE_FILTER_IGNORE; _set_rect(art, Rect2(0.26, 0.30, 0.48, 0.46)); bay.add_child(art)
 		if fact.has("owned_copies"):
 			var ownership := _label("Copies %d · License %s · Models %d" % [int(fact.get("owned_copies", 0)), "permanent" if bool(fact.get("blueprint_license", false)) else "none", int(fact.get("printed_models", 0))], 8, Color("3b2b1c")); ownership.name = "M3ResultDropOwnershipFacts"; ownership.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; ownership.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _set_rect(ownership, Rect2(0.04, 0.69, 0.92, 0.28)); bay.add_child(ownership)
-	var value := _label(str(fact.get("value", "—")), 16 if drop_id.is_empty() else 11, Color("3b2b1c")); value.name = "M3ResultBayValue"; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_rect(value, Rect2(0.06, 0.68 if not drop_id.is_empty() else 0.34, 0.88, 0.16)); bay.add_child(value)
+	# Numeric rewards and optional em dashes share the same scale and tall value
+	# seat, keeping their baseline aligned at 150% instead of making absence look
+	# lower than Coins/XP.
+	var plain_value := drop_id.is_empty()
+	var value := _label(str(fact.get("value", "—")), 16 if plain_value else 11, Color("3b2b1c"), plain_value); value.name = "M3ResultBayValue"; value.tooltip_text = str(fact.get("tooltip", "")); value.accessibility_name = value.tooltip_text if not value.tooltip_text.is_empty() else value.text; value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _set_rect(value, Rect2(0.06, 0.34, 0.88, 0.40) if plain_value else Rect2(0.06, 0.68, 0.88, 0.16)); bay.add_child(value)
 
 func _set_rect(node: Control, rect: Rect2) -> void:
 	node.anchor_left = rect.position.x; node.anchor_top = rect.position.y; node.anchor_right = rect.end.x; node.anchor_bottom = rect.end.y
 
-func _label(value: String, size: int, color: Color) -> Label:
-	var label := Label.new(); label.text = value; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS; label.add_theme_font_size_override("font_size", size); label.add_theme_color_override("font_color", color); label.mouse_filter = Control.MOUSE_FILTER_IGNORE; return label
+func _label(value: String, size: int, color: Color, scale_with_accessibility := false) -> Label:
+	var label := Label.new(); label.text = value; label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; label.autowrap_mode = TextServer.AUTOWRAP_OFF; label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	var settings: Dictionary = GameManager.profile.get("settings", {}) if GameManager.profile.get("settings", {}) is Dictionary else {}
+	var scale_bps := int(settings.get("text_scale_bps", 10000))
+	label.add_theme_font_size_override("font_size", maxi(12, (size * scale_bps) / 10000) if scale_with_accessibility else size); label.add_theme_color_override("font_color", color); label.mouse_filter = Control.MOUSE_FILTER_IGNORE; return label
 
 func _button(node_name: String, value: String, action: Callable) -> Button:
 	var button := Button.new(); button.name = node_name; button.text = value; button.focus_mode = Control.FOCUS_ALL; button.add_theme_font_size_override("font_size", 14); button.add_theme_color_override("font_color", Color("f5e1b0")); button.add_theme_color_override("font_disabled_color", Color("a99578")); button.add_theme_stylebox_override("normal", _style(Color("26333b"), Color("b98b46"), 3)); button.add_theme_stylebox_override("hover", _style(Color("3c4c4d"), Color("f0c76c"), 3)); button.add_theme_stylebox_override("pressed", _style(Color("5a462e"), Color("f7d77b"), 3)); button.add_theme_stylebox_override("focus", _style(Color("26333b"), Color("74d8df"), 4)); button.add_theme_stylebox_override("disabled", _style(Color("1d2930"), Color("66553b"), 2))

@@ -17,13 +17,16 @@ const ARCHIVE_CARD_WELLS := [
 	Rect2(0.1875, 0.386719, 0.291667, 0.160156), Rect2(0.5174, 0.386719, 0.291667, 0.160156),
 	Rect2(0.1875, 0.574219, 0.291667, 0.160156), Rect2(0.5174, 0.574219, 0.291667, 0.160156)
 ]
-const ARCHIVE_PAGE_ROCKER_RECT := Rect2(0.054, 0.897, 0.182, 0.095)
+const ARCHIVE_PAGE_ROCKER_RECT := Rect2(32.0 / 576.0, 926.0 / 1024.0, 111.0 / 576.0, 68.0 / 1024.0)
 const ARCHIVE_BOTTOM_WELLS := [
 	Rect2(0.247, 0.897, 0.222, 0.095), Rect2(0.479167, 0.897, 0.224, 0.095),
 	Rect2(0.714, 0.897, 0.224, 0.095)
 ]
 
+var _archive_native_action_font_size := 12
+
 func render_archive(main: Control, surface: Control, margin: Callable, heading: Callable) -> void:
+	_archive_native_action_font_size = main.scaled_font(12)
 	# CO-02 owns a dedicated inspection folio.  It is not a modal overlay on the
 	# CO-01 grid: rendering both makes cards/facts collide and leaves inactive grid
 	# targets beneath the detail leaf.
@@ -59,8 +62,11 @@ func render_archive(main: Control, surface: Control, margin: Callable, heading: 
 	var rail_next := _archive_button("ArchiveCategoryRailNext", "›", func(): _scroll_archive_tabs(rail, 1)); _set_normalized_rect(rail_next, Rect2(0.760, 0.777, 0.090, 0.086)); rail_next.custom_minimum_size = Vector2(48, 48); rail_next.add_theme_font_size_override("font_size", main.scaled_font(22)); rail_next.tooltip_text = "Show later archive categories"; rail_next.accessibility_name = rail_next.tooltip_text; surface.add_child(rail_next)
 	var wells := Control.new(); wells.name = "ArchiveLowerPhysicalWells"; wells.mouse_filter = Control.MOUSE_FILTER_IGNORE; wells.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); surface.add_child(wells)
 	var rocker := Control.new(); rocker.name = "ArchivePageRocker"; rocker.mouse_filter = Control.MOUSE_FILTER_IGNORE; rocker.clip_contents = true; _set_normalized_rect(rocker, ARCHIVE_PAGE_ROCKER_RECT); wells.add_child(rocker)
-	var previous := _archive_button("ArchivePagePrevious", "‹", func(): main.set_meta("m3_archive_page", maxi(0, page - 1)); main.render()); previous.disabled = page <= 0; previous.tooltip_text = "Previous archive page"; previous.anchor_right = 0.50; previous.anchor_bottom = 1.0; previous.custom_minimum_size = Vector2(48, 48); previous.add_theme_font_size_override("font_size", main.scaled_font(22)); rocker.add_child(previous)
-	var next := _archive_button("ArchivePageNext", "›", func(): main.set_meta("m3_archive_page", mini(pages - 1, page + 1)); main.render()); next.disabled = page >= pages - 1; next.tooltip_text = "Next archive page"; next.anchor_left = 0.50; next.anchor_right = 1.0; next.anchor_bottom = 1.0; next.custom_minimum_size = Vector2(48, 48); next.add_theme_font_size_override("font_size", main.scaled_font(22)); rocker.add_child(next)
+	# The lower-left rocker is one dial: two measured arrow zones flank a native
+	# page readout.  The readout is decorative and cannot steal either touch lane.
+	var previous := _archive_button("ArchivePagePrevious", "‹", func(): main.set_meta("m3_archive_page", maxi(0, page - 1)); main.render()); previous.disabled = page <= 0; previous.tooltip_text = "Previous archive page"; previous.accessibility_name = previous.tooltip_text; _set_normalized_rect(previous, Rect2(0.00, 0.00, 0.50, 1.00)); previous.custom_minimum_size = Vector2(48, 48); previous.add_theme_font_size_override("font_size", main.scaled_font(22)); rocker.add_child(previous)
+	var readout: Label = main.label("%d/%d" % [page + 1, pages], 10, Color("f3e5c9")); readout.name = "ArchivePageReadout"; readout.mouse_filter = Control.MOUSE_FILTER_IGNORE; readout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; readout.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; readout.autowrap_mode = TextServer.AUTOWRAP_OFF; _set_normalized_rect(readout, Rect2(0.25, 0.00, 0.50, 1.00)); rocker.add_child(readout)
+	var next := _archive_button("ArchivePageNext", "›", func(): main.set_meta("m3_archive_page", mini(pages - 1, page + 1)); main.render()); next.disabled = page >= pages - 1; next.tooltip_text = "Next archive page"; next.accessibility_name = next.tooltip_text; _set_normalized_rect(next, Rect2(0.50, 0.00, 0.50, 1.00)); next.custom_minimum_size = Vector2(48, 48); next.add_theme_font_size_override("font_size", main.scaled_font(22)); rocker.add_child(next)
 	var owned_well := _archive_button("ArchiveWellOwned", "Owned", func(): main.m3_archive_owned_only = not bool(main.m3_archive_owned_only); main.set_meta("m3_archive_page", 0); main.render(), bool(main.m3_archive_owned_only)); _set_normalized_rect(owned_well, ARCHIVE_BOTTOM_WELLS[0]); owned_well.custom_minimum_size = Vector2(48, 48); wells.add_child(owned_well)
 	var printable_well := _archive_button("ArchiveWellPrintable", "Printable", func(): main.m3_archive_printable_only = not bool(main.m3_archive_printable_only); main.set_meta("m3_archive_page", 0); main.render(), bool(main.m3_archive_printable_only)); _set_normalized_rect(printable_well, ARCHIVE_BOTTOM_WELLS[1]); printable_well.custom_minimum_size = Vector2(48, 48); wells.add_child(printable_well)
 	var clear_well := _archive_button("ArchiveWellClear", "Clear", func(): main.m3_archive_owned_only = false; main.m3_archive_printable_only = false; main.set_meta("m3_archive_category", "all"); main.set_meta("m3_archive_page", 0); main.render()); _set_normalized_rect(clear_well, ARCHIVE_BOTTOM_WELLS[2]); clear_well.custom_minimum_size = Vector2(48, 48); wells.add_child(clear_well)
@@ -83,7 +89,7 @@ func _archive_button(node_name: String, value: String, action: Callable, active 
 	# Archive plates, category rails, and card wells are authored in the master.
 	# Their native actions stay transparent so a generic button skin never hides
 	# the folio art; the actual navigation Back applies its own hardware afterward.
-	button.flat = true; button.add_theme_font_size_override("font_size", 12); CONTROLS.apply(button, "lever", active, true)
+	button.flat = true; button.add_theme_font_size_override("font_size", _archive_native_action_font_size); CONTROLS.apply(button, "lever", active, true)
 	# Archive rail/bottom controls sit directly on navy leather and brass wells.
 	# Pale native ink is required there; CO-02's parchment actions explicitly
 	# override this through _archive_detail_button.
@@ -189,6 +195,7 @@ func _printed_model_count(creature_id: String) -> int:
 func render_deck(main: Control, surface: Control, margin: Callable, heading: Callable, scroll: Callable) -> void:
 	# DK-01 is an authored workbench, rather than an app panel.  All live values
 	# stay native, but each control is deliberately seated in its physical recess.
+	_archive_native_action_font_size = main.scaled_font(12)
 	main._m3_ensure_deck_draft()
 	var host := Control.new(); host.name = "M3DeckWorkbench"; host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); surface.add_child(host)
 	_deck_hud(main, host)
@@ -290,17 +297,34 @@ func _deck_inspector(main: Control, host: Control, selected_id: String, reason: 
 	var legal: Label = main.label(legal_text, 9, Color("f3e5c9") if reason.is_empty() else Color("ffd0c8")); legal.name = "DeckLegalityStatus"; legal.tooltip_text = "%d cards · %s" % [main.unified_deck_draft.size(), "legal" if reason.is_empty() else reason]; legal.accessibility_name = legal.tooltip_text; legal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; legal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; legal.autowrap_mode = TextServer.AUTOWRAP_OFF; legal.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING; legal.z_index = 3; legal.add_theme_stylebox_override("normal", _deck_recess_style()); _set_normalized_rect(legal, Rect2(0.05, 0.640, 0.90, 0.300)); inspector.add_child(legal)
 	# The two lower-right physical wells are deliberately non-overlapping at 576px;
 	# both retain a true 48px global target rather than relying on a narrow label.
-	var save_rect := Rect2(0.730, 0.520, 0.118, 0.055)
-	# The narrow right keycap retains a compact two-line native caption while its
-	# accessibility name keeps the full Pre-Print save action.
-	var preprint_rect := Rect2(0.850, 0.520, 0.140, 0.055)
+	# These are two adjacent, independent physical keys. The old narrow right
+	# keycap was only wide enough for clipped text, so keep a two-pixel gutter.
+	var save_rect := Rect2(420.0 / 576.0, 516.0 / 1024.0, 66.0 / 576.0, 78.0 / 1024.0)
+	var preprint_rect := Rect2(488.0 / 576.0, 510.0 / 1024.0, 78.0 / 576.0, 94.0 / 1024.0)
 	# The transparent actions retain their large accessible hit areas.  Their small
 	# painted cream keycaps are narrower, so their native ink is independently
 	# inset to the actual faces rather than centred in the broad interaction rects.
+	# The right action is a true cream face, not dark deck hardware with parchment
+	# ink painted over it. It is decorative; SavePrePrintLoadout remains the only
+	# focus, press, and callback owner.
+	var preprint_plate := NinePatchRect.new()
+	preprint_plate.name = "SavePrePrintLoadoutPlate"
+	preprint_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preprint_plate.texture = ResourceLoader.load("res://assets/ui/physical_ui/live-correction-r1/controls/wide_parchment_tab/normal.png") as Texture2D
+	# The source is a four-times authoring raster. Draw it at four-times then
+	# scale only the decoration down: 24px source borders become a 6px physical
+	# rim, leaving a true 66px cream face for the 18px HC PRE-PRINTS glyphs.
+	preprint_plate.patch_margin_left = 24; preprint_plate.patch_margin_right = 24
+	preprint_plate.patch_margin_top = 24; preprint_plate.patch_margin_bottom = 24
+	preprint_plate.draw_center = true
+	_set_normalized_rect(preprint_plate, Rect2(preprint_rect.position, preprint_rect.size * 4.0))
+	preprint_plate.scale = Vector2(0.25, 0.25)
+	preprint_plate.z_index = 2
+	host.add_child(preprint_plate)
 	var save := _deck_button("SaveActiveDeck", "", main._m3_save_deck, true); _deck_cream_ink(save); save.tooltip_text = "Save the active fixed deck"; save.accessibility_name = save.tooltip_text; _set_normalized_rect(save, save_rect); save.custom_minimum_size = Vector2(56, 56); save.disabled = not reason.is_empty(); save.z_index = 3; host.add_child(save)
-	var save_ink: Label = main.label("SAVE", 11, Color("172b3c")); save_ink.name = "SaveActiveDeckInk"; save_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; save_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; save_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; save_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; save_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(save_ink, Rect2(0.756, 0.520, 0.087, 0.055)); save_ink.z_index = 4; host.add_child(save_ink)
+	var save_ink: Label = main.label("SAVE", 12, Color("172b3c")); save_ink.name = "SaveActiveDeckInk"; save_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; save_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; save_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; save_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; save_ink.clip_text = true; save_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(save_ink, Rect2(426.0 / 576.0, 532.0 / 1024.0, 54.0 / 576.0, 48.0 / 1024.0)); save_ink.z_index = 4; host.add_child(save_ink)
 	var save_pre := _deck_button("SavePrePrintLoadout", "", main._m3_save_preprints); _deck_cream_ink(save_pre); save_pre.tooltip_text = "Save Pre-Print loadout"; save_pre.accessibility_name = save_pre.tooltip_text; _set_normalized_rect(save_pre, preprint_rect); save_pre.custom_minimum_size = Vector2(56, 56); save_pre.z_index = 3; host.add_child(save_pre)
-	var pre_ink: Label = main.label("PRE\nSAVE", 8, Color("172b3c")); pre_ink.name = "SavePrePrintLoadoutInk"; pre_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; pre_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pre_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; pre_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; pre_ink.add_theme_color_override("font_color", Color("172b3c")); _set_normalized_rect(pre_ink, Rect2(0.854, 0.512, 0.089, 0.071)); pre_ink.z_index = 4; host.add_child(pre_ink)
+	var pre_ink: Label = main.label("SAVE\nPRE-\nPRINTS", 12, Color("172b3c")); pre_ink.name = "SavePrePrintLoadoutInk"; pre_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; pre_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; pre_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; pre_ink.autowrap_mode = TextServer.AUTOWRAP_OFF; pre_ink.clip_text = true; pre_ink.add_theme_color_override("font_color", Color("172b3c")); pre_ink.add_theme_constant_override("line_spacing", -6); _set_normalized_rect(pre_ink, Rect2(494.0 / 576.0, 521.0 / 1024.0, 66.0 / 576.0, 72.0 / 1024.0)); pre_ink.z_index = 4; host.add_child(pre_ink)
 
 func _deck_preprint_clamps(main: Control, host: Control) -> void:
 	var clamps := Control.new(); clamps.name = "M3PrePrintClamps"; _set_normalized_rect(clamps, Rect2(0.070, 0.604, 0.860, 0.203)); host.add_child(clamps)

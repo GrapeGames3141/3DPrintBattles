@@ -343,7 +343,7 @@ func _raw_texture_for(card_id: String) -> Texture2D:
 	if _raw_texture_cache.has(card_id): return _raw_texture_cache[card_id] as Texture2D
 	var creature := Catalog.creature(card_id)
 	var raw_path := str(creature.get("raw_print", ""))
-	if raw_path.is_empty() and card_id == "iron_gem": raw_path = "res://assets/ui/physical_ui/m11/iron-gem-raw-alpha-v1.png"
+	if raw_path.is_empty() and card_id == "iron_gem": raw_path = "res://assets/ui/physical_ui/m11/iron_gem-raw-alpha-v1.png"
 	if raw_path.is_empty() and card_id.ends_with("_full_suit"):
 		var suit_id := card_id.trim_suffix("_full_suit")
 		for suit in Catalog.SUITS:
@@ -354,6 +354,11 @@ func _raw_texture_for(card_id: String) -> Texture2D:
 		for core in Catalog.CORE_BLUEPRINTS:
 			raw_path = str((core as Dictionary).get("raw_print", ""))
 			if not raw_path.is_empty(): break
+	# Legal support cards without approved battle raw art remain truthful finite
+	# fallbacks. Never ask ResourceLoader to resolve an empty path during a live turn.
+	if raw_path.is_empty():
+		_raw_texture_cache[card_id] = null
+		return null
 	var texture := ResourceLoader.load(raw_path) as Texture2D
 	_raw_texture_cache[card_id] = texture
 	return texture

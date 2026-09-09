@@ -20,6 +20,8 @@ var players: Array = []
 var log: Array[String] = []
 ## Stable authority identities for print work; presentation serials remain separate.
 var print_job_serial := 0
+const BASE_PRINTER_HP := 200
+const REINFORCED_CHASSIS_HP := 50
 
 static func create(player_deck: Array, rival_deck: Array, match_seed: int = 7, player_upgrades: Array = [], rival_upgrades: Array = [], player_preprints: Array = [], rival_preprints: Array = [], player_workshop: Dictionary = {}, rival_workshop: Dictionary = {}) -> UnifiedBattleState:
 	var state := UnifiedBattleState.new()
@@ -49,7 +51,10 @@ static func _player(deck_source: Array, seed_value: int, installed: Array, prepr
 	var capacity := 400
 	if "spool_capacity_i" in workshop_upgrades: capacity = 500
 	if "spool_capacity_ii" in workshop_upgrades: capacity = 700
-	return {"printer":{"hp":200,"max_hp":200}, "slots":field, "queue":[], "staging":[], "holding":[], "filament_ring_active":false, "filament":200, "filament_max":capacity, "trap":{}, "deck":deck, "hand":hand, "graveyard":[], "scrap":[], "installed_upgrades":installed.duplicate(), "upgrade_plays":0, "emergency_reprints":installed.count("emergency_reprint_upgrade"), "preprints":preprints.duplicate(), "draw_count":0, "played":[]}
+	# Workshop upgrades are launch data; in-battle Chassis cards remain uninstalled
+	# until their existing authority action resolves, so a fresh state begins at base.
+	var printer_max := BASE_PRINTER_HP
+	return {"printer":{"hp":printer_max,"max_hp":printer_max}, "slots":field, "queue":[], "staging":[], "holding":[], "filament_ring_active":false, "filament":200, "filament_max":capacity, "trap":{}, "deck":deck, "hand":hand, "graveyard":[], "scrap":[], "installed_upgrades":installed.duplicate(), "upgrade_plays":0, "emergency_reprints":installed.count("emergency_reprint_upgrade"), "preprints":preprints.duplicate(), "draw_count":0, "played":[]}
 
 static func _unit(card: Dictionary, preprinted := false) -> Dictionary:
 	return {"card_id":str(card.get("id", "")), "name":str(card.get("name", "Print")), "rarity":str(card.get("rarity", "common")), "element":str(card.get("element", "Arcane")), "bend":int(card.get("bend_score", card.get("bend", 0))), "base_hp":int(card.get("hp", 1)), "hp":int(card.get("hp", 1)), "armor_hp":0, "mode":"defense" if preprinted else "attack", "ready":not preprinted, "preprinted":preprinted, "mode_changed":false, "attacked":false, "equipment":{"armor":{},"gem":{}}, "statuses":{}, "ability_cooldown":0, "equipment_cost":0}

@@ -77,8 +77,8 @@
       "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "selected approved M11 fitting derivative", "approval_date": "2026-09-08", "approval_source": "M11 r7 equipment fitting review"}
     },
     "iron_gem_raw": {
-      "runtime_path": "res://assets/ui/physical_ui/m11/iron-gem-raw-alpha-v1.png",
-      "source_path": "res://docs/art/m9-equipment-20260904/family/iron_gem-raw-alpha-v1.png",
+      "runtime_path": "res://assets/ui/physical_ui/m11/iron_gem-raw-alpha-v1.png",
+	  "source_path": "res://docs/art/m9-equipment-20260904/family/iron_gem-raw-alpha-v1.png",
       "dimensions": [1600, 1600],
       "bytes": 2499720,
       "sha256": "DE06034FE1B80AE866334840E730608B4F4419FD15F54BE7D5B82DA6075BCBE6",
@@ -87,14 +87,25 @@
       "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "previously approved equipment family", "approval_date": "2026-09-04", "approval_source": "M9 equipment asset review"}
     },
     "iron_gem_blueprint": {
-      "runtime_path": "res://assets/ui/physical_ui/m11/iron-gem-blueprint-alpha-v1.png",
-      "source_path": "res://docs/art/m9-equipment-20260904/family/iron_gem-blueprint-alpha-v1.png",
+      "runtime_path": "res://assets/ui/physical_ui/m11/iron_gem-blueprint-alpha-v1.png",
+	  "source_path": "res://docs/art/m9-equipment-20260904/family/iron_gem-blueprint-alpha-v1.png",
       "dimensions": [1600, 1600],
       "bytes": 1132632,
       "sha256": "B977A9E15626161E9AAAE36B823EDD388565521BE73F8ACD07B99FAB1950140F",
       "alpha_expected": true,
       "runtime_role": "Approved Iron Gem blueprint for M11 fitting handoff and inspection.",
       "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "previously approved equipment family", "approval_date": "2026-09-04", "approval_source": "M9 equipment asset review"}
+    },
+    "battle_lever_aperture": {
+      "runtime_path": "res://assets/ui/physical_ui/m11/battle-lever-inner-aperture-v1.png",
+      "source_path": "res://docs/art/m11-living-battles-20260908/lever-inner-aperture-v1.png",
+      "dimensions": [1122, 1402],
+      "bytes": 2706983,
+      "sha256": "CBE5AEDE27246F288DECECC26435394BAC38D6DDE9795EB8ADA56AA049199FDF",
+      "alpha_expected": false,
+      "approved_crop": [40, 8, 1042, 1158],
+      "runtime_role": "Opaque M11 Run Cycle mechanism inset only; the battle floor retains the sole brass outer mount and all labels remain native.",
+      "provenance": {"generator": "OpenAI ImageGen", "prompt_status": "selected aperture-only derivative", "approval_date": "2026-09-08", "approval_source": "M11 UI1 lever correction selection"}
     }
   },
   "m3_physical_ui": {

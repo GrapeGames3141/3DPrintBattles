@@ -3,6 +3,7 @@ extends Node
 const MAIN := preload("res://scenes/main.tscn")
 const RULES := preload("res://scripts/core/unified_rules.gd")
 const IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
+const TEST_PROFILES := preload("res://tests/m9_test_profile_factory.gd")
 const TEST_ROOT := "E:/AI Projects/games/3d print battler/build/task-state/m3-runtime-20260831/m1-navigation-save"
 var failures: Array[String] = []
 
@@ -47,8 +48,7 @@ func _mount() -> Dictionary:
 
 func _run() -> void:
 	_clean_paths()
-	var base: Dictionary = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
-	base = RULES.print_starter(base).profile
+	var base: Dictionary = TEST_PROFILES.founder_ready("cinderpaw")
 	GameManager.profile = base
 	var mounted := await _mount()
 	var main: Control = mounted.main
@@ -74,7 +74,11 @@ func _run() -> void:
 		if button != null:
 			var suffix := str(node_name).trim_prefix("WorkshopHotspot")
 			var station_label := main.find_child("WorkshopStationLabel" + suffix, true, false) as Label
-			require(is_instance_valid(station_label) and button.get_global_rect().encloses(station_label.get_global_rect()), "%s native label is fully seated inside its owning authored Workshop object." % node_name)
+			var station_plate := main.find_child("WorkshopStationLabel%sPlate" % suffix, true, false) as TextureRect
+			var seated := is_instance_valid(station_label) and is_instance_valid(station_plate) and station_plate.get_global_rect().encloses(station_label.get_global_rect())
+			if station_plate == null:
+				seated = is_instance_valid(station_label) and button.get_global_rect().encloses(station_label.get_global_rect())
+			require(seated and button.custom_minimum_size.x >= 48.0 and button.custom_minimum_size.y >= 48.0, "%s native label is fully seated on its literal mounted plate while the owning Workshop hotspot retains a 48px target." % node_name)
 			var ring := button.find_child("WorkshopHotspotTightFocusRing", true, false) as Panel
 			require(is_instance_valid(ring) and ring.get_theme_stylebox("panel") is StyleBoxEmpty, "%s focus owner has a transparent center; only its physical edge strokes render." % node_name)
 			for edge in ["Top", "Right", "Bottom", "Left"]:
@@ -91,23 +95,20 @@ func _run() -> void:
 	await get_tree().process_frame
 	require(main.screen == "workshop" and not main.toast.is_empty() and var_to_str(GameManager.profile) == profile_before_unknown, "Unavailable physical route remains in Workshop with a native reason and zero mutation.")
 	GameManager.profile = RULES.choose_starter(RULES.new_profile(), "cinderpaw").profile
+	var profile_before_printer_open := var_to_str(GameManager.profile)
 	main.open_printer("cinderpaw")
 	await get_tree().process_frame
-	var bed := main.find_child("FirstPrintEmptyBedProof", true, false) as Control
-	var cartridge := main.find_child("FirstPrintDockedBlueprint", true, false) as TextureRect
-	var cartridge_owner := main.find_child("FirstPrintBlueprintDock", true, false) as Panel
-	var cartridge_paper_aperture := main.find_child("FirstPrintBlueprintPaperAperture", true, false) as Control
-	var cartridge_caption := main.find_child("FirstPrintDockCaption", true, false) as Label
+	await get_tree().process_frame
+	var chamber := main.find_child("ForgeContinuityChamber", true, false) as ArcaneForgeStage
+	var cartridge := main.find_child("ForgeBlueprintCartridgeInk", true, false) as TextureRect
+	var cartridge_owner := main.find_child("ForgeBlueprintCartridgeAperture", true, false) as Control
+	var cartridge_caption := main.find_child("ForgeBlueprintCartridgeLabel", true, false) as Label
 	var begin := main.find_child("BeginCreaturePrint", true, false) as Button
 	var back := main.find_child("ArcaneForgeBack", true, false) as Button
-	var bed_status := main.find_child("FirstPrintBedStatus", true, false) as Label
-	var bed_light_mask := main.find_child("FirstPrintBedInactiveLightMask", true, false) as ColorRect
-	require(bed != null and cartridge != null and begin != null and main.find_child("FeedbackForgeStage", true, false) == null and main.find_child("ArcaneForgeStage", true, false) == null, "First Print setup keeps the bed empty before Start.")
-	var cartridge_caption_width_ok := cartridge_caption != null and cartridge_caption.get_global_rect().size.x >= cartridge_caption.get_minimum_size().x + 8.0
-	require(cartridge.texture != null and not IMPRINT.is_neutral_placeholder(cartridge.texture) and cartridge_owner != null and cartridge_owner.clip_contents and cartridge_owner.get_theme_stylebox("panel") is StyleBoxEmpty and cartridge_paper_aperture != null and cartridge_paper_aperture.clip_contents and cartridge_owner.get_global_rect().encloses(cartridge_paper_aperture.get_global_rect()) and cartridge_paper_aperture.get_global_rect().encloses(cartridge.get_global_rect()) and cartridge_caption != null and cartridge_caption.text == "LOADED" and cartridge_caption.get_theme_font_size("font_size") <= 7 and cartridge_paper_aperture.get_global_rect().encloses(cartridge_caption.get_global_rect()) and cartridge_caption_width_ok and cartridge.get_global_rect().end.y <= cartridge_caption.get_global_rect().position.y and cartridge.mouse_filter == Control.MOUSE_FILTER_IGNORE and cartridge.accessibility_name == "Docked blueprint: Cinderpaw" and not cartridge.get_global_rect().intersects(bed.get_global_rect()), "Docked pre-print review uses a transparent clipped cream-paper aperture owner around passive native ink and a full-width padded Loaded caption above the brass lip, preventing bleed onto the authored blue cartridge or empty chamber.")
-	require(_has_dark_cream_font(back) and _has_dark_cream_font(begin) and bed_status != null and bed_status.mouse_filter == Control.MOUSE_FILTER_IGNORE and "BED EMPTY" in bed_status.text and bed_light_mask != null and bed_light_mask.color.a >= 0.80 and bed_light_mask.mouse_filter == Control.MOUSE_FILTER_IGNORE, "First Print cream actions stay live while the third lower plaque is passive empty-bed status with its own dimmed indicator lamp.")
-	var pre_start := var_to_str(GameManager.profile)
-	require(begin != null and var_to_str(GameManager.profile) == pre_start, "First Print setup introduces zero mutation before Start.")
+	require(chamber != null and cartridge != null and begin != null and chamber._last_solid_rect.size == Vector2.ZERO and chamber._last_wireframe_rect.size == Vector2.ZERO, "First Print setup keeps the enclosed Forge bed empty before Start.")
+	require(cartridge_owner != null and cartridge_owner.clip_contents and cartridge != null and cartridge.texture != null and not IMPRINT.is_neutral_placeholder(cartridge.texture) and cartridge_caption != null and cartridge_caption.text in ["LOADED", "READY"] and cartridge_caption.tooltip_text.contains("Blueprint loaded") and cartridge.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Docked pre-print review exposes the enclosed Forge cartridge aperture, an accessibility-scale loaded caption, and passive blueprint ink before Start.")
+	require(_has_dark_cream_font(back) and _has_dark_cream_font(begin) and main.printer_sequence.phase == ArcaneForgeSequence.IDLE, "First Print cream actions stay live while the enclosed Forge remains at its empty pre-Start state.")
+	require(begin != null and var_to_str(GameManager.profile) == profile_before_printer_open, "First Print setup introduces zero mutation before Start.")
 	GameManager.profile = RULES.new_profile()
 	main.screen = "title"
 	main.render()
@@ -127,7 +128,7 @@ func _run() -> void:
 	if title_settings != null:
 		title_settings.emit_signal("pressed")
 		await get_tree().process_frame
-		var settings_return := main.find_child("UnifiedFoundryWorkshopReturn", true, false) as Button
+		var settings_return := main.find_child("SettingsCancel", true, false) as Button
 		require(main.screen == "settings" and settings_return != null and settings_return.tooltip_text.contains("Title"), "Title Settings opens the physical Settings instrument with a caller-aware return control.")
 		if settings_return != null:
 			settings_return.emit_signal("pressed")
@@ -140,8 +141,9 @@ func _run() -> void:
 	var title_resume := main.find_child("TitleContinue", true, false) as Button
 	var title_new_maker := main.find_child("TitleNewMaker", true, false) as Button
 	title_settings = main.find_child("TitleSettings", true, false) as Button
-	require(title_resume != null and title_new_maker != null and title_settings != null and main.find_children("Title*", "Button", true, false).size() == 3 and title_resume.text == "CONTINUE" and "Continue" in title_resume.accessibility_name, "Completed profiles receive exactly three truthful physical title actions.")
-	for title_action in [title_resume, title_new_maker, title_settings]:
+	var title_back := main.find_child("TitleBack", true, false) as Button
+	require(title_resume != null and title_new_maker != null and title_settings != null and title_back != null and main.find_children("Title*", "Button", true, false).size() == 4 and title_resume.text == "CONTINUE" and "Continue" in title_resume.accessibility_name, "Completed profiles receive Continue, New Maker, Settings, and Back / Exit as four truthful physical title actions.")
+	for title_action in [title_resume, title_new_maker, title_settings, title_back]:
 		if title_action != null:
 			require(title_action.custom_minimum_size.x >= 48.0 and title_action.custom_minimum_size.y >= 48.0 and _has_dark_cream_font(title_action), "%s retains physical target size and dark native cream copy." % title_action.name)
 			for edge in ["Top", "Right", "Bottom", "Left"]:
@@ -172,10 +174,10 @@ func _run() -> void:
 	var completed_revision := int(GameManager.profile.get("revision", 0))
 	if title_settings != null: title_settings.emit_signal("pressed")
 	await get_tree().process_frame
-	var completed_settings_return := main.find_child("UnifiedFoundryWorkshopReturn", true, false) as Button
+	var completed_settings_return := main.find_child("SettingsCancel", true, false) as Button
 	if completed_settings_return != null: completed_settings_return.emit_signal("pressed")
 	await get_tree().process_frame
-	require(main.screen == "title" and main.find_children("Title*", "Button", true, false).size() == 3 and var_to_str(GameManager.profile) == completed_before_settings and int(GameManager.profile.get("revision", 0)) == completed_revision, "Completed Title Settings round-trip restores its exact three actions, profile, and revision without opening Workshop.")
+	require(main.screen == "title" and main.find_children("Title*", "Button", true, false).size() == 4 and var_to_str(GameManager.profile) == completed_before_settings and int(GameManager.profile.get("revision", 0)) == completed_revision, "Completed Title Settings round-trip restores its exact four actions, profile, and revision without opening Workshop.")
 	# Title must not render a reset/navigation surface while recovery is read-only.
 	var compatibility_before_read_only := GameManager.save_compatibility.duplicate(true)
 	var recovery_before_read_only := SaveService.recovery_status

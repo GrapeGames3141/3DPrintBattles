@@ -67,11 +67,11 @@ static func workshop_prop_specs(textures: Dictionary = {}) -> Array:
 	return [
 		# Label faces are individually fitted to the pictured ivory/paper plaques.
 		# Manual line breaks prevent orphaned syllables at 150% text scale.
-		{"id":"battle_arena", "label":"BATTLE\nDAIS", "label_rect":Rect2(31.0 / 576.0, 344.0 / 928.0, 90.0 / 576.0, 38.0 / 928.0), "label_font_size":9, "label_color":Color("1a2a30"), "label_outline":Color("f5e5bd"), "texture":textures.battle, "crop":Rect2i(82, 7, 1090, 1205), "rect":Rect2(16.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
+		{"id":"battle_arena", "label":"BATTLE\nDAIS", "label_rect":Rect2(31.0 / 576.0, 330.0 / 928.0, 90.0 / 576.0, 42.0 / 928.0), "label_font_size":9, "label_color":Color("1a2a30"), "label_outline":Color("f5e5bd"), "texture":textures.battle, "crop":Rect2i(82, 7, 1090, 1205), "rect":Rect2(16.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
 		{"id":"card_archive", "label":"ARCHIVE\nFOLIO", "label_rect":Rect2(456.0 / 576.0, 347.0 / 928.0, 88.0 / 576.0, 38.0 / 928.0), "label_font_size":9, "label_color":Color("362317"), "label_outline":Color("fff0c9"), "texture":textures.archive, "crop":Rect2i(101, 6, 1056, 1185), "rect":Rect2(440.0 / 576.0, 258.0 / 928.0, 120.0 / 576.0, 184.0 / 928.0)},
 		{"id":"deck", "label":"DECK\nCLIPBOARD", "label_rect":Rect2(73.0 / 576.0, 575.0 / 928.0, 136.0 / 576.0, 42.0 / 928.0), "label_font_size":9, "label_color":Color("47331f"), "label_outline":Color("fff0c9"), "texture":textures.deck, "crop":Rect2i(112, 37, 1030, 1128), "rect":Rect2(16.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
-		{"id":"supplies", "label":"SUPPLIES", "label_rect":Rect2(370.0 / 576.0, 670.0 / 928.0, 150.0 / 576.0, 30.0 / 928.0), "label_font_size":8, "label_color":Color("f7e5bd"), "label_outline":Color("152832"), "texture":textures.supplies, "crop":Rect2i(38, 145, 1184, 950), "rect":Rect2(310.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
-		{"id":"settings", "label":"SETTINGS", "label_rect":Rect2(228.0 / 576.0, 807.0 / 928.0, 120.0 / 576.0, 36.0 / 928.0), "label_font_size":10, "label_color":Color("172c35"), "label_outline":Color("f5e5bd"), "texture":textures.settings, "crop":Rect2i(107, 107, 1040, 1045), "rect":Rect2(166.0 / 576.0, 732.0 / 928.0, 244.0 / 576.0, 168.0 / 928.0)}
+		{"id":"supplies", "label":"SUPPLIES", "nameplate_rect":Rect2(366.0 / 576.0, 706.0 / 1024.0, 120.0 / 576.0, 32.0 / 1024.0), "texture":textures.supplies, "crop":Rect2i(38, 145, 1184, 950), "rect":Rect2(310.0 / 576.0, 516.0 / 928.0, 250.0 / 576.0, 176.0 / 928.0)},
+		{"id":"settings", "label":"SETTINGS", "nameplate_rect":Rect2(230.0 / 576.0, 927.0 / 1024.0, 116.0 / 576.0, 32.0 / 1024.0), "texture":textures.settings, "crop":Rect2i(107, 107, 1040, 1045), "rect":Rect2(166.0 / 576.0, 732.0 / 928.0, 244.0 / 576.0, 168.0 / 928.0)}
 	]
 
 static func workshop_label_rect(prop: Dictionary) -> Rect2:
@@ -125,6 +125,8 @@ static func workshop_focus_rect(hotspot_id: String) -> Rect2:
 	# a small physical latch/medallion inside it, so keyboard focus never reads as
 	# a generic rectangle drawn over scenery or a station label.
 	match hotspot_id:
+		"TitleContinue", "TitleConfirmExit", "TitleConfirmNewMaker": return Rect2(0.08, 0.14, 0.84, 0.72)
+		"TitleNewMaker", "TitleSettings", "TitleStay", "TitleCancelNewMaker": return Rect2(0.08, 0.14, 0.84, 0.72)
 		"printer": return Rect2(0.28, 0.58, 0.44, 0.17)
 		"battle_arena", "card_archive": return Rect2(0.17, 0.12, 0.66, 0.33)
 		"deck", "supplies": return Rect2(0.34, 0.16, 0.32, 0.38)

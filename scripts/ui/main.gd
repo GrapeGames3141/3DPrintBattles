@@ -793,7 +793,12 @@ func _feedback_progress_instrument(surface: Control, prefix := "Workshop") -> vo
 	instrument.size = Vector2(230, 80)
 	surface.add_child(instrument)
 	var instrument_body := VBoxContainer.new(); instrument_body.add_theme_constant_override("separation", 3); instrument.add_child(instrument_body)
-	instrument_body.add_child(label("SPOOL LEVEL %d" % level, 18, Color("f6db9a")))
+	var compact_level := int(settings().get("text_scale_bps", 10000)) >= 15000
+	var level_label := label("LEVEL %d" % level if compact_level else "SPOOL LEVEL %d" % level, 18, Color("f6db9a"))
+	level_label.name = "%sSpoolLevel" % prefix
+	level_label.tooltip_text = "Spool Level %d" % level
+	level_label.accessibility_name = level_label.tooltip_text
+	instrument_body.add_child(level_label)
 	var progress := ProgressBar.new(); progress.name = "%sHudProgress" % prefix; progress.max_value = threshold; progress.value = xp; progress.show_percentage = false; progress.custom_minimum_size = Vector2(0, 13); progress.tooltip_text = "Spool Level %d · XP %d / %d" % [level, xp, threshold]; progress.accessibility_name = progress.tooltip_text
 	progress.add_theme_stylebox_override("background", _visual_style(Color("123640"), Color("75e8f2"), 6, 1))
 	progress.add_theme_stylebox_override("fill", _visual_style(Color("20bfcf"), Color("c3fbff"), 6, 1))
@@ -822,6 +827,9 @@ func _add_m1_r2_workshop_props(surface: Control) -> void:
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		art.anchor_left = rect.position.x; art.anchor_top = rect.position.y; art.anchor_right = rect.end.x; art.anchor_bottom = rect.end.y
 		surface.add_child(art)
+		if prop.has("nameplate_rect"):
+			_add_workshop_nameplate(surface, "WorkshopStationLabel%s" % _workshop_overview_hotspot_node_suffix(str(prop.id)), str(prop.label), prop.nameplate_rect as Rect2)
+			continue
 		var label_rect := M1_PHYSICAL_UI.workshop_label_rect(prop)
 		var high_contrast := bool(settings().get("high_contrast", false))
 		var is_dark_supply_apron := str(prop.get("id", "")) == "supplies"
@@ -843,6 +851,40 @@ func _add_m1_r2_workshop_props(surface: Control) -> void:
 		native_label.add_theme_color_override("font_outline_color", native_outline)
 		native_label.add_theme_constant_override("outline_size", 1)
 		surface.add_child(native_label)
+
+func _add_workshop_nameplate(surface: Control, node_name: String, caption: String, rect: Rect2) -> void:
+	# These three labels need a literal mounted face, not detached ink over tools,
+	# a print bed, or a reflective dial. The shared wide parchment is already an
+	# approved physical family element; it is decorative here and never owns a hit.
+	# Crop the existing wide tab to its center nameplate band.  This preserves the
+	# source aspect at the narrow measured seats instead of squeezing a full button
+	# bitmap into a 23px-high plaque.
+	var plate := TextureRect.new()
+	plate.name = "%sPlate" % node_name
+	var source := ResourceLoader.load("res://assets/ui/physical_ui/live-correction-r1/controls/wide_parchment_tab/normal.png") as Texture2D
+	if source != null:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = source
+		atlas.region = Rect2i(0, 46, 411, 114)
+		plate.texture = atlas
+	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.anchor_left = rect.position.x; plate.anchor_top = rect.position.y
+	plate.anchor_right = rect.end.x; plate.anchor_bottom = rect.end.y
+	surface.add_child(plate)
+	var ink := label(caption, 12, Color("000000") if bool(settings().get("high_contrast", false)) else Color("172b3c"))
+	# Preserve the established label identity for focus/navigation QA; the plate is
+	# now its literal physical parent rather than a competing interactive owner.
+	ink.name = node_name
+	ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ink.autowrap_mode = TextServer.AUTOWRAP_OFF
+	ink.clip_text = true
+	ink.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ink.add_theme_color_override("font_color", Color("000000") if bool(settings().get("high_contrast", false)) else Color("172b3c"))
+	ink.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	plate.add_child(ink)
 func render_feedback_workshop() -> void:
 	overview_layout_portrait = is_portrait_layout()
 	var workshop_plate := PHYSICAL_PORTRAIT_PLATE.new()
@@ -857,25 +899,9 @@ func render_feedback_workshop() -> void:
 	workshop_plate.content_layer().add_child(surface)
 	_feedback_progress_instrument(surface, "Workshop")
 	_add_m1_r2_workshop_props(surface)
-	var printer_label := label("PRINTER", 12, Color("9beaff") if not bool(settings().get("high_contrast", false)) else Color("ffffff"))
-	printer_label.add_theme_color_override("font_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("9beaff"))
-	printer_label.add_theme_color_override("font_outline_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("fff1c8"))
-	printer_label.add_theme_constant_override("outline_size", 1)
-	# The label is initialized before its late local contrast overrides.
-	printer_label.name = "WorkshopStationLabelPrinter"
-	surface.add_child(printer_label)
-	printer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	printer_label.add_theme_color_override("font_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("9beaff"))
-	printer_label.add_theme_color_override("font_outline_color", Color("ffffff") if bool(settings().get("high_contrast", false)) else Color("fff1c8"))
-	printer_label.add_theme_constant_override("outline_size", 1)
-	printer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	printer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# The authored printer plaque supplies its own material face. Keep this native
-	# label transparent so it cannot become a generic cream button overlay.
-	printer_label.add_theme_stylebox_override("normal", workshop_hotspot_style())
-	# The lower rim is hardware, not a caption face.  Keep the printer label in the
-	# dark-glass band immediately above the bed where its light outline remains clear.
-	printer_label.anchor_left = 0.36; printer_label.anchor_top = 0.430; printer_label.anchor_right = 0.64; printer_label.anchor_bottom = 0.475
+	# Printer uses the same small mounted plate as the Toolbox and dial labels. It
+	# sits on the dark front pedestal below the bed, not on a rail or print surface.
+	_add_workshop_nameplate(surface, "WorkshopStationLabelPrinter", "PRINTER", Rect2(230.0 / 576.0, 493.0 / 1024.0, 116.0 / 576.0, 32.0 / 1024.0))
 	for hotspot in _physical_workshop_hotspots():
 		var button := _workshop_overview_hotspot_button(hotspot)
 		surface.add_child(button)
@@ -883,6 +909,7 @@ func render_feedback_workshop() -> void:
 	if not pending.is_empty():
 		var resume := _visual_button("WorkshopResumePendingPack", "RESUME\nPACK", _m3_open_pending_pack.bind("workshop"), Color("f1be69"), true)
 		resume.custom_minimum_size = Vector2(56, 56)
+		resume.add_theme_font_size_override("font_size", scaled_font(12))
 		PHYSICAL_CONTROL_FAMILY.apply(resume, "wide")
 		resume.tooltip_text = "Open the committed pack waiting in this Workshop"
 		resume.accessibility_name = resume.tooltip_text
@@ -893,8 +920,9 @@ func render_feedback_workshop() -> void:
 	else:
 		var rewards: Dictionary = GameManager.profile.get("starter_pack_rewards", {})
 		if str(rewards.get("kind", "")) == UNIFIED_RULES.FOUNDER_VERSION and int(rewards.get("opened", 0)) < int(rewards.get("entitled", 0)) and int(rewards.get("opened", 0)) == int(rewards.get("kept", 0)):
-			var founder_pack := _visual_button("WorkshopOpenFounderPack", "OPEN\nFOUNDER %d/3" % (int(rewards.get("opened", 0)) + 1), _open_next_starter_pack, Color("f1be69"), true)
+			var founder_pack := _visual_button("WorkshopOpenFounderPack", "OPEN\nPACK %d/3" % (int(rewards.get("opened", 0)) + 1), _open_next_starter_pack, Color("f1be69"), true)
 			founder_pack.custom_minimum_size = Vector2(56, 56)
+			founder_pack.add_theme_font_size_override("font_size", scaled_font(12))
 			PHYSICAL_CONTROL_FAMILY.apply(founder_pack, "wide")
 			founder_pack.tooltip_text = "Open the next committed Founder pack"
 			founder_pack.accessibility_name = founder_pack.tooltip_text
@@ -1172,6 +1200,9 @@ func _title_action(name_value: String, text_value: String, action: Callable, rec
 		# the readable physical affordance; the brass binding remains Back hardware
 		# everywhere a dark plate already frames it.
 		PHYSICAL_CONTROL_FAMILY.apply(button, "wide")
+	# The M1 edge ring is the one measured focus owner for title hardware. Shared
+	# family focus boxes would paint a second cyan rectangle over the same plate.
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	M1_PHYSICAL_UI.add_complete_focus_ring(button, name_value, bool(settings().get("high_contrast", false)), _visual_style)
 	M1_PHYSICAL_UI.place_design(button, rect)
 	if default_focus: button.set_meta("title_default_focus", true)
@@ -1671,18 +1702,26 @@ func render_m1_r2_starter_page() -> void:
 	M1_PHYSICAL_UI.apply_cream_action(next)
 	M1_PHYSICAL_UI.place_design(medallion, Rect2(374, 920, 190, 105))
 	surface.add_child(medallion)
-	var inspect := _visual_button("StarterInspectFocused", "INSPECT", show_starter_inspector.bind(starter_id), accent)
+	var inspect := _visual_button("StarterInspectFocused", "", show_starter_inspector.bind(starter_id), accent)
 	inspect.custom_minimum_size = Vector2(48, 48)
 	inspect.accessibility_name = "Inspect %s blueprint" % str(creature.get("name", starter_id))
-	M1_PHYSICAL_UI.place_design(inspect, Rect2(72, 1100, 310, 120))
+	M1_PHYSICAL_UI.place_design(inspect, Rect2(72, 1100, 310, 136))
 	M1_PHYSICAL_UI.apply_cream_action(inspect)
 	surface.add_child(inspect)
-	var confirm := _visual_button("StarterConfirmFocused", "CONFIRM", func(): pending_starter_id = starter_id; confirm_starter(), Color("f1be69"), true)
+	var inspect_ink := label("INSPECT", 12, Color("000000") if bool(settings().get("high_contrast", false)) else Color("172b3c"))
+	inspect_ink.name = "StarterInspectFocusedInk"; inspect_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; inspect_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; inspect_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	M1_PHYSICAL_UI.place_design(inspect_ink, Rect2(91, 1139, 239, 88))
+	surface.add_child(inspect_ink)
+	var confirm := _visual_button("StarterConfirmFocused", "", func(): pending_starter_id = starter_id; confirm_starter(), Color("f1be69"), true)
 	confirm.custom_minimum_size = Vector2(0, 56)
 	confirm.accessibility_name = "Confirm %s blueprint and open its free first print" % str(creature.get("name", starter_id))
-	M1_PHYSICAL_UI.place_design(confirm, Rect2(558, 1100, 310, 120))
+	M1_PHYSICAL_UI.place_design(confirm, Rect2(558, 1100, 310, 136))
 	M1_PHYSICAL_UI.apply_cream_action(confirm)
 	surface.add_child(confirm)
+	var confirm_ink := label("CONFIRM", 12, Color("000000") if bool(settings().get("high_contrast", false)) else Color("172b3c"))
+	confirm_ink.name = "StarterConfirmFocusedInk"; confirm_ink.mouse_filter = Control.MOUSE_FILTER_IGNORE; confirm_ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; confirm_ink.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	M1_PHYSICAL_UI.place_design(confirm_ink, Rect2(617, 1139, 242, 88))
+	surface.add_child(confirm_ink)
 	var helper := label("INSPECT TO PREVIEW\nCONFIRM TO FORGE", 11, Color("10283a") if not bool(settings().get("high_contrast", false)) else Color("000000"))
 	helper.name = "StarterNativeHelper"
 	helper.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -4297,11 +4336,17 @@ func _settle_finished_unified_battle() -> void:
 func _unified_card_button(card_id: String) -> Button:
 	var card := UNIFIED_RULES.card(card_id)
 	var filament_cost := int(card.get("filament_cost", card.get("cost", 0)))
-	# Selection is communicated by the physical focus/active treatment; a leading
-	# tick made the first glyph sit under its cyan ring on the narrow hand rail.
-	var button := make_button(str(card.get("name", card_id)) + " · %dF" % filament_cost, func(): unified_selected_card_id = card_id; unified_selected_slot = -2; unified_selected_target = -2; render(), Color("588d73") if card_id == unified_selected_card_id else Color("2f93a8"))
+	# The pictured hand is one parchment rail, not a row of generic app buttons.
+	# Each native card owner stays transparent while its art, name, and cost occupy
+	# measured lanes within that physical rail.
+	var button := Button.new()
+	button.text = ""
+	button.flat = true
+	button.pressed.connect(func(): unified_selected_card_id = card_id; unified_selected_slot = -2; unified_selected_target = -2; render())
 	button.custom_minimum_size = Vector2(0, 58)
 	button.name = "UnifiedHand%s" % card_id.capitalize()
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	var can_play := battle != null and str(battle.phase) == "main" and (battle_mode == "local" or int(battle.active_seat) == 0) and not unified_ai_pending
 	if not can_play:
 		button.disabled = true
@@ -4315,9 +4360,33 @@ func _unified_card_button(card_id: String) -> Button:
 	button.add_theme_stylebox_override("focus", _unified_hand_focus_style())
 	var art := _unified_card_thumbnail(card)
 	if art != null:
-		button.icon = art
-		button.expand_icon = true
-		button.add_theme_constant_override("icon_max_width", 42)
+		var preview := TextureRect.new()
+		preview.name = "UnifiedHandBlueprintArt"
+		preview.texture = art
+		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		preview.anchor_left = 0.05; preview.anchor_top = 0.12; preview.anchor_right = 0.33; preview.anchor_bottom = 0.88
+		button.add_child(preview)
+	var hand_ink := Color("000000") if bool(settings().get("high_contrast", false)) else Color("172b3c")
+	var name := label(str(card.get("name", card_id)), 9, hand_ink)
+	name.name = "UnifiedHandCardName"
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name.autowrap_mode = TextServer.AUTOWRAP_OFF
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name.add_theme_color_override("font_color", hand_ink)
+	name.anchor_left = 0.38; name.anchor_top = 0.13; name.anchor_right = 0.95; name.anchor_bottom = 0.53
+	button.add_child(name)
+	var cost := label("%dF" % filament_cost, 9, hand_ink)
+	cost.name = "UnifiedHandCardCost"
+	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	cost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost.add_theme_color_override("font_color", hand_ink)
+	cost.anchor_left = 0.38; cost.anchor_top = 0.50; cost.anchor_right = 0.95; cost.anchor_bottom = 0.88
+	button.add_child(cost)
 	return button
 
 func _unified_hand_focus_style() -> StyleBoxFlat:
