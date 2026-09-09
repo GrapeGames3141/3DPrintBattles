@@ -36,7 +36,7 @@ const M3_PHYSICAL_UI := preload("res://scripts/ui/m3_physical_ui_component.gd")
 const PHYSICAL_NAVIGATION := preload("res://scripts/ui/physical_navigation_component.gd")
 const PHYSICAL_CONTROL_FAMILY := preload("res://scripts/ui/physical_control_family.gd")
 const PHYSICAL_CATALOG_IMPRINT := preload("res://scripts/ui/physical_catalog_imprint.gd")
-const REVIEW_BUILD_LABEL := "0.8.9-ui-alignment"
+const REVIEW_BUILD_LABEL := "0.8.10-physical-ui-polish"
 const ELEMENT_COLORS := {"Fire":"f17e5b", "Water":"5fb9f5", "Lightning":"efd862", "Nature":"7bcf89", "Ice":"a5ecff", "Stone":"b7a48b", "Wind":"a6d7c8"}
 # Approved perspective-matched workshop station close-ups. Each keeps its visible
 # props aligned with the normalized, accessible object hotspots below.
