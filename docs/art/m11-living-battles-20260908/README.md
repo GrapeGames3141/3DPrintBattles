@@ -1,6 +1,8 @@
 # M11: living-print battle art supplement
 
-Status: **preproduction candidate; human approval pending; no runtime changes or new APK.**
+Status: **exact r7 battle-only supplement approved by the user on 2026-09-08;
+controlled runtime integration authorized; no runtime change or new APK is claimed by
+this concept record.**
 
 This is a bounded supplement to the already-approved full-game atlas. Workshop,
 Forge, Archive, Deck, Market, title, icon, and their approved art are not being
@@ -77,8 +79,10 @@ The read-only final r7 concept review passed with no P0/P1, carrying forward the
 the lower-printer launch/hop/landing route, both teams without card-like frames,
 print stages, visible attack contact, fitting, and enlarged text. This is not
 runtime, animation-timing, input, accessibility-API, or Android certification.
-The user must approve this exact battle-art supplement before runtime integration.
-The approved gameplay decisions do not need to be approved again.
+The user approved this exact r7 battle-art supplement on 2026-09-08. This closes the
+battle-art source gate for controlled M11 runtime integration; the approved gameplay
+decisions do not need to be approved again. It does not approve an unrelated art
+revision or count concept captures as runtime evidence.
 
 After that gate: one implementation agent, actual Run Cycle/AI regression tests,
 normal and accessibility captures, primary maintainability review, Android package

@@ -107,7 +107,7 @@ func _ready() -> void:
 	var preprint := RULES.save_preprints(printed.profile, ["cinderpaw"])
 	require(bool(preprint.ok), "one base Pre-Print selection is legal")
 	var state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 11, [], [], ["cinderpaw"])
-	require(state.phase == "draw" and int(state.player(0).printer.hp) == 2000 and int(state.player(0).filament) == 200 and int(state.player(0).filament_max) == 400, "state begins with v3 printer, phase, and filament values")
+	require(state.phase == "draw" and int(state.player(0).printer.hp) == 200 and int(state.player(0).filament) == 200 and int(state.player(0).filament_max) == 400, "state begins with M11 printer, phase, and filament values")
 	require(state.player(0).slots[0] != null and str(state.player(0).slots[0].mode) == "defense" and not bool(state.player(0).slots[0].ready), "pre-print deploys as a first-turn defender")
 	var invalid_before := state.serialize()
 	var invalid := BATTLE.apply_intent(state, 1 - state.active_seat, {"type":"advance_phase"})
@@ -125,23 +125,22 @@ func _ready() -> void:
 	BATTLE.apply_intent(state, active, {"type":"play_card","card_id":"speed_spool"})
 	BATTLE.apply_intent(state, active, {"type":"advance_phase"})
 	BATTLE.apply_intent(state, active, {"type":"advance_phase"})
-	if not state.pending.is_empty(): BATTLE.apply_intent(state, active, {"type":"place_completed","slot":1,"mode":"attack"})
-	require(state.player(active).slots[1] != null and str(state.player(active).slots[1].mode) == "attack", "completed prints request placement and become attack-ready")
+	require(state.player(active).slots[1] != null and str(state.player(active).slots[1].mode) == "attack" and state.pending.is_empty(), "completed creature prints auto-deploy leftmost and become attack-ready")
 	state.phase = "attack"
 	state.turn = 2
 	state.player(active).slots[1].attacked = false
 	for slot in 3: state.player(1 - active).slots[slot] = null
 	var direct := BATTLE.apply_intent(state, active, {"type":"attack","slot":1,"target":-1})
-	require(bool(direct.ok) and int(state.player(1 - active).printer.hp) < 2000, "direct attacks only damage the exposed printer")
+	require(bool(direct.ok) and int(state.player(1 - active).printer.hp) < 200, "direct attacks only damage the exposed printer")
 	var gear_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 17)
 	gear_state.active_seat = 0
 	gear_state.phase = "main"
 	gear_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw"))
 	gear_state.player(0).hand = ["standard_full_suit"]
-	BATTLE.apply_intent(gear_state, 0, {"type":"play_card","card_id":"standard_full_suit","target":0})
+	BATTLE.apply_intent(gear_state, 0, {"type":"play_card","card_id":"standard_full_suit"})
 	BATTLE.apply_intent(gear_state, 0, {"type":"advance_phase"})
 	BATTLE.apply_intent(gear_state, 0, {"type":"advance_phase"})
-	require(int(gear_state.player(0).slots[0].armor_hp) == 8 and str(gear_state.player(0).slots[0].equipment.armor.card_id) == "standard_full_suit", "full-suit equipment tracks armor HP ahead of creature HP")
+	require(str(gear_state.pending.get("kind", "")) == "attach" and bool(BATTLE.apply_intent(gear_state, 0, {"type":"attach_completed","slot":0}).ok) and int(gear_state.player(0).slots[0].armor_hp) == 8 and str(gear_state.player(0).slots[0].equipment.armor.card_id) == "standard_full_suit", "full-suit equipment queues without a target then attaches through the fitting choice")
 	var public_view := gear_state.public_snapshot(1)
 	require(not public_view.players[0].has("hand") and int(public_view.players[0].hand_count) == gear_state.player(0).hand.size(), "opponent public snapshots redact hand details")
 	var ai_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 23)
@@ -222,9 +221,7 @@ func _ready() -> void:
 	for slot in 3: staging_state.player(0).slots[slot] = STATE._unit(RULES.card("cinderpaw"))
 	staging_state.player(0).staging = [STATE._unit(RULES.card("aquafin"))]
 	BATTLE._destroy(staging_state, 0, 1)
-	require(staging_state.player(0).slots[1] == null, "staging never auto-enters without a legal mode decision")
-	BATTLE.apply_intent(staging_state, 0, {"type":"advance_phase"})
-	require(str(staging_state.pending.get("kind", "")) == "place" and bool(BATTLE.apply_intent(staging_state, 0, {"type":"place_completed","slot":1,"mode":"defense"}).ok), "the oldest staged creature pauses for placement and a chosen mode")
+	require(staging_state.player(0).slots[1] != null and str(staging_state.player(0).slots[1].card_id) == "aquafin" and str(staging_state.player(0).slots[1].mode) == "attack", "the oldest staged creature auto-deploys leftmost with the default Attack stance")
 	var holding_state := STATE.create(printed.profile.decks[0].cards, printed.profile.decks[0].cards, 121)
 	holding_state.active_seat = 0; holding_state.phase = "draw"; holding_state.player(0).slots[0] = STATE._unit(RULES.card("cinderpaw")); holding_state.player(0).holding = [{"card_id":"standard_full_suit","target":-1}]
 	BATTLE.apply_intent(holding_state, 0, {"type":"advance_phase"})

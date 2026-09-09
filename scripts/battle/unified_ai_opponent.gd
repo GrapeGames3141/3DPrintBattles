@@ -7,7 +7,6 @@ const BATTLE := preload("res://scripts/battle/unified_battle_rules.gd")
 static func next_legal_intent(state: UnifiedBattleState, seat: int) -> Dictionary:
 	if state == null or state.finished or state.active_seat != seat: return {}
 	if not state.pending.is_empty():
-		if str(state.pending.get("kind", "")) == "place": return {"type":"place_completed","slot":_open(state.player(seat)),"mode":"attack"}
 		if str(state.pending.get("kind", "")) == "attach":
 			var held := RULES.card(str(state.pending.get("card_id", "")))
 			return {"type":"attach_completed","slot":_best_friend(state.player(seat), str(held.get("equipment_slot", "")))}
@@ -36,8 +35,7 @@ static func take_turn(state: UnifiedBattleState, seat: int) -> Dictionary:
 		var intent: Dictionary = {}
 		var optional_action := false
 		if not state.pending.is_empty():
-			if str(state.pending.get("kind", "")) == "place": intent = {"type":"place_completed","slot":_open(state.player(seat)),"mode":"attack"}
-			elif str(state.pending.get("kind", "")) == "attach":
+			if str(state.pending.get("kind", "")) == "attach":
 				var held_card := RULES.card(str(state.pending.get("card_id", "")))
 				intent = {"type":"attach_completed","slot":_best_friend(state.player(seat), str(held_card.get("equipment_slot", "")))}
 			else: return _result("stalled", safety, progressed, "Unknown pending print decision.", presentation_trace)
@@ -132,12 +130,9 @@ static func _main_intent(state: UnifiedBattleState, seat: int) -> Dictionary:
 		var equipment_slot := str(def.get("equipment_slot", ""))
 		if kind == "equipment" and equipment_slot == "battle_effect" and not bool(p.get(BATTLE.battle_effect_key(def), false)) and int(def.filament_cost) <= int(p.filament): return {"type":"play_card","card_id":str(id)}
 		if kind == "equipment" and equipment_slot != "battle_effect" and int(def.filament_cost) <= int(p.filament):
-			# Prefer an empty matching slot so the print attaches immediately. If every
-			# matching slot is occupied, keep the former holding behavior by targeting
-			# the best existing companion; the rules will retain it for a later attach.
-			var target := _best_friend(p, equipment_slot)
-			if target < 0: target = _best_friend(p)
-			if target >= 0: return {"type":"play_card","card_id":str(id),"target":target}
+			# Printable gear has no pre-print recipient.  A compatible living print
+			# creates the post-print fitting choice; otherwise the item stays held.
+			if p.queue.size() < queue_cap: return {"type":"play_card","card_id":str(id)}
 		if kind == "trap": return {"type":"play_card","card_id":str(id)}
 	return {}
 static func _attack_intent(state: UnifiedBattleState, seat: int) -> Dictionary:

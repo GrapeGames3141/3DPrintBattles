@@ -1,7 +1,8 @@
 # M11 concept review record
 
 These are offline HTML composition reviews, not Godot or gameplay test results.
-Human approval and runtime integration remain pending.
+The user approved the exact selected r7 supplement on 2026-09-08. Runtime integration
+and its evidence remain pending.
 
 ## Floor master v1
 
@@ -45,8 +46,9 @@ sign-off. This does not waive later actual Godot, authority, Android or device t
 ## Selected r7 — 2026-09-08
 
 Read-only UI reviewer verdict: **PASS for user battle-art approval; P0 none, P1 none.**
-Human approval remains pending. This is not permission to promote the floor or start
-runtime work before that approval.
+Human approval: **PASS on 2026-09-08 for the exact r7 battle-only supplement shown in
+chat.** Controlled floor promotion and runtime integration may proceed under M11; this
+is not approval for another art revision or a broader full-game redesign.
 
 The reviewer carried forward the complete 15-state review, accepted the r6 printer
 contact correction, then inspected r7 equipment/HC at all three sizes plus populated

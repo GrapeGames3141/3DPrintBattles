@@ -236,7 +236,8 @@ core loop rather than documenting temporary friction.
 1. **Approved:** replace the unfinished x10 rule with 200 base printer HP and +50
    Reinforced Chassis, subject to the same 30-match pacing gate.
 2. **Approved:** preserve the 40-card minimum and existing legal decks above 40; add
-   deterministic Recommended/Fill actions without migrating ownership.
+   deterministic Recommended Deck and Fill to 40 previews from owned copies without
+   migrating ownership.
 3. **Approved:** queued creatures may preselect stance and auto-deploy leftmost,
    Attack by default with Guard optional.
 4. **Approved:** queue armor/gems without a recipient, then choose one compatible

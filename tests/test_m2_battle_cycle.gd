@@ -48,9 +48,9 @@ func _ready() -> void:
 	require(bool(cycle.ok) and state.phase == "print", "Run Cycle starts by advancing Main to Print.")
 	coordinator.acknowledge_presentation(coordinator.generation)
 	var print := coordinator.advance_run_cycle(0, coordinator.generation)
-	require(bool(print.ok) and str(state.pending.get("kind", "")) == "place", "Run Cycle pauses for a required placement.")
-	var expired := coordinator.submit_required_decision(0, {"type":"place_completed","slot":0,"mode":"attack"}, coordinator.generation + 1)
-	require(not bool(expired.ok) and str(state.pending.get("kind", "")) == "place", "Expired generation cannot submit a placement.")
+	require(bool(print.ok) and state.pending.is_empty() and state.player(0).slots[0] != null, "Run Cycle auto-deploys a completed creature without a placement pause.")
+	var expired := coordinator.submit_required_decision(0, {"type":"attach_completed","slot":0}, coordinator.generation + 1)
+	require(not bool(expired.ok) and state.pending.is_empty(), "Expired generation cannot create a required fitting choice.")
 	var public := state.public_snapshot(0)
 	require(not public.players[1].has("hand") and not public.players[1].has("deck") and int(public.players[1].get("hand_count", -1)) >= 0, "Public snapshot redacts rival hand and deck identity.")
 	var restored = STATE.from_snapshot(state.serialize())
@@ -97,14 +97,14 @@ func _ready() -> void:
 	require(bool(printer_result.ok) and bool((printer_result.receipt as Dictionary).get("printer_target", false)) and int((printer_result.receipt as Dictionary).get("printer_hp_after", 2000)) < int((printer_result.receipt as Dictionary).get("printer_hp_before", 0)), "Printer-target receipt reports authoritative before/after printer HP.")
 	require(not JSON.stringify(armor_attack.receipt).contains("hand") and not JSON.stringify(armor_attack.receipt).contains("deck") and not JSON.stringify(armor_attack.receipt).contains("trap"), "Public presentation receipts contain no private hand, deck, or trap identity.")
 	var print_coordinator := fresh(); print_coordinator.state.phase = "print"; print_coordinator.state.turn = 2
-	print_coordinator.state.player(0).queue = [{"card_id":"cinderpaw","remaining":1,"target":-1,"cost":70},{"card_id":"cinderpaw","remaining":1,"target":-1,"cost":70}]
+	print_coordinator.state.player(0).queue = [{"card_id":"cinderpaw","remaining":1,"target":-1,"cost":70,"job_id":"m2-duplicate-a"},{"card_id":"cinderpaw","remaining":1,"target":-1,"cost":70,"job_id":"m2-duplicate-b"}]
 	var duplicate_print := print_coordinator.submit_checked(print_coordinator.envelope(0, {"type":"advance_phase"}), print_coordinator.generation)
 	var print_receipt: Dictionary = duplicate_print.get("receipt", {}) if duplicate_print.get("receipt", {}) is Dictionary else {}
-	require(bool(duplicate_print.ok) and bool(print_receipt.get("completed", false)) and int(print_receipt.get("completed_count", 0)) == 1 and str(print_receipt.get("pending", "")) == "place", "Duplicate FIFO heads report a truthful completed print and placement pause.")
-	require(print_coordinator.state.player(0).queue.size() == 1, "Creature placement pause truthfully bounds a Print cycle to one FIFO completion.")
-	var partial_print := fresh(); partial_print.state.phase = "print"; partial_print.state.turn = 2; partial_print.state.player(0).queue = [{"card_id":"cinderpaw","remaining":3,"target":-1,"cost":70}]
+	require(bool(duplicate_print.ok) and str((print_receipt.get("print_events", [])[0] as Dictionary).get("job_id", "")).is_empty() == false and str((print_receipt.get("deployments", [])[0] as Dictionary).get("job_id", "")).is_empty() == false, "Duplicate FIFO heads report stable print and deployment identities without duplicate ownership.")
+	require(print_coordinator.state.player(0).queue.size() == 1 and print_coordinator.state.player(0).slots[0] != null, "Creature auto-deploy preserves FIFO work for the next print cycle.")
+	var partial_print := fresh(); partial_print.state.phase = "print"; partial_print.state.turn = 2; partial_print.state.player(0).queue = [{"card_id":"cinderpaw","remaining":3,"target":-1,"cost":70,"job_id":"m2-partial"}]
 	var partial_result := partial_print.submit_checked(partial_print.envelope(0, {"type":"advance_phase"}), partial_print.generation)
-	require(bool(partial_result.ok) and not bool((partial_result.receipt as Dictionary).get("completed", true)) and int((partial_result.receipt as Dictionary).get("remaining_after", -1)) == 2, "Partial print receipts retain a truthful surviving queue-head remaining count.")
+	require(bool(partial_result.ok) and int(((partial_result.receipt as Dictionary).get("print_events", [])[0] as Dictionary).get("remaining_after", -1)) == 2, "Partial print receipts retain a truthful surviving queue-head remaining count.")
 	require(int(print_receipt.get("serial", -1)) > int((armor_attack.receipt as Dictionary).get("serial", -1)) or int(print_receipt.get("serial", -1)) == 1, "Each coordinator emits a unique monotonically increasing receipt serial.")
 	var overflow_coordinator := fresh()
 	overflow_coordinator.state.phase = "collect"

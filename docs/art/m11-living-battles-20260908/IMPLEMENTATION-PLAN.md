@@ -1,7 +1,9 @@
-# M11 implementation handoff — gated
+# M11 implementation handoff — authorized
 
-This is the primary agent's inspected plan, not permission to bypass the atlas gate.
-Runtime work starts after the user approves this battle-only art supplement.
+This is the primary agent's inspected plan. Read-only review passed the exact r7
+battle-only supplement with no P0/P1 and the user approved it on 2026-09-08, closing
+the bounded atlas gate. Runtime work may proceed under this plan; the approval does
+not cover a different art revision or wider full-game redesign.
 The sole runtime writer is `terra_implementer`; designer owns design Markdown,
 UI reviewer stays read-only, and the primary agent reviews/stages/commits.
 

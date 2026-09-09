@@ -18,7 +18,9 @@ Use case: precise-object-edit. Asset type: text-free portrait PrintForge battle 
 - Tool-managed source: `C:/Users/Tak/.codex/generated_images/01a040b4-1af1-7930-a96f-92db5d0339b3/exec-d0d7a833-788b-44ae-aae2-effd43bded6e.png`.
 - Durable E: copy verified equal by SHA-256 before referencing.
 - UI reviewer: final r7 full-state concept review found no P0/P1; see `REVIEW.md`.
-- Human approval: PENDING. This candidate is not a promoted runtime asset.
+- Human approval: **PASS on 2026-09-08 as the exact floor source used by the selected
+  r7 battle-only supplement.** It is authorized for controlled M11 promotion but is
+  not yet claimed as a promoted or validated runtime asset.
 
 The original creature sheets, raw print PNGs, blueprint inks, and card back used in
 the concept compositor are existing project assets, not new generated characters.
