@@ -1,0 +1,11 @@
+# Cinderpaw directional production source v1
+
+Built-in ImageGen, 2026-09-10. Output `exec-0ca66b29-3876-40fa-a447-a7169eadadc9.png` copied to durable E: directory. SHA-256 CAD84AC1A73A208B3377607F65A3332D080DBC641F660F3A8ECF6E537F3F398F. RGB with baked checkerboard: NOT promotion-ready. Requires clean alpha derivative.
+
+## Exact prompt
+
++Use case: identity-preserve. Create ONE production 2D game sprite atlas for PrintForge creature CINDERPAW from the supplied references. Image 1 is its exact existing identity/material reference; Image 2 is ONLY the approved front/back camera and toy-material reference, do not copy its UI.
+Output a 1536 x 1024 PNG with genuine transparent alpha, arranged as an exact invisible 4-column by 2-row grid of eight equal 384x512 cells. No text, dividers, floor, drop shadows, cards, pedestal, scenery, or UI. Each cell contains exactly one full-body Cinderpaw with 30px clear margins and feet centered at cell x=192 y=455. Never cross cell boundaries. Same scale/body proportions between cells.
+Camera: elevated 25 degrees above the tabletop. TOP ROW: face forward/down-board toward viewer, nearly straight-on (not side profile). BOTTOM ROW: face directly away/up-board, true rear view with back of head/body dominant and muzzle not looking back. Maintain same direction throughout each row.
+Columns within EACH row: 1 relaxed standing idle; 2 small breathing rise with slight tail movement, feet fixed; 3 crouched attack windup, ears alert; 4 forward striking/pouncing contact toward the row's facing, front paws extended, all anatomy fully inside cell. Four distinct animated poses, not four camera angles. Rear attack must still face AWAY.
+Keep exact whimsical orange-red 3D-printed fox kitten: two large pointed orange ears with cream-gold inner ears visible only from front, big amber eyes only from front, cream muzzle/chest/paws, faceted orange jointed limbs with subtle horizontal filament layers, one curly orange flame tail with translucent yellow tip, head tuft. No new armor, horns, wings, humans, mechs, props. No new exposed machinery. Soft warm studio key from upper left, restrained cyan rim. High quality physical miniature render suitable for a steampunk workshop battlefield, crisp clean alpha edges. This is runtime animation art, not a concept montage.
