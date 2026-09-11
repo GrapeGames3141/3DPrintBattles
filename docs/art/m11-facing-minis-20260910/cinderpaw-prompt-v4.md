@@ -1,0 +1,5 @@
+# Cinderpaw directional source v4
+
+Built-in ImageGen; targeted rear-idle distinction and uniform matte, preserving approved camera/identity. Programmatic matte cleanup authorized by user on 2026-09-10.
+
+Use case: precise-object-edit. This reference is the exact Cinderpaw sprite atlas to edit, not redesign. Preserve all eight poses, orange/cream printed fox identity, four legs, single consistent-volume flame tail, flame crown, 30degree elevated front/rear camera, 4x2 layout, 1536x1024, 384x512 cells. Change ONLY: (1) replace all checkerboard with perfectly uniform PURE MAGENTA #FF00FF background, including interior gaps, no floor, shadow or magenta spill on creatures; (2) second column BOTTOM row rear idle B: ears visibly dip/splay sideways, shoulders relax a little, tail tip swings subtly lower compared to rear idle A so animation reads at 130px tall. Keep feet planted with same ground root in both idle poses. Do not turn rear face toward viewer. Preserve other cells. Fully complete figures, 30px inside own cell, no text or graphics. This is an asset not a presentation poster.

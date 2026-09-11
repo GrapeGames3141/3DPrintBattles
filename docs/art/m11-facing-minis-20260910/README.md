@@ -1,49 +1,64 @@
 # Facing-miniature production checkpoint — 2026-09-10
 
-Status: **SOURCE CANDIDATES ONLY — no art promoted, no new Android build delivered.**
+Status: **23 source sheets generated; cleanup, registration and runtime validation in progress. No new Android build delivered yet.**
 
-The user approved the inward-facing direction on 2026-09-08 and explicitly requested its runtime integration and a Google Drive build on 2026-09-10. Investigation confirmed that the earlier front/rear image was a concept only; all 24 production creature sheets and all three living battle-render paths still used side views.
+The user approved inward-facing direction on September 8 and requested runtime integration plus Google Drive delivery on September 10. Earlier forward/rear evidence was concept-only; the playable game used side-biased creature sheets. This work integrates production front/rear poses through print, awaken, deploy, idle and attack.
 
-The bounded [implementation checkpoint](../../checkpoints/m11-facing-integration-20260910.md) preserves current rules, stats, saves, decks, card backs, physical UI and the no-AdMob portrait Android configuration. It adopts none of the Reboot gameplay proposal.
+The [implementation checkpoint](../../checkpoints/m11-facing-integration-20260910.md) preserves current mechanics, saves, decks, card backs, physical UI and no-AdMob portrait Android configuration. No Reboot gameplay proposal is adopted.
 
-## Current production result
+## Authority and status
 
-- A dedicated seat-aware cache, warm raw-filament shader and focused tests were prepared by the sole Terra writer. Actual stage integration is parked until reviewed art exists so the current playable game does not lose its creatures.
-- Planned atlas: 1536×1024, four columns/two rows. Rival/front row uses idle A, idle B, windup, contact; friendly/rear row uses the same beats from behind. Existing nonbattle art remains unchanged.
-- Built-in ImageGen returned RGB checkerboard images rather than genuine transparency, including a targeted background-extraction attempt. These cannot be imported as finished sprites.
-- An asynchronous user question asks permission for programmatic background removal while preserving generated creature artwork. No programmatic image editing has occurred pending that answer.
-- Cinderpaw v3 fixes the low camera, near-identical front idle and exaggerated attack-tail issues found in v1. Rear-visible idle movement and exact idle foot registration still need correction. Camera, identity, tail continuity and action direction passed the second read-only review. Alpha remains a hard failure.
-- Aquafin v1 is an opaque magenta-matte source, not a finished transparent sprite. Identity, cells, feet and final alpha still require review.
-- The remaining 22 species are not generated. Full 24-species/both-seat lifecycle coverage, runtime visual review and the Android export/Drive delivery remain outstanding.
+- User explicitly approved programmatic background cleanup with “yes do it.” Cleanup preserves generated creature pixels; only matte/antialiasing and mathematical registration are changed offline.
+- Eight poses per species, 1536×1024: top rival/front, bottom friendly/rear; each row idle A, idle B, windup, contact.
+- Built-in ImageGen produced sources. Selected files were copied from tool-managed C: to durable E: storage and SHA-256 compared.
+- Terra is sole cleanup/runtime writer; UI review is read-only. Original-resolution and phone-slot proofs precede final promotion.
+- Runestag’s first alpha extraction was rejected for translucent body material; revised spatially bounded cleanup preserves solid violet material and passed re-review.
+- Aquafin foot registration/material appearance remain under slot-size review.
+- Voltwig generation was rejected twice by the service (output moderation). No directional source exists. User was asked whether an explicitly limited interim 23-species release is acceptable; **no exception approved yet**.
+- Incremental development integration is allowed for approved candidates; full roster remains a release gate unless user approves an exception.
+- Target 0.8.11-facing-integration/code107 remains subject to validation. Latest delivered APK is still 0.8.10-physical-ui-polish/code106.
 
-## Image collection and exact prompts
+## Durable image collection
 
-Every generated image shown during this checkpoint has a durable local link here. Rejected attempts are retained as local correction evidence, never as runtime art.
+The [common family prompt](directional-family-prompt.md) plus each species note reconstructs generation. Original species atlas supplies identity; Cinderpaw v4 supplies camera/grid only. Green mattes protect pink/purple creature materials.
 
-| Image | State | Prompt |
-| --- | --- | --- |
-| [Cinderpaw v1](cinderpaw-directional-source-v1.png) | Rejected low camera/idle/tail and baked-checkerboard source | [Exact prompt](cinderpaw-prompt-v1.md) |
-| [Cinderpaw alpha-only attempt v2](cinderpaw-directional-source-v2-alpha-attempt.png) | Rejected: still RGB checkerboard | [Exact prompt](cinderpaw-prompt-v2.md) |
-| [Cinderpaw corrected v3](cinderpaw-directional-source-v3.png) | Current direction/pose candidate; not alpha-ready | [Exact prompt](cinderpaw-prompt-v3.md) |
-| [Aquafin v1](aquafin-directional-source-v1.png) | Opaque matte source awaiting cutout and review | [Exact prompt](aquafin-prompt-v1.md) |
+| Species | Generated master | Prompt | Matte |
+| --- | --- | --- | --- |
+| aquafin | [Source](aquafin-directional-source-v1.png) | [Prompt](aquafin-prompt-v1.md) | Magenta |
+| aurorawing | [Source](aurorawing-directional-source-v1.png) | [Prompt](aurorawing-prompt-v1.md) | Magenta |
+| brambleowl | [Source](brambleowl-directional-source-v1.png) | [Prompt](brambleowl-prompt-v1.md) | Magenta |
+| cinderpaw | [Source](cinderpaw-directional-source-v4.png) | [Prompt](cinderpaw-prompt-v4.md) | Magenta |
+| coalgriffin | [Source](coalgriffin-directional-source-v1.png) | [Prompt](coalgriffin-prompt-v1.md) | Magenta |
+| coralisk | [Source](coralisk-directional-source-v1.png) | [Prompt](coralisk-prompt-v1.md) | Magenta |
+| frostling | [Source](frostling-directional-source-v1.png) | [Prompt](frostling-prompt-v1.md) | Magenta |
+| galehopper | [Source](galehopper-directional-source-v1.png) | [Prompt](galehopper-prompt-v1.md) | Magenta |
+| glassdrake | [Source](glassdrake-directional-source-v1.png) | [Prompt](glassdrake-prompt-v1.md) | Magenta |
+| ironmaw | [Source](ironmaw-directional-source-v1.png) | [Prompt](ironmaw-prompt-v1.md) | Magenta |
+| miragefox | [Source](miragefox-directional-source-v1.png) | [Prompt](miragefox-prompt-v1.md) | Green |
+| mossmunk | [Source](mossmunk-directional-source-v1.png) | [Prompt](mossmunk-prompt-v1.md) | Magenta |
+| pyraxis | [Source](pyraxis-directional-source-v1.png) | [Prompt](pyraxis-prompt-v1.md) | Green |
+| runestag | [Source](runestag-directional-source-v1.png) | [Prompt](runestag-prompt-v1.md) | Magenta |
+| skyforge | [Source](skyforge-directional-source-v1.png) | [Prompt](skyforge-prompt-v1.md) | Magenta |
+| sparkotter | [Source](sparkotter-directional-source-v1.png) | [Prompt](sparkotter-prompt-v1.md) | Magenta |
+| starloom | [Source](starloom-directional-source-v1.png) | [Prompt](starloom-prompt-v1.md) | Green |
+| stoneback | [Source](stoneback-directional-source-v1.png) | [Prompt](stoneback-prompt-v1.md) | Magenta |
+| thunderelk | [Source](thunderelk-directional-source-v1.png) | [Prompt](thunderelk-prompt-v1.md) | Magenta |
+| tidewhale | [Source](tidewhale-directional-source-v1.png) | [Prompt](tidewhale-prompt-v1.md) | Magenta |
+| verdantitan | [Source](verdantitan-directional-source-v1.png) | [Prompt](verdantitan-prompt-v1.md) | Magenta |
+| voidmanta | [Source](voidmanta-directional-source-v1.png) | [Prompt](voidmanta-prompt-v1.md) | Green |
+| worldcoil | [Source](worldcoil-directional-source-v1.png) | [Prompt](worldcoil-prompt-v1.md) | Magenta |
 
-Selected-source SHA-256:
+Candidates, dark/light proofs and provenance are under [cleaned](cleaned/). Sources/review assets are excluded from Godot imports by .gdignore. Runtime assets belong separately under assets/creatures/2d/battle-facing; candidate existence is not release approval.
 
-- Cinderpaw v3: `1811F5522609818D2481EA93C76F2F49D8FE7DBAF9554A620A6B9832A79FF440`, 2,970,557 bytes.
-- Aquafin v1: `CF9D81A952C96985AA5E993BC9E5535A7366EDE4F9F1A20064ABE6830F50FAA7`, 1,817,763 bytes.
+## Earlier corrections and failed generation
 
-Reference images inspected during this checkpoint:
+- [Cinderpaw v1](cinderpaw-directional-source-v1.png), [prompt](cinderpaw-prompt-v1.md): rejected camera/idle/tail.
+- [Cinderpaw v2 alpha attempt](cinderpaw-directional-source-v2-alpha-attempt.png), [prompt](cinderpaw-prompt-v2.md): still RGB checkerboard.
+- [Cinderpaw v3](cinderpaw-directional-source-v3.png), [prompt](cinderpaw-prompt-v3.md): corrected camera, superseded rear-idle/matte.
+- [Voltwig attempted prompt](voltwig-prompt-v1.md): no output; service request IDs 6c95db58-8d7d-4977-bd63-d2ef49c3a50c and 475f1a9a-0c7e-4f16-8ea1-be8aad10b619.
 
-- [Approved facing direction proof](../m11-living-battles-20260908/direction-proof-facing-inward-v1.png).
-- [Original Cinderpaw sheet](../../../assets/creatures/2d/cinderpaw_sprite_sheet.png).
-- [Original Aquafin sheet](../../../assets/creatures/2d/aquafin_sprite_sheet.png).
-- [Original Voltwig sheet](../../../assets/creatures/2d/voltwig_sprite_sheet.png).
-- [Original Mossmunk sheet](../../../assets/creatures/2d/mossmunk_sprite_sheet.png).
+## Approved direction and delivery gates
 
-## Resume sequence
+[Approved concept](../m11-living-battles-20260908/direction-proof-facing-inward-v1.png) and [direction record](../m11-living-battles-20260908/FACING-DIRECTION.md).
 
-Resolve the background-removal method, correct Cinderpaw idle registration/rear-readable motion, review alpha on dark/light surfaces, and establish the production grammar before generating the remaining species. Preserve genuine native transparency when available. Do not weaken the alpha acceptance test or substitute screen crops.
-
-Then promote only reviewed sheets through Terra, restore the parked stage integration, validate both seats through print/awaken/deploy/idle/contact/return, inspect full-resolution portrait/accessibility captures, and run exported-runtime checks. Only after those gates should version `0.8.11-facing-integration`, code `107`, be exported and delivered non-overwriting to the established PrintForge folder on Google Drive.
-
-The latest delivered APK remains `0.8.10-physical-ui-polish`, code `106`. Source prototypes or parser passes are not a new playable facing-integration release.
+Required: stable roots/alpha; actual Main/coordinator both-seat lifecycle and deterministic checks; portrait/accessibility captures; no blocking visual finding; exported-runtime checks; signed arm64 metadata and no-ad audit. APK/README must have commit-qualified non-overwriting names in the established Google Drive PrintForge release folder. Compare bytes/SHA-256; distinguish DriveFS copy from cloud sync.

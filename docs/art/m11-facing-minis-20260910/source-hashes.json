@@ -1,0 +1,117 @@
+[
+  {
+    "file": "aquafin-directional-source-v1.png",
+    "bytes": 1817763,
+    "sha256": "CF9D81A952C96985AA5E993BC9E5535A7366EDE4F9F1A20064ABE6830F50FAA7"
+  },
+  {
+    "file": "aurorawing-directional-source-v1.png",
+    "bytes": 1889619,
+    "sha256": "1EACAC88E3060A293EEEAB8D77D1F0F3827EAD2BA46FD837177ECCB8890C02B5"
+  },
+  {
+    "file": "brambleowl-directional-source-v1.png",
+    "bytes": 2136357,
+    "sha256": "3202EF6960B3FC23A1E2A8FF1264C1ED5BE098953F72D9CF4DE2D73D2F715B0F"
+  },
+  {
+    "file": "cinderpaw-directional-source-v4.png",
+    "bytes": 1793602,
+    "sha256": "DB00724EBDAF97363F58B248C8051E15B863624516118F93DDBCE204E0FAFA1E"
+  },
+  {
+    "file": "coalgriffin-directional-source-v1.png",
+    "bytes": 2108655,
+    "sha256": "38C65790755D1BEB8AAAAC9E6A30A8F6650B33BCCF45E4CE1D2E9B07F9F69AB7"
+  },
+  {
+    "file": "coralisk-directional-source-v1.png",
+    "bytes": 1938267,
+    "sha256": "B58FA34F348EAF44A39405ADBBC4E184DC01CB7520D701DDC054B61393B074AF"
+  },
+  {
+    "file": "frostling-directional-source-v1.png",
+    "bytes": 1807972,
+    "sha256": "C2B35112250BB3211C495082A4A7E5C631BE127F9F99C649DA500A72762BB0B9"
+  },
+  {
+    "file": "galehopper-directional-source-v1.png",
+    "bytes": 1815904,
+    "sha256": "ED982ADE1828B08FB94527E551F33D8A3637097C4949B0F0EB32A39DABBA7CCB"
+  },
+  {
+    "file": "glassdrake-directional-source-v1.png",
+    "bytes": 1959369,
+    "sha256": "429C0842B6AE81F9B874BB3D78BE693439467495CE0E196E83B1E64CD106A682"
+  },
+  {
+    "file": "ironmaw-directional-source-v1.png",
+    "bytes": 2008769,
+    "sha256": "57BD34159705A2C64DBF6BCD9C718E9EBCEFD5D7FD4A5C7A56F2B176D3A8A287"
+  },
+  {
+    "file": "miragefox-directional-source-v1.png",
+    "bytes": 1868248,
+    "sha256": "A11C6374AE629C72EE704B76BDCCE3923D773EC5F532A23F481440629E6CCF08"
+  },
+  {
+    "file": "mossmunk-directional-source-v1.png",
+    "bytes": 2062147,
+    "sha256": "DAF425FAEF0742706E48447AD188D87756932E7F59BDBB7513716EA349681D11"
+  },
+  {
+    "file": "pyraxis-directional-source-v1.png",
+    "bytes": 2085648,
+    "sha256": "4D676E991F6DE55CE69099FD9520BD62FB02BF7681BD2B2E57F5FAAF986D6584"
+  },
+  {
+    "file": "runestag-directional-source-v1.png",
+    "bytes": 1997727,
+    "sha256": "A6DBD0D646AFDD2D66A7F936DC4FD8CA7B843A7C7F93D2816E5F85F147F33071"
+  },
+  {
+    "file": "skyforge-directional-source-v1.png",
+    "bytes": 2235783,
+    "sha256": "20DCB11BC65BD3863218FCEFAA253DE596CF40E810FE067AD383262AA73C58B7"
+  },
+  {
+    "file": "sparkotter-directional-source-v1.png",
+    "bytes": 1805364,
+    "sha256": "E0140E34DD5F515B4C363E3D3B2A271C4F04D7BDB061D7DF9FD8D71CC1243F0B"
+  },
+  {
+    "file": "starloom-directional-source-v1.png",
+    "bytes": 2167967,
+    "sha256": "24DF2060B4F4B9A3B41E4A93C4C4ABEF09EA446ECD5B98B1B5B5ACEB17465876"
+  },
+  {
+    "file": "stoneback-directional-source-v1.png",
+    "bytes": 2120811,
+    "sha256": "A88FC9BC3C41A19D4449E931C33881233B08DACD42BC3B6A2FB951EBFCADC390"
+  },
+  {
+    "file": "thunderelk-directional-source-v1.png",
+    "bytes": 1783173,
+    "sha256": "422DEA24A464A7133E63D5888735D38C5D03A6F36A8C6A95CF103AC83EA726EC"
+  },
+  {
+    "file": "tidewhale-directional-source-v1.png",
+    "bytes": 1941460,
+    "sha256": "9D98FD02648D6D1E72B740345DC843928F9484FE49728236CE10E3CAD77C956A"
+  },
+  {
+    "file": "verdantitan-directional-source-v1.png",
+    "bytes": 2326771,
+    "sha256": "0364E397F00E9B2FBFE8A41E39BEC6884C723D0378B57F877498A918663EF9DF"
+  },
+  {
+    "file": "voidmanta-directional-source-v1.png",
+    "bytes": 1740787,
+    "sha256": "7FE1C5C09A816749183D95CA69B88BAB3C8BEA7790E5195DDE011ACF2C86D5D7"
+  },
+  {
+    "file": "worldcoil-directional-source-v1.png",
+    "bytes": 2388377,
+    "sha256": "CD7C748F21E33B2D0900A76BDAD361F580BCF7FB5C4CEF7BD92B2BA472BE5621"
+  }
+]

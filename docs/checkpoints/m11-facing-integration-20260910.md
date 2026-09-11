@@ -1,8 +1,13 @@
 # M11 facing-integration checkpoint — 2026-09-10
 
-Status: **AUTHORIZED bounded integration.** The user approved the facing-inward
-direction on 2026-09-08 and on 2026-09-10 explicitly requested that it appear in the
-battlefield and be delivered in a new Android review build on Google Drive.
+Status: **AUTHORITY CLEARED; runtime integration and build pending.** The user approved
+the facing-inward direction on 2026-09-08 and on 2026-09-10 explicitly requested that
+it appear in the battlefield and be delivered in a new Android review build on Google
+Drive. The user then answered “yes do it,” explicitly approving programmatic background
+cleanup for the production facing family. Conservative source-preserving front/rear
+variants that remain inside the already-approved direction require no additional human
+approval round. This method approval does not waive manifest, runtime-evidence or
+read-only no-P0/P1 gates; a new direction or creature redesign still requires approval.
 Preparation baseline: branch `spike/printforge-physical-ui`, HEAD `032c546`.
 
 Authority: [facing direction and approval](../art/m11-living-battles-20260908/FACING-DIRECTION.md),
@@ -24,6 +29,11 @@ remain side-biased. No source-preserving production front/rear animation family 
 found. Therefore `0.8.10-physical-ui-polish` / code `106` cannot be described as
 implementing the approved facing direction. The prior concept-only Drive receipt is
 `docs/art/m11-living-battles-20260908/FACING-DRIVE-DELIVERY.md`; it is not an APK.
+
+Execution ownership remains gated: the primary prepares the complete 24-creature
+source-facing family; the sole Terra runtime writer performs deterministic background
+cleanup/alpha extraction, registers animation frames, integrates assets and tests the
+result. The designer changes only this checkpoint and the UI reviewer remains read-only.
 
 ## Player-facing feature contract
 
@@ -82,6 +92,9 @@ future separately approved build enabled it; Godot must not reserve that space t
    side-view mirror presented as a rear view. Cinderpaw, Aquafin and Voltwig are each
    exercised as friendly and rival starters; every remaining catalog creature is
    exercised at least once on each ownership side through automated coverage.
+   Programmatic cleanup must be deterministic and background-only: preserve source RGB
+   inside the accepted creature silhouette, preserve intentional internal openings,
+   reject ambiguous edge/background regions, and retain per-file provenance/hashes.
 2. Actual Main -> coordinator -> stage evidence covers both seats at early print, exact
    60%, raw completion, awakening, launch/travel/landing, settled idle, creature
    contact, exposed-printer contact and return. It includes duplicate card IDs,
@@ -95,7 +108,8 @@ future separately approved build enabled it; Godot must not reserve that space t
    proof and r7 composition. A read-only UI review must return no P0/P1 for identity,
    inward facing, ground contact, scale, unobscured native information, accessibility,
    material consistency or print-to-attack continuity before runtime-art promotion.
-   Any new direction or creature redesign requires fresh human approval.
+   Passing conservative variants within the approved direction do not require a second
+   human approval; any new direction or creature redesign does.
 5. Focused deterministic tests prove presentation-mode and missing-resource trace
    equality, exactly-once settlement, no node/material growth, cached resources and no
    late callback unlocking a newer receipt. Existing M11/UI1 rule, battle, Back, save,
