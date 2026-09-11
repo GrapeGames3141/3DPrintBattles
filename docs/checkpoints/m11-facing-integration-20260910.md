@@ -1,13 +1,14 @@
 # M11 facing-integration checkpoint — 2026-09-10
 
-Status: **AUTHORITY CLEARED; runtime integration and build pending.** The user approved
-the facing-inward direction on 2026-09-08 and on 2026-09-10 explicitly requested that
-it appear in the battlefield and be delivered in a new Android review build on Google
-Drive. The user then answered “yes do it,” explicitly approving programmatic background
-cleanup for the production facing family. Conservative source-preserving front/rear
-variants that remain inside the already-approved direction require no additional human
-approval round. This method approval does not waive manifest, runtime-evidence or
-read-only no-P0/P1 gates; a new direction or creature redesign still requires approval.
+Status: **23 available species UI-cleared and promoted in development; release build
+blocked.** The user approved the facing-inward direction on 2026-09-08 and on
+2026-09-10 explicitly requested that it appear in the battlefield and be delivered in
+a new Android review build on Google Drive. The user then answered “yes do it,”
+explicitly approving programmatic background cleanup for the production facing family.
+Conservative source-preserving front/rear variants that remain inside the already-
+approved direction require no additional human approval round. This method approval
+does not waive manifest, runtime-evidence or read-only no-P0/P1 gates; a new direction
+or creature redesign still requires approval.
 Preparation baseline: branch `spike/printforge-physical-ui`, HEAD `032c546`.
 
 Authority: [facing direction and approval](../art/m11-living-battles-20260908/FACING-DIRECTION.md),
@@ -20,20 +21,56 @@ The approved visual target is
 friendly lower units show rear/slight three-quarter-rear views facing up-board, and
 rival upper units show front/slight three-quarter-front views facing down-board.
 
-## Observed gap
+## Durable progress and known blocker
 
-The proof is a static three-creature composition concept, not runtime art. Current
-runtime inventory contains 24 tracked `assets/creatures/2d/*_sprite_sheet.png` sheets,
-and `assets/runtime_asset_manifest.json` requires the same 24 creatures; those sheets
-remain side-biased. No source-preserving production front/rear animation family was
-found. Therefore `0.8.10-physical-ui-polish` / code `106` cannot be described as
-implementing the approved facing direction. The prior concept-only Drive receipt is
+The original proof is a static three-creature composition concept, not runtime art.
+Source-art checkpoint `b823022` now holds 23 identity-preserving directional masters.
+All 23 available species now pass offline read-only UI review and have runtime sheets
+promoted in the development working tree. Pyraxis and Voidmanta passed lossless
+whole-pose cross-cell reclaim: their toe/fin anatomy is preserved rather than cropped
+or deleted to force a cell boundary. The visual cleanup P0 findings for Runestag and
+Aquafin remain corrected and reviewed.
+
+Runestag's stale import was resolved by fresh import PID `24928` and GPU validation PID
+`49952`: source, imported texture and shader each report `834/834` accepted alpha
+pixels at the same original `0.04` tolerance. This closes the previously recorded
+source/import alpha discrepancy; it does not substitute for lifecycle review.
+
+Actual Main public-FIFO capture PID `66612` passes at 576x1024 for partial raw printing
+with no early field occupant, and read-only UI review passes that bounded raw-printer
+state. Full both-seat print/awaken/deploy/idle/attack lifecycle evidence, 720x1280 and
+tall portrait review remain pending.
+
+Voltwig is the sole missing master. The image service blocked its unchanged prompt at
+output moderation three times; the last request was
+`d4923bae-6fa1-4c40-9196-0d0751ef5e02`. No usable 3D or other source alternative was
+found. The user was asked asynchronously to authorize an explicitly limited interim
+23-creature build that retains legacy Voltwig, but has not answered; **no exception is
+approved**. Full 24-creature coverage with no fallback remains the release gate unless
+the user explicitly grants that exception.
+
+The primary permits incremental working-tree integration and testing of candidates
+that have passed UI review. This does not authorize a final release claim, a Voltwig
+substitution or a 23-creature Android delivery. Latest delivered remains
+`0.8.10-physical-ui-polish` / code `106`; no APK, Drive artifact or version bump has
+occurred in this integration pass. The prior concept-only Drive receipt is
 `docs/art/m11-living-battles-20260908/FACING-DRIVE-DELIVERY.md`; it is not an APK.
 
 Execution ownership remains gated: the primary prepares the complete 24-creature
 source-facing family; the sole Terra runtime writer performs deterministic background
 cleanup/alpha extraction, registers animation frames, integrates assets and tests the
 result. The designer changes only this checkpoint and the UI reviewer remains read-only.
+
+## Durable evidence
+
+- [Facing-mini source collection and review ledger](../art/m11-facing-minis-20260910/README.md)
+- [Pyraxis lossless cleanup — dark composite](../art/m11-facing-minis-20260910/cleaned/pyraxis-battle-facing-cleaned-v1-dark-composite.png)
+- [Voidmanta lossless cleanup — dark composite](../art/m11-facing-minis-20260910/cleaned/voidmanta-battle-facing-cleaned-v1-dark-composite.png)
+- [Actual Main 576 public FIFO partial-print capture](../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/actual-main-576-qa/m11-b1-actual-fifo-print60-576x1024.png)
+
+These links expose the reviewed source collection, the two anatomy-reclaim proofs and
+the bounded actual-runtime image. They do not prove Voltwig, full lifecycle coverage,
+larger/tall portrait behavior, Android packaging or Drive delivery.
 
 ## Player-facing feature contract
 
@@ -135,7 +172,10 @@ Current reusable approval/evidence paths are:
 - `build/evidence/m11-ui1-20260908/`
 - `build/evidence/m11-ui1-release-20260908/`
 
-Open gaps at authorization are the absent production front/rear family, absent
-24-creature/both-seat lifecycle proof, absent integrated no-P0/P1 review, and absent
-`0.8.11` Android/Drive delivery. The approved static proof, earlier r7 captures and
-`0.8.10` APK do not close any of those gaps.
+Open gaps are Voltwig's missing directional master, complete 24-creature/both-seat
+lifecycle proof, full actual Main integration tests, 720/tall integrated no-P0/P1
+review, and `0.8.11-facing-integration` / code `107` Android/Drive delivery. No final
+release, full-facing, mechanics or ad claim is made. The approved static proof,
+23-master source checkpoint, 23 development promotions, focused 834/834 GPU pass,
+bounded 576 partial-print capture, earlier r7 captures and `0.8.10` APK do not close
+the full-24 release gate.

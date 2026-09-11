@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "ironmaw",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\ironmaw-directional-source-v1.png",
+    "sha256": "57BD34159705A2C64DBF6BCD9C718E9EBCEFD5D7FD4A5C7A56F2B176D3A8A287",
+    "bytes": 2008769,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "per-frame metadata only; no source pixels translated"
+  },
+  "alpha_counts": {
+    "transparent": 1095457,
+    "partial_edge": 5013,
+    "opaque": 472394,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    247,
+    7,
+    249
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 5013,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 472394,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        33,
+        133,
+        353,
+        447
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        32,
+        170,
+        361,
+        447
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        27,
+        107,
+        369,
+        450
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        33,
+        94,
+        358,
+        420
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        35,
+        61,
+        353,
+        399
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        35,
+        100,
+        353,
+        400
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        33,
+        84,
+        363,
+        400
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        54,
+        37,
+        342,
+        416
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\ironmaw-battle-facing-cleaned-v1.png",
+      "sha256": "C1CAB3CE3BDC758E7D1B2C7D6B15BDB6ABEDB2D6A5E309ED8CB72EA13720ED75",
+      "bytes": 1955487,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\ironmaw-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "693FE50C164B2A59DD571AF7B289DF71F21043E0575FCAE4F57568BAC05BB91C",
+      "bytes": 1065476,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\ironmaw-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "3C96EC5A4D9D13C6EF9DE79C248670BC393B8E675946523BAC0B33FDE2A4B549",
+      "bytes": 1065411,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\ironmaw-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "60ED5BEEDACCD7034247AD725973594FCF6CD8DC53444C8F644C5D0B42A5C3D4",
+      "bytes": 1065633,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\ironmaw-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "A0553C74F421DE19EE1409D7F2FE55C3AEA56A550235B811D04AE5809A85B402",
+      "bytes": 109812,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\ironmaw-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "1DD27104B424A1CCEE5C7CF5148C53F421A50A70410530532CA7BE8F22029786",
+      "bytes": 163496,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

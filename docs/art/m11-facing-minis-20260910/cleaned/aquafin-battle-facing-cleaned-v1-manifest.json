@@ -1,0 +1,267 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "aquafin",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\aquafin-directional-source-v1.png",
+    "sha256": "CF9D81A952C96985AA5E993BC9E5535A7366EDE4F9F1A20064ABE6830F50FAA7",
+    "bytes": 1817763,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "cell-edge seeded connected external matte only",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "explicit per-frame pixel translations only"
+  },
+  "alpha_counts": {
+    "transparent": 1081224,
+    "partial_edge": 11482,
+    "opaque": 480158,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    246,
+    5,
+    249
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 11482,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 480158,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        42,
+        70,
+        350,
+        488
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        32,
+        104,
+        365,
+        484
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        21,
+        72,
+        346,
+        485
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        18,
+        72,
+        345,
+        486
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        76,
+        40,
+        313,
+        420
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": [
+        192,
+        421
+      ],
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        16,
+        96,
+        323,
+        420
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": [
+        192,
+        421
+      ],
+      "translation": [
+        0,
+        22
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        53,
+        68,
+        324,
+        404
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        37,
+        31,
+        321,
+        405
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\aquafin-battle-facing-cleaned-v1.png",
+      "sha256": "1E2CACF2E00AE0C0886E1B6A800959CF6F8B2972AD79735A4CE37138B13CE8EB",
+      "bytes": 1108265,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\aquafin-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "6CFFF649CCC1FD5DF600DAB28950AD98D359E647E7CA376247E16F80472519F3",
+      "bytes": 939804,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\aquafin-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "9049C34EA93478AEAF5F9D228D7414F6E7D7BD3417B1BE3141854F602DA498D7",
+      "bytes": 958425,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\aquafin-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "809FF37948E7C53B2F89BA343323756750C95612E78A91D9B3493219BE30E2D9",
+      "bytes": 958437,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\aquafin-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "BEBD939B17072A987C764E81BAFB036948EAEA3C1B4C3564B66A97B15E42F769",
+      "bytes": 111598,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\aquafin-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "9D83979788B727382FD32DED2119615BFE93CDBE10ED260C65140EC6C808434E",
+      "bytes": 161591,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

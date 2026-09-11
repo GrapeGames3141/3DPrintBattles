@@ -1,0 +1,10 @@
+{
+  "approval_state": "review-directed_candidate_registration_not_runtime_promotion",
+  "creature_id": "aquafin",
+  "method": "translation of existing cleaned pixels only; no redraw, scale, crop, or anatomy change",
+  "target": "Rear idle A and B share the visible foot baseline at local y=421.",
+  "frames": [
+    {"frame": 4, "foot_root": [192, 421], "translation": [0, 0], "reason": "rear idle A reference baseline"},
+    {"frame": 5, "foot_root": [192, 421], "translation": [0, 22], "reason": "move rear idle B's source bottom from y=399 down to the reviewed rear idle A y=421 baseline"}
+  ]
+}

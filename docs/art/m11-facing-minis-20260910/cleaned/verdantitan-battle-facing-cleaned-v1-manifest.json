@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "verdantitan",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\verdantitan-directional-source-v1.png",
+    "sha256": "0364E397F00E9B2FBFE8A41E39BEC6884C723D0378B57F877498A918663EF9DF",
+    "bytes": 2326771,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "per-frame metadata only; no source pixels translated"
+  },
+  "alpha_counts": {
+    "transparent": 1016468,
+    "partial_edge": 4488,
+    "opaque": 551908,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    247,
+    5,
+    250
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 4488,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 551908,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        35,
+        97,
+        335,
+        459
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        39,
+        134,
+        355,
+        460
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        26,
+        150,
+        354,
+        462
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        20,
+        112,
+        353,
+        435
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        54,
+        31,
+        357,
+        417
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        52,
+        56,
+        351,
+        416
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        33,
+        85,
+        374,
+        415
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        54,
+        36,
+        335,
+        434
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\verdantitan-battle-facing-cleaned-v1.png",
+      "sha256": "2B40C1F16BB1ED7A188F9224AE2D068D55E73E1CD2E368D3CDF648D3F5DE335D",
+      "bytes": 2271676,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\verdantitan-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "0C22994AEFF22E5BE22A492332DD34299F6F2877BF17D584A09E856B7BAE68D3",
+      "bytes": 1351555,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\verdantitan-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "B72AA2712319F30494D6656F8517176BA4FAFDB411D713D8D6F1A98B8AD7F7DF",
+      "bytes": 1356021,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\verdantitan-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "0B6040FBB828A175EBA929D6DD9D971BA0164EF01CA5CB1E610264A101605299",
+      "bytes": 1356116,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\verdantitan-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "1D5607CD423B1A00077121A0112EF0C06CB9DD2ED14CA9FC4BD9421B15A3521C",
+      "bytes": 127648,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\verdantitan-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "57F2681F3E1FD9520F6A618BAF9D13754E862C99E5A334CA2D6FBB6B720E6F16",
+      "bytes": 192677,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

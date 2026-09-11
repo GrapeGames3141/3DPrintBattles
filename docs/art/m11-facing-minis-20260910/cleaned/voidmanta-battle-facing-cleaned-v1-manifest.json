@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "voidmanta",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\voidmanta-directional-source-v1.png",
+    "sha256": "7FE1C5C09A816749183D95CA69B88BAB3C8BEA7790E5195DDE011ACF2C86D5D7",
+    "bytes": 1740787,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "green"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "explicit per-frame pixel translations only"
+  },
+  "alpha_counts": {
+    "transparent": 1236038,
+    "partial_edge": 10216,
+    "opaque": 326610,
+    "detached_noise_removed": 87
+  },
+  "measured_matte_rgb": [
+    4,
+    248,
+    6
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 10198,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 326628,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        12,
+        104,
+        381,
+        445
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        -1,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        16,
+        148,
+        376,
+        459
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        -7,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        62,
+        105,
+        333,
+        459
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        13,
+        105,
+        369,
+        481
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        26,
+        60,
+        381,
+        348
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        15,
+        90,
+        381,
+        357
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        -8,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        65,
+        74,
+        326,
+        363
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        44,
+        35,
+        344,
+        356
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\voidmanta-battle-facing-cleaned-v1.png",
+      "sha256": "2B779366819BF7FDD6271A99AF5198862BFE5F7A00CCCFFA2842069556C9D2B7",
+      "bytes": 870886,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\voidmanta-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "14AA492B41B8E3F08A8A266618D7F560FCA5370C3BBE50A089439534AA5B33A1",
+      "bytes": 754217,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\voidmanta-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "4D5540CC2CF8EC688D0600FBCD6A8B5FA7739DAA1DC5F11F19BCACB4BAD95946",
+      "bytes": 753002,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\voidmanta-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "6731069F467A32DCD7B8B9DBCD4F6F9BBA5A9FA5E684B3C431A6ED47A7402832",
+      "bytes": 753151,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\voidmanta-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "0BF9AB04C8CE146ED87F034FA3659BEC7905B828B2EB8CC56BD7B4788A3AF5FF",
+      "bytes": 85502,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\voidmanta-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "CFFCD98877888054FB9BC0B301941059D399333C46E76C0F372EF4A390C9A744",
+      "bytes": 125235,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

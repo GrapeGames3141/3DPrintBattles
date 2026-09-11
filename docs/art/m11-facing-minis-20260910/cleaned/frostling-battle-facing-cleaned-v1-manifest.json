@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "frostling",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\frostling-directional-source-v1.png",
+    "sha256": "C2B35112250BB3211C495082A4A7E5C631BE127F9F99C649DA500A72762BB0B9",
+    "bytes": 1807972,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "per-frame metadata only; no source pixels translated"
+  },
+  "alpha_counts": {
+    "transparent": 1095460,
+    "partial_edge": 7675,
+    "opaque": 469729,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    248,
+    5,
+    250
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 7675,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 469729,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        53,
+        93,
+        347,
+        471
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        20,
+        157,
+        343,
+        471
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        40,
+        110,
+        362,
+        472
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        24,
+        92,
+        352,
+        451
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        38,
+        39,
+        336,
+        419
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        18,
+        71,
+        365,
+        419
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        33,
+        98,
+        367,
+        424
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        50,
+        38,
+        332,
+        414
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\frostling-battle-facing-cleaned-v1.png",
+      "sha256": "7A3EB8B26439DCC1E6F5E9FA14EEE3E520342B1DCA2C49478666EBFAF6AB0EE4",
+      "bytes": 1812702,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\frostling-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "5C555F3740E477E1609D71B9D7710512CB6EAFB1E5E3130AE6DC6446B0A619CD",
+      "bytes": 919120,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\frostling-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "2AE194250D838019A9A4B4E1A2D5E73E3C3E0B22113B87EEAF4E1DFF10589E7F",
+      "bytes": 935887,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\frostling-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "1C9146740ABF7BE039AF4B343BA521C9A3914A14B54788B36E0AF49D639210FB",
+      "bytes": 936181,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\frostling-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "2438C9EAB9658F5F6C71D9B0F65B338FE2207124BA378E1326F1C3136521AEDC",
+      "bytes": 108146,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\frostling-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "9D7B221B85F83ACFA88061BBB6BE434CC307B4B5EB96E92485D97853EA5C108B",
+      "bytes": 158086,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

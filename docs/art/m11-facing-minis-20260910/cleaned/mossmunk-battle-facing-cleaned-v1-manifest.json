@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "mossmunk",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\mossmunk-directional-source-v1.png",
+    "sha256": "DAF425FAEF0742706E48447AD188D87756932E7F59BDBB7513716EA349681D11",
+    "bytes": 2062147,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "per-frame metadata only; no source pixels translated"
+  },
+  "alpha_counts": {
+    "transparent": 1068941,
+    "partial_edge": 5121,
+    "opaque": 498802,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    248,
+    5,
+    249
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 5121,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 498802,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        52,
+        99,
+        328,
+        486
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        24,
+        124,
+        334,
+        485
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        49,
+        103,
+        370,
+        489
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        46,
+        51,
+        352,
+        464
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        45,
+        61,
+        339,
+        425
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        36,
+        78,
+        337,
+        426
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        33,
+        121,
+        366,
+        434
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        68,
+        27,
+        342,
+        437
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\mossmunk-battle-facing-cleaned-v1.png",
+      "sha256": "53F8F680AA8418BBD58A2CC2E7333C17DDA6087DD22D2AE54DD1A80E25DA1D77",
+      "bytes": 2067941,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\mossmunk-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "91289ABE75616B28BDEE7E16CB5F1EE4F2FD80E9D21374F51982C054B8DB122C",
+      "bytes": 1128812,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\mossmunk-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "E1492AEB32EB445DF476D0EC9AB7987FEEBC00E90316630D7584F2FCC2424A5F",
+      "bytes": 1133731,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\mossmunk-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "AD76784E2973C7BF0AA683BEA75941A14883EF59259274841273331742FA0763",
+      "bytes": 1133863,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\mossmunk-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "2784816F5C43E2F56A0B4A267A7670AD191D802462D84BF3261CA9437AE21BFD",
+      "bytes": 114907,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\mossmunk-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "08462B99BB29D59B28B268D0598AA32F350F79D68710F2CF035ED5CCC2EE5A4C",
+      "bytes": 170730,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

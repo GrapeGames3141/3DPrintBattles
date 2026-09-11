@@ -1,0 +1,9 @@
+{
+  "approval_state": "review_candidate_registration_not_runtime_promotion",
+  "creature_id": "pyraxis",
+  "method": "translation of existing cleaned pixels only; no redraw, scale, crop, or anatomy change",
+  "target": "Reclaim the complete frame-2 windup source bounds, including its toe overhang in donor frame 3, then translate the complete pose nine pixels left into its required transparent atlas gutter.",
+  "frames": [
+    {"frame": 2, "source_bounds": [814, 64, 1158, 492], "translation": [-9, 0], "reason": "reclaim complete windup including the x1152..1158 toe from donor frame 3, then preserve a 2px gutter"}
+  ]
+}

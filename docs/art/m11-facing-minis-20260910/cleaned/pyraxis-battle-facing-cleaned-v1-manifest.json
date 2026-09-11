@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "pyraxis",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\pyraxis-directional-source-v1.png",
+    "sha256": "4D676E991F6DE55CE69099FD9520BD62FB02BF7681BD2B2E57F5FAAF986D6584",
+    "bytes": 2085648,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "green"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "explicit per-frame pixel translations only"
+  },
+  "alpha_counts": {
+    "transparent": 1042657,
+    "partial_edge": 6293,
+    "opaque": 523914,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    4,
+    248,
+    4
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 6293,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 523914,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        45,
+        62,
+        369,
+        492
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        27,
+        93,
+        371,
+        490
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        37,
+        64,
+        381,
+        492
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        -9,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        16,
+        47,
+        357,
+        462
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        23,
+        57,
+        346,
+        432
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        21,
+        73,
+        343,
+        435
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        18,
+        94,
+        377,
+        438
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        31,
+        2,
+        341,
+        415
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\pyraxis-battle-facing-cleaned-v1.png",
+      "sha256": "7ED455F571B7D361CC6CF2D5B29389B56346E28C074E9D5BA41F9635FCDC0BDC",
+      "bytes": 1389220,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\pyraxis-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "A8206390EDF2B0F88601C2D68237A8E2EBDF116E7A2F5460EC5E658385C9BE20",
+      "bytes": 1204174,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\pyraxis-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "6A496E2E36D0AC71563BF6E8FD0A14E5280E73A29540DF9025E6DDD568E7C21A",
+      "bytes": 1203648,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\pyraxis-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "F984C02796460C7E20E381074FA4955832BD8B792D207FC0BFECF666C2318D49",
+      "bytes": 1203198,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\pyraxis-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "2701E46708513D85685C19D5D254CFC63571A789EDBBA16BF6FF20E8A0BAE961",
+      "bytes": 130631,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\pyraxis-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "E5E23C901AF837C1EA6F605CAAEBBC82265F8084FE3FA5ACFFD1B451D5DE5AFF",
+      "bytes": 192333,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

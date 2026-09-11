@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "worldcoil",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\worldcoil-directional-source-v1.png",
+    "sha256": "CD7C748F21E33B2D0900A76BDAD361F580BCF7FB5C4CEF7BD92B2BA472BE5621",
+    "bytes": 2388377,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "per-frame metadata only; no source pixels translated"
+  },
+  "alpha_counts": {
+    "transparent": 1010950,
+    "partial_edge": 5767,
+    "opaque": 556147,
+    "detached_noise_removed": 0
+  },
+  "measured_matte_rgb": [
+    247,
+    5,
+    250
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 5767,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 556147,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        65,
+        69,
+        311,
+        475
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        56,
+        81,
+        307,
+        474
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        48,
+        127,
+        337,
+        475
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        43,
+        76,
+        356,
+        475
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        71,
+        28,
+        316,
+        431
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        58,
+        57,
+        313,
+        431
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        52,
+        88,
+        319,
+        430
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        41,
+        22,
+        338,
+        431
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "metadata_only_no_pixels_translated"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\worldcoil-battle-facing-cleaned-v1.png",
+      "sha256": "114F3FEBEE9CDB0E0CCA45E2F108276D214DD94C3109573821A2520988090920",
+      "bytes": 2327195,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\worldcoil-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "9380E5B75406E225CBD8702D15BCF643598F247D1CBA3CDA22B33A126A357608",
+      "bytes": 1401078,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\worldcoil-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "3098DEEEB2954EF30E3609193989D1D6F0E24E1328C539E0A3095FC52EBBC7E8",
+      "bytes": 1404025,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\worldcoil-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "8A26C64DD51FD97A21DAB1FFAEF1015C4351CC897FAAE6958C09A49612939024",
+      "bytes": 1404006,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\worldcoil-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "21255C3B55E54D57119776D65DFB2822C581E06319F8849D705F76D69AFC3D72",
+      "bytes": 130161,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\worldcoil-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "B87B97827561961A13C0CE6114CA135DB0F74479331E8ECFEAC45082EEEB350A",
+      "bytes": 197556,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

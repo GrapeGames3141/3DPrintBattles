@@ -1,0 +1,261 @@
+{
+  "approval_state": "review_candidate_only_not_runtime_promoted",
+  "creature_id": "tidewhale",
+  "tool": {
+    "path": "tools/clean_battle_facing_atlas.py",
+    "python": "3.12.14",
+    "png_io": "Pillow bundled with Codex runtime"
+  },
+  "source": {
+    "path": "docs\\art\\m11-facing-minis-20260910\\tidewhale-directional-source-v1.png",
+    "sha256": "9D98FD02648D6D1E72B740345DC843928F9484FE49728236CE10E3CAD77C956A",
+    "bytes": 1941460,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "channels": 3,
+    "matte_mode": "magenta"
+  },
+  "algorithm": {
+    "matte": "near-exact measured key core is removed anywhere in each cell (including enclosed negative spaces); only the non-key partial edge band is spatially capped",
+    "keyed_edge": "only true near-matte exterior core is transparent; partial alpha is limited to a two-pixel exterior-connected edge band with reverse-composite decontamination",
+    "checkerboard": "bright low-chroma edge-connected pixels only; enclosed neutral creature details remain",
+    "protected_hues": [],
+    "pixel_policy": "no drawing, inpainting, resizing, anatomy changes, or pose changes; opaque source RGB stays byte-identical",
+    "registration": "explicit per-frame pixel translations only"
+  },
+  "alpha_counts": {
+    "transparent": 1145496,
+    "partial_edge": 7864,
+    "opaque": 419504,
+    "detached_noise_removed": 30
+  },
+  "measured_matte_rgb": [
+    247,
+    5,
+    250
+  ],
+  "alpha_edge_audit": {
+    "partial_alpha_pixels": 7848,
+    "partial_alpha_pixels_with_near_matte_rgb": 0
+  },
+  "pre_registration_opaque_source_pixels_rgb_byte_identical": 419520,
+  "pre_registration_opaque_source_rgb_mismatches": 0,
+  "pre_registration_opaque_source_rgb_equality_pass": true,
+  "frames": [
+    {
+      "frame": 0,
+      "row_direction": "front_rival",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        35,
+        158,
+        371,
+        452
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 1,
+      "row_direction": "front_rival",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        24,
+        211,
+        381,
+        455
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        -2,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 2,
+      "row_direction": "front_rival",
+      "pose": "windup",
+      "alpha_bounds": [
+        28,
+        191,
+        354,
+        470
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 3,
+      "row_direction": "front_rival",
+      "pose": "contact",
+      "alpha_bounds": [
+        37,
+        104,
+        353,
+        434
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 4,
+      "row_direction": "rear_friendly",
+      "pose": "idle_a",
+      "alpha_bounds": [
+        36,
+        90,
+        373,
+        377
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 5,
+      "row_direction": "rear_friendly",
+      "pose": "idle_b",
+      "alpha_bounds": [
+        46,
+        109,
+        381,
+        410
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        -2,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 6,
+      "row_direction": "rear_friendly",
+      "pose": "windup",
+      "alpha_bounds": [
+        43,
+        95,
+        362,
+        389
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    },
+    {
+      "frame": 7,
+      "row_direction": "rear_friendly",
+      "pose": "contact",
+      "alpha_bounds": [
+        39,
+        53,
+        351,
+        358
+      ],
+      "transparent_gutter_2px": true,
+      "requested_foot_root": null,
+      "translation": [
+        0,
+        0
+      ],
+      "registration_mode": "pixel_translation_from_explicit_metadata"
+    }
+  ],
+  "validation_errors": [],
+  "outputs": {
+    "rgba": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\tidewhale-battle-facing-cleaned-v1.png",
+      "sha256": "8BA10A3E1B794CB6349DCEC36F8F439A4613943D1B9A515EB47F684001EF0E62",
+      "bytes": 1109258,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 4,
+      "purpose": "candidate artifact"
+    },
+    "light_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\tidewhale-battle-facing-cleaned-v1-light-composite.png",
+      "sha256": "C1E7F27EFCDAEED2450028355CCB5BD89163BAAA75C2FEC5BC302458C1F65F6B",
+      "bytes": 963106,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "dark_composite": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\tidewhale-battle-facing-cleaned-v1-dark-composite.png",
+      "sha256": "3D5F6FFEA08BE18074495197450589A13320174FCA31453A534FC7DD217D3159",
+      "bytes": 966452,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "contact_review": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\tidewhale-battle-facing-cleaned-v1-contact-review.png",
+      "sha256": "1710EDF638443B1EB0914010CD4CE77649A5A43E8747B2456559E1DA5179D805",
+      "bytes": 967629,
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "candidate artifact"
+    },
+    "phone_slot_proof_576": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\tidewhale-battle-facing-cleaned-v1-phone-slot-proof-576x1024.png",
+      "sha256": "743B2FC9453FFEA3C623E1B3DC5B47D00E53E87999F0C14F470F636BA96F0C89",
+      "bytes": 93899,
+      "dimensions": [
+        576,
+        1024
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    },
+    "phone_slot_proof_720": {
+      "path": "docs\\art\\m11-facing-minis-20260910\\cleaned\\tidewhale-battle-facing-cleaned-v1-phone-slot-proof-720x1280.png",
+      "sha256": "7B2B1E5ED58168F1AD944BDD4DAF07EB1645CA07B0FB179AB012FDABCE568E57",
+      "bytes": 138703,
+      "dimensions": [
+        720,
+        1280
+      ],
+      "channels": 3,
+      "purpose": "offline native-slot-scale proof only; not an actual runtime capture"
+    }
+  }
+}

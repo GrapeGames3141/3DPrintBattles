@@ -1,0 +1,10 @@
+{
+  "approval_state": "review_candidate_registration_not_runtime_promotion",
+  "creature_id": "voidmanta",
+  "method": "measured complete source-pose reclaim and translation only; no redraw, scale, crop, or anatomy change",
+  "frames": [
+    {"frame": 0, "source_bounds": [13, 104, 382, 445], "translation": [-1, 0], "reason": "complete front idle A into 2px gutter"},
+    {"frame": 1, "source_bounds": [407, 148, 772, 459], "translation": [-7, 0], "reason": "reclaim front idle B fin from donor cell and preserve 2px gutter"},
+    {"frame": 5, "source_bounds": [407, 602, 773, 869], "translation": [-8, 0], "reason": "reclaim rear idle B fin from donor cell and preserve 2px gutter"}
+  ]
+}

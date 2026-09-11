@@ -1,0 +1,10 @@
+{
+  "approval_state": "review_candidate_registration_not_runtime_promotion",
+  "creature_id": "tidewhale",
+  "method": "translation of existing cleaned pixels only; no redraw, scale, crop, or anatomy change",
+  "target": "Frames 1 and 5 move two pixels left into the required transparent atlas gutter; the visible fins have free left margin and do not cross a cell boundary.",
+  "frames": [
+    {"frame": 1, "translation": [-2, 0], "reason": "right-edge-safe registration"},
+    {"frame": 5, "translation": [-2, 0], "reason": "right-edge-safe registration"}
+  ]
+}
