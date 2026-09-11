@@ -1,8 +1,8 @@
 # M11 facing-integration checkpoint — 2026-09-10
 
-Status: **Approved interim runtime integration is active; remaining validation,
-version `0.8.11-facing-integration` / code `107` export, and Drive delivery are
-pending.** After directly observing Voltwig's side-profile presentation, the user
+Status: **Approved interim runtime integration is active; current export, validation,
+and DriveFS state is maintained in the
+[final delivery record](m11-facing-android-delivery-20260910.md).** After directly observing Voltwig's side-profile presentation, the user
 reconfirmed the exact bounded authority with **“Ship the interim build.”** This is in
 addition to the 2026-09-10 answer **“yes finish the build and put it on the google
 drive”** in direct response

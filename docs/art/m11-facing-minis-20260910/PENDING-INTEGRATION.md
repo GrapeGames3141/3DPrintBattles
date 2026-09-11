@@ -1,13 +1,18 @@
 # Current battle-facing runtime integration and evidence index
 
-Status: active on 2026-09-10; release evidence remains incomplete. The user explicitly
+Status: active on 2026-09-10; release validation passes and the APK DriveFS copy is
+byte/hash verified. The frozen README DriveFS copy is also byte/hash verified; cloud
+synchronization is not confirmed. The user explicitly
 approved finishing the build and putting it on Google Drive with the exact
 interim contract of new reviewed front/rear sets for 23 species and Voltwig retaining
 its existing legacy artwork. All 24 species must remain visible and playable, with no
 general fallback, no gameplay change, and no ad change. After directly observing the
 Voltwig side profiles, the user reconfirmed: **“Ship the interim build.”** The 23 new
 directional species plus named legacy Voltwig integration is now active. Version
-`0.8.11-facing-integration` / code `107` export and Drive delivery remain pending.
+`0.8.11-facing-integration` / code `107` is exported from final source
+`b4fcd709b1c2` and passes the full static APK audit, all six final compiled checks, and
+the bounded compiled 576x1024 read-only UI spot-check. The APK DriveFS copy is
+byte/hash verified; cloud synchronization is unconfirmed.
 This record is not itself an APK, device proof, cloud proof, or full-24-directional-art
 approval.
 
@@ -101,6 +106,56 @@ These passes close current roster presence/both-seat coverage and the named prim
 regressions. They do not claim every species at every lifecycle beat, the full fault
 cross-product, physical-device behavior, APK contents, DriveFS copy, or cloud sync.
 
+## Corrected caption and contact-frame evidence
+
+The final source raises the native attack caption above the moving unit at `z32` and
+adds outline `2`; no art, combat rule, or receipt behavior changed. Presentation-frame
+snapshots at progress 0.50 and 0.68 both pass, and read-only UI review finds no P0/P1.
+They prove the rendered frames, not real elapsed timing; the real Release Cycle run
+provides timing evidence:
+
+- [p50 directory](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/voltwig-contact50-2/qa/):
+  [actor 0 contact](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/voltwig-contact50-2/qa/m11-facing-actor0-attack-contact-p50-576x1024.png) and
+  [actor 1 contact](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/voltwig-contact50-2/qa/m11-facing-actor1-attack-contact-p50-576x1024.png)
+- [p68 directory](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/voltwig-contact68-2/qa/):
+  [actor 0 contact](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/voltwig-contact68-2/qa/m11-facing-actor0-attack-contact-p68-576x1024.png) and
+  [actor 1 contact](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/voltwig-contact68-2/qa/m11-facing-actor1-attack-contact-p68-576x1024.png)
+- [Real Release Cycle caption lifecycle process](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/caption-release-cycle-1/process.json): PASS
+
+The original source p50/p68 process PIDs were not retained. Final compiled redos below
+have complete process records.
+
+## Current Android candidate
+
+- [Final-source README](../../../build/android/README-0.8.11-facing-integration-b4fcd709b1c2.md)
+- [Final-source APK](../../../build/android/PrintForge-Legends-0.8.11-facing-integration-arm64-b4fcd709b1c2.apk)
+- [Full static APK audit](../../../build/evidence/m11-facing-release-20260910/audit-b4fcd709b1c2/apk-audit.json):
+  PASS with zero errors
+
+The APK is 282,461,896 bytes with SHA-256
+`9894AC653726AC4E3FB80240C826ECE22E50B634636E71C74F978CE1BC692ADF`.
+All six final compiled checks pass with isolated QA roots, exit code 0, clean process
+exit, and no unexpected errors/dialogs: roster PID `108028`, normal PID `41328`,
+Voltwig p50 PID `75220`, Voltwig p68 PID `121216`, cycle PID `127856`, and integration
+PID `122276`. [Complete compiled records](../../../build/evidence/m11-apk-b4fcd709b1c2/shipped-assets/build/evidence/facing-checks/)
+and [post-test integrity](../../../build/evidence/m11-apk-b4fcd709b1c2/post-test-integrity.json)
+pass. The final compiled normal and both Voltwig phases/actors pass read-only UI review
+at 576x1024 with no P0/P1; inherited P2 rival-status ellipsis remains. The
+non-overwriting APK DriveFS copy is byte/hash verified by
+[the local receipt](../../../build/evidence/m11-facing-release-20260910/drive-apk-b4fcd709b1c2.json).
+[The frozen README DriveFS receipt](../../../build/evidence/m11-facing-release-20260910/drive-readme-b4fcd709b1c2.json)
+confirms 4,482 bytes and SHA-256
+`E5F277A494B164E01010C4DB5B8E97A9BBB2531A17F2DB98002F2D1AAFD02DFD`.
+[Final process audit](../../../build/evidence/m11-facing-release-20260910/final-process-audit-b4fcd709b1c2.json)
+records zero Godot and WerFault processes. Cloud synchronization remains unconfirmed;
+no physical-device or cloud-sync claim is made.
+
+Accepted final compiled-image evidence includes
+[normal seat 0 settled](../../../build/evidence/m11-apk-b4fcd709b1c2/shipped-assets/build/evidence/facing-checks/normal/qa/m11-facing-seat0-settled-576x1024.png),
+[normal actor 0 contact](../../../build/evidence/m11-apk-b4fcd709b1c2/shipped-assets/build/evidence/facing-checks/normal/qa/m11-facing-actor0-attack-contact-p50-576x1024.png),
+[Voltwig actor 0 p50 contact](../../../build/evidence/m11-apk-b4fcd709b1c2/shipped-assets/build/evidence/facing-checks/voltwig-p50/qa/m11-facing-actor0-attack-contact-p50-576x1024.png), and
+[Voltwig actor 0 p68 contact](../../../build/evidence/m11-apk-b4fcd709b1c2/shipped-assets/build/evidence/facing-checks/voltwig-p68/qa/m11-facing-actor0-attack-contact-p68-576x1024.png).
+
 ## Process-cleanup correction
 
 The old `raw-filament-shortcache-3` Forward+ parse-failure process pair was
@@ -137,6 +192,10 @@ These displayed images remain durable diagnostic evidence, not current approval:
 - [Earlier failed settled readback](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/settled-576-qa2/m11-facing-seat0-settled-576x1024.png)
 - [Pre-fixed settled capture](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/settled-576-6/qa/m11-facing-seat0-settled-576x1024.png)
   and [pre-fixed actor-0 contact](../../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/settled-576-6/qa/m11-facing-actor0-attack-contact-576x1024.png)
+- [The compiled Voltwig contact capture from superseded APK candidate `1de81e4bb78e`](../../../build/evidence/m11-apk-1de81e4bb78e/shipped-assets/build/evidence/facing-checks/voltwig/qa/m11-facing-actor0-attack-contact-576x1024.png)
+  sampled the real late pose but used a stale hardcoded frame expectation and exposed
+  the caption-layer overlap. It is diagnostic only; it is superseded by the accepted
+  p50/p68 source captures above. The old APK and README must never be copied to Drive.
 
 The final training-viewer evidence proves actor 0 rear/contact frame 7 and actor
 1 front/contact frame 3. It does not yet prove the approved all-24 interim roster
