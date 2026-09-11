@@ -45,7 +45,7 @@ func _ready() -> void:
 	var project := _text("res://project.godot")
 	var export_config := _text("res://export_presets.cfg")
 	require(not project.contains("[admob_review]") and not project.contains("ReviewAdMobBanner") and not project.contains("[editor_plugins]"), "Project configuration has no advertising review singleton or plugin section.")
-	require(export_config.contains('version/name="0.8.8-deck-export-fix"') and export_config.contains("version/code=104"), "Android no-ad version and code are locked.")
+	require(export_config.contains('version/name="0.8.11-facing-integration"') and export_config.contains("version/code=107"), "Android no-ad version and code are locked.")
 	require(export_config.contains('package/unique_name="com.tak.printforge.legends.playtest"') and export_config.contains('package/name="PrintForge Legends Physical UI No-Ad Review"'), "Android no-ad package identity is locked.")
 	require(export_config.contains('custom_features="unified_playtest"') and not export_config.contains("android_review"), "Android export has no review-only custom feature.")
 	require(export_config.contains("gradle_build/use_gradle_build=false"), "Android export uses the standard Godot template.")
