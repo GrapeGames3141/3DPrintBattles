@@ -12,6 +12,7 @@ var fixture_creature := ""
 var text_scale_bps := 10000
 var high_contrast := false
 var reduced_motion := false
+var contact_progress := .50
 
 func require(value: bool, message: String) -> void:
 	if not value: failures.append(message); push_error(message)
@@ -61,6 +62,8 @@ func _ready() -> void:
 			fixture_creature = option.trim_prefix("--fixture=")
 		elif option.begins_with("--text-scale-bps="):
 			text_scale_bps = int(option.trim_prefix("--text-scale-bps="))
+		elif option.begins_with("--contact-progress="):
+			contact_progress = clampf(float(option.trim_prefix("--contact-progress=")), .42, .83)
 		elif option == "--high-contrast":
 			high_contrast = true
 		elif option == "--reduced-motion":
@@ -143,17 +146,9 @@ func _capture_attack(actor: int) -> void:
 	var receipt: Dictionary = accepted.get("receipt",{})
 	require(bool(accepted.get("ok",false)) and str(receipt.get("kind","")) == "attack", "actor %d produces a legal coordinator attack receipt" % actor)
 	var authority_signature := JSON.stringify(receipt)
-	shell._present_unified_battle_event(receipt); shell.render(); await get_tree().create_timer(.30).timeout; await _await_presented_frame()
+	shell._present_unified_battle_event(receipt); shell.render(); await get_tree().process_frame
 	var stage := shell.find_child("PhysicalBattlefieldStage",true,false) as PhysicalBattlefieldStage
-	var contact := stage.find_child("BattleContactPeakOverlay",true,false) as TextureRect if stage != null else null
-	var contact_atlas := contact.texture as AtlasTexture if contact != null else null
-	# Training has a fixed seat-0 viewer, so the physical stage must retain each
-	# authority actor: player Cinderpaw attacks rear-facing; rival Aquafin attacks
-	# front-facing. This deliberately avoids hotseat's lower-seat remap.
-	var presentation_actor := int(stage.event.get("actor", -1)) if stage != null else -1
 	var expected_card := _card_for_seat(actor)
-	var expected_frame := FACING.frame_for_creature(expected_card, actor if reduced_motion else presentation_actor, 0.0, "attack", .50)
-	var expected_region := FACING.safe_source_region(expected_frame)
 	if reduced_motion:
 		var settled := stage.find_child("LivingPrintSlot%d" % (actor * 3), true, false) as TextureRect if stage != null else null
 		require(stage != null and not shell.unified_battle_coordinator.presentation_active and settled != null and settled.visible, "Reduced-motion actor %d reaches a settled visible unit without claiming an attack flyover/contact overlay." % actor)
@@ -161,11 +156,44 @@ func _capture_attack(actor: int) -> void:
 		_save_capture(get_viewport().get_texture().get_image(), "m11-facing-actor%d-attack-reduced-motion" % actor, {"kind":"attack_reduced_motion","authority_actor":actor,"actor_card":expected_card,"receipt_serial":int(receipt.get("serial",-1)),"authority_signature":authority_signature,"fixture":fixture_creature,"text_scale_bps":text_scale_bps,"high_contrast":high_contrast,"reduced_motion":true,"width":width,"height":height})
 		await _dispose_shell(shell)
 		return
+	# Deterministic presentation-frame capture only: real Main/coordinator receipt
+	# ownership remains intact while the stage clock is temporarily sampled at the
+	# requested finite attack progress. Run Cycle covers real elapsed timing.
+	require(stage != null, "actor %d owns a mounted physical stage for deterministic presentation sampling" % actor)
+	if stage != null:
+		var active := stage._active_beat()
+		var active_progress := float(active.get("progress", -1.0))
+		var active_duration := float(active.get("duration", 0.0))
+		require(str((active.get("beat", {}) as Dictionary).get("kind", "")) == "attack" and active_duration > 0.0, "actor %d samples an active finite attack beat." % actor)
+		# Let the real stage contact signal request Main's one deferred truth refresh
+		# before freezing the visual clock. This does not acknowledge or alter the
+		# receipt; it only drains the existing presentation refresh path.
+		stage._event_elapsed += (.42 - active_progress) * active_duration
+		stage._process(0.0)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		stage = shell.find_child("PhysicalBattlefieldStage", true, false) as PhysicalBattlefieldStage
+		active = stage._active_beat() if stage != null else {}
+		active_progress = float(active.get("progress", -1.0))
+		active_duration = float(active.get("duration", 0.0))
+		stage.set_process(false)
+		stage._event_elapsed += (contact_progress - active_progress) * active_duration
+		stage._sync()
+	await _await_presented_frame()
+	var contact := stage.find_child("BattleContactPeakOverlay",true,false) as TextureRect if stage != null else null
+	var contact_atlas := contact.texture as AtlasTexture if contact != null else null
+	# Training has a fixed seat-0 viewer, so the physical stage must retain each
+	# authority actor: player Cinderpaw attacks rear-facing; rival Aquafin attacks
+	# front-facing. This deliberately avoids hotseat's lower-seat remap.
+	var presentation_actor := int(stage.event.get("actor", -1)) if stage != null else -1
+	var expected_frame := FACING.frame_for_creature(expected_card, actor if reduced_motion else presentation_actor, 0.0, "attack", contact_progress)
+	var expected_region := FACING.safe_source_region(expected_frame)
 	require(presentation_actor == actor, "training viewer retains authority actor %d as physical actor %d rather than remapping its battle direction" % [actor, presentation_actor])
 	var presentation_kind := "legacy selected presentation" if FACING.uses_legacy_art(expected_card) else "required inward"
-	require(stage != null and stage.attack_contact_reached() and contact != null and contact.visible and contact_atlas != null and contact_atlas.atlas != null and contact_atlas.atlas.resource_path == FACING.sprite_path_for(expected_card) and contact_atlas.region.position == expected_region.position, "authority actor %d / physical actor %d contact overlay uses %s's %s contact cell (frame=%d expected=%s actual=%s visible=%s reached=%s)" % [actor, presentation_actor, expected_card, presentation_kind, expected_frame, str(expected_region.position), str(contact_atlas.region.position if contact_atlas != null else Vector2(-1,-1)), str(contact.visible if contact != null else false), str(stage.attack_contact_reached() if stage != null else false)])
+	require(stage != null and stage.attack_contact_reached() and contact != null and contact.visible and contact_atlas != null and contact_atlas.atlas != null and contact_atlas.atlas.resource_path == FACING.sprite_path_for(expected_card) and contact_atlas.region.position == expected_region.position and is_equal_approx(float(stage._active_beat().get("progress", -1.0)), contact_progress), "authority actor %d / physical actor %d deterministic presentation frame retains real contact HUD refresh and samples %s's %s action cell at requested progress %.2f." % [actor, presentation_actor, expected_card, presentation_kind, contact_progress])
 	require(JSON.stringify(receipt) == authority_signature, "actor %d authority receipt remains unchanged through visual contact" % actor)
-	_save_capture(get_viewport().get_texture().get_image(), "m11-facing-actor%d-attack-contact" % actor, {"kind":"attack_contact","authority_actor":actor,"presentation_actor":presentation_actor,"actor_card":expected_card,"receipt_serial":int(receipt.get("serial",-1)),"contact_frame":expected_frame,"contact_region":str(expected_region),"authority_signature":authority_signature,"fixture":fixture_creature,"text_scale_bps":text_scale_bps,"high_contrast":high_contrast,"reduced_motion":reduced_motion,"width":width,"height":height})
+	_save_capture(get_viewport().get_texture().get_image(), "m11-facing-actor%d-attack-contact-p%02d" % [actor, int(contact_progress * 100.0)], {"kind":"attack_deterministic_presentation_frame","authority_actor":actor,"presentation_actor":presentation_actor,"actor_card":expected_card,"receipt_serial":int(receipt.get("serial",-1)),"requested_progress":contact_progress,"actual_progress":float(stage._active_beat().get("progress", -1.0)),"contact_frame":int(contact_atlas.region.position.x / 384.0) + int(contact_atlas.region.position.y / 512.0) * 4 if contact_atlas != null else -1,"contact_region":str(contact_atlas.region if contact_atlas != null else Rect2()),"authority_signature":authority_signature,"fixture":fixture_creature,"timing_note":"Deterministic presentation-frame capture; Run Cycle remains the real elapsed timing proof.","width":width,"height":height})
+	stage.set_process(true)
 	var deadline := Time.get_ticks_msec() + 3000
 	while shell.unified_battle_coordinator.presentation_active and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame

@@ -80,7 +80,11 @@ func _ready() -> void:
 		caption.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		caption.add_theme_font_size_override("font_size", 13)
-		caption.z_index = 22
+		# Captions remain native feedback and must stay readable over the root-level
+		# attack/deploy overlays (z 30/31) without changing combat geometry.
+		caption.z_index = 32
+		caption.add_theme_constant_override("outline_size", 2)
+		caption.add_theme_color_override("font_outline_color", Color("111820"))
 		add_child(caption)
 		_labels.append(caption)
 		var shadow := Panel.new(); shadow.name = "BattleGroundShadow%d" % index; shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE; shadow.z_index = 2; shadow.add_theme_stylebox_override("panel", _ground_shadow_style()); add_child(shadow); _shadows.append(shadow)
