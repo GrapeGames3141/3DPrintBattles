@@ -1,7 +1,8 @@
 # M11 facing-integration checkpoint — 2026-09-10
 
 Status: **23 available species UI-cleared and promoted in development; release build
-blocked.** The user approved the facing-inward direction on 2026-09-08 and on
+blocked. The reviewed stage integration is parked and the previous playable
+all-creature stage baseline is restored.** The user approved the facing-inward direction on 2026-09-08 and on
 2026-09-10 explicitly requested that it appear in the battlefield and be delivered in
 a new Android review build on Google Drive. The user then answered “yes do it,”
 explicitly approving programmatic background cleanup for the production facing family.
@@ -26,7 +27,8 @@ rival upper units show front/slight three-quarter-front views facing down-board.
 The original proof is a static three-creature composition concept, not runtime art.
 Source-art checkpoint `b823022` now holds 23 identity-preserving directional masters.
 All 23 available species now pass offline read-only UI review and have runtime sheets
-promoted in the development working tree. Pyraxis and Voidmanta passed lossless
+promoted in the development working tree. The fresh strict cache import proves all
+23 available sheets; its full-catalog failure is Voltwig only. Pyraxis and Voidmanta passed lossless
 whole-pose cross-cell reclaim: their toe/fin anatomy is preserved rather than cropped
 or deleted to force a cell boundary. The visual cleanup P0 findings for Runestag and
 Aquafin remain corrected and reviewed.
@@ -37,9 +39,14 @@ pixels at the same original `0.04` tolerance. This closes the previously recorde
 source/import alpha discrepancy; it does not substitute for lifecycle review.
 
 Actual Main public-FIFO capture PID `66612` passes at 576x1024 for partial raw printing
-with no early field occupant, and read-only UI review passes that bounded raw-printer
-state. Full both-seat print/awaken/deploy/idle/attack lifecycle evidence, 720x1280 and
-tall portrait review remain pending.
+with no early field occupant. The reviewed parked patch has final fixed-training-viewer
+Main/coordinator captures at 576x1024 (PID `53832`) and 720x1280 (PID `82732`): both
+physical seats print and settle, actor 0 uses rear contact frame 7, actor 1 uses front
+contact frame 3, receipt identity is unchanged, target captions remain readable, and
+the P1 contact-grounding correction passed read-only review. The existing real Release
+Cycle regression also passes after that correction (PID `99476`). These captures are
+evidence for the parked patch, not the restored default stage. Tall portrait, device,
+Android packaging and Drive delivery remain pending.
 
 Voltwig is the sole missing master. The image service blocked its unchanged prompt at
 output moderation three times; the last request was
@@ -50,8 +57,10 @@ approved**. Full 24-creature coverage with no fallback remains the release gate 
 the user explicitly grants that exception.
 
 The primary permits incremental working-tree integration and testing of candidates
-that have passed UI review. This does not authorize a final release claim, a Voltwig
-substitution or a 23-creature Android delivery. Latest delivered remains
+that have passed UI review. The exact reviewed runtime stage diff is preserved in
+[the parked integration record](../art/m11-facing-minis-20260910/PENDING-INTEGRATION.md)
+and is not active on the default stage. This does not authorize a final release claim,
+a Voltwig substitution or a 23-creature Android delivery. Latest delivered remains
 `0.8.10-physical-ui-polish` / code `106`; no APK, Drive artifact or version bump has
 occurred in this integration pass. The prior concept-only Drive receipt is
 `docs/art/m11-living-battles-20260908/FACING-DRIVE-DELIVERY.md`; it is not an APK.
@@ -67,10 +76,12 @@ result. The designer changes only this checkpoint and the UI reviewer remains re
 - [Pyraxis lossless cleanup — dark composite](../art/m11-facing-minis-20260910/cleaned/pyraxis-battle-facing-cleaned-v1-dark-composite.png)
 - [Voidmanta lossless cleanup — dark composite](../art/m11-facing-minis-20260910/cleaned/voidmanta-battle-facing-cleaned-v1-dark-composite.png)
 - [Actual Main 576 public FIFO partial-print capture](../../build/evidence/m11-facing-integration-20260910/writer-validation-dev/actual-main-576-qa/m11-b1-actual-fifo-print60-576x1024.png)
+- [Parked runtime-patch index, final 576/720 captures and superseded diagnostics](../art/m11-facing-minis-20260910/PENDING-INTEGRATION.md)
 
-These links expose the reviewed source collection, the two anatomy-reclaim proofs and
-the bounded actual-runtime image. They do not prove Voltwig, full lifecycle coverage,
-larger/tall portrait behavior, Android packaging or Drive delivery.
+These links expose the reviewed source collection, the two anatomy-reclaim proofs,
+bounded actual-runtime image, and the parked-patch final lifecycle capture index. They
+do not prove Voltwig/full-24 release coverage, tall portrait behavior, device behavior,
+Android packaging or Drive delivery.
 
 ## Player-facing feature contract
 
@@ -172,10 +183,10 @@ Current reusable approval/evidence paths are:
 - `build/evidence/m11-ui1-20260908/`
 - `build/evidence/m11-ui1-release-20260908/`
 
-Open gaps are Voltwig's missing directional master, complete 24-creature/both-seat
-lifecycle proof, full actual Main integration tests, 720/tall integrated no-P0/P1
-review, and `0.8.11-facing-integration` / code `107` Android/Drive delivery. No final
-release, full-facing, mechanics or ad claim is made. The approved static proof,
-23-master source checkpoint, 23 development promotions, focused 834/834 GPU pass,
-bounded 576 partial-print capture, earlier r7 captures and `0.8.10` APK do not close
-the full-24 release gate.
+Open gaps are Voltwig's missing directional master or a user-approved limited-release
+exception, full 24-creature coverage, tall/device validation, and
+`0.8.11-facing-integration` / code `107` Android/Drive delivery. No final release,
+full-facing, mechanics or ad claim is made. The approved static proof, 23-master
+source checkpoint, 23 development promotions, focused 834/834 GPU pass, reviewed
+parked-patch 576/720 lifecycle evidence, earlier r7 captures and `0.8.10` APK do not
+close the full-24 release gate.

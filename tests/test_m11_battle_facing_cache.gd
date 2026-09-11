@@ -53,10 +53,10 @@ func _validate_creature(definition: Dictionary) -> void:
 func _cell_edges_are_clear(image: Image, frame: int) -> bool:
 	var origin := Vector2i((frame % 4) * 384, (frame / 4) * 512)
 	for x in range(origin.x, origin.x + 384):
-		if image.get_pixel(x, origin.y).a > .04 or image.get_pixel(x, origin.y + 511).a > .04:
+		if image.get_pixel(x, origin.y).a > .04 or image.get_pixel(x, origin.y + 1).a > .04 or image.get_pixel(x, origin.y + 510).a > .04 or image.get_pixel(x, origin.y + 511).a > .04:
 			return false
 	for y in range(origin.y, origin.y + 512):
-		if image.get_pixel(origin.x, y).a > .04 or image.get_pixel(origin.x + 383, y).a > .04:
+		if image.get_pixel(origin.x, y).a > .04 or image.get_pixel(origin.x + 1, y).a > .04 or image.get_pixel(origin.x + 382, y).a > .04 or image.get_pixel(origin.x + 383, y).a > .04:
 			return false
 	return true
 

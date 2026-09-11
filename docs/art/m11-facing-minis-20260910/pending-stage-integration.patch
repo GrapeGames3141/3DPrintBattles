@@ -1,0 +1,231 @@
+diff --git a/scripts/ui/physical_battlefield_stage.gd b/scripts/ui/physical_battlefield_stage.gd
+index af1362a..1a87442 100644
+--- a/scripts/ui/physical_battlefield_stage.gd
++++ b/scripts/ui/physical_battlefield_stage.gd
+@@ -3,11 +3,12 @@ extends Control
+ ## Portrait battle plate.  The chassis owns static material; every value and
+ ## living print remains a native child anchored to its real slot.
+ 
+-const CACHE := preload("res://scripts/ui/creature_sprite_cache.gd")
++const FACING_CACHE := preload("res://scripts/ui/battle_facing_sprite_cache.gd")
+ const VFX := preload("res://scripts/ui/battle_move_vfx.gd")
+ const CHASSIS_PATH := "res://assets/ui/physical_ui/m11/battle-continuous-floor-master-v1.png"
+ const CARD_BACK := preload("res://assets/cards/support_card_back_source_v1.png")
+ const SCHEMATIC := preload("res://scripts/ui/battle_wireframe.gdshader")
++const RAW_FILAMENT := preload("res://assets/creatures/2d/battle-facing/battle_raw_filament.gdshader")
+ const PORTRAIT_PRESENTER := preload("res://scripts/ui/physical_portrait_plate_presenter.gd")
+ const DESIGN := Vector2(941, 1672)
+ const RIVAL_PRINTER := Rect2(18, 50, 254, 328)
+@@ -28,6 +29,8 @@ var _labels: Array[Label] = []
+ var _rival_backs: Array[TextureRect] = []
+ var _printer_clips: Array[Control] = []
+ var _printer_sprites: Array[TextureRect] = []
++var _printer_facing_atlases: Array[AtlasTexture] = []
++var _printer_filament_materials: Array[ShaderMaterial] = []
+ var _printer_schematic_clips: Array[Control] = []
+ var _printer_schematics: Array[TextureRect] = []
+ var _printer_fallbacks: Array[Label] = []
+@@ -38,10 +41,12 @@ var _impact_marks: Array[Panel] = []
+ var _scan_lines: Array[ColorRect] = []
+ var _deploy_sprite: TextureRect
+ var _deploy_atlas: AtlasTexture
++var _deploy_filament_material: ShaderMaterial
+ var _attack_sprite: TextureRect
+ var _attack_atlas: AtlasTexture
+ var _attack_overlay_index := -1
+ var _raw_texture_cache: Dictionary = {}
++var _facing_fallbacks: Dictionary = {}
+ var _elapsed := 0.0
+ var _event_elapsed := 0.0
+ var _event_serial := -1
+@@ -95,12 +100,16 @@ func _ready() -> void:
+ 		var chamber := Control.new(); chamber.name = "BattlePrinterClip%d" % seat; chamber.clip_contents = true; chamber.mouse_filter = Control.MOUSE_FILTER_IGNORE; add_child(chamber); _printer_clips.append(chamber)
+ 		var solid_clip := Control.new(); solid_clip.name = "BattlePrinterSolidClip%d" % seat; solid_clip.clip_contents = true; solid_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE; chamber.add_child(solid_clip)
+ 		var raw := TextureRect.new(); raw.name = "BattlePrinterSolidRaw%d" % seat; raw.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; raw.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; raw.mouse_filter = Control.MOUSE_FILTER_IGNORE; solid_clip.add_child(raw); _printer_sprites.append(raw)
++		_printer_facing_atlases.append(AtlasTexture.new())
++		var filament_material := ShaderMaterial.new(); filament_material.shader = RAW_FILAMENT; _printer_filament_materials.append(filament_material)
+ 		var schematic_clip := Control.new(); schematic_clip.name = "BattlePrinterSchematicClip%d" % seat; schematic_clip.clip_contents = true; schematic_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE; schematic_clip.z_index = 2; chamber.add_child(schematic_clip); _printer_schematic_clips.append(schematic_clip)
+ 		var schematic := TextureRect.new(); schematic.name = "BattlePrinterSchematic%d" % seat; schematic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; schematic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; schematic.mouse_filter = Control.MOUSE_FILTER_IGNORE; var material := ShaderMaterial.new(); material.shader = SCHEMATIC; schematic.material = material; schematic_clip.add_child(schematic); _printer_schematics.append(schematic)
+ 		var scan := ColorRect.new(); scan.name = "BattlePrinterScanLine%d" % seat; scan.color = Color("7fefff"); scan.mouse_filter = Control.MOUSE_FILTER_IGNORE; scan.z_index = 4; chamber.add_child(scan); _scan_lines.append(scan)
+ 		var fallback := Label.new(); fallback.name = "BattlePrinterArtFallback%d" % seat; fallback.text = "PRINT ART\nUNAVAILABLE"; fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; fallback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; fallback.add_theme_font_size_override("font_size", 10); fallback.add_theme_color_override("font_color", Color("9af4ff")); fallback.tooltip_text = "This printed item has no approved battle art. The checked battle continues."; fallback.accessibility_name = fallback.tooltip_text; fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE; fallback.z_index = 5; chamber.add_child(fallback); _printer_fallbacks.append(fallback)
+ 	_deploy_sprite = TextureRect.new(); _deploy_sprite.name = "BattleDeploySprite"; _deploy_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; _deploy_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; _deploy_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE; _deploy_sprite.z_index = 30; add_child(_deploy_sprite)
+ 	_deploy_atlas = AtlasTexture.new()
++	_deploy_filament_material = ShaderMaterial.new()
++	_deploy_filament_material.shader = RAW_FILAMENT
+ 	_attack_sprite = TextureRect.new(); _attack_sprite.name = "BattleContactPeakOverlay"; _attack_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; _attack_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; _attack_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE; _attack_sprite.z_index = 31; add_child(_attack_sprite)
+ 	_attack_atlas = AtlasTexture.new()
+ 	queue_redraw()
+@@ -264,21 +273,35 @@ func _sync() -> void:
+ 			_shadows[index].position = rect.position + Vector2(rect.size.x * .20, rect.size.y * .82)
+ 			_shadows[index].size = Vector2(rect.size.x * .60, maxf(3.0, rect.size.y * .08))
+ 			_shadows[index].visible = unit is Dictionary
++			# Attack contact temporarily moves this existing ground shadow with the
++			# flyover. Restore its normal anchor/material every sync before that
++			# presentation-only override can apply.
++			_shadows[index].modulate = Color.WHITE
+ 			_focus_marks[index].position = rect.position + Vector2(3,3); _focus_marks[index].size = rect.size - Vector2(6,6); _focus_marks[index].visible = _focus_seat == seat and _focus_slot == slot
+ 			_selection_marks[index].position = rect.position + Vector2(8,8); _selection_marks[index].size = rect.size - Vector2(16,16); _selection_marks[index].visible = _selected_seat == seat and _selected_slot == slot
+ 			_impact_marks[index].position = rect.position + rect.size * .23; _impact_marks[index].size = rect.size * .54; _impact_marks[index].visible = false
+ 			if unit is Dictionary:
+ 				var id := str((unit as Dictionary).get("card_id", "mossmunk"))
+ 				var atlas := _living_atlases[index]
+-				atlas.atlas = CACHE.texture_for_creature(id)
+-				var frame := int(floor(_elapsed * 6.0)) % 4
+-				atlas.region = CACHE.safe_source_region(frame)
++				var active_kind := str((active_beat.get("beat", {}) as Dictionary).get("kind", ""))
++				var facing_texture := FACING_CACHE.texture_for_creature(id)
++				if facing_texture == null:
++					_report_facing_fallback(id, seat, active_kind if not active_kind.is_empty() else "idle")
++					_sprites[index].visible = false
++					var facing_status := "%s facing art unavailable for seat %d during %s." % [str((unit as Dictionary).get("name", "Print")), seat, active_kind if not active_kind.is_empty() else "idle"]
++					_labels[index].text = "%s  FACING ART UNAVAILABLE" % str((unit as Dictionary).get("name", "Print"))
++					_labels[index].tooltip_text = facing_status
++					_labels[index].accessibility_name = facing_status
++					_labels[index].visible = true
++					continue
++				atlas.atlas = facing_texture
++				var attacking_unit := active_kind == "attack" and seat == int(event.get("actor", -1)) and slot == int(event.get("source_slot", event.get("slot", -1)))
++				atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.frame_for(seat, _elapsed, active_kind if attacking_unit else "", float(active_beat.get("progress", 1.0))))
+ 				_sprites[index].texture = atlas
+ 				_sprites[index].position = _event_offset(seat, slot, rect.size)
+ 				_sprites[index].scale = Vector2.ONE * _presentation_scale(id)
+ 				_sprites[index].pivot_offset = rect.size * .5
+ 				_sprites[index].modulate = Color.WHITE
+-				var active_kind := str((active_beat.get("beat", {}) as Dictionary).get("kind", ""))
+ 				if active_kind == "attack" and seat == 1 - int(event.get("actor", -1)) and slot == int(event.get("target_slot", -2)):
+ 					var hit_p := float(active_beat.get("progress", 0.0))
+ 					if hit_p >= .38 and hit_p < .78:
+@@ -288,6 +311,8 @@ func _sync() -> void:
+ 					if bool(event.get("defeated", false)) and hit_p >= .55: _sprites[index].modulate.a = clampf(1.0 - (hit_p - .55) / .17, 0.0, 1.0)
+ 				_sprites[index].visible = index != _attack_overlay_index
+ 				_labels[index].text = "%s  %d HP" % [str((unit as Dictionary).get("name", "Print")), int((unit as Dictionary).get("hp", 0))]
++				_labels[index].tooltip_text = _labels[index].text
++				_labels[index].accessibility_name = _labels[index].text
+ 				_labels[index].visible = true
+ 			else:
+ 				_sprites[index].visible = false
+@@ -331,7 +356,21 @@ func _sync() -> void:
+ 		_scan_lines[seat].position = Vector2(0, maxf(0.0, cut - 2.0)); _scan_lines[seat].size = Vector2(chamber_size.x, 3); _scan_lines[seat].visible = visible and cut > 1.0
+ 		_printer_fallbacks[seat].visible = false
+ 		if visible:
+-			var raw_texture := _raw_texture_for(preview_id)
++			var creature := Catalog.creature(preview_id)
++			var raw_texture: Texture2D = null
++			if not creature.is_empty():
++				var facing_texture := FACING_CACHE.texture_for_creature(preview_id)
++				if facing_texture != null:
++					var printer_atlas := _printer_facing_atlases[seat]
++					printer_atlas.atlas = facing_texture
++					printer_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.raw_frame_for(seat))
++					raw_texture = printer_atlas
++					_printer_sprites[seat].material = _printer_filament_materials[seat]
++				else:
++					_report_facing_fallback(preview_id, seat, "print")
++			else:
++				raw_texture = _raw_texture_for(preview_id)
++				_printer_sprites[seat].material = null
+ 			if raw_texture == null:
+ 				_printer_sprites[seat].visible = false; _printer_schematics[seat].visible = false; _scan_lines[seat].visible = false; _printer_fallbacks[seat].visible = true
+ 			else:
+@@ -402,9 +441,30 @@ func _sync_deploy_overlay() -> void:
+ 	rect.position.y -= sin(travel * PI) * minf(source.size.y, target_rect.size.y) * .68
+ 	_deploy_sprite.position = rect.position; _deploy_sprite.size = rect.size; _deploy_sprite.visible = true
+ 	var card_id := str(beat.get("card_id", ""))
+-	if p < .36: _deploy_sprite.texture = _raw_texture_for(card_id)
++	var creature := Catalog.creature(card_id)
++	if p < .36 and not creature.is_empty():
++		var raw_facing_texture := FACING_CACHE.texture_for_creature(card_id)
++		if raw_facing_texture == null:
++			_report_facing_fallback(card_id, actor, "deploy_raw")
++			_deploy_sprite.visible = false
++			return
++		_deploy_atlas.atlas = raw_facing_texture
++		_deploy_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.raw_frame_for(actor))
++		_deploy_sprite.texture = _deploy_atlas
++		_deploy_sprite.material = _deploy_filament_material
++	elif p < .36:
++		_deploy_sprite.texture = _raw_texture_for(card_id)
++		_deploy_sprite.material = null
+ 	else:
+-		_deploy_atlas.atlas = CACHE.texture_for_creature(card_id); _deploy_atlas.region = CACHE.safe_source_region(4 + int(floor(_elapsed * 6.0)) % 4); _deploy_sprite.texture = _deploy_atlas
++		var facing_texture := FACING_CACHE.texture_for_creature(card_id)
++		if facing_texture == null:
++			_report_facing_fallback(card_id, actor, "deploy_awaken")
++			_deploy_sprite.visible = false
++			return
++		_deploy_atlas.atlas = facing_texture
++		_deploy_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.frame_for(actor, _elapsed, "deploy", p))
++		_deploy_sprite.texture = _deploy_atlas
++		_deploy_sprite.material = null
+ 	_deploy_sprite.modulate = Color.WHITE; _deploy_sprite.scale = Vector2.ONE * (1.0 + sin(p * PI) * .08)
+ 
+ func _sync_attack_overlay() -> void:
+@@ -426,21 +486,35 @@ func _sync_attack_overlay() -> void:
+ 	if p >= .94: return
+ 	var source_rect := _rect((PLAYER_SLOTS if actor == 0 else RIVAL_SLOTS)[source_slot])
+ 	var target_rect := _rect(RIVAL_PRINTER if actor == 0 else PLAYER_PRINTER) if target_slot < 0 else _rect((RIVAL_SLOTS if actor == 0 else PLAYER_SLOTS)[clampi(target_slot, 0, 2)])
+-	# Keep the contact clearly inside the target field but bias the root overlay
+-	# away from the bottom native name/HP strip. Rects are already stage-scaled,
+-	# so this remains the same physical relationship at both portrait sizes.
+-	var contact_center := target_rect.get_center() - Vector2(target_rect.size.x * .08, target_rect.size.y * .42)
++	# Creature contact belongs at the target's physical center. Printer targets
++	# retain their existing elevated reach so their internal hardware remains the
++	# contact point instead of the machine's base.
++	var contact_center := target_rect.get_center()
++	if target_slot < 0:
++		contact_center -= Vector2(target_rect.size.x * .08, target_rect.size.y * .42)
+ 	var contact_size := source_rect.size * 1.08
+ 	var travel := p / .48 if p < .48 else (1.0 - p) / .46
+ 	var attack_origin := source_rect.get_center() - contact_size * .5
+-	_attack_sprite.position = attack_origin.lerp(contact_center - contact_size * .5, clampf(travel, 0.0, 1.0))
++	var attack_position := attack_origin.lerp(contact_center - contact_size * .5, clampf(travel, 0.0, 1.0))
++	# The contact sprite is a root overlay, not a chassis child. Keep creature
++	# target contact within the battlefield slot span so it cannot enter either
++	# printer or furniture. Printer-target attacks retain their intended reach.
++	if target_slot >= 0:
++		var battle_span := _rect(Rect2(0, RIVAL_SLOTS[0].position.y + 10.0, DESIGN.x, PLAYER_SLOTS[2].end.y - RIVAL_SLOTS[0].position.y - 10.0))
++		var max_position := battle_span.end - contact_size
++		attack_position = Vector2(clampf(attack_position.x, battle_span.position.x, max_position.x), clampf(attack_position.y, battle_span.position.y, max_position.y))
++	_attack_sprite.position = attack_position
+ 	_attack_sprite.size = contact_size
+ 	var players: Array = snapshot.get("players", []) if snapshot.get("players", []) is Array else []
+ 	var actor_slots: Array = (players[actor] as Dictionary).get("slots", []) if actor < players.size() and players[actor] is Dictionary else []
+ 	var unit: Dictionary = actor_slots[source_slot] if source_slot < actor_slots.size() and actor_slots[source_slot] is Dictionary else {}
+ 	var card_id := str(unit.get("card_id", event.get("card_id", "mossmunk")))
+-	_attack_atlas.atlas = CACHE.texture_for_creature(card_id)
+-	_attack_atlas.region = CACHE.safe_source_region(4 + int(floor(_elapsed * 6.0)) % 4)
++	var facing_texture := FACING_CACHE.texture_for_creature(card_id)
++	if facing_texture == null:
++		_report_facing_fallback(card_id, actor, "attack_contact")
++		return
++	_attack_atlas.atlas = facing_texture
++	_attack_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.frame_for(actor, _elapsed, "attack", p))
+ 	_attack_sprite.texture = _attack_atlas
+ 	_attack_sprite.modulate = Color("ffffff") if not reduced else Color("ffe5a8")
+ 	_attack_sprite.visible = true
+@@ -448,6 +522,11 @@ func _sync_attack_overlay() -> void:
+ 	if _attack_overlay_index >= 0 and _attack_overlay_index < _sprites.size():
+ 		_sprites[_attack_overlay_index].visible = false
+ 		_labels[_attack_overlay_index].visible = false
++		var shadow := _shadows[_attack_overlay_index]
++		shadow.position = attack_position + Vector2(contact_size.x * .20, contact_size.y * .82)
++		shadow.size = Vector2(contact_size.x * .60, maxf(3.0, contact_size.y * .08))
++		shadow.modulate = Color(1.0, 1.0, 1.0, lerpf(1.0, .45, clampf(travel, 0.0, 1.0)))
++		shadow.visible = true
+ 
+ func _event_offset(seat: int, slot: int, slot_size: Vector2) -> Vector2:
+ 	if str(event.get("kind", "")) != "attack" or bool(event.get("reduced_motion", false)): return Vector2.ZERO
+@@ -466,6 +545,13 @@ func _event_offset(seat: int, slot: int, slot_size: Vector2) -> Vector2:
+ 	var direction := (target_rect.get_center() - source_rect.get_center()).normalized()
+ 	return direction * slot_size.y * sin(progress * PI) * .52
+ 
++func _report_facing_fallback(creature_id: String, seat: int, beat: String) -> void:
++	var key := "%s:%d:%s" % [creature_id, seat, beat]
++	if _facing_fallbacks.has(key):
++		return
++	_facing_fallbacks[key] = true
++	push_error("Battle-facing presentation fallback: creature=%s seat=%d beat=%s. The accepted receipt will finish without legacy side-view substitution." % [creature_id, seat, beat])
++
+ func _draw() -> void:
+ 	var fit := _fit()
+ 	draw_rect(Rect2(Vector2.ZERO, size), Color("07111b"), true)

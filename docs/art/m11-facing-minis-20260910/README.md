@@ -1,6 +1,6 @@
 # Facing-miniature production checkpoint — 2026-09-10
 
-Status: **23 source sheets generated; cleanup, registration and runtime validation in progress. No new Android build delivered yet.**
+Status: **23 sheets cleaned, registered, reviewed, and promoted as approved runtime candidates. The reviewed runtime stage patch is parked pending the Voltwig release decision. No APK was built or delivered.**
 
 The user approved inward-facing direction on September 8 and requested runtime integration plus Google Drive delivery on September 10. Earlier forward/rear evidence was concept-only; the playable game used side-biased creature sheets. This work integrates production front/rear poses through print, awaken, deploy, idle and attack.
 
@@ -14,8 +14,8 @@ The [implementation checkpoint](../../checkpoints/m11-facing-integration-2026091
 - Terra is sole cleanup/runtime writer; UI review is read-only. Original-resolution and phone-slot proofs precede final promotion.
 - Runestag’s first alpha extraction was rejected for translucent body material; revised spatially bounded cleanup preserves solid violet material and passed re-review.
 - Aquafin foot registration/material appearance remain under slot-size review.
-- Voltwig generation was rejected twice by the service (output moderation). No directional source exists. User was asked whether an explicitly limited interim 23-species release is acceptable; **no exception approved yet**.
-- Incremental development integration is allowed for approved candidates; full roster remains a release gate unless user approves an exception.
+- Voltwig generation failed three times at the service (output moderation). No directional source exists. Two retained request IDs are 6c95db58-8d7d-4977-bd63-d2ef49c3a50c and 475f1a9a-0c7e-4f16-8ea1-be8aad10b619. User was asked whether an explicitly limited interim 23-species release is acceptable; **no exception approved yet**.
+- The 23-candidate runtime stage integration is preserved as a [parked apply-ready patch](PENDING-INTEGRATION.md); the default stage remains on its prior playable all-creature path. Full roster remains a release gate unless user approves an exception.
 - Target 0.8.11-facing-integration/code107 remains subject to validation. Latest delivered APK is still 0.8.10-physical-ui-polish/code106.
 
 ## Durable image collection
@@ -48,7 +48,7 @@ The [common family prompt](directional-family-prompt.md) plus each species note 
 | voidmanta | [Source](voidmanta-directional-source-v1.png) | [Prompt](voidmanta-prompt-v1.md) | Green |
 | worldcoil | [Source](worldcoil-directional-source-v1.png) | [Prompt](worldcoil-prompt-v1.md) | Magenta |
 
-Candidates, dark/light proofs and provenance are under [cleaned](cleaned/). Sources/review assets are excluded from Godot imports by .gdignore. Runtime assets belong separately under assets/creatures/2d/battle-facing; candidate existence is not release approval.
+Candidates, dark/light proofs and provenance are under [cleaned](cleaned/). Sources/review assets are excluded from Godot imports by .gdignore. Runtime assets belong separately under assets/creatures/2d/battle-facing; candidate existence is not release approval. The [parked integration index](PENDING-INTEGRATION.md) links final and superseded actual-Main captures without presenting them as default-stage evidence.
 
 ## Earlier corrections and failed generation
 
