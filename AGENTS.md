@@ -1,6 +1,13 @@
 # PrintForge Legends project rules
 
-- This repository is the durable Windows Steam project for PrintForge Legends.
+- The active product target is the solo portrait-Android PrintForge team prototype:
+  tactile navy/brass/wood Workshop, animal/fantasy printed companions, and no humans,
+  mechs, or space theme. Steam and `backend/` files remain preserved historical or
+  future-platform scaffolding; do not delete or rewrite them to implement this target.
+- [The 2026-09-12 team prototype authority](docs/design/team-prototype-20260912.md)
+  and [its preproduction gate](docs/checkpoints/team-prototype-preproduction-20260912.md)
+  take precedence over conflicting earlier battle/platform proposals for this isolated
+  mode; they do not erase the historical mode or relax the production loop below.
 - Use Godot 4.7.1, GDScript, Forward+, deterministic integer combat, and catalog-driven data.
 - Never place credentials, Steam app IDs, Nakama keys, builds, imports, or save journals in Git.
 - `backend/` is authoritative-server scaffolding only; deployment configuration stays outside Git.
