@@ -1,0 +1,1146 @@
+{
+  "startedAt": "2026-09-12T18:47:29.655Z",
+  "nodePid": 115116,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "captureLabel": "v8-battle-core",
+  "states": [
+    "combined-second-plan",
+    "equipment-auto-fit",
+    "auto-replacement"
+  ],
+  "sizes": [
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    }
+  ],
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\team-prototype-20260912\\atlas-browser\\edge-profile-2026-09-12T18-47-29-652Z",
+  "sourceAssets": [
+    "BA-R1-team-autobattle-chassis-text-free-v1.png",
+    "TM-R1-team-support-workbench-text-free-v1.png",
+    "../../../assets/cards/support_card_back_source_v1.png",
+    "../../../assets/cards/support_cards_resources_landscape_v2.png",
+    "../../../assets/cards/support_cards_offense_landscape_v2.png",
+    "../../../assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "../../../assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-head-v1.png",
+    "../../../assets/creatures/2d/battle-facing/cinderpaw_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/aquafin_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/mossmunk_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/voltwig_sprite_sheet.png",
+    "EQ-R1-quadruped-armor-kit-raw-draft-v2.png"
+  ],
+  "cleanup": "persistent Edge context closed",
+  "evidenceScope": "offline native-HTML concept atlas only; not Godot/runtime/device evidence",
+  "browserTreeAtStart": {
+    "known": true,
+    "items": [
+      {
+        "pid": 67136,
+        "parent": 115116,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 108188,
+        "parent": 67136,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 124768,
+        "parent": 67136,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 117176,
+        "parent": 67136,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 118928,
+        "parent": 67136,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 92368,
+        "parent": 67136,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 111848,
+        "parent": 67136,
+        "name": "msedge.exe"
+      }
+    ]
+  },
+  "conceptChecks": [
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "combined-second-plan",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 14,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "coreState": "combined-second-plan",
+      "coreRecords": [
+        {
+          "seat": "rival",
+          "creature": "cinder",
+          "status": "Active"
+        },
+        {
+          "seat": "rival",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "rival",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "cinder",
+          "status": "Active"
+        },
+        {
+          "seat": "player",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        }
+      ],
+      "coreRecordMap": {
+        "rival:cinder": "Active",
+        "rival:aquafin": "Unspent",
+        "rival:mossmunk": "Unspent",
+        "player:cinder": "Active",
+        "player:aquafin": "Unspent",
+        "player:mossmunk": "Unspent"
+      },
+      "coreTextFits": true,
+      "coreTextDiagnostics": [
+        {
+          "text": "RIVAL HAND4 HIDDEN",
+          "scrollWidth": 194,
+          "clientWidth": 194,
+          "scrollHeight": 72,
+          "clientHeight": 72
+        },
+        {
+          "text": "6 − 3 − 2 = 1Aquafin + SuitEquip Cinderpaw",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 376,
+          "clientHeight": 376
+        },
+        {
+          "text": "CinderpawActive · 27 HP",
+          "scrollWidth": 381,
+          "clientWidth": 381,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "AQUAFINUNSPENT",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "MOSSMUNKUNSPENT",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "CinderpawActive · 27 HP",
+          "scrollWidth": 381,
+          "clientWidth": 381,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "AQUAFINUNSPENT",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "MOSSMUNKUNSPENT",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 441,
+          "clientWidth": 441,
+          "scrollHeight": 44,
+          "clientHeight": 44
+        },
+        {
+          "text": "1: Aquafin · 2: Suit",
+          "scrollWidth": 600,
+          "clientWidth": 600,
+          "scrollHeight": 44,
+          "clientHeight": 44
+        }
+      ],
+      "coreInputs": [
+        {
+          "kind": "hand",
+          "disabled": false
+        },
+        {
+          "kind": "hand",
+          "disabled": false
+        },
+        {
+          "kind": "hand",
+          "disabled": false
+        },
+        {
+          "kind": "hand",
+          "disabled": false
+        },
+        {
+          "kind": "run",
+          "disabled": false
+        }
+      ],
+      "coreHand": 4,
+      "coreCards": [
+        {
+          "id": "suit",
+          "label": "Full Suit · 2",
+          "aria": "Full Suit, cost 2"
+        },
+        {
+          "id": "gem",
+          "label": "Iron Gem · 2",
+          "aria": "Iron Gem, cost 2"
+        },
+        {
+          "id": "surge",
+          "label": "Forge Surge · 2",
+          "aria": "Forge Surge, cost 2"
+        },
+        {
+          "id": "raw",
+          "label": "Raw Filament +2",
+          "aria": "Raw Filament, cost 0, gain 2 filament"
+        }
+      ],
+      "coreGear": [],
+      "coreGearGeometry": true,
+      "coreQueues": {
+        "rival": "EMPTY",
+        "player": "1: Aquafin · 2: Suit"
+      },
+      "coreGeometry": true,
+      "duplicateStatusRows": 0,
+      "coreThirdBay": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 81.99468994140625,
+          "height": 48.0510139465332,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, cost 2",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, cost 2",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, cost 2",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, cost 0, gain 2 filament",
+          "width": 89.3687744140625,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Run Cycle",
+          "width": 106.50796508789062,
+          "height": 148.13177490234375,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 16.53,
+        "action": 0,
+        "primary": 0,
+        "heading": 16.54,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0,
+        "coreActive": 16.51,
+        "coreReserve": 16.53,
+        "coreHand": 16.53,
+        "coreSide": 16.56,
+        "corePrivate": 16.53
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 4,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_card_back_source_v1.png\")",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v8-battle-core/combined-second-plan-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "equipment-auto-fit",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 14,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "coreState": "equipment-auto-fit",
+      "coreRecords": [
+        {
+          "seat": "rival",
+          "creature": "cinder",
+          "status": "Active"
+        },
+        {
+          "seat": "rival",
+          "creature": "aquafin",
+          "status": "Ready"
+        },
+        {
+          "seat": "rival",
+          "creature": "mossmunk",
+          "status": "Queued"
+        },
+        {
+          "seat": "player",
+          "creature": "cinder",
+          "status": "Active"
+        },
+        {
+          "seat": "player",
+          "creature": "aquafin",
+          "status": "Ready"
+        },
+        {
+          "seat": "player",
+          "creature": "mossmunk",
+          "status": "Queued"
+        }
+      ],
+      "coreRecordMap": {
+        "rival:cinder": "Active",
+        "rival:aquafin": "Ready",
+        "rival:mossmunk": "Queued",
+        "player:cinder": "Active",
+        "player:aquafin": "Ready",
+        "player:mossmunk": "Queued"
+      },
+      "coreTextFits": true,
+      "coreTextDiagnostics": [
+        {
+          "text": "RIVAL HAND4 HIDDEN",
+          "scrollWidth": 194,
+          "clientWidth": 194,
+          "scrollHeight": 72,
+          "clientHeight": 72
+        },
+        {
+          "text": "Equip Cinderpaw+8 armor on fitMossmunk · 31 HPQueued",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 376,
+          "clientHeight": 376
+        },
+        {
+          "text": "CinderpawActive · 20 HP",
+          "scrollWidth": 381,
+          "clientWidth": 381,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "AquafinReady · 36 HP",
+          "scrollWidth": 254,
+          "clientWidth": 254,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "MOSSMUNKQUEUED",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "CinderpawActive · 20 HP",
+          "scrollWidth": 381,
+          "clientWidth": 381,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "AquafinReady · 36 HP",
+          "scrollWidth": 254,
+          "clientWidth": 254,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "MOSSMUNKQUEUED",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "1: Suit · 2: Mossmunk",
+          "scrollWidth": 441,
+          "clientWidth": 441,
+          "scrollHeight": 44,
+          "clientHeight": 44
+        },
+        {
+          "text": "1: Suit · 2: Mossmunk",
+          "scrollWidth": 600,
+          "clientWidth": 600,
+          "scrollHeight": 44,
+          "clientHeight": 44
+        }
+      ],
+      "coreInputs": [
+        {
+          "kind": "reserve",
+          "disabled": true
+        },
+        {
+          "kind": "reserve",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "run",
+          "disabled": true
+        }
+      ],
+      "coreHand": 4,
+      "coreCards": [
+        {
+          "id": "gem",
+          "label": "Iron Gem · 2",
+          "aria": "Iron Gem, cost 2 locked during resolution"
+        },
+        {
+          "id": "surge",
+          "label": "Forge Surge · 2",
+          "aria": "Forge Surge, cost 2 locked during resolution"
+        },
+        {
+          "id": "raw",
+          "label": "Raw Filament +2",
+          "aria": "Raw Filament, cost 0, gain 2 filament locked during resolution"
+        },
+        {
+          "id": "heated",
+          "label": "Heated Spool +3",
+          "aria": "Heated Spool, cost 0, gain 3 filament locked during resolution"
+        }
+      ],
+      "coreGear": [
+        {
+          "job": "equipment",
+          "target": "cinder",
+          "owner": "rival",
+          "filter": "url(\"#gear-alpha-mask\") drop-shadow(rgba(0, 0, 0, 0.733) 0px 4px 4px)"
+        },
+        {
+          "job": "equipment",
+          "target": "cinder",
+          "owner": "player",
+          "filter": "url(\"#gear-alpha-mask\") drop-shadow(rgba(0, 0, 0, 0.733) 0px 4px 4px)"
+        }
+      ],
+      "coreGearGeometry": true,
+      "coreQueues": {
+        "rival": "1: Suit · 2: Mossmunk",
+        "player": "1: Suit · 2: Mossmunk"
+      },
+      "coreGeometry": true,
+      "duplicateStatusRows": 0,
+      "coreThirdBay": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 81.99468994140625,
+          "height": 48.0510139465332,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Aquafin · 36 HP Ready locked during resolution",
+          "width": 170.04356384277344,
+          "height": 108.95642852783203,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Aquafin · 36 HP Ready locked during resolution",
+          "width": 170.04356384277344,
+          "height": 108.9564208984375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, cost 2 locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, cost 2 locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, cost 0, gain 2 filament locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Heated Spool, cost 0, gain 3 filament locked during resolution",
+          "width": 89.3687744140625,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Run Cycle locked during resolution",
+          "width": 106.50796508789062,
+          "height": 148.13177490234375,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 16.53,
+        "action": 0,
+        "primary": 0,
+        "heading": 16.54,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0,
+        "coreActive": 16.51,
+        "coreReserve": 16.51,
+        "coreHand": 16.53,
+        "coreSide": 16.56,
+        "corePrivate": 16.53
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 4,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_card_back_source_v1.png\")",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v8-battle-core/equipment-auto-fit-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "auto-replacement",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 13,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "coreState": "auto-replacement",
+      "coreRecords": [
+        {
+          "seat": "rival",
+          "creature": "cinder",
+          "status": "Active"
+        },
+        {
+          "seat": "rival",
+          "creature": "aquafin",
+          "status": "Ready"
+        },
+        {
+          "seat": "rival",
+          "creature": "mossmunk",
+          "status": "Ready"
+        },
+        {
+          "seat": "player",
+          "creature": "cinder",
+          "status": "Active"
+        },
+        {
+          "seat": "player",
+          "creature": "aquafin",
+          "status": "Defeated"
+        },
+        {
+          "seat": "player",
+          "creature": "mossmunk",
+          "status": "Ready"
+        }
+      ],
+      "coreRecordMap": {
+        "rival:cinder": "Active",
+        "rival:aquafin": "Ready",
+        "rival:mossmunk": "Ready",
+        "player:cinder": "Active",
+        "player:aquafin": "Defeated",
+        "player:mossmunk": "Ready"
+      },
+      "coreTextFits": true,
+      "coreTextDiagnostics": [
+        {
+          "text": "RIVAL HAND3 HIDDEN",
+          "scrollWidth": 194,
+          "clientWidth": 194,
+          "scrollHeight": 72,
+          "clientHeight": 72
+        },
+        {
+          "text": "Aquafin · 0 HPDefeatedCinderpaw auto-replacedLow-HP branch fixture",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 376,
+          "clientHeight": 376
+        },
+        {
+          "text": "CinderpawActive · 7 HP",
+          "scrollWidth": 381,
+          "clientWidth": 381,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "AquafinReady · 36 HP",
+          "scrollWidth": 254,
+          "clientWidth": 254,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "MossmunkReady · 31 HP",
+          "scrollWidth": 254,
+          "clientWidth": 254,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "CinderpawActive · 12 HP",
+          "scrollWidth": 381,
+          "clientWidth": 381,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "AQUAFINDEFEATED",
+          "scrollWidth": 216,
+          "clientWidth": 216,
+          "scrollHeight": 82,
+          "clientHeight": 82
+        },
+        {
+          "text": "MossmunkReady · 31 HP",
+          "scrollWidth": 254,
+          "clientWidth": 254,
+          "scrollHeight": 59,
+          "clientHeight": 59
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 441,
+          "clientWidth": 441,
+          "scrollHeight": 44,
+          "clientHeight": 44
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 600,
+          "clientWidth": 600,
+          "scrollHeight": 44,
+          "clientHeight": 44
+        }
+      ],
+      "coreInputs": [
+        {
+          "kind": "reserve",
+          "disabled": true
+        },
+        {
+          "kind": "reserve",
+          "disabled": true
+        },
+        {
+          "kind": "reserve",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "hand",
+          "disabled": true
+        },
+        {
+          "kind": "run",
+          "disabled": true
+        }
+      ],
+      "coreHand": 3,
+      "coreCards": [
+        {
+          "id": "gem",
+          "label": "Iron Gem · 2",
+          "aria": "Iron Gem, cost 2 locked during resolution"
+        },
+        {
+          "id": "raw",
+          "label": "Raw Filament +2",
+          "aria": "Raw Filament, cost 0, gain 2 filament locked during resolution"
+        },
+        {
+          "id": "heated",
+          "label": "Heated Spool +3",
+          "aria": "Heated Spool, cost 0, gain 3 filament locked during resolution"
+        }
+      ],
+      "coreGear": [],
+      "coreGearGeometry": true,
+      "coreQueues": {
+        "rival": "EMPTY",
+        "player": "EMPTY"
+      },
+      "coreGeometry": true,
+      "duplicateStatusRows": 0,
+      "coreThirdBay": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 81.99468994140625,
+          "height": 48.0510139465332,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Aquafin · 36 HP Ready locked during resolution",
+          "width": 170.04356384277344,
+          "height": 108.95642852783203,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Mossmunk · 31 HP Ready locked during resolution",
+          "width": 170.0435791015625,
+          "height": 108.95642852783203,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Mossmunk · 31 HP Ready locked during resolution",
+          "width": 170.0435791015625,
+          "height": 108.9564208984375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, cost 2 locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, cost 0, gain 2 filament locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Heated Spool, cost 0, gain 3 filament locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Run Cycle locked during resolution",
+          "width": 106.50796508789062,
+          "height": 148.13177490234375,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 16.53,
+        "action": 0,
+        "primary": 0,
+        "heading": 16.54,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0,
+        "coreActive": 16.51,
+        "coreReserve": 16.51,
+        "coreHand": 16.53,
+        "coreSide": 16.56,
+        "corePrivate": 16.53
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 3,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_card_back_source_v1.png\")",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v8-battle-core/auto-replacement-576x1024.png"
+    }
+  ],
+  "browserTreeAfterClose": {
+    "known": true,
+    "items": []
+  },
+  "finishedAt": "2026-09-12T18:47:42.320Z",
+  "userDataCleanup": "removed exact task-owned Edge profile after tracked browser descendants exited"
+}

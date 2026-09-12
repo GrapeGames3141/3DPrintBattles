@@ -1,0 +1,2040 @@
+{
+  "startedAt": "2026-09-12T18:14:05.912Z",
+  "nodePid": 99476,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "captureLabel": "v6-team-support",
+  "states": [
+    "team-empty",
+    "team-one",
+    "teaminvalid",
+    "teamvalid",
+    "supportkit",
+    "supportkit-excluded"
+  ],
+  "sizes": [
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    }
+  ],
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\team-prototype-20260912\\atlas-browser\\edge-profile-2026-09-12T18-14-05-909Z",
+  "sourceAssets": [
+    "BA-R1-team-autobattle-chassis-text-free-v1.png",
+    "TM-R1-team-support-workbench-text-free-v1.png",
+    "../../../assets/cards/support_card_back_source_v1.png",
+    "../../../assets/cards/support_cards_resources_landscape_v2.png",
+    "../../../assets/cards/support_cards_offense_landscape_v2.png",
+    "../../../assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "../../../assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-head-v1.png",
+    "../../../assets/creatures/2d/battle-facing/cinderpaw_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/aquafin_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/mossmunk_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/voltwig_sprite_sheet.png"
+  ],
+  "cleanup": "persistent Edge context closed",
+  "evidenceScope": "offline native-HTML concept atlas only; not Godot/runtime/device evidence",
+  "browserTreeAtStart": {
+    "known": true,
+    "items": [
+      {
+        "pid": 89048,
+        "parent": 99476,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 126780,
+        "parent": 89048,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 110072,
+        "parent": 89048,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 126624,
+        "parent": 89048,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 75664,
+        "parent": 89048,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 125700,
+        "parent": 89048,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 96096,
+        "parent": 89048,
+        "name": "msedge.exe"
+      }
+    ]
+  },
+  "conceptChecks": [
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "team-empty",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 4,
+      "teamArt": 0,
+      "teamCreatures": [
+        "",
+        "",
+        ""
+      ],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 4,
+      "kitCounts": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "First: empty · Reserve 1: emptyReserve 2: empty",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [
+        {
+          "text": "TEAM · 0 / 3 SELECTED",
+          "scrollWidth": 680,
+          "clientWidth": 680,
+          "scrollHeight": 43,
+          "clientHeight": 43,
+          "insideParent": true
+        },
+        {
+          "text": "First: empty · Reserve 1: emptyReserve 2: empty",
+          "scrollWidth": 687,
+          "clientWidth": 687,
+          "scrollHeight": 72,
+          "clientHeight": 72,
+          "insideParent": true
+        },
+        {
+          "text": "Choose three printed companions.Unprinted blueprints cannot be selected.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 79,
+          "clientHeight": 79,
+          "insideParent": true
+        },
+        {
+          "text": "0 / 3 selected · Ownership retained.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 39,
+          "clientHeight": 39,
+          "insideParent": true
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 206,
+          "clientWidth": 206,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Full Suit",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Iron Gem",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Forge Surge",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "4",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        }
+      ],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 153.0286865234375,
+          "height": 48.96918487548828,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "FIRST empty",
+          "width": 171.00001525878906,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 1 empty",
+          "width": 169.99575805664062,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 2 empty",
+          "width": 167.99679565429688,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, 3 ready cards",
+          "width": 85.00743865966797,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, 3 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, 3 ready cards",
+          "width": 88.00105285644531,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, 4 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Apply Team disabled",
+          "width": 207.05738830566406,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Cancel",
+          "width": 207.05740356445312,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.54,
+        "primary": 0,
+        "heading": 15.91,
+        "queue": 0,
+        "editorOrder": 16.52,
+        "editorEligibility": 16.54,
+        "editorStatus": 16.54,
+        "teamCaption": 16.55,
+        "kitName": 16.51,
+        "kitCount": 16.51,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/TM-R1-team-support-workbench-text-free-v1.png\")",
+        "card": "",
+        "kit": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_cards_resources_landscape_v2.png\")",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v6-team-support/team-empty-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "team-one",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 4,
+      "teamArt": 1,
+      "teamCreatures": [
+        "cinder",
+        "",
+        ""
+      ],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 4,
+      "kitCounts": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "First: Cinderpaw · Reserve 1: emptyReserve 2: empty",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [
+        {
+          "text": "TEAM · 1 / 3 SELECTED",
+          "scrollWidth": 680,
+          "clientWidth": 680,
+          "scrollHeight": 43,
+          "clientHeight": 43,
+          "insideParent": true
+        },
+        {
+          "text": "First: Cinderpaw · Reserve 1: emptyReserve 2: empty",
+          "scrollWidth": 687,
+          "clientWidth": 687,
+          "scrollHeight": 72,
+          "clientHeight": 72,
+          "insideParent": true
+        },
+        {
+          "text": "Choose two more printed companions.Unprinted blueprints cannot be selected.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 79,
+          "clientHeight": 79,
+          "insideParent": true
+        },
+        {
+          "text": "1 / 3 selected · Choose two more.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 39,
+          "clientHeight": 39,
+          "insideParent": true
+        },
+        {
+          "text": "Cinderpaw",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "EMPTY",
+          "scrollWidth": 206,
+          "clientWidth": 206,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Full Suit",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Iron Gem",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Forge Surge",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "4",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        }
+      ],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 153.0286865234375,
+          "height": 48.96918487548828,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "FIRST Cinderpaw",
+          "width": 171.00001525878906,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 1 empty",
+          "width": 169.99575805664062,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 2 empty",
+          "width": 167.99679565429688,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, 3 ready cards",
+          "width": 85.00743865966797,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, 3 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, 3 ready cards",
+          "width": 88.00105285644531,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, 4 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Apply Team disabled",
+          "width": 207.05738830566406,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Cancel",
+          "width": 207.05740356445312,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.54,
+        "primary": 0,
+        "heading": 15.91,
+        "queue": 0,
+        "editorOrder": 16.52,
+        "editorEligibility": 16.54,
+        "editorStatus": 16.54,
+        "teamCaption": 16.55,
+        "kitName": 16.51,
+        "kitCount": 16.51,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/TM-R1-team-support-workbench-text-free-v1.png\")",
+        "card": "",
+        "kit": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_cards_resources_landscape_v2.png\")",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v6-team-support/team-one-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "teaminvalid",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 4,
+      "teamArt": 3,
+      "teamCreatures": [
+        "cinder",
+        "cinder",
+        "mossmunk"
+      ],
+      "duplicateMarked": true,
+      "teamGeometry": true,
+      "kitFaces": 4,
+      "kitCounts": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "First: Cinderpaw · Reserve 1: CinderpawReserve 2: Mossmunk",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [
+        {
+          "text": "TEAM · DUPLICATE BLOCKED",
+          "scrollWidth": 680,
+          "clientWidth": 680,
+          "scrollHeight": 43,
+          "clientHeight": 43,
+          "insideParent": true
+        },
+        {
+          "text": "First: Cinderpaw · Reserve 1: CinderpawReserve 2: Mossmunk",
+          "scrollWidth": 687,
+          "clientWidth": 687,
+          "scrollHeight": 72,
+          "clientHeight": 72,
+          "insideParent": true
+        },
+        {
+          "text": "Blocked: Cinderpaw is selected twice.Choose three unique printed companions.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 79,
+          "clientHeight": 79,
+          "insideParent": true
+        },
+        {
+          "text": "Duplicate selection blocked.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 39,
+          "clientHeight": 39,
+          "insideParent": true
+        },
+        {
+          "text": "Cinderpaw",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "DUPLICATE",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Mossmunk",
+          "scrollWidth": 206,
+          "clientWidth": 206,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Full Suit",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Iron Gem",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Forge Surge",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "4",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        }
+      ],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 153.0286865234375,
+          "height": 48.96918487548828,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "FIRST Cinderpaw",
+          "width": 171.00001525878906,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 1 Cinderpaw duplicate",
+          "width": 169.99575805664062,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 2 Mossmunk",
+          "width": 167.99679565429688,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, 3 ready cards",
+          "width": 85.00743865966797,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, 3 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, 3 ready cards",
+          "width": 88.00105285644531,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, 4 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Apply Team disabled",
+          "width": 207.05738830566406,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Cancel",
+          "width": 207.05740356445312,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.54,
+        "primary": 0,
+        "heading": 15.91,
+        "queue": 0,
+        "editorOrder": 16.52,
+        "editorEligibility": 16.54,
+        "editorStatus": 16.54,
+        "teamCaption": 16.55,
+        "kitName": 16.51,
+        "kitCount": 16.51,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/TM-R1-team-support-workbench-text-free-v1.png\")",
+        "card": "",
+        "kit": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_cards_resources_landscape_v2.png\")",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v6-team-support/teaminvalid-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "teamvalid",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 4,
+      "teamArt": 3,
+      "teamCreatures": [
+        "cinder",
+        "aquafin",
+        "mossmunk"
+      ],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 4,
+      "kitCounts": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "First: Cinderpaw · Reserve 1: AquafinReserve 2: Mossmunk",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [
+        {
+          "text": "TEAM · 3 / 3 SELECTED",
+          "scrollWidth": 680,
+          "clientWidth": 680,
+          "scrollHeight": 43,
+          "clientHeight": 43,
+          "insideParent": true
+        },
+        {
+          "text": "First: Cinderpaw · Reserve 1: AquafinReserve 2: Mossmunk",
+          "scrollWidth": 687,
+          "clientWidth": 687,
+          "scrollHeight": 72,
+          "clientHeight": 72,
+          "insideParent": true
+        },
+        {
+          "text": "Eligible · Apply saves this order",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 79,
+          "clientHeight": 79,
+          "insideParent": true
+        },
+        {
+          "text": "3 / 3 unique prints · Team ready.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 39,
+          "clientHeight": 39,
+          "insideParent": true
+        },
+        {
+          "text": "Cinderpaw",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Aquafin",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Mossmunk",
+          "scrollWidth": 206,
+          "clientWidth": 206,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Full Suit",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Iron Gem",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Forge Surge",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "4",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        }
+      ],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 153.0286865234375,
+          "height": 48.96918487548828,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "FIRST Cinderpaw",
+          "width": 171.00001525878906,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 1 Aquafin",
+          "width": 169.99575805664062,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 2 Mossmunk",
+          "width": 167.99679565429688,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, 3 ready cards",
+          "width": 85.00743865966797,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, 3 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, 3 ready cards",
+          "width": 88.00105285644531,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, 4 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Apply Team",
+          "width": 207.05738830566406,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Cancel",
+          "width": 207.05740356445312,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.54,
+        "primary": 0,
+        "heading": 15.91,
+        "queue": 0,
+        "editorOrder": 16.52,
+        "editorEligibility": 16.54,
+        "editorStatus": 16.54,
+        "teamCaption": 16.55,
+        "kitName": 16.51,
+        "kitCount": 16.51,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/TM-R1-team-support-workbench-text-free-v1.png\")",
+        "card": "",
+        "kit": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_cards_resources_landscape_v2.png\")",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v6-team-support/teamvalid-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "supportkit",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 4,
+      "teamArt": 3,
+      "teamCreatures": [
+        "cinder",
+        "aquafin",
+        "mossmunk"
+      ],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 4,
+      "kitCounts": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "kitTallies": [
+        3,
+        2,
+        3,
+        3,
+        4
+      ],
+      "kitGeometry": true,
+      "folioText": "Raw Filament ×3 · Heated Spool ×2Full Suit ×3 · Iron Gem ×3 · Forge Surge ×4",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [
+        {
+          "text": "SUPPORT KIT · 15 / 15",
+          "scrollWidth": 680,
+          "clientWidth": 680,
+          "scrollHeight": 43,
+          "clientHeight": 43,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament ×3 · Heated Spool ×2Full Suit ×3 · Iron Gem ×3 · Forge Surge ×4",
+          "scrollWidth": 687,
+          "clientWidth": 687,
+          "scrollHeight": 72,
+          "clientHeight": 72,
+          "insideParent": true
+        },
+        {
+          "text": "Eligible: spells, equipment, and printer aids.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 79,
+          "clientHeight": 79,
+          "insideParent": true
+        },
+        {
+          "text": "Ready to apply.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 39,
+          "clientHeight": 39,
+          "insideParent": true
+        },
+        {
+          "text": "Cinderpaw",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Aquafin",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Mossmunk",
+          "scrollWidth": 206,
+          "clientWidth": 206,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Full Suit",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Iron Gem",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Forge Surge",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "4",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        }
+      ],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 153.0286865234375,
+          "height": 48.96918487548828,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "FIRST Cinderpaw",
+          "width": 171.00001525878906,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 1 Aquafin",
+          "width": 169.99575805664062,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 2 Mossmunk",
+          "width": 167.99679565429688,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, 3 ready cards",
+          "width": 85.00743865966797,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, 3 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, 3 ready cards",
+          "width": 88.00105285644531,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, 4 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Reset Support Kit",
+          "width": 104.99679565429688,
+          "height": 48.96917724609375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Apply Support Kit",
+          "width": 207.05738830566406,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Cancel",
+          "width": 207.05740356445312,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.54,
+        "primary": 0,
+        "heading": 15.91,
+        "queue": 0,
+        "editorOrder": 16.52,
+        "editorEligibility": 16.54,
+        "editorStatus": 16.54,
+        "teamCaption": 16.55,
+        "kitName": 16.51,
+        "kitCount": 16.51,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/TM-R1-team-support-workbench-text-free-v1.png\")",
+        "card": "",
+        "kit": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_cards_resources_landscape_v2.png\")",
+        "magazine": "none",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": false,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v6-team-support/supportkit-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "supportkit-excluded",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 4,
+      "teamArt": 3,
+      "teamCreatures": [
+        "cinder",
+        "aquafin",
+        "mossmunk"
+      ],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 4,
+      "kitCounts": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "kitTallies": [
+        3,
+        2,
+        3,
+        3,
+        4
+      ],
+      "kitGeometry": true,
+      "folioText": "Raw Filament ×3 · Heated Spool ×2Full Suit ×3 · Iron Gem ×3 · Forge Surge ×4",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [
+        {
+          "text": "SUPPORT KIT · 15 / 15",
+          "scrollWidth": 680,
+          "clientWidth": 680,
+          "scrollHeight": 43,
+          "clientHeight": 43,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament ×3 · Heated Spool ×2Full Suit ×3 · Iron Gem ×3 · Forge Surge ×4",
+          "scrollWidth": 687,
+          "clientWidth": 687,
+          "scrollHeight": 72,
+          "clientHeight": 72,
+          "insideParent": true
+        },
+        {
+          "text": "Eligible: spells, equipment, and printer aids.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 79,
+          "clientHeight": 79,
+          "insideParent": true
+        },
+        {
+          "text": "Cannot apply: Legacy Trap is not eligible for Solo Battle.",
+          "scrollWidth": 673,
+          "clientWidth": 673,
+          "scrollHeight": 39,
+          "clientHeight": 39,
+          "insideParent": true
+        },
+        {
+          "text": "Cinderpaw",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Aquafin",
+          "scrollWidth": 204,
+          "clientWidth": 204,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Mossmunk",
+          "scrollWidth": 206,
+          "clientWidth": 206,
+          "scrollHeight": 47,
+          "clientHeight": 47,
+          "insideParent": true
+        },
+        {
+          "text": "Raw Filament",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 139,
+          "clientWidth": 139,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Full Suit",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Iron Gem",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "3",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        },
+        {
+          "text": "Forge Surge",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 67,
+          "clientHeight": 67,
+          "insideParent": true
+        },
+        {
+          "text": "4",
+          "scrollWidth": 144,
+          "clientWidth": 144,
+          "scrollHeight": 34,
+          "clientHeight": 34,
+          "insideParent": true
+        }
+      ],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 153.0286865234375,
+          "height": 48.96918487548828,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "FIRST Cinderpaw",
+          "width": 171.00001525878906,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 1 Aquafin",
+          "width": 169.99575805664062,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "RESERVE 2 Mossmunk",
+          "width": 167.99679565429688,
+          "height": 138.99786376953125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw Filament, 3 ready cards",
+          "width": 85.00743865966797,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, 3 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, 3 ready cards",
+          "width": 88.00105285644531,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, 4 ready cards",
+          "width": 88.00106811523438,
+          "height": 152.0435791015625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Reset Support Kit",
+          "width": 104.99679565429688,
+          "height": 48.96917724609375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Apply Support Kit disabled",
+          "width": 207.05738830566406,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Cancel",
+          "width": 207.05740356445312,
+          "height": 65.00848388671875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.54,
+        "primary": 0,
+        "heading": 15.91,
+        "queue": 0,
+        "editorOrder": 16.52,
+        "editorEligibility": 16.54,
+        "editorStatus": 16.54,
+        "teamCaption": 16.55,
+        "kitName": 16.51,
+        "kitCount": 16.51,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/TM-R1-team-support-workbench-text-free-v1.png\")",
+        "card": "",
+        "kit": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_cards_resources_landscape_v2.png\")",
+        "magazine": "none",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": false,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v6-team-support/supportkit-excluded-576x1024.png"
+    }
+  ],
+  "browserTreeAfterClose": {
+    "known": true,
+    "items": []
+  },
+  "finishedAt": "2026-09-12T18:14:19.071Z",
+  "userDataCleanup": "removed exact task-owned Edge profile after tracked browser descendants exited"
+}

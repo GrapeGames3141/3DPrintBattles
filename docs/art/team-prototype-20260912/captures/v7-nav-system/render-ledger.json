@@ -1,0 +1,1011 @@
+{
+  "startedAt": "2026-09-12T18:13:43.686Z",
+  "nodePid": 123848,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "captureLabel": "v7-nav-system",
+  "states": [
+    "workshop-prototype-nav",
+    "preflight-error",
+    "recovery",
+    "focus-sheet",
+    "reduced-motion"
+  ],
+  "sizes": [
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    }
+  ],
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\team-prototype-20260912\\atlas-browser\\edge-profile-2026-09-12T18-13-43-681Z",
+  "sourceAssets": [
+    "BA-R1-team-autobattle-chassis-text-free-v1.png",
+    "TM-R1-team-support-workbench-text-free-v1.png",
+    "../../../assets/cards/support_card_back_source_v1.png",
+    "../../../assets/cards/support_cards_resources_landscape_v2.png",
+    "../../../assets/cards/support_cards_offense_landscape_v2.png",
+    "../../../assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "../../../assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-head-v1.png",
+    "../../../assets/creatures/2d/battle-facing/cinderpaw_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/aquafin_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/mossmunk_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/voltwig_sprite_sheet.png"
+  ],
+  "cleanup": "persistent Edge context closed",
+  "evidenceScope": "offline native-HTML concept atlas only; not Godot/runtime/device evidence",
+  "browserTreeAtStart": {
+    "known": true,
+    "items": [
+      {
+        "pid": 95488,
+        "parent": 123848,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 66620,
+        "parent": 95488,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 66004,
+        "parent": 95488,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 123236,
+        "parent": 95488,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 90652,
+        "parent": 95488,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 72288,
+        "parent": 95488,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 105480,
+        "parent": 95488,
+        "name": "msedge.exe"
+      }
+    ]
+  },
+  "conceptChecks": [
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "workshop-prototype-nav",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 6,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "workshop-prototype-nav",
+      "systemOwnerNames": [
+        "forge",
+        "team",
+        "kit",
+        "battle",
+        "settings",
+        "back"
+      ],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [
+        {
+          "name": "forge",
+          "scrollWidth": 457,
+          "clientWidth": 457,
+          "scrollHeight": 261,
+          "clientHeight": 261
+        },
+        {
+          "name": "team",
+          "scrollWidth": 196,
+          "clientWidth": 196,
+          "scrollHeight": 314,
+          "clientHeight": 314
+        },
+        {
+          "name": "kit",
+          "scrollWidth": 193,
+          "clientWidth": 193,
+          "scrollHeight": 237,
+          "clientHeight": 237
+        },
+        {
+          "name": "battle",
+          "scrollWidth": 219,
+          "clientWidth": 219,
+          "scrollHeight": 194,
+          "clientHeight": 194
+        },
+        {
+          "name": "settings",
+          "scrollWidth": 353,
+          "clientWidth": 353,
+          "scrollHeight": 327,
+          "clientHeight": 327
+        },
+        {
+          "name": "back",
+          "scrollWidth": 134,
+          "clientWidth": 134,
+          "scrollHeight": 79,
+          "clientHeight": 79
+        }
+      ],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Forge",
+          "width": 279.99468994140625,
+          "height": 159.991455078125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Team",
+          "width": 119.9936294555664,
+          "height": 191.99363708496094,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Support Kit",
+          "width": 117.99468994140625,
+          "height": 144.9659881591797,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Solo Battle",
+          "width": 133.99575805664062,
+          "height": 118.99893188476562,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Settings",
+          "width": 216.00001525878906,
+          "height": 199.99896240234375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Back",
+          "width": 81.99468994140625,
+          "height": 48.0510139465332,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 0,
+        "heading": 0,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 16.54,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/workshop-backplate-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v7-nav-system/workshop-prototype-nav-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "preflight-error",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "preflight-error",
+      "systemOwnerNames": [
+        "back",
+        "context"
+      ],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [
+        "TEAM SETUP",
+        "Choose 3 unique printed companionsand an eligible Support Kit before Solo Battle.",
+        "OPEN TEAM"
+      ],
+      "systemTextDiagnostics": [
+        {
+          "name": "native settings-header",
+          "scrollWidth": 253,
+          "clientWidth": 253,
+          "scrollHeight": 52,
+          "clientHeight": 52
+        },
+        {
+          "name": "native settings-body",
+          "scrollWidth": 624,
+          "clientWidth": 624,
+          "scrollHeight": 216,
+          "clientHeight": 216
+        },
+        {
+          "name": "context-label",
+          "scrollWidth": 196,
+          "clientWidth": 196,
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "name": "back",
+          "scrollWidth": 134,
+          "clientWidth": 134,
+          "scrollHeight": 79,
+          "clientHeight": 79
+        },
+        {
+          "name": "context",
+          "scrollWidth": 403,
+          "clientWidth": 403,
+          "scrollHeight": 154,
+          "clientHeight": 154
+        }
+      ],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back",
+          "width": 81.99468994140625,
+          "height": 48.05101013183594,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "OPEN TEAM",
+          "width": 246.96920776367188,
+          "height": 93.98828125,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 0,
+        "heading": 0,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 16.52,
+        "settingsHeader": 16.55,
+        "settingsBody": 16.53,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/ST-01-settings-instrument-text-free-v3.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v7-nav-system/preflight-error-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "recovery",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 3,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "recovery",
+      "systemOwnerNames": [
+        "back",
+        "continue"
+      ],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [
+        "Recovered Team and Kit preview.No legacy save mutation."
+      ],
+      "systemTextDiagnostics": [
+        {
+          "name": "native recovery-message",
+          "scrollWidth": 752,
+          "clientWidth": 752,
+          "scrollHeight": 237,
+          "clientHeight": 237
+        },
+        {
+          "name": "back",
+          "scrollWidth": 134,
+          "clientWidth": 134,
+          "scrollHeight": 79,
+          "clientHeight": 79
+        },
+        {
+          "name": "continue",
+          "scrollWidth": 288,
+          "clientWidth": 288,
+          "scrollHeight": 149,
+          "clientHeight": 149
+        }
+      ],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back",
+          "width": 81.99468994140625,
+          "height": 48.05101013183594,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Continue",
+          "width": 175.98301696777344,
+          "height": 91.032958984375,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 0,
+        "heading": 0,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 16.52,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 16.52
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/SY-02-recovery-ledger-text-free-v2.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v7-nav-system/recovery-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "focus-sheet",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "focus-sheet",
+      "systemOwnerNames": [
+        "back",
+        "context"
+      ],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [
+        "FOCUS ORDER",
+        "Forge → Team → Kit → Battle → SettingsFocus is shown with a cyan outline.",
+        "CLOSE"
+      ],
+      "systemTextDiagnostics": [
+        {
+          "name": "native settings-header",
+          "scrollWidth": 253,
+          "clientWidth": 253,
+          "scrollHeight": 52,
+          "clientHeight": 52
+        },
+        {
+          "name": "native settings-body",
+          "scrollWidth": 624,
+          "clientWidth": 624,
+          "scrollHeight": 216,
+          "clientHeight": 216
+        },
+        {
+          "name": "context-label",
+          "scrollWidth": 196,
+          "clientWidth": 196,
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "name": "back",
+          "scrollWidth": 134,
+          "clientWidth": 134,
+          "scrollHeight": 79,
+          "clientHeight": 79
+        },
+        {
+          "name": "context",
+          "scrollWidth": 403,
+          "clientWidth": 403,
+          "scrollHeight": 154,
+          "clientHeight": 154
+        }
+      ],
+      "focusProof": true,
+      "focusedOwner": "context",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "controls": [
+        {
+          "name": "Back",
+          "width": 81.99468994140625,
+          "height": 48.05101013183594,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "CLOSE",
+          "width": 246.96920776367188,
+          "height": 93.98828125,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 0,
+        "heading": 0,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 16.52,
+        "settingsHeader": 16.55,
+        "settingsBody": 16.53,
+        "settingsDial": 0,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/ST-01-settings-instrument-text-free-v3.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v7-nav-system/focus-sheet-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "reduced-motion",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 5,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "reduced-motion",
+      "systemOwnerNames": [
+        "back",
+        "dial",
+        "context"
+      ],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [
+        "MOTION",
+        "Presentation travel settles in place.Reduced motion is ON.",
+        "SAVESETTING"
+      ],
+      "systemTextDiagnostics": [
+        {
+          "name": "native settings-header",
+          "scrollWidth": 253,
+          "clientWidth": 253,
+          "scrollHeight": 52,
+          "clientHeight": 52
+        },
+        {
+          "name": "native settings-body",
+          "scrollWidth": 624,
+          "clientWidth": 624,
+          "scrollHeight": 216,
+          "clientHeight": 216
+        },
+        {
+          "name": "context-label",
+          "scrollWidth": 196,
+          "clientWidth": 196,
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "name": "back",
+          "scrollWidth": 134,
+          "clientWidth": 134,
+          "scrollHeight": 79,
+          "clientHeight": 79
+        },
+        {
+          "name": "dial",
+          "scrollWidth": 172,
+          "clientWidth": 172,
+          "scrollHeight": 160,
+          "clientHeight": 160
+        },
+        {
+          "name": "context",
+          "scrollWidth": 403,
+          "clientWidth": 403,
+          "scrollHeight": 154,
+          "clientHeight": 154
+        }
+      ],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "true",
+      "controls": [
+        {
+          "name": "Back",
+          "width": 81.99468994140625,
+          "height": 48.05101013183594,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Reduced motion on",
+          "width": 104.99681091308594,
+          "height": 97.9957275390625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "SAVE SETTING",
+          "width": 246.96920776367188,
+          "height": 93.98828125,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 0,
+        "heading": 0,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 16.52,
+        "settingsHeader": 16.55,
+        "settingsBody": 16.53,
+        "settingsDial": 16.48,
+        "recoveryMessage": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/ST-01-settings-instrument-text-free-v3.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v7-nav-system/reduced-motion-576x1024.png"
+    }
+  ],
+  "browserTreeAfterClose": {
+    "known": true,
+    "items": []
+  },
+  "finishedAt": "2026-09-12T18:13:56.125Z",
+  "userDataCleanup": "removed exact task-owned Edge profile after tracked browser descendants exited"
+}
