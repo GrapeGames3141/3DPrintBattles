@@ -1,6 +1,9 @@
 # Team prototype preproduction checkpoint — 2026-09-12
 
-Status: **M0 ATLAS COMPLETE, READ-ONLY REVIEW HAS NO P0; AWAITING HUMAN ATLAS APPROVAL. No Godot invocation, runtime edit, runtime-art promotion, runtime test, build, or export is authorized yet.**
+Status: **M0 APPROVED; M1 BATTLE CORE AUTHORIZED.** On 2026-09-12 the user replied
+“yeah do it” to the explicit request to approve the atlas at commit `ae8ad71` and
+begin Battle Core. This opens implementation, not runtime/device acceptance or
+release sign-off.
 
 Branch: `codex/printforge-team-prototype`; preserved baseline `d7a4a10`.
 Authorities: [solo prototype contract](../design/team-prototype-20260912.md),
@@ -89,13 +92,14 @@ carried interim exception. No new art generation is authorized merely by this no
 - Full current three-size normal registry: **PASS, 58 × 3 selected captures**.
 - Representative 150%/HC/RM family: **PASS, 3 × 3 selected captures**.
 - Final full-atlas read-only UI review: **PASS, no remaining reviewed P0**.
-- Human approval of this new full atlas: **PENDING**.
-- Godot/runtime/build authorization: **CLOSED**.
+- Human approval of this new full atlas: **PASS, 2026-09-12, “yeah do it”, candidate `ae8ad71`**.
+- Godot/runtime implementation authorization: **OPEN for M1–M3 within the contract; release gates remain**.
 - New Android APK or Google Drive release this M0 pass: **NONE**.
 
-A read-only agent review is not human approval. Show the indexed candidate and obtain
-the single full-atlas approval before starting M1. Approval must name this current
-v24b/v25 + v23c/v26b candidate; historical approvals do not substitute for it.
+The user approved the current v24b/v25 + v23c/v26b candidate after its no-P0
+read-only review. No further M0 approval is pending. Production equipment alpha,
+Voltwig facing, native accessibility, runtime correctness and device evidence remain
+implementation/release checks; this approval does not claim those checks passed.
 
 ## M1 — isolated deterministic Battle Core
 

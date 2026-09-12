@@ -1,6 +1,6 @@
 # PrintForge solo team prototype — approval atlas
 
-**M0 static visual review complete; awaiting your approval. This is not a playable build.**
+**M0 approved on 2026-09-12 (“yeah do it”), candidate `ae8ad71`; Battle Core authorized. This atlas is not a playable build.**
 
 The candidate follows the [solo prototype design](../../design/team-prototype-20260912.md):
 three unique printed companions, a 15-card Support Kit, one Active plus two Reserves,
@@ -27,8 +27,8 @@ The [checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md) and
 
 ## What approval covers
 
-Approve this screen family and its physical control placement as the direction for
-implementation. The user-approved battle loop is unchanged. This does **not** claim
+The user approved this screen family and its physical control placement as the
+implementation direction. The user-approved battle loop is unchanged. This does **not** claim
 working gameplay, animation playback, save safety, Android Back, real-device touch,
 or all-route native accessibility; those must be implemented and tested in M1–M3.
 

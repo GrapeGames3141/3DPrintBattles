@@ -1,10 +1,12 @@
 # M0 review record — solo Team prototype
 
 This is offline HTML/art authoring evidence, **not Godot, runtime, Android, or device
-acceptance**. The full current atlas now has no remaining reviewed P0; human approval
-is pending. Do not promote art or begin runtime/build work before that approval.
+acceptance**. The full current atlas has no remaining reviewed P0. On 2026-09-12
+the user approved candidate `ae8ad71` with “yeah do it” in direct response to the
+atlas/Battle Core approval request. M1 implementation may begin; runtime and release
+acceptance remain separate.
 
-## Final selected candidate — M0 ready for human approval
+## Final selected candidate — M0 human-approved
 
 The final read-only reviewer cleared the complete candidate:
 

@@ -1,6 +1,6 @@
 # PrintForge team prototype — screen-family authoring record
 
-Status: **M0 STATIC VISUAL REVIEW COMPLETE, NO P0; awaiting human approval. No runtime approval.**
+Status: **M0 APPROVED 2026-09-12, candidate `ae8ad71`; M1 implementation authorized. No runtime acceptance claimed.**
 Use [the selected-screen index](INDEX.md) to review the candidate and
 [the current checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md)
 for the authoritative remaining work. These HTML compositions over ImageGen art are
@@ -35,9 +35,9 @@ latest solo three-companion/15-Support/no-printer-HP contract on paper only.
   their physical materials. Earlier v22/v23 Print60 failures are historical only.
 
 The full current candidate is indexed: 174 normal plus nine accessibility images.
-The read-only review recommends it for the single human full-atlas approval. Historical
+The user approved it with “yeah do it” after the final no-P0 read-only review. Historical
 v1/v3/v5 and other diagnostic folders are not selected evidence; preserve them without
-claiming passes. This is static composition approval readiness, not runtime readiness.
+claiming passes. This is static composition approval, not runtime readiness.
 
 The [offline atlas](atlas.html) is an authoring viewer; its controls display fixture
 states, not tested gameplay. The [capture helper](render-atlas.cjs) checks static
@@ -113,7 +113,8 @@ native/runtime placement later, after approval.
 ## Approval boundary
 
 Two text-free masters passed scoped original-resolution substrate review. Their
-human approval and runtime promotion remain pending the complete atlas gate.
+human approval was recorded on 2026-09-12 for candidate `ae8ad71`; bounded runtime
+integration may proceed through the M1–M3 checkpoints.
 Dynamic identities, cards, values, text, states, and interaction owners remain native.
 
 The RGB armor drafts below are **not transparent production assets**. Only their
