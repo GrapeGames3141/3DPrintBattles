@@ -1,7 +1,8 @@
 # M1 bot and session implementation interface
 
-Primary decision-complete follow-on to the Rules interface. Not implemented or
-accepted yet. No new gameplay or human approval gate is introduced.
+Primary decision-complete follow-on to the Rules interface. Implemented and accepted
+on 2026-09-12; see the M1 Rules/Bot and Coordinator validation checkpoints for
+evidence. No new gameplay or human approval gate is introduced.
 
 ## Bot
 

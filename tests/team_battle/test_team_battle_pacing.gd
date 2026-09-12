@@ -41,6 +41,7 @@ func _test_all_starter_pairings() -> void:
 	var first_prints := []
 	var first_contacts := []
 	var replacements := []
+	var first_replacements := []
 	var supports := []
 	var swaps := []
 	var terminal_causes := {}
@@ -67,6 +68,8 @@ func _test_all_starter_pairings() -> void:
 				var first_print := -1
 				var first_contact := -1
 				var replacement_count := 0
+				var first_replacement := -1
+				var replacement_marks := []
 				var support_count := 0
 				var swap_count := 0
 				var trace_ok := true
@@ -103,7 +106,13 @@ func _test_all_starter_pairings() -> void:
 						var event: Dictionary = event_value
 						if str(event.type) == "attack_locked" and first_contact < 0:
 							first_contact = steps
-					replacement_count += replace_stage.get("events", []).size()
+					for event_value in replace_stage.get("events", []):
+						var event: Dictionary = event_value
+						if str(event.type) == "replacement":
+							replacement_count += 1
+							if first_replacement < 0:
+								first_replacement = steps
+							replacement_marks.append("%s:%d" % [str(event.seat), steps])
 					swap_count += swap_stage.get("events", []).size()
 					state = resolved.state
 				require(not trace_ok or not str(state.result).is_empty() or steps < MATCH_LIMIT, "pacing trace remains below the 500-cycle hard failure bound seed %d" % seed)
@@ -113,21 +122,23 @@ func _test_all_starter_pairings() -> void:
 					first_prints.append(first_print)
 					first_contacts.append(first_contact)
 					replacements.append(replacement_count)
+					first_replacements.append(first_replacement)
 					supports.append(support_count)
 					swaps.append(swap_count)
 					terminal_causes[state.result] = int(terminal_causes.get(state.result, 0)) + 1
 					if str(state.result) == "Draw":
 						draws += 1
-				print("TEAM_BATTLE_PACING match seed=%d pairing=%d-%d cycles=%d result=%s first_print=%d first_contact=%d replacements=%d supports=%d swaps=%d complete=%s" % [seed, player_index, rival_index, steps, str(state.result), first_print, first_contact, replacement_count, support_count, swap_count, trace_ok and not str(state.result).is_empty()])
+				print("TEAM_BATTLE_PACING match seed=%d pairing=%d-%d cycles=%d result=%s first_print=%d first_contact=%d replacements=%d replacement_cycles=%s supports=%d swaps=%d complete=%s" % [seed, player_index, rival_index, steps, str(state.result), first_print, first_contact, replacement_count, JSON.stringify(replacement_marks), support_count, swap_count, trace_ok and not str(state.result).is_empty()])
 
 	cycles.sort()
 	first_prints.sort()
 	first_contacts.sort()
+	first_replacements.sort()
 	require(completed_matches == 45, "all 45 bot matches terminate without harness timeout")
 	var median := _nearest_rank(cycles, 0.50)
 	var p95 := _nearest_rank(cycles, 0.95)
 	var longest: int = int(cycles.back()) if not cycles.is_empty() else -1
-	print("TEAM_BATTLE_PACING aggregate matches=%d median=%d p95=%d max=%d first_print_median=%d first_contact_median=%d replacements=%d supports=%d swaps=%d draws=%d terminal_causes=%s" % [completed_matches, median, p95, longest, _nearest_rank(first_prints, 0.50), _nearest_rank(first_contacts, 0.50), _sum(replacements), _sum(supports), _sum(swaps), draws, JSON.stringify(terminal_causes)])
+	print("TEAM_BATTLE_PACING aggregate matches=%d median=%d p95=%d max=%d first_print_median=%d first_contact_median=%d first_replacement_median=%d replacements=%d supports=%d swaps=%d draws=%d terminal_causes=%s" % [completed_matches, median, p95, longest, _nearest_rank(first_prints, 0.50), _nearest_rank(first_contacts, 0.50), _nearest_rank(first_replacements, 0.50), _sum(replacements), _sum(supports), _sum(swaps), draws, JSON.stringify(terminal_causes)])
 	completed_groups += 1
 
 

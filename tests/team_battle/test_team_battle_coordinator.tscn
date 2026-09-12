@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://tests/team_battle/test_team_battle_coordinator.gd" type="Script" id="1_coordinator"]
+
+[node name="TeamBattleCoordinatorTest" type="Node"]
+script = ExtResource("1_coordinator")

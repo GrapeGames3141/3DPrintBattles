@@ -43,6 +43,10 @@ All public request numerics are checked, not coerced from booleans/fractions.
 Restore accepts safe whole-number JSON numeric forms while preserving legacy
 top-level JSON values. Do not recursively normalize or rewrite unrelated fields.
 Only the prototype namespace and the relevant fingerprint projection normalize.
+A present top-level `schema_version` must be a safe positive integer no greater
+than the current supported v3 value31; reject wrong types and future schemas
+without replacing them. Missing schema on a clean source remains missing. The
+later adapter also honors GameManager's existing corrupt/backup read-only state.
 
 ## Actions
 
