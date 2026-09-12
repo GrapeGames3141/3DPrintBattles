@@ -6,8 +6,51 @@ complete atlas; full-atlas review and human approval remain pending, so they do 
 open the Godot/runtime/build gate.
 
 Authority: [team prototype design](../../design/team-prototype-20260912.md) and
+[atlas fixture registry](../../design/team-prototype-atlas-fixtures-20260912.md), with
+gate status in the
 [preproduction checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md).
 Generation briefs and edited-source provenance are in [PROMPTS.md](PROMPTS.md).
+
+## Durable progress
+
+Branch `codex/printforge-team-prototype` has committed rules and fixtures at `270c8d9`.
+The [offline atlas](atlas.html) and [capture script](render-atlas.cjs) exist and remain
+in progress. Source presence and a clean render ledger do not constitute visual PASS.
+
+The current first-session candidate is `v4-starter-forge-576f`: all seven selected
+576x1024 captures have the corrected front row, empty bed/nozzle sequence, and native
+ink treatment. Main self-review is positive; final read-only UI confirmation remains
+pending:
+
+- [starter choice](captures/v4-starter-forge-576f/starter-choice-576x1024.png)
+- [starter inspect](captures/v4-starter-forge-576f/starter-inspect-576x1024.png)
+- [voucher / empty bed](captures/v4-starter-forge-576f/starter-voucher-576x1024.png)
+- [print early](captures/v4-starter-forge-576f/starter-print-early-576x1024.png)
+- [print 60](captures/v4-starter-forge-576f/starter-print-60-576x1024.png)
+- [raw complete](captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png)
+- [awaken](captures/v4-starter-forge-576f/starter-awaken-576x1024.png)
+
+Terminal `v3-terminal-results2` geometry/material review passed for
+[Win](captures/v3-terminal-results2/win-result-m2-576x1024.png),
+[Loss](captures/v3-terminal-results2/loss-result-m2-576x1024.png), and
+[Draw](captures/v3-terminal-results2/draw-result-m2-576x1024.png). Loss copy has since
+been corrected in source, so its next recapture remains pending; the linked Loss image
+is geometry/material evidence, not current-copy approval.
+
+`v5-editor-nav-576c` is **not visually approved**. Its native ledger passes, but that
+does not excuse the empty Team/Kit art regression or incorrect Workshop/Settings
+ownership; UI corrections remain pending. Battle v3 states still have overlapping
+duplicate records, overflow, and missing gear and await a distribution fix.
+
+The [superseded `v1-canonical-final` folder](captures/v1-canonical-final/) is rejected
+historical diagnostic material, not the current candidate. The bounded
+[v1 populated geometry folder](captures/v1-populated-576f/) is likewise historical
+diagnostic evidence only. Full state coverage, 576/720/tall-150% families, complete
+read-only visual review, and human approval remain incomplete. No Godot, runtime,
+asset-integration, test, build, or export change is claimed.
+
+The two generated `C:` master intermediates were removed only after fresh size and
+SHA-256 comparisons matched the permanent committed `E:` masters listed below.
 
 ## Draft masters
 
@@ -19,6 +62,26 @@ Generation briefs and edited-source provenance are in [PROMPTS.md](PROMPTS.md).
 Both files were generated on 2026-09-12 with built-in ImageGen as edits of existing
 approved-family sources. Both are 941x1672 portrait PNGs and contain no intentional
 text, creature, card-face, HP, filament, queue, status, or button label content.
+
+## Unapproved equipment drafts
+
+| Draft | Dimensions / mode | Bytes | SHA-256 | Honest status |
+|---|---|---:|---|---|
+| [EQ-R1 quadruped armor raw draft v1](EQ-R1-quadruped-armor-kit-raw-draft-v1.png) | 1254x1254 RGB | 2,316,973 | `3F929AF4097EBA2C180C6D9506A31EA39BB835955E7B7B896C7A8AD73271F26E` | Subject/material direction PASS only; baked checkerboard; alpha failed |
+| [EQ-R1 quadruped armor extraction draft v2](EQ-R1-quadruped-armor-kit-raw-draft-v2.png) | 1254x1254 RGB | 2,201,271 | `99A51C4EFA77BDAB1A82AB5548FC19439CA2CED3283F7F05427357E42D78C36F` | Subject/material direction PASS only; targeted extraction failed alpha; checkerboard remains |
+
+Both were made with built-in ImageGen on 2026-09-12. Their durable `E:` copies freshly
+matched the generated `C:` originals by byte size and SHA-256, after which both `C:`
+intermediates were removed by exact path. The identity/material reference was
+`assets/armor/tiered/cinderpaw_tiered_armor_signature_green_alpha_v3.png`.
+`assets/armor/raw/full_suit_raw_print_alpha_v2.png` was rejected as a reusable source
+because it reads as humanoid/mech rather than animal/fantasy quadruped equipment.
+
+Neither RGB draft is an actual transparent cutout or runtime-approved asset. Read-only
+UI review passed only the quadruped subject/material direction; alpha failed. A
+possible native material mask awaits review in the actual printer chamber and is not
+approved by this record. Exact prompts and generation provenance are in
+[PROMPTS.md](PROMPTS.md).
 
 ## Ownership and reuse inventory
 
@@ -58,14 +121,26 @@ native/runtime placement later, after approval.
 
 - Two first-pass draft masters present: PASS.
 - Required screen family in the preproduction checkpoint: INCOMPLETE.
-- Empty/populated/error/recovery/Win/Loss/Draw and accessibility state coverage:
+- Full empty/populated/error/recovery/Win/Loss/Draw and accessibility state coverage:
   INCOMPLETE.
-- 576x1024, 720x1280, tall safe-top, 150% text, high contrast, and reduced-motion
-  capture family: NOT RUN; these are source masters, not runtime captures.
+- Basic battle geometry at `v1-populated-576f`: REVIEWED SUCCESSFULLY, bounded only.
+- Current first-session `v4-starter-forge-576f`: SELF-REVIEW POSITIVE; final UI
+  confirmation pending.
+- Terminal `v3-terminal-results2`: geometry/material PASS; corrected Loss-copy
+  recapture pending.
+- Editor/navigation `v5-editor-nav-576c`: SOURCE/LEDGER PRESENT; VISUAL APPROVAL FAILS
+  pending Team/Kit and ownership corrections.
+- Battle v3 states: SOURCE/LEDGER PRESENT; duplicate-record overlap, overflow, and
+  missing-gear corrections pending.
+- Complete 576x1024 and 720x1280 families, tall safe-top, 150% text, high contrast,
+  and reduced-motion coverage: INCOMPLETE.
 - Read-only original-resolution substrate review for the two masters: PASS, no P0.
+- Two EQ-R1 equipment drafts: subject/material direction PASS only; baked
+  checkerboards and alpha FAIL; chamber-mask review pending; runtime use blocked.
 - Full-atlas read-only UI review: PENDING on incomplete atlas.
 - User atlas approval: PENDING.
 - Runtime asset promotion/Godot/build authorization: BLOCKED.
 
-Full-atlas aesthetics remain pending human approval. Preserve these masters and provenance;
-do not slice, import, package, or represent them as approved runtime assets.
+Full-atlas aesthetics remain pending human approval. Preserve these masters and
+provenance; do not slice, import, package, or represent them or the current canonical
+bundle as approved runtime assets.

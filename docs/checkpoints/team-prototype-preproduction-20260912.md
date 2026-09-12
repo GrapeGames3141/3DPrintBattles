@@ -1,10 +1,12 @@
 # Team prototype preproduction checkpoint — 2026-09-12
 
-Status: **DESIGN AUTHORITY COMPLETE; M0 SCREEN ATLAS MISSING, SO GODOT/RUNTIME/ASSET
+Status: **DESIGN AUTHORITY COMPLETE; M0 SCREEN ATLAS IN PROGRESS AND INCOMPLETE, SO GODOT/RUNTIME/ASSET
 INTEGRATION, TEST, BUILD, AND EXPORT WORK REMAIN BLOCKED.**
 
-Authority: [solo team prototype](../design/team-prototype-20260912.md).
-Preparation baseline: branch `codex/printforge-team-prototype`, commit `d7a4a10`.
+Authority: [solo team prototype](../design/team-prototype-20260912.md) and
+[M0 atlas fixture registry](../design/team-prototype-atlas-fixtures-20260912.md).
+Current preparation: branch `codex/printforge-team-prototype`; committed rules and
+fixtures at `270c8d9` (historical branch baseline `d7a4a10`).
 
 ## User authority recorded
 
@@ -56,6 +58,44 @@ screen family in the existing tactile workshop materials:
 | TB-08 | Legal swap preserving unit identity and equipped/HP state |
 | TB-09 | Win, Loss, and simultaneous-final-KO Draw results |
 | TS-01 | Empty/error/recovery/disabled/focus/high-contrast/reduced-motion state sheet |
+
+### Finite M0 coverage checklist
+
+These are the coordinated atlas authoring IDs for the required rows above. `Present`
+means only that the WIP offline state exists; it is not visual approval or runtime
+evidence. `Planned` is the finite remaining M0 set, not a new product feature or
+approval gate.
+
+| Required coverage | Coordinated atlas states | Minimum completion shown | Current |
+|---|---|---|---|
+| Shared Workshop entry/navigation reuse | `workshop-prototype-nav` | One reused Workshop concept exposes only native Team, Support Kit, and Battle routes; Back returns here. Old 40-card, printer-HP, online, and ad routes are inaccessible in prototype navigation. No new title, icon, or Market work. | Source/capture present in `v5-editor-nav-576c`; not visually approved |
+| TP-01 starter choice | `starter-choice`, `starter-inspect` | Three approved animal/fantasy blueprints, Inspect, one selected starter, Confirm enabled/disabled. | Both sources present; selected `v4-starter-forge-576f` self-review positive, final UI confirmation pending |
+| TP-02 voucher print | `starter-voucher`, `starter-print-early`, `starter-print-60`, `starter-rawcomplete`, `starter-awaken` | Empty bed, one voucher, then early/60/raw/awaken presentation; no premature Team-ready receipt. | All selected states present in `v4-starter-forge-576f`; final UI confirmation pending |
+| TP-03 grant receipt | `guaranteedstarterreceipt` | Post-awaken starter Printed, two named preprinted commons, voucher consumed, Kit 15/15, idempotent acknowledgement. | Source present; current recapture/review pending |
+| TP-04 Team editor | `team-empty`, `team-one`, `teaminvalid`, `teamvalid` | Exactly empty, one selected, duplicate blocked, and ready 3/3 unique Printed states; first fabrication plus Reserve 1/2 order; native Apply and Cancel. | All sources/captures present; `v5-editor-nav-576c` not visually approved due empty-state art regression |
+| TP-05 Kit editor | `supportkit`, `supportkit-excluded` | Native five-entry tally totals exactly 15: Raw Filament x3, Heated Spool x2, Standard Full Suit x3, Iron Gem x3, Forge Surge x4. Show eligible and excluded-card reason plus Apply, Cancel, and Reset; invalid Apply is disabled. Four visible slots totalling 13 never substitute for the central five-entry 15-card tally. | Both sources/captures present; `v5-editor-nav-576c` not visually approved due Kit art/ownership corrections |
+| TB-01 preflight | `preflight-empty` | Team/Kit/seed check, first priority, two reserve priorities, native Back, exact invalid reason without mutation. | Present, review pending |
+| TB-02 empty-Active Plan | `choosefirstprint`, `activewaiting`, `activewaitingrun`, `activewaiting-nextplan` | Both seats start all three Unspent; required/default fabrication, legal no-cost replenishment Run, next-Plan auto-selection, hand four, FIFO and exact filament forecast. | First/wait states present; next-Plan proof planned |
+| TB-03 populated battle | `populatedPlan` | One Active/two ready Reserves per seat, all six native status records, rival hand four hidden, no printer HP. | Present; basic `v1-populated-576f` geometry only passed |
+| TB-04 combined Plan | `combined-second-plan`, `second-print`, `third-plan-behind-gear`, `equipment-auto-fit` | Companion then locked-target equipment FIFO, capacity/cost forecast, gear-head art while queued creature has status only, auto-fit without a second commit. | Sources/captures present; battle v3 overlap/overflow/missing-gear corrections pending |
+| TB-05 Support or swap | `support-plan`, `swap-plan` | One Support versus one swap as mutually exclusive checked Plans; Run Cycle remains the only commit and invalid composite is atomic. | Planned |
+| TB-06 print/deploy sequence | `printEarly`, `print60`, `rawcomplete`, `awaken`, `first-entry-active`, `reserve-1-entry`, `reserve-2-entry` | Early/60/raw/awaken are one Run presentation; first completion becomes Active and later completions enter ordered Reserves. | Sources/captures present; battle v3 distribution corrections pending |
+| TB-07 defeat/replacement/wait | `auto-replacement`, `activewaiting`, `activewaitingrun`, `activewaiting-nextplan` | Defeated status without a living bay mini, priority replacement, no-ready-reserve hold, legal replenishment Run, and eventual last-member deployment. | Present except next-Plan source; battle v3 distribution corrections pending |
+| TB-08 identity-preserving swap | `swap-plan`, `swap-and-attack`, `swap-result` | Before/Run/after states preserve the same identity, HP, equipment, and once-only fabrication record. | Run state present; Plan/Result planned |
+| TB-09 terminal results | `win-result-m2`, `loss-result-m2`, `draw-result-m2` | Team-only terminal cause, simultaneous-final-KO Draw, gameplay disabled, and exact settle-once M2 reward copy. | All sources/captures present; `v3-terminal-results2` geometry/material PASS, corrected Loss-copy recapture pending |
+| TS-01 shared states | `team-empty`, `preflight-error`, `recovery`, `focus-sheet`, `HC150-RM`, `reduced-motion` | Empty, exact error with zero mutation, resumable native recovery, native Back, focus/disabled reasons, high contrast plus 150% text, and reduced-motion equivalence. | All sources present; 576 editor captures not visually approved and full 720/tall-150% family incomplete |
+
+The M1 mechanics cohort remains four commons, including Voltwig. The fixed Cinderpaw /
+Aquafin / Mossmunk battle fixtures deliberately avoid counting Voltwig as directional
+visual evidence because the approved 23-species facing set excludes it. Existing
+legacy Voltwig art may remain in the M0 starter carousel. Before M3 visual sign-off,
+Voltwig's battle presentation needs the same facing review or a separately explicit
+carried interim exception; it must not be silently counted as four-species facing
+coverage. No new art generation is authorized by this note.
+
+Checking every row completes state coverage only. The existing full screen-family,
+responsive capture, read-only review, and single human atlas-approval gate remain
+unchanged; no additional design or approval round is created.
 
 Each composition needs 576x1024, 720x1280, and tall portrait coverage. At least one
 tall safe-top fixture and 150% text fixture must show Team, hand four, Plan choices,
@@ -148,13 +188,43 @@ a softlock failure, never a forced result. The unsettled 12–2 wording and hist
 
 ### M0 — atlas and approval (current)
 
-Design documents and two first-pass masters are complete. The sole Terra writer owns
-only the remaining offline HTML atlas and capture production during M0; this does not
-authorize Godot, runtime, scene, project-setting, build, or runtime-asset work. Produce
-the full screen atlas above, retain masters and
-provenance, obtain read-only UI review with no P0, and obtain user approval of the
-atlas. Until all are true, no Godot invocation, runtime edit, asset integration, test,
-build, or export may begin.
+Design documents and two permanent first-pass masters are present. The
+[offline atlas](../art/team-prototype-20260912/atlas.html) and
+[capture script](../art/team-prototype-20260912/render-atlas.cjs) exist in progress.
+Basic battle geometry was reviewed successfully at `v1-populated-576f`, but this was
+not a full-atlas pass or human approval. The superseded
+[`v1-canonical-final` folder](../art/team-prototype-20260912/captures/v1-canonical-final/)
+is rejected historical diagnostic material, not the current candidate.
+
+The current first-session candidate is `v4-starter-forge-576f`; its selected captures
+are [choice](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-choice-576x1024.png),
+[inspect](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-inspect-576x1024.png),
+[voucher](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-voucher-576x1024.png),
+[early](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-print-early-576x1024.png),
+[60%](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-print-60-576x1024.png),
+[raw complete](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png),
+and [awaken](../art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-awaken-576x1024.png).
+All seven have the corrected front row, bed/nozzle, and native ink; main self-review is
+positive, while final read-only UI confirmation remains pending.
+
+Terminal `v3-terminal-results2` geometry/material review passed for
+[Win](../art/team-prototype-20260912/captures/v3-terminal-results2/win-result-m2-576x1024.png),
+[Loss](../art/team-prototype-20260912/captures/v3-terminal-results2/loss-result-m2-576x1024.png),
+and [Draw](../art/team-prototype-20260912/captures/v3-terminal-results2/draw-result-m2-576x1024.png).
+Loss copy is corrected in source but awaits recapture, so the linked Loss image is not
+current-copy approval.
+
+`v5-editor-nav-576c` is not visually approved: native ledger PASS masks an empty
+Team/Kit art regression and incorrect Workshop/Settings owners. Battle v3 states have
+overlapping duplicate records, overflow, and missing gear; both groups await UI
+correction. Source/capture presence is not visual PASS.
+
+Full state coverage, tall and 150% text fixtures, complete read-only visual review,
+and human approval remain incomplete. The generated `C:` master intermediates were
+removed after fresh size/SHA-256 matches against the permanent committed `E:` masters.
+This progress does not authorize or claim Godot, runtime, scene, project-setting,
+asset-integration, test, build, or export changes. Until every M0 gate is true, none
+may begin.
 
 ### M1 — isolated deterministic core, 1v1 -> 3v3
 
@@ -193,8 +263,20 @@ DriveFS/cloud status reported separately.
 - User gameplay/product direction: PASS.
 - Decision-complete prototype rules and tunable defaults: PASS.
 - Portrait-only and active no-AdMob preservation: PASS.
-- Two first-pass text-free masters: PRESENT, unapproved.
-- Full new screen atlas: **INCOMPLETE**.
-- Read-only atlas review: **BLOCKED on atlas**.
-- User atlas approval: **BLOCKED on atlas**.
+- Two permanent first-pass text-free masters: PRESENT, unapproved; verified `C:`
+  intermediates removed after `E:` size/SHA match.
+- Offline atlas/capture tooling: PRESENT, in progress.
+- Basic `v1-populated-576f` battle geometry review: PASS, bounded only.
+- Superseded `v1-canonical-final`: **REJECTED HISTORICAL DIAGNOSTIC**, not current.
+- Current first-session `v4-starter-forge-576f`: self-review positive; final UI
+  confirmation pending.
+- Terminal `v3-terminal-results2`: geometry/material PASS; corrected Loss-copy
+  recapture pending.
+- Editor/navigation `v5-editor-nav-576c`: ledger/source PRESENT, **NOT VISUALLY
+  APPROVED**; Team/Kit regression and Workshop/Settings ownership fixes pending.
+- Battle v3: source/captures PRESENT, **NOT VISUALLY APPROVED**; duplicate-record
+  overlap, overflow, and missing gear pending.
+- Full state, tall, and 150% coverage: **INCOMPLETE**.
+- Complete read-only atlas review: **PENDING on incomplete atlas**.
+- User atlas approval: **PENDING on incomplete atlas**.
 - Runtime/build authorization: **BLOCKED**.

@@ -1,0 +1,838 @@
+{
+  "startedAt": "2026-09-12T17:37:14.964Z",
+  "nodePid": 108452,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "captureLabel": "v4-starter-forge-576f",
+  "states": [
+    "starter-choice",
+    "starter-inspect",
+    "starter-voucher",
+    "starter-print-early",
+    "starter-print-60",
+    "starter-rawcomplete",
+    "starter-awaken"
+  ],
+  "sizes": [
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    }
+  ],
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\team-prototype-20260912\\atlas-browser\\edge-profile-2026-09-12T17-37-14-961Z",
+  "sourceAssets": [
+    "BA-R1-team-autobattle-chassis-text-free-v1.png",
+    "TM-R1-team-support-workbench-text-free-v1.png",
+    "../../../assets/cards/support_card_back_source_v1.png",
+    "../../../assets/cards/support_cards_resources_landscape_v2.png",
+    "../../../assets/cards/support_cards_offense_landscape_v2.png",
+    "../../../assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "../../../assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-head-v1.png",
+    "../../../assets/creatures/2d/battle-facing/cinderpaw_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/aquafin_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/mossmunk_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/voltwig_sprite_sheet.png"
+  ],
+  "cleanup": "persistent Edge context closed",
+  "evidenceScope": "offline native-HTML concept atlas only; not Godot/runtime/device evidence",
+  "browserTreeAtStart": {
+    "known": true,
+    "items": [
+      {
+        "pid": 39760,
+        "parent": 108452,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 70228,
+        "parent": 39760,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 127644,
+        "parent": 39760,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 21352,
+        "parent": 39760,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 58324,
+        "parent": 39760,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 45524,
+        "parent": 39760,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 59920,
+        "parent": 39760,
+        "name": "msedge.exe"
+      }
+    ]
+  },
+  "conceptChecks": [
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-choice",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 5,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Previous blueprint",
+          "width": 112.01700592041016,
+          "height": 64.8841552734375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Next blueprint",
+          "width": 112.01699829101562,
+          "height": 64.8841552734375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Back to Workshop",
+          "width": 162.82254028320312,
+          "height": 85.69610595703125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Inspect Cinderpaw",
+          "width": 162.82257080078125,
+          "height": 85.69610595703125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Choose Cinderpaw with voucher for 0 filament",
+          "width": 489.69183349609375,
+          "height": 96.10205078125,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.53,
+        "primary": 18.36,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "choice",
+      "starterBlueprints": 1,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-choice-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-inspect",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 5,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Previous blueprint",
+          "width": 112.01700592041016,
+          "height": 64.8841552734375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Next blueprint",
+          "width": 112.01699829101562,
+          "height": 64.8841552734375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Back to Workshop",
+          "width": 162.82254028320312,
+          "height": 85.69610595703125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Inspect Voltwig",
+          "width": 162.82257080078125,
+          "height": 85.69610595703125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Choose Voltwig with voucher for 0 filament",
+          "width": 489.69183349609375,
+          "height": 96.10205078125,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.53,
+        "primary": 18.36,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "inspect",
+      "starterBlueprints": 1,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-inspect-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-voucher",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 82.02338409423828,
+          "height": 48.969181060791016,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Voucher ready",
+          "width": 137.11370849609375,
+          "height": 91.20513916015625,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 15.91,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "voucher",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-voucher-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-print-early",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 82.02338409423828,
+          "height": 48.969181060791016,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Printing 15%",
+          "width": 137.11370849609375,
+          "height": 91.20513916015625,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 15.91,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "print-early",
+      "starterBlueprints": 0,
+      "forgeSolid": 1,
+      "forgeWire": 1,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-print-early-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-print-60",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 82.02338409423828,
+          "height": 48.969181060791016,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Printing 60%",
+          "width": 137.11370849609375,
+          "height": 91.20513916015625,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 15.91,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "print-60",
+      "starterBlueprints": 0,
+      "forgeSolid": 1,
+      "forgeWire": 1,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-print-60-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-rawcomplete",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 82.02338409423828,
+          "height": 48.969181060791016,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Raw complete",
+          "width": 137.11370849609375,
+          "height": 91.20513916015625,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 15.91,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "rawcomplete",
+      "starterBlueprints": 0,
+      "forgeSolid": 1,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "starter-awaken",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 4,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 82.02338409423828,
+          "height": 48.969181060791016,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Awakening",
+          "width": 137.11370849609375,
+          "height": 91.20513916015625,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 0,
+        "primary": 15.91,
+        "heading": 0,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "awaken",
+      "starterBlueprints": 0,
+      "forgeSolid": 1,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v4-starter-forge-576f/starter-awaken-576x1024.png"
+    }
+  ],
+  "browserTreeAfterClose": {
+    "known": true,
+    "items": []
+  },
+  "finishedAt": "2026-09-12T17:37:29.056Z",
+  "userDataCleanup": "removed exact task-owned Edge profile after tracked browser descendants exited"
+}

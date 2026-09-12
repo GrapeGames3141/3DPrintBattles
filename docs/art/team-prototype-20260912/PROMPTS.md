@@ -1,9 +1,10 @@
 # Team prototype ImageGen edit provenance — 2026-09-12
 
-Status: durable provenance for two first-pass, text-free built-in ImageGen edits. This
-record does not constitute visual, product, or runtime approval.
+Status: durable provenance for two first-pass composition edits and two unapproved
+equipment drafts made with built-in ImageGen. This record does not constitute visual,
+product, alpha-readiness, or runtime approval.
 
-## Shared constraints
+## Composition-master shared constraints
 
 - Portrait composition at 941x1672 in the established tactile navy enamel, aged brass,
   cream paper, and warm wood Workshop family.
@@ -16,7 +17,7 @@ record does not constitute visual, product, or runtime approval.
 - No runtime promotion, slicing, or package inclusion before complete-atlas review and
   user approval.
 
-Both briefs below are the verbatim built-in ImageGen edit prompts.
+The BA-R1 and TM-R1 briefs below are the verbatim built-in ImageGen edit prompts.
 
 ## BA-R1 team autobattle chassis
 
@@ -112,9 +113,67 @@ Verbatim prompt:
 > rectangles, no mechs, humans, outer space, sci-fi, holograms, ads or bottom banner
 > strip. This is a cohesive game UI plate, not a photograph of a phone.
 
+## EQ-R1 quadruped armor raw drafts
+
+- Date: 2026-09-12.
+- Method: built-in ImageGen; v1 referenced the approved creature-fit armor identity,
+  and v2 was a targeted background-extraction edit of v1.
+- Original identity/material reference:
+  `assets/armor/tiered/cinderpaw_tiered_armor_signature_green_alpha_v3.png`.
+- Rejected reusable source:
+  `assets/armor/raw/full_suit_raw_print_alpha_v2.png`; it reads as humanoid/mech and
+  is not suitable for the animal/fantasy equipment contract.
+- v1 output: `EQ-R1-quadruped-armor-kit-raw-draft-v1.png`; 1254x1254 RGB;
+  2,316,973 bytes; SHA-256
+  `3F929AF4097EBA2C180C6D9506A31EA39BB835955E7B7B896C7A8AD73271F26E`.
+- v2 output: `EQ-R1-quadruped-armor-kit-raw-draft-v2.png`; 1254x1254 RGB;
+  2,201,271 bytes; SHA-256
+  `99A51C4EFA77BDAB1A82AB5548FC19439CA2CED3283F7F05427357E42D78C36F`.
+- The durable `E:` copies freshly matched their generated `C:` originals by exact
+  byte size and SHA-256; both `C:` intermediates were then removed by exact path.
+
+Both drafts contain a baked neutral checkerboard and are **not actual-alpha cutouts**.
+The v2 background-extraction attempt also failed to produce alpha. Read-only UI review
+passed the quadruped subject/material direction only; alpha failed, and neither draft
+has runtime approval. Any native material-mask approach remains only a possibility
+pending review in the actual printer chamber.
+
+### v1 verbatim prompt
+
+> Create ONE text-free transparent-background production game UI asset for PrintForge,
+> an empty quadruped armor print kit. Use the reference ONLY as identity/material
+> guidance for the curved feline-fit armor shapes. Remove the animal completely: NO
+> living creature, fur, eyes, paws, tail, fire, body, skeleton or mannequin. Show ONLY
+> a compact collection of EMPTY shell components fitted to a small four-legged fantasy
+> cat: a low curved back/chest shell and four short open cuff shells arranged neatly
+> close together on one small thin orange printed raft. NO humanoid helmet, human
+> torso, arms, hands, trousers, legs, boots, standing armor or mech. The armor parts
+> must not be assembled into a ghost creature or humanoid; it is a squat printable
+> equipment kit with visible open interiors. Monochrome warm orange unpainted 3D-
+> printed plastic with clear horizontal print layer ridges, broad readable rounded
+> edges, slight real plastic surface sheen, no blue paint or gemstones at this raw
+> print stage. Three-quarter slightly top-down camera matching printed figurines, front
+> key from upper left, subtle contact shadow on the little raft ONLY. Entire object
+> centered with 12 percent transparent padding, no room, printer, UI, labels, lettering,
+> numbers, gradients, or checkerboard baked into artwork. Composition should remain
+> unmistakably non-living equipment at 80x92 pixels. Square 1024x1024 transparent RGBA
+> cutout, one isolated kit.
+
+### v2 verbatim prompt
+
+> Background extraction edit only. Keep the orange quadruped armor kit, its low print
+> raft, all open shell shapes, pose, proportions, framing, orange layer-line plastic,
+> and lighting EXACTLY unchanged. Remove the entire gray checkerboard image and all
+> gray haze, including visible holes and spaces between components. Output a genuinely
+> transparent PNG with an alpha channel: background pixels must be fully transparent,
+> not white, gray, black or a drawn checkerboard. No added content, text, objects,
+> animals, human/mech silhouettes or shadows outside the raft. This is an actual
+> production cutout asset, not an illustration of transparency.
+
 ## Approval boundary
 
-These are two edited-source composition drafts, not the full screen atlas required by
-`docs/checkpoints/team-prototype-preproduction-20260912.md`. No read-only UI review or
-human atlas approval is recorded here. Exact hashes prove file identity only, not
-visual suitability or runtime readiness.
+The composition masters are not the full screen atlas required by
+`docs/checkpoints/team-prototype-preproduction-20260912.md`, and the equipment files
+are failed-alpha shape drafts only. No complete read-only UI review or human atlas
+approval is recorded here. Exact hashes prove file identity only, not visual
+suitability, transparency, material-mask viability, or runtime readiness.

@@ -30,21 +30,27 @@ includes the next Plan's +2 regeneration and the cap of 9. During Run and Result
 second time. Each seat has a private checked Plan, but the two Plans are evaluated from
 the same opening snapshot without private-plan peeking.
 
+The table records both seats' complete fixture truth for authoring and review; it is
+not all player-visible copy. During Plan, the player sees only their own pending
+fabrication/Support/swap preview. The rival's visible queue contains only work committed
+in an earlier cycle; rival pending choices and their choice-dependent filament forecast
+remain private until Run Cycle commits and reveals the resulting jobs/events.
+
 ## Fixed battle sequence
 
 | Atlas state | Cycle / phase | Player C/A/M | Rival C/A/M | Checked fabrication; Support or swap | FIFO after commit / during frame | Filament player; rival | Run Cycle |
 |---|---|---|---|---|---|---|---|
 | `preflight-empty` | C1 Plan | U/U/U | U/U/U | None yet; none | Empty; empty | P `5; next 7`; R `5; next 7` | Disabled until first fabrication is selected |
-| `choose-first` | C1 Plan | U/U/U | U/U/U | P `C`; Raw Filament. R `C`; Raw Filament | Preview P `C`; R `C` (aids are immediate, not FIFO jobs) | Both `5 +2 -3 = 4; next 6` | Allowed; this is the sole commit |
+| `choose-first` | C1 Plan | U/U/U | U/U/U | P `C`; Raw Filament. R `C`; Raw Filament | Visible P preview `C`; rival visible queue empty (authoring R preview `C` stays private; aids are immediate) | Both `5 +2 -3 = 4; next 6` | Allowed; this is the sole commit |
 | `print-early` | C1 Run | P/U/U | P/U/U | Locked from `choose-first` | P `C head, early`; R same | Both `post 4; next 6` | Disabled; resolution in flight |
 | `print-60` | C1 Run | P/U/U | P/U/U | Locked | P `C head, 60% presentation`; R same | Both `post 4; next 6` | Disabled; resolution in flight |
 | `raw-body-complete` | C1 Run | P/U/U | P/U/U | Locked | P `C head, raw-body presentation`; R same | Both `post 4; next 6` | Disabled; resolution in flight |
 | `awaken` | C1 Run | P/U/U | P/U/U | Locked | P `C completion/awaken presentation`; R same | Both `post 4; next 6` | Disabled; resolution in flight |
 | `first-entry-active` | C1 Result | A/U/U | A/U/U | Settled | Empty; empty | Both `post 4; next 6` | Disabled until next Plan opens |
-| `combined-second-plan` | C2 Plan | A/U/U | A/U/U | P `A`; Standard Full Suit -> C. R same | Preview P `A -> Suit(C)`; R same | Both `6 -3 -2 = 1; next 3` | Allowed; atomic two-job Plan |
+| `combined-second-plan` | C2 Plan | A/U/U | A/U/U | P `A`; Standard Full Suit -> C. R same | Visible P preview `A -> Suit(C)`; rival visible queue empty, with its matching preview private until Run | Both `6 -3 -2 = 1; next 3` | Allowed; atomic two-job Plan |
 | `second-print` | C2 Run | A/P/U | A/P/U | Locked | P `A head -> Suit(C)`; R same | Both `post 1; next 3` | Disabled; resolution in flight |
 | `reserve-1-entry` | C2 Result | A/R/U | A/R/U | Settled | P `Suit(C) head`; R same | Both `post 1; next 3` | Disabled until next Plan opens |
-| `third-plan-behind-gear` | C3 Plan | A/R/U | A/R/U | P `M`; none. R same | Existing `Suit(C)` then preview `M`; same for R | Both `3 -3 = 0; next 2` | Allowed; capacity is 2 of 3 |
+| `third-plan-behind-gear` | C3 Plan | A/R/U | A/R/U | P `M`; none. R same | P shows committed `Suit(C)` then own preview `M`; rival shows committed `Suit(C)` only, with R `M` private until Run | Both `3 -3 = 0; next 2` | Allowed; capacity is 2 of 3 |
 | `equipment-auto-fit` | C3 Run | A/R/P | A/R/P | Locked | P `Suit(C) head` (gear art) -> `M Queued` (no creature art); R same | Both `post 0; next 2` | Disabled; one FIFO work resolves Suit only |
 | `equipment-fitted` | C3 Result | A/R/P | A/R/P | Settled | P `M head` (creature printer art); R same | Both `post 0; next 2` | Disabled until next Plan opens |
 | `printing-wait-plan` | C4 Plan | A/R/P | A/R/P | No new choice; none | P `M head` (creature printer art); R same | Both `2 = 2; next 4` | Allowed; Run advances existing work |

@@ -1,0 +1,370 @@
+{
+  "startedAt": "2026-09-12T17:15:40.711Z",
+  "nodePid": 59764,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "captureLabel": "v3-terminal-results2",
+  "states": [
+    "win-result-m2",
+    "loss-result-m2",
+    "draw-result-m2"
+  ],
+  "sizes": [
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    }
+  ],
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\team-prototype-20260912\\atlas-browser\\edge-profile-2026-09-12T17-15-40-708Z",
+  "sourceAssets": [
+    "BA-R1-team-autobattle-chassis-text-free-v1.png",
+    "TM-R1-team-support-workbench-text-free-v1.png",
+    "../../../assets/cards/support_card_back_source_v1.png",
+    "../../../assets/cards/support_cards_resources_landscape_v2.png",
+    "../../../assets/cards/support_cards_offense_landscape_v2.png",
+    "../../../assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "../../../assets/creatures/2d/battle-facing/cinderpaw_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/aquafin_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/mossmunk_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/voltwig_sprite_sheet.png"
+  ],
+  "cleanup": "persistent Edge context closed",
+  "evidenceScope": "offline native-HTML concept atlas only; not Godot/runtime/device evidence",
+  "browserTreeAtStart": {
+    "known": true,
+    "items": [
+      {
+        "pid": 72392,
+        "parent": 59764,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 103844,
+        "parent": 72392,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 61044,
+        "parent": 72392,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 105924,
+        "parent": 72392,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 127768,
+        "parent": 72392,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 64532,
+        "parent": 72392,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 55588,
+        "parent": 72392,
+        "name": "msedge.exe"
+      }
+    ]
+  },
+  "conceptChecks": [
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "win-result-m2",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 5,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 72.22954559326172,
+          "height": 61.21147537231445,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Return to Team",
+          "width": 164.04678344726562,
+          "height": 183.63446044921875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.53,
+        "heading": 15.91,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 1,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v3-terminal-results2/win-result-m2-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "loss-result-m2",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 5,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 72.22954559326172,
+          "height": 61.21147537231445,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Return to Team",
+          "width": 164.04678344726562,
+          "height": 183.63446044921875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.53,
+        "heading": 15.91,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 1,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v3-terminal-results2/loss-result-m2-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "draw-result-m2",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 5,
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 72.22954559326172,
+          "height": 61.21147537231445,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Return to Team",
+          "width": 164.04678344726562,
+          "height": 183.63446044921875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.9915161132812,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.9915161132812,
+        "left": 0
+      },
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 0,
+        "action": 16.53,
+        "heading": 15.91,
+        "queue": 0
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 1,
+      "printedInPrinter": 0,
+      "privateBacks": 0,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v3-terminal-results2/draw-result-m2-576x1024.png"
+    }
+  ],
+  "browserTreeAfterClose": {
+    "known": true,
+    "items": []
+  },
+  "finishedAt": "2026-09-12T17:15:54.423Z",
+  "userDataCleanup": "removed exact task-owned Edge profile after tracked browser descendants exited"
+}
