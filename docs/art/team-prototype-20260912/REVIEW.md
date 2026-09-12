@@ -11,8 +11,7 @@ art or begin runtime/build work from the bounded passes below.
 | `captures/v4-starter-forge-576f` | Seven starter/Forge states at 576×1024 | No remaining P0: empty voucher bed, raw layers, front-row contact, aligned nozzle, color only after awakening, native plate ink |
 | `captures/v6-team-support` | Six Team/Kit states at 576×1024, final revised captures | No remaining geometry/state/copy P0: selected minis 0/1/3/3, Kit four face previews, saved trio, five-type tally `[3,2,3,3,4]`, truthful Apply/Reset, centered name plates |
 | `captures/v7-nav-system` | Five navigation/system states at 576×1024; final ledger finished `2026-09-12T18:13:56.125Z` | No remaining P0 after cream context-label recapture: physical owners, one Back, actual cyan focus, checked reduced-motion dial, contained right-plate labels |
-| `captures/v8-battle-core` | Combined second Plan, equipment auto-fit, and auto-replacement at 576×1024; final ledger finished `2026-09-12T18:47:42.320Z` | No visual P0: full-size inward-facing Active minis, explicit per-seat records, indexed FIFO, grounded hollow gear, target labels and locked inputs. Finite-hand continuity still needs the correction below. |
-| `captures/v3-terminal-results2` | Win/Loss/Draw at 576×1024 | Geometry/material passed; Loss copy was subsequently corrected in source and still needs recapture |
+| `captures/v12-battle-verified` | All 35 battle/result states at 576×1024; ledger finished `2026-09-12T19:38:59.893Z` | No remaining composition P0: inward-facing Active minis, six unique roster records, indexed FIFO, raw/wire/awaken continuity, finite hands, automatic replacement, Win/Loss/Draw. Separate selected-control finding below remains until v15. |
 
 V6 and v7 final render ledgers report all bounds, touch, native text, source, and clip
 checks passing, and closure/removal of their isolated task-owned Edge profiles. These
@@ -88,6 +87,59 @@ it with the remaining finite-hand fixtures and retain v8 as historical evidence.
 The pacing wording `12-2` remains unresolved. No pacing pass threshold or playable
 prototype is claimed by this authoring checkpoint.
 
+### Expanded battle review status
+
+`v9-battle-registry` is superseded diagnostic evidence, not an accepted family. Its
+35-state render did not prevent reversed scan math or inconsistent input defaults.
+Primary review rejected it and sent bounded corrections back to the sole writer.
+
+`v10-corrections` contains thirteen scoped correction captures. Primary self-review
+confirms the corrected Cinderpaw print direction and full-color awakening. At 576,
+the independently calculated positions are:
+
+| Seat | Sprite owner Y | Scan at 15% | Scan at 60% |
+|---|---:|---:|---:|
+| Rival/front | 114.75 | 193.0875 | 160.35 |
+| Player/rear | 722.125 | 791.790625 | 761.1625 |
+
+The scan rises as progress increases: `bedY - progress * opaqueHeight`. It must not
+use `alphaTop + progress * opaqueHeight`, which reveals less raw material over time.
+The remaining bounded v11 pass normalizes all fixture defaults, removes obsolete
+battle helpers, validates per-seat input ownership and low-filament fabrication
+disabling, makes the cyan upper layer visibly striped/transparent, and reruns the
+entire registered battle family. Neither v9 nor v10 is a full-atlas approval.
+
+Read-only UI review subsequently cleared v10's thirteen scoped visual/semantic
+corrections, with the filled-cyan material and input/default issues explicitly left
+for the following passes. V11 added transparent horizontal cyan layers; v12 retained
+the control metadata that the factory had previously dropped. Primary inspected the
+actual v12 ledger: F2 fabrication is disabled while Run is enabled, Support selection
+disables swaps, and a selected swap disables Supports. V12 contains **35** normal
+battle/result captures, not 36. The read-only family review is pending.
+
+The maintenance-only v13 follow-up unifies fixture defaults, adds the omitted
+combined-Plan fabrication selection, and permits editing a queue-rejected Plan.
+The remaining dead JS fixture/helper declarations were removed afterward and the
+inline script parsed successfully. Explicit seat/identity/pressed input assertions
+are a separate pending v14 check, not completed v13 evidence. No additional art
+family or gameplay rule is added by these corrections.
+
+Read-only UI review has now cleared all 35 v12 normal-size battle/result captures
+with no remaining visual P0. This is limited to 576x1024 static composition and does
+not establish tall-screen, 150% text, native Godot, animation, or device acceptance.
+
+The separate v13 interaction-state review found one additional P0: pending Aquafin
+has selected DOM state but no visible selected outline because the reserve-owner
+CSS rule is absent. The normal composition review does not waive this finding.
+V14 must add and verify the visible selected-owner outline before control sign-off.
+Queue-rejection hand editing and locked Run show no additional visual regression.
+
+Closed in **v15-visible-controls**: all seven named-state assertions pass, including
+seat, identity, pressed state, disabled state, no rival input, and computed cyan
+outline on selected fabrication/reserve owners. Read-only UI spot-review of combined
+Plan, swap Plan, and replenishment next-Plan confirms the missing-selection P0 is
+resolved without moving or obscuring the physical owners. V14 is superseded by v15.
+
 ## Contract audit follow-up
 
 Read-only audit found the core design consistent with the latest user contract: three
@@ -156,6 +208,32 @@ Representative existing states: `combined-second-plan`, `teamvalid`,
 `starter-print-60`, `preflight-error`, and `workshop-prototype-nav`. Verify all three
 sizes, native font scaling and glyph bounds, topmost hit owners, material contrast,
 unclipped focus, no sprite/queue masking, fixed stage aspect, and tall safe top 24.
+
+## Final narrow 150% placement decisions
+
+Read-only UI review confirms these actual-576 acceptance rectangles. Keep the
+941×1672 stage uniformly scaled; multiply the rectangles once by 941/576.
+
+- Private hand: `(14,220,141,28)`, visible `Rival ×4`, full concealed-hand aria.
+- Battle header: `(171,27,234,34)`, only filament math such as `6 → 1 · Next 3`.
+  Cycle/phase moves to the first lines of `(14,330,141,230)`, at most eight 24/26 lines.
+- Reserve mini boxes: `(252,105,38,50)`, `(440,105,38,50)`,
+  `(252,685,38,50)`, `(440,685,38,50)`; alpha feet contact y155/735.
+  Caption owners: `(186,158,170,52)`, `(374,158,170,52)`,
+  `(186,738,170,52)`, `(374,738,170,52)`.
+- Printer names: one line on cream at `(28,72,136,26)` top and
+  `(18,648,132,26)` bottom. Top y52 would cross Back. Keep status/progress in
+  side annotation and full aria. Interactive docket hit owners stay at least48.
+- Hand copy: exactly two short lines, `Raw/+2`, `Heated/+3`, `Suit/2`, `Gem/2`,
+  or `Surge/2`; full names/effects remain native aria.
+- Receipt tile captions at 150%: `1 Starter / Printed`, `2 Gift / Printed`,
+  `3 Gift / Printed`. The main paper body gives the matching ordered full names
+  and first-print/preprinted statuses, plus voucher-used/Team-ready copy.
+  Do not squeeze full Cinderpaw/Mossmunk names into 100px tile widths at24px.
+  All three32×43 minis and physical tile owners remain. Numbers prevent the two
+  gifts from depending solely on creature artwork/color for identity.
+
+These are authoring directions, not completed accessibility evidence.
 
 ## Read-only startup audit for the later M1 handoff
 

@@ -8,6 +8,23 @@ Authority: [solo team prototype](../design/team-prototype-20260912.md) and
 Current preparation: branch `codex/printforge-team-prototype`; committed rules and
 fixtures at `270c8d9` (historical branch baseline `d7a4a10`).
 
+## Current evidence update (supersedes historical coverage status below)
+
+Normal-size read-only UI review now has no remaining P0 in the seven-state
+`v4-starter-forge-576f` family, six-state `v6-team-support` family, five-state
+`v7-nav-system` family, and all 35 battle/results in `v12-battle-verified`.
+V13 corrects selected fabrication and editable rejected-Plan controls. Independent
+control assertions, all starter grant variants, saved-versus-proposed editor values,
+720/tall/150% material-safe text, and the complete indexed atlas still need closure.
+The current evidence and links are maintained in
+[the art index](../art/team-prototype-20260912/README.md) and
+[review record](../art/team-prototype-20260912/REVIEW.md).
+
+These are offline HTML compositions over ImageGen art, not Godot captures or tested
+gameplay. The historical table below records earlier authoring stages; its v3/v5
+failures have been superseded by the selected families above. The full-atlas/human
+approval gate remains closed. No new Android APK has been built or delivered.
+
 ## User authority recorded
 
 The user approved a solo portrait-Android tactile navy/brass/wood Workshop populated

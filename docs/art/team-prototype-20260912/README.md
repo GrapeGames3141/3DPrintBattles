@@ -33,12 +33,20 @@ states:
 - [raw complete](captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png)
 - [awaken](captures/v4-starter-forge-576f/starter-awaken-576x1024.png)
 
-Terminal `v3-terminal-results2` geometry/material review passed for
-[Win](captures/v3-terminal-results2/win-result-m2-576x1024.png),
-[Loss](captures/v3-terminal-results2/loss-result-m2-576x1024.png), and
-[Draw](captures/v3-terminal-results2/draw-result-m2-576x1024.png). Loss copy has since
-been corrected in source, so its next recapture remains pending; the linked Loss image
-is geometry/material evidence, not current-copy approval.
+The current battle/result candidate is `v12-battle-verified`: all 35 normal-size
+576x1024 states passed read-only visual review with no remaining P0. It includes
+[first fabrication](captures/v12-battle-verified/choosefirstprint-576x1024.png),
+[60% printing](captures/v12-battle-verified/print60-576x1024.png),
+[equipment work](captures/v12-battle-verified/equipment-auto-fit-576x1024.png),
+[automatic replacement](captures/v12-battle-verified/auto-replacement-576x1024.png),
+[Win](captures/v12-battle-verified/win-result-m2-576x1024.png),
+[Loss](captures/v12-battle-verified/loss-result-m2-576x1024.png), and
+[Draw](captures/v12-battle-verified/draw-result-m2-576x1024.png).
+The v15 control follow-up adds the missing selected fabrication outline and keeps
+rejected-Plan card editing available, with seven independent control checks and a
+read-only visual recheck. The [selected-screen index](INDEX.md) links current captures.
+This is still static HTML concept evidence,
+not a tested combat simulation or playable game.
 
 `v5-editor-nav-576c` and battle v3 are rejected historical diagnostics. Their selected
 replacements are:
@@ -47,10 +55,9 @@ replacements are:
   no remaining P0; [ready Team](captures/v6-team-support/teamvalid-576x1024.png).
 - [Workshop / system five-state family](captures/v7-nav-system/): normal-size UI
   review has no remaining P0; [Workshop](captures/v7-nav-system/workshop-prototype-nav-576x1024.png).
-- [Battle three-state family](captures/v8-battle-core/): normal-size visual review has
-  no remaining P0; [combined Plan](captures/v8-battle-core/combined-second-plan-576x1024.png).
-  The auto-replacement rival-hand count needs the semantic correction recorded in
-  REVIEW.md, and the remaining battle registry is still being converted.
+- [Battle 35-state family](captures/v12-battle-verified/): normal-size visual review
+  has no remaining P0; rival-hand continuity is corrected. The selected-control
+  follow-up is [combined Plan](captures/v15-visible-controls/combined-second-plan-576x1024.png).
 
 The [superseded `v1-canonical-final` folder](captures/v1-canonical-final/) is rejected
 historical diagnostic material, not the current candidate. The bounded
@@ -136,11 +143,10 @@ native/runtime placement later, after approval.
   INCOMPLETE.
 - Basic battle geometry at `v1-populated-576f`: REVIEWED SUCCESSFULLY, bounded only.
 - Current first-session `v4-starter-forge-576f`: normal-576 UI review has no P0.
-- Terminal `v3-terminal-results2`: geometry/material PASS; corrected Loss-copy
-  recapture pending.
+- Terminal v12 Win/Loss/Draw: normal-576 read-only visual review has no P0.
 - Team/Kit v6 and navigation v7: normal-576 UI review has no P0.
-- Battle v8 three-state family: normal-576 visual review has no P0; rival-hand
-  continuity correction and remaining registry coverage pending.
+- Battle v12 full 35-state registry: normal-576 visual review has no P0; v15 closes
+  the separately found selection-outline issue and verifies seven control states.
 - Complete 576x1024 and 720x1280 families, tall safe-top, 150% text, high contrast,
   and reduced-motion coverage: INCOMPLETE.
 - Read-only original-resolution substrate review for the two masters: PASS, no P0.
