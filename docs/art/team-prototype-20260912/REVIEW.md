@@ -88,6 +88,26 @@ it with the remaining finite-hand fixtures and retain v8 as historical evidence.
 The pacing wording `12-2` remains unresolved. No pacing pass threshold or playable
 prototype is claimed by this authoring checkpoint.
 
+## Contract audit follow-up
+
+Read-only audit found the core design consistent with the latest user contract: three
+unique Team members, fifteen Supports, one Active/two Reserve owners, one fabrication
+plus one Support or swap, automatic resolution, team-only defeat, and no ads/network/
+Steam expansion. Complete these finite examples on the existing templates:
+
+- All three starter choices and their correct two-preprinted grant mappings. The
+  fixed C/A/M battle sequence stays fixed; it is not four-species directional proof.
+- Full-FIFO composite rejection with zero spend/append, and exhausted hand/draw pile
+  with legal Run still available. Neither introduces a new battle mechanic.
+- Saved versus proposed Team/Kit values on the existing folio, including unchanged
+  saved values when selection is invalid.
+- Before runtime, reconcile defeat feedback to: the creature leaves the field and
+  its roster record reads Defeated. Only the FIFO head owns printer-chamber art;
+  defeated units must not occupy or replace a working print job.
+
+The existing Voltwig-facing limitation remains an explicit M3 issue, not a reason to
+invent a fourth identity in the C/A/M authoring sequence or claim new art approval.
+
 ## Corrected 150% reflow contract
 
 These are read-only UI review instructions for the pending pass, not accepted captures.
@@ -136,3 +156,22 @@ Representative existing states: `combined-second-plan`, `teamvalid`,
 `starter-print-60`, `preflight-error`, and `workshop-prototype-nav`. Verify all three
 sizes, native font scaling and glyph bounds, topmost hit owners, material contrast,
 unclipped focus, no sprite/queue masking, fixed stage aspect, and tall safe top 24.
+
+## Read-only startup audit for the later M1 handoff
+
+Source inspection confirms `project.godot` autoloads Catalog, GameManager, and
+SaveService. `scripts/core/game_manager.gd::_ready` currently configures QA or v3
+paths, loads the profile, then calls `_initialize_loaded_profile`; that function can
+create/persist a v3 profile, run `UNIFIED_RULES.ensure`, persist normalization, and
+apply the Android review coin floor. A prototype selector in the main scene would
+therefore be too late.
+
+The already-planned prototype entry branch must occur in the startup path before that
+legacy initializer. Preserve `SaveService.configure_debug_qa_storage_from_command_line`
+as the first test-storage guard; its explicit E-based evidence root precedes any
+profile load. The prototype branch must not call the legacy initializer or coin floor.
+Use existing journal/atomic storage only for later explicit prototype transitions;
+do not normalize or rewrite legacy values while deciding which UI to show.
+
+This was source inspection only. No Godot invocation, actual player-save read, runtime
+edit, or startup behavior test has occurred in this M0 pass.

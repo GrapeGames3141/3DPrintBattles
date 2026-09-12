@@ -13,14 +13,17 @@ Generation briefs and edited-source provenance are in [PROMPTS.md](PROMPTS.md).
 
 ## Durable progress
 
-Branch `codex/printforge-team-prototype` has committed rules and fixtures at `270c8d9`.
+Branch `codex/printforge-team-prototype` has committed rules and fixtures at `270c8d9`
+and a reviewed physical-family checkpoint at `1546320`. The current scoped review
+and remaining-work record is [REVIEW.md](REVIEW.md); older capture folders below are
+historical evidence, not a claim that every current route has passed.
 The [offline atlas](atlas.html) and [capture script](render-atlas.cjs) exist and remain
 in progress. Source presence and a clean render ledger do not constitute visual PASS.
 
 The current first-session candidate is `v4-starter-forge-576f`: all seven selected
 576x1024 captures have the corrected front row, empty bed/nozzle sequence, and native
-ink treatment. Main self-review is positive; final read-only UI confirmation remains
-pending:
+ink treatment. Read-only UI review found no remaining P0 in these seven normal-size
+states:
 
 - [starter choice](captures/v4-starter-forge-576f/starter-choice-576x1024.png)
 - [starter inspect](captures/v4-starter-forge-576f/starter-inspect-576x1024.png)
@@ -37,10 +40,17 @@ Terminal `v3-terminal-results2` geometry/material review passed for
 been corrected in source, so its next recapture remains pending; the linked Loss image
 is geometry/material evidence, not current-copy approval.
 
-`v5-editor-nav-576c` is **not visually approved**. Its native ledger passes, but that
-does not excuse the empty Team/Kit art regression or incorrect Workshop/Settings
-ownership; UI corrections remain pending. Battle v3 states still have overlapping
-duplicate records, overflow, and missing gear and await a distribution fix.
+`v5-editor-nav-576c` and battle v3 are rejected historical diagnostics. Their selected
+replacements are:
+
+- [Team / Kit six-state family](captures/v6-team-support/): normal-size UI review has
+  no remaining P0; [ready Team](captures/v6-team-support/teamvalid-576x1024.png).
+- [Workshop / system five-state family](captures/v7-nav-system/): normal-size UI
+  review has no remaining P0; [Workshop](captures/v7-nav-system/workshop-prototype-nav-576x1024.png).
+- [Battle three-state family](captures/v8-battle-core/): normal-size visual review has
+  no remaining P0; [combined Plan](captures/v8-battle-core/combined-second-plan-576x1024.png).
+  The auto-replacement rival-hand count needs the semantic correction recorded in
+  REVIEW.md, and the remaining battle registry is still being converted.
 
 The [superseded `v1-canonical-final` folder](captures/v1-canonical-final/) is rejected
 historical diagnostic material, not the current candidate. The bounded
@@ -79,8 +89,9 @@ because it reads as humanoid/mech rather than animal/fantasy quadruped equipment
 
 Neither RGB draft is an actual transparent cutout or runtime-approved asset. Read-only
 UI review passed only the quadruped subject/material direction; alpha failed. A
-possible native material mask awaits review in the actual printer chamber and is not
-approved by this record. Exact prompts and generation provenance are in
+native material mask passed the bounded offline printer-chamber visual review; this
+does not make either source a transparent production asset. Exact review scope is in
+REVIEW.md. Exact prompts and generation provenance are in
 [PROMPTS.md](PROMPTS.md).
 
 ## Ownership and reuse inventory
@@ -124,19 +135,18 @@ native/runtime placement later, after approval.
 - Full empty/populated/error/recovery/Win/Loss/Draw and accessibility state coverage:
   INCOMPLETE.
 - Basic battle geometry at `v1-populated-576f`: REVIEWED SUCCESSFULLY, bounded only.
-- Current first-session `v4-starter-forge-576f`: SELF-REVIEW POSITIVE; final UI
-  confirmation pending.
+- Current first-session `v4-starter-forge-576f`: normal-576 UI review has no P0.
 - Terminal `v3-terminal-results2`: geometry/material PASS; corrected Loss-copy
   recapture pending.
-- Editor/navigation `v5-editor-nav-576c`: SOURCE/LEDGER PRESENT; VISUAL APPROVAL FAILS
-  pending Team/Kit and ownership corrections.
-- Battle v3 states: SOURCE/LEDGER PRESENT; duplicate-record overlap, overflow, and
-  missing-gear corrections pending.
+- Team/Kit v6 and navigation v7: normal-576 UI review has no P0.
+- Battle v8 three-state family: normal-576 visual review has no P0; rival-hand
+  continuity correction and remaining registry coverage pending.
 - Complete 576x1024 and 720x1280 families, tall safe-top, 150% text, high contrast,
   and reduced-motion coverage: INCOMPLETE.
 - Read-only original-resolution substrate review for the two masters: PASS, no P0.
 - Two EQ-R1 equipment drafts: subject/material direction PASS only; baked
-  checkerboards and alpha FAIL; chamber-mask review pending; runtime use blocked.
+  checkerboards and alpha FAIL; offline chamber-mask visual review PASS only;
+  runtime use blocked.
 - Full-atlas read-only UI review: PENDING on incomplete atlas.
 - User atlas approval: PENDING.
 - Runtime asset promotion/Godot/build authorization: BLOCKED.
