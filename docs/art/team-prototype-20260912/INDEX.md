@@ -6,22 +6,27 @@ The current [design](../../design/team-prototype-20260912.md), [gate](../../chec
 
 ## Starter and first print
 
-- [starter-choice — 576x1024](captures/v4-starter-forge-576f/starter-choice-576x1024.png)
+- [starter-choice — 576x1024](captures/v18-starter-grants/starter-choice-576x1024.png)
+- [Aquafin starter choice — 576x1024](captures/v18-starter-grants/starter-choice-aquafin-576x1024.png)
+- [Voltwig starter choice — 576x1024](captures/v18-starter-grants/starter-choice-voltwig-576x1024.png)
 - [starter-inspect — 576x1024](captures/v4-starter-forge-576f/starter-inspect-576x1024.png)
 - [starter-voucher — 576x1024](captures/v4-starter-forge-576f/starter-voucher-576x1024.png)
 - [starter-print-early — 576x1024](captures/v4-starter-forge-576f/starter-print-early-576x1024.png)
 - [starter-print-60 — 576x1024](captures/v4-starter-forge-576f/starter-print-60-576x1024.png)
 - [starter-rawcomplete — 576x1024](captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png)
 - [starter-awaken — 576x1024](captures/v4-starter-forge-576f/starter-awaken-576x1024.png)
+- [Cinderpaw starter receipt — 576x1024](captures/v18-starter-grants/guaranteedstarterreceipt-576x1024.png)
+- [Aquafin starter receipt — 576x1024](captures/v18-starter-grants/receipt-aquafin-576x1024.png)
+- [Voltwig starter receipt — 576x1024](captures/v18-starter-grants/receipt-voltwig-576x1024.png)
 
 ## Team and Support Kit
 
 - [team-empty — 576x1024](captures/v6-team-support/team-empty-576x1024.png)
 - [team-one — 576x1024](captures/v6-team-support/team-one-576x1024.png)
-- [teaminvalid — 576x1024](captures/v6-team-support/teaminvalid-576x1024.png)
+- [teaminvalid — 576x1024](captures/v19-folio-drafts/teaminvalid-576x1024.png)
 - [teamvalid — 576x1024](captures/v6-team-support/teamvalid-576x1024.png)
-- [supportkit — 576x1024](captures/v6-team-support/supportkit-576x1024.png)
-- [supportkit-excluded — 576x1024](captures/v6-team-support/supportkit-excluded-576x1024.png)
+- [supportkit — 576x1024](captures/v19-folio-drafts/supportkit-576x1024.png)
+- [supportkit-excluded — 576x1024](captures/v19-folio-drafts/supportkit-excluded-576x1024.png)
 
 ## Workshop and system states
 
@@ -68,3 +73,20 @@ The current [design](../../design/team-prototype-20260912.md), [gate](../../chec
 - [win-result-m2 — 576x1024](captures/v12-battle-verified/win-result-m2-576x1024.png)
 - [loss-result-m2 — 576x1024](captures/v12-battle-verified/loss-result-m2-576x1024.png)
 - [draw-result-m2 — 576x1024](captures/v12-battle-verified/draw-result-m2-576x1024.png)
+
+## Portrait fit comparisons
+
+Static fit evidence only; tall uses aspect letterboxing and a synthetic 24px top inset, not an ad reserve or real-device test.
+
+| Screen | 576×1024 | 720×1280 | 720×1600 |
+|---|---|---|---|
+| combined-second-plan | [View](captures/v20-uniform-fit/combined-second-plan-576x1024.png) | [View](captures/v20-uniform-fit/combined-second-plan-720x1280.png) | [View](captures/v20-uniform-fit/combined-second-plan-720x1600.png) |
+| teamvalid | [View](captures/v20-uniform-fit/teamvalid-576x1024.png) | [View](captures/v20-uniform-fit/teamvalid-720x1280.png) | [View](captures/v20-uniform-fit/teamvalid-720x1600.png) |
+| supportkit-excluded | [View](captures/v20-uniform-fit/supportkit-excluded-576x1024.png) | [View](captures/v20-uniform-fit/supportkit-excluded-720x1280.png) | [View](captures/v20-uniform-fit/supportkit-excluded-720x1600.png) |
+| guaranteedstarterreceipt | [View](captures/v20-uniform-fit/guaranteedstarterreceipt-576x1024.png) | [View](captures/v20-uniform-fit/guaranteedstarterreceipt-720x1280.png) | [View](captures/v20-uniform-fit/guaranteedstarterreceipt-720x1600.png) |
+| starter-choice | [View](captures/v20-uniform-fit/starter-choice-576x1024.png) | [View](captures/v20-uniform-fit/starter-choice-720x1280.png) | [View](captures/v20-uniform-fit/starter-choice-720x1600.png) |
+| starter-print-60 | [View](captures/v20-uniform-fit/starter-print-60-576x1024.png) | [View](captures/v20-uniform-fit/starter-print-60-720x1280.png) | [View](captures/v20-uniform-fit/starter-print-60-720x1600.png) |
+| preflight-error | [View](captures/v20-uniform-fit/preflight-error-576x1024.png) | [View](captures/v20-uniform-fit/preflight-error-720x1280.png) | [View](captures/v20-uniform-fit/preflight-error-720x1600.png) |
+| workshop-prototype-nav | [View](captures/v20-uniform-fit/workshop-prototype-nav-576x1024.png) | [View](captures/v20-uniform-fit/workshop-prototype-nav-720x1280.png) | [View](captures/v20-uniform-fit/workshop-prototype-nav-720x1600.png) |
+
+[Historical capture archive](captures/) — includes superseded and rejected diagnostics; not current approval evidence.

@@ -212,8 +212,10 @@ inventory ownership.
   when a legal no-cost Plan can advance to replenishment. After Win/Loss/Draw, all
   gameplay input is disabled. No resurrection, hidden fatigue, round-cap outcome,
   damage ramp, printer-HP fallback, or off-screen tiebreak is permitted.
-- **Feedback:** Defeat returns the unit to its printer; terminal copy names Team
-  defeated or Draw. An unaffordable last member reads `Need 1 filament · Run to
+- **Feedback:** The defeated creature leaves the field and its roster record reads
+  Defeated. Only the current FIFO head occupies the printer chamber; defeat never
+  replaces or obscures a working print. Terminal copy names Team defeated or Draw.
+  An unaffordable last member reads `Need 1 filament · Run to
   replenish · next 4` in the F2 fixture. With no legal creature target, attacks hold;
   this is neither defeat nor printer damage. Forecast identifies final-member risk
   without revealing hidden rival choices.

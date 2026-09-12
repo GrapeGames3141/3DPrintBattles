@@ -1,73 +1,44 @@
-# Team prototype screen-family drafts — 2026-09-12
+# PrintForge team prototype — screen-family authoring record
 
-Status: **DRAFT PREPRODUCTION ONLY; runtime unapproved.** Two text-free 941x1672
-composition masters pass read-only substrate review with no P0. They are not a
-complete atlas; full-atlas review and human approval remain pending, so they do not
-open the Godot/runtime/build gate.
+Status: **M0 OFFLINE REVIEW CANDIDATE; no runtime approval.**
+Use [the selected-screen index](INDEX.md) to review the candidate and
+[the current checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md)
+for the authoritative remaining work. These HTML compositions over ImageGen art are
+not a playable game, Godot captures, animation tests, or Android/device evidence.
 
-Authority: [team prototype design](../../design/team-prototype-20260912.md) and
-[atlas fixture registry](../../design/team-prototype-atlas-fixtures-20260912.md), with
-gate status in the
-[preproduction checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md).
-Generation briefs and edited-source provenance are in [PROMPTS.md](PROMPTS.md).
+The branch is `codex/printforge-team-prototype`. Its
+[design](../../design/team-prototype-20260912.md) and
+[fixture registry](../../design/team-prototype-atlas-fixtures-20260912.md) implement the
+latest solo three-companion/15-Support/no-printer-HP contract on paper only.
+[PROMPTS.md](PROMPTS.md) preserves generation/source provenance;
+[REVIEW.md](REVIEW.md) preserves scoped reviews and rejected-draft history.
 
-## Durable progress
+## Selected evidence
 
-Branch `codex/printforge-team-prototype` has committed rules and fixtures at `270c8d9`
-and a reviewed physical-family checkpoint at `1546320`. The current scoped review
-and remaining-work record is [REVIEW.md](REVIEW.md); older capture folders below are
-historical evidence, not a claim that every current route has passed.
-The [offline atlas](atlas.html) and [capture script](render-atlas.cjs) exist and remain
-in progress. Source presence and a clean render ledger do not constitute visual PASS.
+- v4: seven starter/Forge normal states, no-P0 read-only review.
+- v6/v19: Team and Kit states, corrected saved-versus-draft values and exact15 tally,
+  no-P0 normal review.
+- v7: Workshop/navigation/error/recovery/focus/settings, no-P0 normal review.
+- v12: all35 normal battle/result states, no-P0 review.
+- v15: seven independent control-state checks; selected fabrication outline corrected
+  and confirmed by read-only UI review.
+- v18: all three starter choices and corresponding fixed grant mappings, six passes
+  and no-P0 review.
+- v20: eight representative screens × three portrait sizes, 24/24 static checks and
+  no-P0 fit review. Tall uses a synthetic24px top inset and inert aspect letterbox,
+  not an AdMob reserve or a device-test result.
+- v22b: Combined Plan150% draft; the missing Back/Run font scaling is a known P0.
+  A bounded v23 correction adds representative Swap/60%-print coverage.
 
-The current first-session candidate is `v4-starter-forge-576f`: all seven selected
-576x1024 captures have the corrected front row, empty bed/nozzle sequence, and native
-ink treatment. Read-only UI review found no remaining P0 in these seven normal-size
-states:
+The complete normal three-size registry and representative battle accessibility
+recheck remain pending. Final source and current captures will be indexed together
+before requesting the single full-atlas human approval. Historical v1/v3/v5 and other
+diagnostic folders are not selected evidence; preserve them without claiming passes.
 
-- [starter choice](captures/v4-starter-forge-576f/starter-choice-576x1024.png)
-- [starter inspect](captures/v4-starter-forge-576f/starter-inspect-576x1024.png)
-- [voucher / empty bed](captures/v4-starter-forge-576f/starter-voucher-576x1024.png)
-- [print early](captures/v4-starter-forge-576f/starter-print-early-576x1024.png)
-- [print 60](captures/v4-starter-forge-576f/starter-print-60-576x1024.png)
-- [raw complete](captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png)
-- [awaken](captures/v4-starter-forge-576f/starter-awaken-576x1024.png)
-
-The current battle/result candidate is `v12-battle-verified`: all 35 normal-size
-576x1024 states passed read-only visual review with no remaining P0. It includes
-[first fabrication](captures/v12-battle-verified/choosefirstprint-576x1024.png),
-[60% printing](captures/v12-battle-verified/print60-576x1024.png),
-[equipment work](captures/v12-battle-verified/equipment-auto-fit-576x1024.png),
-[automatic replacement](captures/v12-battle-verified/auto-replacement-576x1024.png),
-[Win](captures/v12-battle-verified/win-result-m2-576x1024.png),
-[Loss](captures/v12-battle-verified/loss-result-m2-576x1024.png), and
-[Draw](captures/v12-battle-verified/draw-result-m2-576x1024.png).
-The v15 control follow-up adds the missing selected fabrication outline and keeps
-rejected-Plan card editing available, with seven independent control checks and a
-read-only visual recheck. The [selected-screen index](INDEX.md) links current captures.
-This is still static HTML concept evidence,
-not a tested combat simulation or playable game.
-
-`v5-editor-nav-576c` and battle v3 are rejected historical diagnostics. Their selected
-replacements are:
-
-- [Team / Kit six-state family](captures/v6-team-support/): normal-size UI review has
-  no remaining P0; [ready Team](captures/v6-team-support/teamvalid-576x1024.png).
-- [Workshop / system five-state family](captures/v7-nav-system/): normal-size UI
-  review has no remaining P0; [Workshop](captures/v7-nav-system/workshop-prototype-nav-576x1024.png).
-- [Battle 35-state family](captures/v12-battle-verified/): normal-size visual review
-  has no remaining P0; rival-hand continuity is corrected. The selected-control
-  follow-up is [combined Plan](captures/v15-visible-controls/combined-second-plan-576x1024.png).
-
-The [superseded `v1-canonical-final` folder](captures/v1-canonical-final/) is rejected
-historical diagnostic material, not the current candidate. The bounded
-[v1 populated geometry folder](captures/v1-populated-576f/) is likewise historical
-diagnostic evidence only. Full state coverage, 576/720/tall-150% families, complete
-read-only visual review, and human approval remain incomplete. No Godot, runtime,
-asset-integration, test, build, or export change is claimed.
-
-The two generated `C:` master intermediates were removed only after fresh size and
-SHA-256 comparisons matched the permanent committed `E:` masters listed below.
+The [offline atlas](atlas.html) is an authoring viewer; its controls display fixture
+states, not tested gameplay. The [capture helper](render-atlas.cjs) checks static
+geometry, native text, and named fixture/selection states. It cannot establish actual
+combat logic, save safety, motion, Android Back, or touch comfort.
 
 ## Draft masters
 
@@ -135,28 +106,16 @@ Planned existing runtime reuse, after atlas approval only:
 No source asset is copied into these masters as dynamic populated content. Reuse means
 native/runtime placement later, after approval.
 
-## Honest gate state
+## Approval boundary
 
-- Two first-pass draft masters present: PASS.
-- Required screen family in the preproduction checkpoint: INCOMPLETE.
-- Full empty/populated/error/recovery/Win/Loss/Draw and accessibility state coverage:
-  INCOMPLETE.
-- Basic battle geometry at `v1-populated-576f`: REVIEWED SUCCESSFULLY, bounded only.
-- Current first-session `v4-starter-forge-576f`: normal-576 UI review has no P0.
-- Terminal v12 Win/Loss/Draw: normal-576 read-only visual review has no P0.
-- Team/Kit v6 and navigation v7: normal-576 UI review has no P0.
-- Battle v12 full 35-state registry: normal-576 visual review has no P0; v15 closes
-  the separately found selection-outline issue and verifies seven control states.
-- Complete 576x1024 and 720x1280 families, tall safe-top, 150% text, high contrast,
-  and reduced-motion coverage: INCOMPLETE.
-- Read-only original-resolution substrate review for the two masters: PASS, no P0.
-- Two EQ-R1 equipment drafts: subject/material direction PASS only; baked
-  checkerboards and alpha FAIL; offline chamber-mask visual review PASS only;
-  runtime use blocked.
-- Full-atlas read-only UI review: PENDING on incomplete atlas.
-- User atlas approval: PENDING.
-- Runtime asset promotion/Godot/build authorization: BLOCKED.
+Two text-free masters passed scoped original-resolution substrate review. Their
+human approval and runtime promotion remain pending the complete atlas gate.
+Dynamic identities, cards, values, text, states, and interaction owners remain native.
 
-Full-atlas aesthetics remain pending human approval. Preserve these masters and
-provenance; do not slice, import, package, or represent them or the current canonical
-bundle as approved runtime assets.
+The RGB armor drafts below are **not transparent production assets**. Only their
+quadruped subject/material direction and the offline chamber-mask composition passed.
+Resolve production alpha before runtime use; do not ship baked checkerboard artwork.
+
+No Godot/runtime/build/export/player-save action or new APK/Drive release is claimed.
+No-PC/no-backend/no-ads scope remains in force. Full native application accessibility
+and physical-device validation remain mandatory later implementation gates.

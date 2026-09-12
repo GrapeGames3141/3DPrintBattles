@@ -4,6 +4,25 @@ This is offline HTML/art authoring evidence, **not Godot, runtime, Android, or d
 acceptance**. The new full atlas and human approval remain incomplete. Do not promote
 art or begin runtime/build work from the bounded passes below.
 
+## Current review boundary
+
+The checkpoint is the current status authority; entries below preserve the sequence
+of findings and do not reopen already-corrected historical failures. V18 closes all
+three starter/grant mappings. V19 closes saved-versus-draft folio values. V20 passes
+24 uniform-fit captures (eight screens, three sizes), with a synthetic24px safe top
+and no ad reserve. All three groups received read-only no-P0 scoped visual review.
+
+V22b's three Combined Plan150% captures have sound material contrast, selected
+outlines, label ownership, and clipping. Read-only review found one accessibility P0:
+Back and Run/Cycle remained about16px at576 rather than24px. V23 is correcting those
+labels and adding representative Ready-reserve and60%-print large-text fixtures.
+
+The later all-route reflow suggestions in this record remain useful M3 implementation
+briefs. M0's finite accessibility evidence is Combined Plan, Swap Plan, and60% Print
+at all three portrait sizes, showing Team records, four-card choices, forecast, Ready
+reserves, and printer work. Static review cannot prove actual Android accessibility,
+motion equivalence, input, or Back; these remain explicit M3 acceptance requirements.
+
 ## Reviewed normal-portrait families
 
 | Evidence | Scope | Read-only UI result |
@@ -20,6 +39,48 @@ folders are retained checkpoint evidence; subsequent work must use new capture l
 Non-blocking normal-size follow-up: replace the excluded-Kit condensed-font workaround
 with the regular font and a wrapped reason on the existing paper during the 150% pass.
 Recovery wording can describe recovered Team/Kit values instead of authoring jargon.
+
+## Three starter/grant variants — v18
+
+All six `v18-starter-grants` captures pass independent choice/grant identity maps,
+48px control bounds/topmost hit tests, required source presence, and native glyph
+bounds. Read-only UI review found no remaining mapping/material P0: Cinderpaw grants
+Cinderpaw/Aquafin/Mossmunk; Aquafin grants Aquafin/Voltwig/Mossmunk; Voltwig grants
+Voltwig/Cinderpaw/Mossmunk. The selected starter is tile 1; the two preprinted grants
+are tiles 2–3. Legacy Voltwig is not directional-facing evidence.
+
+The corrected grant row does not intercept other controls. Native title-case
+Starter/Printed captions fit their paper tiles without shrinking; full first-print
+status remains in aria and receipt copy. Ready to Battle is dark ink on paper.
+The same receipt-family ink correction applies to result actions; their next full
+matrix capture will supersede older cream-label result captures. The task-owned
+headless Edge context closed and its recorded descendant list is empty.
+
+## Saved versus proposed folio values — v19
+
+The three `v19-folio-drafts` captures pass independent counts and glyph/hit bounds,
+with read-only UI review reporting no P0. The duplicate Team proposal Cinderpaw /
+Cinderpaw / Mossmunk is visibly distinct from the unchanged saved Cinderpaw /
+Aquafin / Mossmunk Team. The excluded Kit proposal is exactly `[2,2,3,3,4,1]`:
+15 cards including one ineligible Legacy Trap, leaving 14 eligible; its Raw face
+shows 2. The saved recommended 15-card Kit remains unchanged. The valid Kit remains
+`[3,2,3,3,4]` with Raw face 3. All text uses normal-width type inside the paper and
+invalid Apply remains disabled and readable. These are proposal-state illustrations,
+not evidence that a save transaction has run.
+
+## Uniform portrait fitting — v20
+
+All 24 `v20-uniform-fit` captures pass source/layout checks and scoped read-only UI
+review: eight representative families at 576×1024, 720×1280, and 720×1600. The stage
+remains 941×1672 and scales uniformly. Tall captures have a 24px top inset and a
+720×1279.32 stage ending near y1303.32; the remaining area is noninteractive aspect
+letterbox, not reserved AdMob geometry. Bottom controls remain on-stage and mapped
+to their authored owners. Normal text has no new clipping P0. The noncapture HTML
+viewer now exposes its state navigation rather than hiding it on desktop windows.
+
+This verifies static fitting only, not comfortable one-handed reach, real phone
+notches, touch, lifecycle, 150% text, or native device behavior. The isolated Edge
+context closed with no recorded descendants remaining.
 
 ## Read-only sprite measurements
 
