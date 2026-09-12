@@ -154,6 +154,17 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         while (-not $process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
             Observe-Descendants $process.Id $records
             Write-Ledger (Join-Path $runRoot 'observed-processes.json') @($records.Values)
+            # A failed test scene can leave Godot idle forever. Fail promptly on
+            # explicit engine diagnostics; the same exact-identity finally block
+            # owns cleanup, and the full logs remain as failure evidence.
+            foreach ($diagnosticPath in @($stderrLog, $engineLog)) {
+                if (Test-Path -LiteralPath $diagnosticPath) {
+                    $diagnosticText = Get-Content -Raw -LiteralPath $diagnosticPath -ErrorAction SilentlyContinue
+                    if ($diagnosticText -match 'SCRIPT ERROR|Parse Error|ERROR:|Failed to load script') {
+                        throw 'Engine emitted a script/runtime error before completion.'
+                    }
+                }
+            }
             Start-Sleep -Milliseconds 200
             $process.Refresh()
         }

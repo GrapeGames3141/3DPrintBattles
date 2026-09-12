@@ -157,6 +157,32 @@ and receipts—remains structurally unchanged.
 
 ## Acceptance fixtures required before implementation can be accepted
 
+### Primary implementation clarifications after independent design audit
+
+- Projection returns a canonical ownership fingerprint of the relevant eligible
+  raw ownership values plus current namespace revision. Numeric JSON integer
+  normalization, stable Dictionary key ordering and retained array order follow
+  the M1 canonical JSON contract. The fingerprint is a concurrency token, not
+  anti-cheat. Every mutation supplies expected namespace revision and fingerprint;
+  recompute from the current source and reject stale input without writes. This
+  does not add a legacy counter or persist projection defaults.
+- Every mutating action uses a bounded action/request identity and canonical
+  payload. Retain the exact input identity and immutable result. An exact duplicate
+  returns that result without persistence or grants, even after later transitions;
+  the same identity with a changed payload rejects. Validate new requests against
+  current revision/ownership only after checking previously accepted duplicates.
+- Onboarding has the durable sequence available voucher -> printing -> settled
+  unacknowledged grant -> acknowledged. Starter binding is immutable. Receipt
+  acknowledgement is one namespace-only transition with one persistence call and
+  revision advance, no grant or loadout effect. Its exact duplicate is zero-write.
+  Reload routes to the corresponding state and never reopens starter selection.
+- First-session completion supplies the recommended loadout as a native editable
+  draft; it does not implicitly Apply. The player explicitly Applies Team, priority
+  and Kit atomically before battle. Back/Cancel keeps the grant and discards only
+  unsaved draft changes, never consumes ownership or writes an empty saved Team.
+
+These resolve implementation ambiguity only and add no gameplay or approval gate.
+
 1. All-empty v3 ownership produces one bound starter License, the two mapped License
    and missing-print guarantees, one available voucher, then exactly one visible
    namespaced starter print and the exact Support deficits.

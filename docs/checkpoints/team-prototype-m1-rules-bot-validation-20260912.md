@@ -39,8 +39,10 @@ Pacing uses the nine ordered starter-team pairings and seeds 0–44. Actual medi
 is 16 cycles, nearest-rank p95 18, maximum 19. First print/contact medians are both
 cycle 1. Across the batch: 161 replacements, 826 Supports, 437 swaps, 10 Draws,
 15 player Wins and 20 player Losses. There are no 500-cycle harness stops. These
-are descriptive bot-vs-bot measures, not evidence of player enjoyment or a target
-pass: the source “12–2” pacing wording remains unresolved.
+are descriptive bot-vs-bot measures, not evidence of player enjoyment. After being
+shown the current 16-cycle median, the user answered “that sounds ok” on 2026-09-12.
+Keep this observed pacing; no alternative numeric interval or balance change is
+inferred from the earlier “12–2” typo.
 
 ## Review and next boundary
 

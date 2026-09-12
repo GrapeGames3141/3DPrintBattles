@@ -44,4 +44,17 @@ per-case E-based environment/storage, and identity-checked bounded cleanup.
   remaining Godot process.
 - Startup logged the isolated E-based OS user-data and QA roots; the fresh QA-save
   folder remained empty. This confirms clean-install read-only startup for this
-  negative fixture, not existing-save preservation or complete Battle Core behavior.
+negative fixture, not existing-save preservation or complete Battle Core behavior.
+
+## Prompt diagnostic failure, 2026-09-12
+
+The runner now detects explicit script/parse/runtime errors during its bounded
+poll and enters the same exact-identity cleanup immediately. This prevents a
+failed scene load from idling for the whole timeout. Successful runs still require
+actual exit zero, clean logs, exact completion markers and unchanged QA saves.
+
+Verified negative evidence:
+`build/evidence/team-battle/20260912-182727-0a9773ae54474dd1a7620741a832f79f/`.
+Coordinator test compile errors were correctly rejected, not claimed as a pass.
+Only task root PID 67404 was stopped, with window handle zero, empty title and no
+survivors. Primary CIM follow-up found it gone. Isolated saves were unchanged.

@@ -117,7 +117,9 @@ terminal settlement once, corruption/privacy and identical resumed traces.
 Run the design's 45 bot matches with seeds 0–44 and the nine ordered starter-team
 pairings. Record actual cycle counts, median/p95/max, first print/contact, replacements,
 support/swap counts, Draws and terminal causes. A 500-cycle harness stop is failure,
-never a game result. No pacing threshold is invented from the unresolved “12–2”.
+never a game result. The user accepted the observed 16-cycle median on 2026-09-12
+(“that sounds ok”). Keep the current balance; do not invent a different range from
+the earlier “12–2” typo.
 Also report serialized completed-session size and timing descriptively so the first
 maintenance review can identify costly snapshots or duplicated responsibilities.
 The approved UI, Collection Link and Android export remain subsequent milestones.

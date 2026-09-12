@@ -27,9 +27,10 @@ printer HP as a second victory system.
 Current v3's 40-card minimum, eight-card hand, three simultaneous field slots,
 repeat-creature deck, multiple freeform Main actions, and printer-HP victory remain
 preserved historical implementation/data, not a second player-facing prototype mode.
-The historical 12–22 median / maximum
-30-round proposal is not a settled target and never becomes fatigue, a timeout, or an
-end-cap result; user clarification is pending.
+The user accepted the observed 16-cycle median on 2026-09-12, preserving the current
+prototype balance. That observation does not infer a different target interval and
+never becomes fatigue, a timeout, or an end-cap result; the historical 12–22 median /
+maximum-30 proposal remains non-authoritative.
 
 ## Tunable prototype defaults
 
@@ -306,9 +307,10 @@ rounds/cycles to actual Win/Loss/Draw, median, p95, longest, first fabrication, 
 contact, replacement timing, Support/swap counts, Draw rate, and terminal cause.
 
 The harness may stop a trace at 500 cycles only to report a softlock/nontermination
-failure; it must not create a timeout Win, Loss, or Draw. Report pacing descriptively
-until the user clarifies the apparent 12–2 wording. Do not silently adopt the historical
-12–22/maximum-30 proposal as a pass gate.
+failure; it must not create a timeout Win, Loss, or Draw. The user accepted the
+observed 16-cycle median on 2026-09-12, preserving the current prototype balance;
+this does not establish a different interval or a gameplay cycle cap. Do not silently
+adopt the historical 12–22/maximum-30 proposal as a pass gate.
 
 ## Implementation ownership and bounded modules
 
