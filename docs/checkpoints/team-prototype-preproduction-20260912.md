@@ -1,6 +1,6 @@
 # Team prototype preproduction checkpoint — 2026-09-12
 
-Status: **M0 REVIEW CANDIDATE IN PROGRESS. No Godot invocation, runtime edit, runtime-art promotion, test, build, or export is authorized yet.**
+Status: **M0 ATLAS COMPLETE, READ-ONLY REVIEW HAS NO P0; AWAITING HUMAN ATLAS APPROVAL. No Godot invocation, runtime edit, runtime-art promotion, runtime test, build, or export is authorized yet.**
 
 Branch: `codex/printforge-team-prototype`; preserved baseline `d7a4a10`.
 Authorities: [solo prototype contract](../design/team-prototype-20260912.md),
@@ -28,12 +28,12 @@ whole Plan. The cycle resolves automatically. Defeat leaves a Defeated roster re
 only the current FIFO head owns printer-chamber art. Ready-reserve replacement is
 automatic. All-three defeated loses; same-beat final defeats draw. Printers have no HP.
 
-Defaults are explicit hypotheses in the design, not final balance: filament 5/cap9,
-+2 per later Plan, common cost3/work1; four eligible commons; five Support IDs totaling
-15 finite copies. M1 is reward-free. M2 provisionally settles Win30c/40XP,
-Loss10c/20XP, Draw20c/30XP through exactly-once prototype receipts.
+Defaults are explicit hypotheses in the design, not final balance: filament 5/cap 9,
++2 per later Plan, common cost 3/work 1; four eligible commons; five Support IDs totaling
+15 finite copies. M1 is reward-free. M2 provisionally settles Win 30c/40XP,
+Loss 10c/20XP, Draw 20c/30XP through exactly-once prototype receipts.
 
-The user's “12–2” pacing wording remains unresolved. The historical 12–22/maximum30
+The user's “12–2” pacing wording remains unresolved. The historical 12–22/maximum 30
 proposal is not an acceptance threshold. Never add fatigue, a damage ramp, timeout,
 forced Draw, or printer damage to manufacture completion.
 
@@ -43,24 +43,26 @@ These are **offline HTML compositions over ImageGen masters**, not Godot capture
 interactive gameplay, tested Android Back behavior, or physical-device evidence.
 Every dynamic name/value/state/label remains separate from art.
 
-| Required family | Current evidence | Remaining M0 check |
-|---|---|---|
-| Starter selection, Inspect, voucher, empty/early/60%/raw/awaken print | v4 seven-state UI review; v18 all three choices | Full three-size registry regression |
-| Exactly-once grant receipt presentation and all three fixed mappings | v18 six choice/receipt checks and no-P0 UI review | Full three-size registry regression |
-| Team empty/1-of-3/duplicate-invalid/ready plus saved-versus-draft values | v6 normal family; v19 corrected draft review | Full three-size registry regression |
-| Recommended15 Kit, excluded-card reason, Apply/Cancel/Reset | v19 eligible and excluded tallies, unchanged saved Kit, no-P0 review | Full three-size registry regression |
-| Workshop navigation, preflight error, recovery, actual focus, reduced-motion setting | v7 five-state normal review | Full three-size registry regression |
-| Preflight, first/combined fabrication, support/swap, FIFO/gear, print/awaken/enter, replacement, empty Active/replenish, exhausted hand, Win/Loss/Draw | v12 all35 normal battle/results reviewed; v15 seven input-state assertions close selected-outline P0 | Full three-size registry regression and representative accessibility |
-| Uniform portrait fit and synthetic safe top | v20 eight representative screens × three sizes, 24/24 checks and no-P0 scoped UI review | Remaining normal registry |
-| 150% text, material high contrast, reduced motion presentation | v22b Combined Plan draft checks; Back/Run scaling gap found | v23 Combined/Swap/60%-print × three sizes plus read-only review |
-| Indexed complete atlas and maintenance audit | Current index and review history | Final refresh, targeted commit, single user atlas approval |
+| Required family | Current evidence and result |
+|---|---|
+| Starter choice/Inspect and voucher/empty/early/60%/raw/awaken | v24b current three-size captures; earlier v4/v18 reviews and final delta review: no P0 |
+| All three guaranteed starter receipts | v25, 9/9 static checks; Continue / To Team is inside paper, correct mappings and route: no P0 |
+| Team empty/one/duplicate/ready and saved-versus-draft values | v24b current three-size captures; v6/v19 plus final review: no P0 |
+| Kit 15, excluded reason, Apply/Cancel/Reset | v24b current three-size captures; exact valid/excluded tallies and unchanged saved values: no P0 |
+| Workshop, preflight error, recovery, focus, reduced-motion setting | v24b current three-size captures; v7 and final review: no P0 |
+| All 35 battle/result states, including finite hand, atomic rejection, FIFO/gear, swaps, replacement, replenishment and Draw | v24b current three-size captures; v12/v15 and final delta review: no P0 |
+| Uniform portrait/synthetic-safe-top fit | v24b 174/174 static checks; replace its nine receipt images with v25; 58 current normal states at three sizes |
+| Representative 150%/HC/RM battle | v23c Combined/Swap (six images) plus v26b Print60 (three images); exact native font/ink/owner checks and final read-only review: no P0 |
+| Indexed atlas and maintenance audit | 183 selected images linked in INDEX; legacy authoring JS removed, scope/export/startup audits recorded; ready for the single human approval |
 
 Every normal composition must be captured at 576×1024, 720×1280, and 720×1600.
 Tall uses uniform 941×1672 stage fit with a synthetic 24px top inset and inert aspect
 letterbox; it is **not an ad reserve** and does not establish one-handed reach or real
 notch behavior. The representative large-text set must show all Team records, a
 four-card Plan, forecast/confirmation, Ready reserves, and in-printer work without
-clipping. Back and Run are included in the 24px-at576/30px-at720 native font checks.
+clipping. Back and Run are included in the 24px-at-576/30px-at-720 native font checks.
+Print60 uses job marker 1 on each roof, with full names/progress in its sidebar,
+queues and aria; the disabled lever says Run / Wait inside its actual ink plate.
 
 M0 approves screen composition, not complete application accessibility. The
 route-by-route native Godot 150% reflow, Android Back, animation equivalence, safe-area
@@ -69,7 +71,7 @@ mark unhandled offline routes as large text or manufacture flags without actual 
 The broader authoring geometry suggestions in REVIEW.md are retained implementation
 briefs, not additional M0 screen-generation rounds.
 
-All touch owners remain at least48 logical pixels and primary owners at least56 at
+All touch owners remain at least 48 logical pixels and primary owners at least 56 at
 the base size. Preserve native focus, selected/disabled reasons, full accessible card
 names/effects, private rival data, and one visible owner per unit/job/control.
 
@@ -84,20 +86,21 @@ carried interim exception. No new art generation is authorized merely by this no
 - User product/battle-loop authority: **PASS**.
 - Decision-complete numeric defaults and deterministic fixtures: **PASS**.
 - Normal-size scoped UI reviews: **PASS within the evidence above**.
-- Full current three-size normal registry: **PENDING**.
-- Representative150/HC/RM family: **PENDING corrections and review**.
-- Final full-atlas read-only UI review: **PENDING; no P0 may remain**.
+- Full current three-size normal registry: **PASS, 58 × 3 selected captures**.
+- Representative 150%/HC/RM family: **PASS, 3 × 3 selected captures**.
+- Final full-atlas read-only UI review: **PASS, no remaining reviewed P0**.
 - Human approval of this new full atlas: **PENDING**.
 - Godot/runtime/build authorization: **CLOSED**.
 - New Android APK or Google Drive release this M0 pass: **NONE**.
 
-A read-only agent review is not human approval. Complete M0, show the indexed
-candidate, and obtain the single full-atlas approval before starting M1.
+A read-only agent review is not human approval. Show the indexed candidate and obtain
+the single full-atlas approval before starting M1. Approval must name this current
+v24b/v25 + v23c/v26b candidate; historical approvals do not substitute for it.
 
 ## M1 — isolated deterministic Battle Core
 
 Implement separate TeamBattle state, rules, bot, coordinator, and explicit eligibility/
-cost data; do not rewrite legacy printer-HP constructors. Prove 1v1 then3v3 using the
+cost data; do not rewrite legacy printer-HP constructors. Prove 1v1 then 3v3 using the
 same model: atomic Plan/revision rejection, FIFO capacity/work/no carry, finite hand
 and discard, simultaneous attacks/traits/Draw, once-only deployment, same-identity
 swap, replacement, equipment target/fizzle, no-ready-reserve regeneration path, bot
@@ -108,12 +111,12 @@ Prototype selection must branch **before** GameManager legacy initialization can
 selector is too late. Preserve the existing QA-root guard first. Startup only reads
 the existing v3 snapshot; an explicit checked transition creates the additive,
 versioned `team_prototype` namespace. Every QA launch, including prebootstrap, supplies
-an isolated E-based `--qa-save-root`. Invalid legacy40-deck and old-ownership fixtures
+an isolated E-based `--qa-save-root`. Invalid legacy 40-card-deck and old-ownership fixtures
 must remain byte-identical. This preproduction pass reads/writes no actual player save.
 
-Run the nine ordered starter-Team pairings × five replicates, seeds0–44. Report actual
+Run the nine ordered starter-Team pairings × five replicates, seeds 0–44. Report actual
 result cycle median/p95/longest, first print/contact, replacements, Support/swap counts,
-Draw rate, and terminal causes. A500-cycle diagnostic stop is a softlock failure, not
+Draw rate, and terminal causes. A 500-cycle diagnostic stop is a softlock failure, not
 a match result; pacing stays descriptive until the typo is clarified.
 
 ## M2 — Collection Link

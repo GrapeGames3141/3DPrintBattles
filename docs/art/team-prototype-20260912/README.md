@@ -1,6 +1,6 @@
 # PrintForge team prototype — screen-family authoring record
 
-Status: **M0 OFFLINE REVIEW CANDIDATE; no runtime approval.**
+Status: **M0 STATIC VISUAL REVIEW COMPLETE, NO P0; awaiting human approval. No runtime approval.**
 Use [the selected-screen index](INDEX.md) to review the candidate and
 [the current checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md)
 for the authoritative remaining work. These HTML compositions over ImageGen art are
@@ -16,24 +16,28 @@ latest solo three-companion/15-Support/no-printer-HP contract on paper only.
 ## Selected evidence
 
 - v4: seven starter/Forge normal states, no-P0 read-only review.
-- v6/v19: Team and Kit states, corrected saved-versus-draft values and exact15 tally,
+- v6/v19: Team and Kit states, corrected saved-versus-draft values and exact 15 tally,
   no-P0 normal review.
 - v7: Workshop/navigation/error/recovery/focus/settings, no-P0 normal review.
-- v12: all35 normal battle/result states, no-P0 review.
+- v12: all 35 normal battle/result states, no-P0 review.
 - v15: seven independent control-state checks; selected fabrication outline corrected
   and confirmed by read-only UI review.
 - v18: all three starter choices and corresponding fixed grant mappings, six passes
   and no-P0 review.
 - v20: eight representative screens × three portrait sizes, 24/24 static checks and
-  no-P0 fit review. Tall uses a synthetic24px top inset and inert aspect letterbox,
+  no-P0 fit review. Tall uses a synthetic 24px top inset and inert aspect letterbox,
   not an AdMob reserve or a device-test result.
-- v22b: Combined Plan150% draft; the missing Back/Run font scaling is a known P0.
-  A bounded v23 correction adds representative Swap/60%-print coverage.
+- v24b: 174/174 static checks, all 58 normal states at three sizes. Its three receipt
+  states are superseded by v25 for final paper-contained CTA placement.
+- v25: 9/9 receipt checks and final no-P0 UI review; Continue / To Team fits its paper.
+- v23c Combined/Swap plus v26b Print60: nine selected 150%/HC/RM images with final
+  no-P0 review. Back/Run scale, Ready HP fits, printer markers and Run/Wait stay on
+  their physical materials. Earlier v22/v23 Print60 failures are historical only.
 
-The complete normal three-size registry and representative battle accessibility
-recheck remain pending. Final source and current captures will be indexed together
-before requesting the single full-atlas human approval. Historical v1/v3/v5 and other
-diagnostic folders are not selected evidence; preserve them without claiming passes.
+The full current candidate is indexed: 174 normal plus nine accessibility images.
+The read-only review recommends it for the single human full-atlas approval. Historical
+v1/v3/v5 and other diagnostic folders are not selected evidence; preserve them without
+claiming passes. This is static composition approval readiness, not runtime readiness.
 
 The [offline atlas](atlas.html) is an authoring viewer; its controls display fixture
 states, not tested gameplay. The [capture helper](render-atlas.cjs) checks static

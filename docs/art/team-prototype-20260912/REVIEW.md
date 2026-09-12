@@ -1,24 +1,69 @@
 # M0 review record — solo Team prototype
 
 This is offline HTML/art authoring evidence, **not Godot, runtime, Android, or device
-acceptance**. The new full atlas and human approval remain incomplete. Do not promote
-art or begin runtime/build work from the bounded passes below.
+acceptance**. The full current atlas now has no remaining reviewed P0; human approval
+is pending. Do not promote art or begin runtime/build work before that approval.
+
+## Final selected candidate — M0 ready for human approval
+
+The final read-only reviewer cleared the complete candidate:
+
+- Normal: v24b's other 55 states plus v25's three receipts, all at 576×1024,
+  720×1280 and 720×1600. The current selection is 174 images.
+- Representative 150%/HC/RM: v23c Combined Plan and Swap Plan plus v26b Print60,
+  each at all three sizes. The current selection is nine images.
+- The [index](INDEX.md) links all 183 selected images and the four render ledgers.
+
+V24b passed all 174 static checks. Visual review then corrected receipt CTA ink
+ownership in v25 (9/9): Continue / To Team is on the inner paper, with exact route,
+full aria, grants and font unchanged. V23c Combined/Swap has no P0: Back arrow and
+Run/Cycle scale, Ready HP fits two lines, selected Aqua remains outlined, and the
+miniatures keep alpha-grounded feet. Its Print60 labels are superseded by v26b (3/3):
+native job marker 1 at actual-576 roof rects (68,40,56,30) and (57,648,56,30), with
+full identity/progress in sidebar, indexed queues and aria; Run / Wait at
+(470,884,84,56) stays within the lever and retains the full locked reason.
+
+V26 revealed real +2/+3 logical-pixel scroll overflow in marker/Run labels. V26b kept
+font size and all rectangles, using explicit Arial 700 with 24px leading at the base
+size. Exact ink rectangles, 24/30px font thresholds, scroll/client containment and
+aria assertions remain enforced; no checker was weakened. The reviewer inspected all
+three final Print60 captures and confirmed contrast, Back clearance, raw/wire scan,
+grounding, three concealed rival cards and the three-card player hand were unchanged.
+
+Final ledger cleanup records show closed task-owned Edge contexts, zero recorded
+descendants, and removal of each exact isolated E-based profile. No Godot invocation,
+actual player-save read/write, runtime change or new build occurred. Source-only
+maintenance checks pass; runtime files do not differ from the preserved baseline.
+All earlier failures below are retained history, not unresolved current findings.
 
 ## Current review boundary
+
+The final coverage audit counts 58 canonical normal screens: 12 first-session, 6
+Team/Kit, 5 Workshop/system, and 35 battle/results. The compatibility alias HC150-RM
+does not count as a 59th screen. No required normal state is substituted by the three
+representative large-text battle fixtures. Product vocabulary and rendered states
+otherwise match the solo three-member/15-Support/team-defeat/no-ads contract.
+
+Two final bounded corrections are in progress: receipt acknowledgement must say
+Continue to Team, matching its intended route; the queue-capacity error's long
+opening/unchanged subtitle wraps outside its plate and needs concise visible math
+with the full native accessible explanation retained. V23 also found a large Ready
+caption wrap and an incorrect test expectation that prematurely swapped the Active;
+the fixture itself correctly keeps Cinderpaw Active until Run.
 
 The checkpoint is the current status authority; entries below preserve the sequence
 of findings and do not reopen already-corrected historical failures. V18 closes all
 three starter/grant mappings. V19 closes saved-versus-draft folio values. V20 passes
-24 uniform-fit captures (eight screens, three sizes), with a synthetic24px safe top
+24 uniform-fit captures (eight screens, three sizes), with a synthetic 24px safe top
 and no ad reserve. All three groups received read-only no-P0 scoped visual review.
 
-V22b's three Combined Plan150% captures have sound material contrast, selected
+V22b's three Combined Plan 150% captures have sound material contrast, selected
 outlines, label ownership, and clipping. Read-only review found one accessibility P0:
-Back and Run/Cycle remained about16px at576 rather than24px. V23 is correcting those
-labels and adding representative Ready-reserve and60%-print large-text fixtures.
+Back and Run/Cycle remained about 16px at 576 rather than 24px. V23 is correcting those
+labels and adding representative Ready-reserve and 60%-print large-text fixtures.
 
 The later all-route reflow suggestions in this record remain useful M3 implementation
-briefs. M0's finite accessibility evidence is Combined Plan, Swap Plan, and60% Print
+briefs. M0's finite accessibility evidence is Combined Plan, Swap Plan, and 60% Print
 at all three portrait sizes, showing Team records, four-card choices, forecast, Ready
 reserves, and printer work. Static review cannot prove actual Android accessibility,
 motion equivalence, input, or Back; these remain explicit M3 acceptance requirements.
@@ -297,6 +342,14 @@ Read-only UI review confirms these actual-576 acceptance rectangles. Keep the
 These are authoring directions, not completed accessibility evidence.
 
 ## Read-only startup audit for the later M1 handoff
+
+Maintainability boundary: the offline HTML is a fixed-state composition authoring
+tool, not a production architecture to port wholesale. Its remaining legacy CSS and
+fixture-specific copy must not become battle authority. M1 uses separate state,
+rules, bot, coordinator and projection modules described in the design, with finite
+events driving reusable M3 UI components. Primary source inspection confirms the
+current export filters exclude docs/* and build/*; this is configuration evidence,
+not a newly inspected APK. No runtime file differs from the preserved baseline.
 
 Source inspection confirms `project.godot` autoloads Catalog, GameManager, and
 SaveService. `scripts/core/game_manager.gd::_ready` currently configures QA or v3

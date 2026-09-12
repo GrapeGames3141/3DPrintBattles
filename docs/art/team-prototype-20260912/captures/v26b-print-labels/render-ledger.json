@@ -1,0 +1,2082 @@
+{
+  "startedAt": "2026-09-12T21:21:51.941Z",
+  "nodePid": 73260,
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "captureLabel": "v26b-print-labels",
+  "states": [
+    "print60"
+  ],
+  "sizes": [
+    {
+      "name": "576x1024",
+      "width": 576,
+      "height": 1024
+    },
+    {
+      "name": "720x1280",
+      "width": 720,
+      "height": 1280
+    },
+    {
+      "name": "720x1600",
+      "width": 720,
+      "height": 1600
+    }
+  ],
+  "requestedAccessibility": {
+    "text": "150",
+    "contrast": "high",
+    "motion": "reduced"
+  },
+  "userDataDir": "E:\\AI Projects\\games\\3d print battler\\build\\evidence\\team-prototype-20260912\\atlas-browser\\edge-profile-2026-09-12T21-21-51-937Z",
+  "sourceAssets": [
+    "BA-R1-team-autobattle-chassis-text-free-v1.png",
+    "TM-R1-team-support-workbench-text-free-v1.png",
+    "../../../assets/cards/support_card_back_source_v1.png",
+    "../../../assets/cards/support_cards_resources_landscape_v2.png",
+    "../../../assets/cards/support_cards_offense_landscape_v2.png",
+    "../../../assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/enclosed-forge-static-master-v1.png",
+    "../../../assets/ui/physical_ui/m1-r2/starter-blueprint-desk-v4.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-guide-v1.png",
+    "../../../assets/ui/physical_ui/forge-continuity/carriage-head-v1.png",
+    "../../../assets/creatures/2d/battle-facing/cinderpaw_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/aquafin_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/battle-facing/mossmunk_battle_facing_4x2.png",
+    "../../../assets/creatures/2d/voltwig_sprite_sheet.png",
+    "EQ-R1-quadruped-armor-kit-raw-draft-v2.png"
+  ],
+  "cleanup": "persistent Edge context closed",
+  "evidenceScope": "offline native-HTML concept atlas only; not Godot/runtime/device evidence",
+  "browserTreeAtStart": {
+    "known": true,
+    "items": [
+      {
+        "pid": 15612,
+        "parent": 73260,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 54956,
+        "parent": 15612,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 42484,
+        "parent": 15612,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 109148,
+        "parent": 15612,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 109820,
+        "parent": 15612,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 19936,
+        "parent": 15612,
+        "name": "msedge.exe"
+      },
+      {
+        "pid": 101692,
+        "parent": 15612,
+        "name": "msedge.exe"
+      }
+    ]
+  },
+  "conceptChecks": [
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "print60",
+      "size": "576x1024",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "largeTextPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "starterChoice": "",
+      "starterGrant": "",
+      "receiptCta": null,
+      "grants": [],
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "coreState": "print60",
+      "coreRecords": [
+        {
+          "seat": "rival",
+          "creature": "cinder",
+          "status": "Printing"
+        },
+        {
+          "seat": "rival",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "rival",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "cinder",
+          "status": "Printing"
+        },
+        {
+          "seat": "player",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        }
+      ],
+      "coreRecordMap": {
+        "rival:cinder": "Printing",
+        "rival:aquafin": "Unspent",
+        "rival:mossmunk": "Unspent",
+        "player:cinder": "Printing",
+        "player:aquafin": "Unspent",
+        "player:mossmunk": "Unspent"
+      },
+      "coreSeatActiveCounts": {
+        "rival": 0,
+        "player": 0
+      },
+      "coreReserveOwners": [
+        "r1",
+        "r2",
+        "p1",
+        "p2"
+      ],
+      "coreTextFits": true,
+      "coreTextDiagnostics": [
+        {
+          "text": "4 · Next 6",
+          "scrollWidth": 382,
+          "clientWidth": 382,
+          "scrollHeight": 56,
+          "clientHeight": 56
+        },
+        {
+          "text": "Rival ×3",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "Cycle 1RunPrintingCinderpaw60%Post 4Next 6",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 376,
+          "clientHeight": 376
+        },
+        {
+          "text": "1",
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "AquafinUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "MossmunkUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "1",
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "AquafinUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "MossmunkUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "1: Cinderpaw",
+          "scrollWidth": 441,
+          "clientWidth": 441,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "1: Cinderpaw",
+          "scrollWidth": 600,
+          "clientWidth": 600,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        }
+      ],
+      "coreInputs": [
+        {
+          "kind": "fabrication",
+          "id": "",
+          "seat": "player",
+          "creature": "aquafin",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(246, 231, 197)",
+          "disabled": true,
+          "aria": "Aquafin Unspent unavailable: Need 1 filament"
+        },
+        {
+          "kind": "fabrication",
+          "id": "",
+          "seat": "player",
+          "creature": "mossmunk",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(246, 231, 197)",
+          "disabled": true,
+          "aria": "Mossmunk Unspent unavailable: Need 1 filament"
+        },
+        {
+          "kind": "hand",
+          "id": "suit",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution"
+        },
+        {
+          "kind": "hand",
+          "id": "gem",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution"
+        },
+        {
+          "kind": "hand",
+          "id": "surge",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution"
+        },
+        {
+          "kind": "run",
+          "id": "",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(255, 246, 213)",
+          "disabled": true,
+          "aria": "Run Cycle unavailable: locked during resolution"
+        }
+      ],
+      "coreJobs": [
+        {
+          "owner": "rival",
+          "id": "cinder",
+          "progress": 60,
+          "scanY": 160.34131355285643,
+          "solid": true,
+          "wire": true
+        },
+        {
+          "owner": "player",
+          "id": "cinder",
+          "progress": 60,
+          "scanY": 761.1595004081726,
+          "solid": true,
+          "wire": true
+        }
+      ],
+      "coreHand": 3,
+      "coreCards": [
+        {
+          "id": "suit",
+          "label": "Suit2",
+          "aria": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        },
+        {
+          "id": "gem",
+          "label": "Gem2",
+          "aria": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        },
+        {
+          "id": "surge",
+          "label": "Surge2",
+          "aria": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        }
+      ],
+      "coreGear": [],
+      "coreGearGeometry": true,
+      "coreQueues": {
+        "rival": "1: Cinderpaw",
+        "player": "1: Cinderpaw"
+      },
+      "coreGeometry": false,
+      "accessibilityFlags": {
+        "text150": true,
+        "highContrast": true,
+        "reducedMotion": true
+      },
+      "largeText": {
+        "title": {
+          "x": 279.359375,
+          "y": 44.109375,
+          "width": 382.2656450801425,
+          "height": 55.54687761598163
+        },
+        "back": {
+          "x": 26.125000884135563,
+          "y": 20.0000012881226,
+          "width": 133.95313061608206,
+          "height": 78.50000092718335
+        },
+        "backLabel": {
+          "x": 26.125000884135563,
+          "y": 20.0000012881226,
+          "width": 71.85937215222252,
+          "height": 78.50000092718335
+        },
+        "backText": "←",
+        "backAria": "Back to Workshop",
+        "run": {
+          "x": 747.9999964502122,
+          "y": 1363.0000087949963,
+          "width": 173.99999157587686,
+          "height": 242.00000031789142
+        },
+        "side": {
+          "x": 22.85937538411882,
+          "y": 539.0937435362074,
+          "width": 230.34377331203882,
+          "height": 375.687498304579
+        },
+        "private": {
+          "x": 22.85937538411882,
+          "y": 359.4062572320302,
+          "width": 230.34377331203882,
+          "height": 48.9999967681037
+        },
+        "activeRival": null,
+        "activePlayer": null,
+        "queueRival": {
+          "x": 347.8906240728166,
+          "y": 343.0624967681037,
+          "width": 441.09374999999994,
+          "height": 49.00002169609069
+        },
+        "queuePlayer": {
+          "x": 295.68750561608203,
+          "y": 1287.3281129201252,
+          "width": 599.5937685436672,
+          "height": 49.00004662407769
+        },
+        "readyLabels": [],
+        "readyMinis": [],
+        "dockets": [
+          {
+            "text": "1",
+            "rect": {
+              "x": 111.07812538411882,
+              "y": 65.34375100003348,
+              "width": 91.4843786160151,
+              "height": 49.00000300010045
+            },
+            "aria": "Cinderpaw Printing, 60% complete",
+            "owner": "core-docket rival"
+          },
+          {
+            "text": "1",
+            "rect": {
+              "x": 93.10937800010045,
+              "y": 1058.625,
+              "width": 91.48437238401836,
+              "height": 49.00004662407769
+            },
+            "aria": "Cinderpaw Printing, 60% complete",
+            "owner": "core-docket player"
+          }
+        ],
+        "tokens": [
+          {
+            "text": "Aquafin\nUnspent",
+            "rect": {
+              "x": 303.8906330797407,
+              "y": 191.39062778155008,
+              "width": 277.71873953607343,
+              "height": 91.4843910800086
+            },
+            "parent": {
+              "x": 303.8906330797407,
+              "y": 163.39062784777747,
+              "width": 277.79686384730866,
+              "height": 177.99999868869781
+            }
+          },
+          {
+            "text": "Mossmunk\nUnspent",
+            "rect": {
+              "x": 611.0000176959567,
+              "y": 191.39062778155008,
+              "width": 277.7187146080865,
+              "height": 91.4843910800086
+            },
+            "parent": {
+              "x": 611.0000176959567,
+              "y": 163.39062784777747,
+              "width": 277.79688877529566,
+              "height": 177.99999868869781
+            }
+          },
+          {
+            "text": "Aquafin\nUnspent",
+            "rect": {
+              "x": 303.8906330797407,
+              "y": 1136.9999870724148,
+              "width": 277.71873953607343,
+              "height": 91.4844160079956
+            },
+            "parent": {
+              "x": 303.8906330797407,
+              "y": 1109.0000743865967,
+              "width": 277.79686384730866,
+              "height": 177.99998622470432
+            }
+          },
+          {
+            "text": "Mossmunk\nUnspent",
+            "rect": {
+              "x": 611.0000176959567,
+              "y": 1136.9999870724148,
+              "width": 277.7187146080865,
+              "height": 91.4844160079956
+            },
+            "parent": {
+              "x": 611.0000176959567,
+              "y": 1109.0000743865967,
+              "width": 277.79688877529566,
+              "height": 177.99998622470432
+            }
+          }
+        ],
+        "titleText": "4 · Next 6",
+        "titleAria": "CYCLE 1 · RUN; POST 4 · NEXT 6",
+        "sideText": "Cycle 1\nRun\nPrinting\nCinderpaw\n60%\nPost 4\nNext 6",
+        "privateText": "Rival ×3",
+        "privateAria": "Rival private hand: 3 concealed Support cards",
+        "activeText": [],
+        "queueAria": [
+          "Rival queue: 1: Cinderpaw",
+          "Player queue: 1: Cinderpaw"
+        ],
+        "fonts": {
+          "title": 24.02,
+          "back": 23.99,
+          "backLabel": 23.95,
+          "run": 24,
+          "side": 24.04,
+          "private": 24.04,
+          "active": 0,
+          "ready": 0,
+          "docket": 24.13,
+          "token": 23.98,
+          "queue": 24.01,
+          "card": 24
+        },
+        "cardLabels": [
+          "Suit\n2",
+          "Gem\n2",
+          "Surge\n2"
+        ]
+      },
+      "duplicateStatusRows": 0,
+      "coreThirdBay": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 81.99468994140625,
+          "height": 48.05101013183594,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Aquafin Unspent unavailable: Need 1 filament",
+          "width": 170.04356384277344,
+          "height": 108.9564208984375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Mossmunk Unspent unavailable: Need 1 filament",
+          "width": 170.0435791015625,
+          "height": 108.9564208984375,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution",
+          "width": 89.36875915527344,
+          "height": 132.828857421875,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Run Cycle unavailable: locked during resolution",
+          "width": 106.50796508789062,
+          "height": 148.13177490234375,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1024,
+        "top": 0,
+        "right": 576,
+        "bottom": 1024,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 576,
+        "height": 1023.4559326171875,
+        "top": 0,
+        "right": 576,
+        "bottom": 1023.4559326171875,
+        "left": 0
+      },
+      "print60Markers": [
+        {
+          "seat": "rival",
+          "text": "1",
+          "aria": "Cinderpaw Printing, 60% complete",
+          "rect": {
+            "x": 111.07812538411882,
+            "y": 65.34375100003348,
+            "width": 91.4843786160151,
+            "height": 49.00000300010045
+          },
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49,
+          "fits": true,
+          "inside": true
+        },
+        {
+          "seat": "player",
+          "text": "1",
+          "aria": "Cinderpaw Printing, 60% complete",
+          "rect": {
+            "x": 93.10937800010045,
+            "y": 1058.625,
+            "width": 91.48437238401836,
+            "height": 49.00004662407769
+          },
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49,
+          "fits": true,
+          "inside": true
+        }
+      ],
+      "print60RunLabel": {
+        "text": "RUN\nWAIT",
+        "aria": "Run Cycle unavailable: locked during resolution",
+        "rect": {
+          "x": 767.8281660079955,
+          "y": 1444.156261232164,
+          "width": 137.2186969121297,
+          "height": 91.4844160079956
+        },
+        "font": 24.04,
+        "scrollWidth": 137,
+        "clientWidth": 137,
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "fits": true,
+        "inside": true
+      },
+      "screenInViewportTop": 0,
+      "screenInViewportBottom": 0.5440673828125,
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 24,
+        "action": 0,
+        "primary": 0,
+        "heading": 24.02,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0,
+        "coreActive": 0,
+        "coreReserve": 23.98,
+        "coreHand": 24,
+        "coreSide": 24.04,
+        "corePrivate": 24.04
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 3,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_card_back_source_v1.png\")",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v26b-print-labels/print60-576x1024.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "print60",
+      "size": "720x1280",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "largeTextPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "starterChoice": "",
+      "starterGrant": "",
+      "receiptCta": null,
+      "grants": [],
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "coreState": "print60",
+      "coreRecords": [
+        {
+          "seat": "rival",
+          "creature": "cinder",
+          "status": "Printing"
+        },
+        {
+          "seat": "rival",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "rival",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "cinder",
+          "status": "Printing"
+        },
+        {
+          "seat": "player",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        }
+      ],
+      "coreRecordMap": {
+        "rival:cinder": "Printing",
+        "rival:aquafin": "Unspent",
+        "rival:mossmunk": "Unspent",
+        "player:cinder": "Printing",
+        "player:aquafin": "Unspent",
+        "player:mossmunk": "Unspent"
+      },
+      "coreSeatActiveCounts": {
+        "rival": 0,
+        "player": 0
+      },
+      "coreReserveOwners": [
+        "r1",
+        "r2",
+        "p1",
+        "p2"
+      ],
+      "coreTextFits": true,
+      "coreTextDiagnostics": [
+        {
+          "text": "4 · Next 6",
+          "scrollWidth": 382,
+          "clientWidth": 382,
+          "scrollHeight": 56,
+          "clientHeight": 56
+        },
+        {
+          "text": "Rival ×3",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "Cycle 1RunPrintingCinderpaw60%Post 4Next 6",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 376,
+          "clientHeight": 376
+        },
+        {
+          "text": "1",
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "AquafinUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "MossmunkUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "1",
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "AquafinUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "MossmunkUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "1: Cinderpaw",
+          "scrollWidth": 441,
+          "clientWidth": 441,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "1: Cinderpaw",
+          "scrollWidth": 600,
+          "clientWidth": 600,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        }
+      ],
+      "coreInputs": [
+        {
+          "kind": "fabrication",
+          "id": "",
+          "seat": "player",
+          "creature": "aquafin",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(246, 231, 197)",
+          "disabled": true,
+          "aria": "Aquafin Unspent unavailable: Need 1 filament"
+        },
+        {
+          "kind": "fabrication",
+          "id": "",
+          "seat": "player",
+          "creature": "mossmunk",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(246, 231, 197)",
+          "disabled": true,
+          "aria": "Mossmunk Unspent unavailable: Need 1 filament"
+        },
+        {
+          "kind": "hand",
+          "id": "suit",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution"
+        },
+        {
+          "kind": "hand",
+          "id": "gem",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution"
+        },
+        {
+          "kind": "hand",
+          "id": "surge",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution"
+        },
+        {
+          "kind": "run",
+          "id": "",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(255, 246, 213)",
+          "disabled": true,
+          "aria": "Run Cycle unavailable: locked during resolution"
+        }
+      ],
+      "coreJobs": [
+        {
+          "owner": "rival",
+          "id": "cinder",
+          "progress": 60,
+          "scanY": 200.42662887573243,
+          "solid": true,
+          "wire": true
+        },
+        {
+          "owner": "player",
+          "id": "cinder",
+          "progress": 60,
+          "scanY": 951.4493144750595,
+          "solid": true,
+          "wire": true
+        }
+      ],
+      "coreHand": 3,
+      "coreCards": [
+        {
+          "id": "suit",
+          "label": "Suit2",
+          "aria": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        },
+        {
+          "id": "gem",
+          "label": "Gem2",
+          "aria": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        },
+        {
+          "id": "surge",
+          "label": "Surge2",
+          "aria": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        }
+      ],
+      "coreGear": [],
+      "coreGearGeometry": true,
+      "coreQueues": {
+        "rival": "1: Cinderpaw",
+        "player": "1: Cinderpaw"
+      },
+      "coreGeometry": false,
+      "accessibilityFlags": {
+        "text150": true,
+        "highContrast": true,
+        "reducedMotion": true
+      },
+      "largeText": {
+        "title": {
+          "x": 279.359375,
+          "y": 44.109375,
+          "width": 382.2656151665582,
+          "height": 55.546873876783586
+        },
+        "back": {
+          "x": 26.124999014536538,
+          "y": 19.999999418523576,
+          "width": 133.9531206448873,
+          "height": 78.50000092718336
+        },
+        "backLabel": {
+          "x": 26.124999014536538,
+          "y": 19.999999418523576,
+          "width": 71.85937963061862,
+          "height": 78.50000092718336
+        },
+        "backText": "←",
+        "backAria": "Back to Workshop",
+        "run": {
+          "x": 748.0000263637967,
+          "y": 1362.9999489678278,
+          "width": 173.99998160468206,
+          "height": 242.00010002983942
+        },
+        "side": {
+          "x": 22.85937538411882,
+          "y": 539.0937235938178,
+          "width": 230.34373342725965,
+          "height": 375.6875381893582
+        },
+        "private": {
+          "x": 22.85937538411882,
+          "y": 359.4062522464328,
+          "width": 230.34373342725965,
+          "height": 49.0000067392985
+        },
+        "activeRival": null,
+        "activePlayer": null,
+        "queueRival": {
+          "x": 347.89063902960885,
+          "y": 343.0625067392985,
+          "width": 441.0937101152208,
+          "height": 49.0000067392985
+        },
+        "queuePlayer": {
+          "x": 295.6875056160821,
+          "y": 1287.328073035346,
+          "width": 599.5937884860568,
+          "height": 49.00004662407769
+        },
+        "readyLabels": [],
+        "readyMinis": [],
+        "dockets": [
+          {
+            "text": "1",
+            "rect": {
+              "x": 111.07812289132012,
+              "y": 65.34374726083543,
+              "width": 91.48436615202162,
+              "height": 49.000001753701106
+            },
+            "aria": "Cinderpaw Printing, 60% complete",
+            "owner": "core-docket rival"
+          },
+          {
+            "text": "1",
+            "rect": {
+              "x": 93.1093717681037,
+              "y": 1058.625,
+              "width": 91.48436615202162,
+              "height": 48.999966854519315
+            },
+            "aria": "Cinderpaw Printing, 60% complete",
+            "owner": "core-docket player"
+          }
+        ],
+        "tokens": [
+          {
+            "text": "Aquafin\nUnspent",
+            "rect": {
+              "x": 303.8906280941433,
+              "y": 191.39062279595268,
+              "width": 277.7187544928657,
+              "height": 91.48437612321642
+            },
+            "parent": {
+              "x": 303.8906280941433,
+              "y": 163.39062036938137,
+              "width": 277.7968488905165,
+              "height": 177.99998622470432
+            }
+          },
+          {
+            "text": "Mossmunk\nUnspent",
+            "rect": {
+              "x": 610.9999977535672,
+              "y": 191.39062279595268,
+              "width": 277.7187146080865,
+              "height": 91.48437612321642
+            },
+            "parent": {
+              "x": 610.9999977535672,
+              "y": 163.39062036938137,
+              "width": 277.79688877529566,
+              "height": 177.99998622470432
+            }
+          },
+          {
+            "text": "Aquafin\nUnspent",
+            "rect": {
+              "x": 303.8906280941433,
+              "y": 1136.9999471876356,
+              "width": 277.7187544928657,
+              "height": 91.4844359503852
+            },
+            "parent": {
+              "x": 303.8906280941433,
+              "y": 1108.999954732259,
+              "width": 277.7968488905165,
+              "height": 178.0000261094835
+            }
+          },
+          {
+            "text": "Mossmunk\nUnspent",
+            "rect": {
+              "x": 610.9999977535672,
+              "y": 1136.9999471876356,
+              "width": 277.7187146080865,
+              "height": 91.4844359503852
+            },
+            "parent": {
+              "x": 610.9999977535672,
+              "y": 1108.999954732259,
+              "width": 277.79688877529566,
+              "height": 178.0000261094835
+            }
+          }
+        ],
+        "titleText": "4 · Next 6",
+        "titleAria": "CYCLE 1 · RUN; POST 4 · NEXT 6",
+        "sideText": "Cycle 1\nRun\nPrinting\nCinderpaw\n60%\nPost 4\nNext 6",
+        "privateText": "Rival ×3",
+        "privateAria": "Rival private hand: 3 concealed Support cards",
+        "activeText": [],
+        "queueAria": [
+          "Rival queue: 1: Cinderpaw",
+          "Player queue: 1: Cinderpaw"
+        ],
+        "fonts": {
+          "title": 30.02,
+          "back": 29.99,
+          "backLabel": 29.94,
+          "run": 30,
+          "side": 30.05,
+          "private": 30.05,
+          "active": 0,
+          "ready": 0,
+          "docket": 30.16,
+          "token": 29.97,
+          "queue": 30.01,
+          "card": 30
+        },
+        "cardLabels": [
+          "Suit\n2",
+          "Gem\n2",
+          "Surge\n2"
+        ]
+      },
+      "duplicateStatusRows": 0,
+      "coreThirdBay": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 102.49335479736328,
+          "height": 60.06376266479492,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Aquafin Unspent unavailable: Need 1 filament",
+          "width": 212.554443359375,
+          "height": 136.195556640625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Mossmunk Unspent unavailable: Need 1 filament",
+          "width": 212.55447387695312,
+          "height": 136.195556640625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution",
+          "width": 111.71094512939453,
+          "height": 166.0361328125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution",
+          "width": 111.7109375,
+          "height": 166.0361328125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution",
+          "width": 111.7109375,
+          "height": 166.0361328125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Run Cycle unavailable: locked during resolution",
+          "width": 133.13494873046875,
+          "height": 185.164794921875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1280,
+        "top": 0,
+        "right": 720,
+        "bottom": 1280,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1279.31982421875,
+        "top": 0,
+        "right": 720,
+        "bottom": 1279.31982421875,
+        "left": 0
+      },
+      "print60Markers": [
+        {
+          "seat": "rival",
+          "text": "1",
+          "aria": "Cinderpaw Printing, 60% complete",
+          "rect": {
+            "x": 111.07812289132012,
+            "y": 65.34374726083543,
+            "width": 91.48436615202162,
+            "height": 49.000001753701106
+          },
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49,
+          "fits": true,
+          "inside": true
+        },
+        {
+          "seat": "player",
+          "text": "1",
+          "aria": "Cinderpaw Printing, 60% complete",
+          "rect": {
+            "x": 93.1093717681037,
+            "y": 1058.625,
+            "width": 91.48436615202162,
+            "height": 48.999966854519315
+          },
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49,
+          "fits": true,
+          "inside": true
+        }
+      ],
+      "print60RunLabel": {
+        "text": "RUN\nWAIT",
+        "aria": "Run Cycle unavailable: locked during resolution",
+        "rect": {
+          "x": 767.8281061808268,
+          "y": 1444.1562213473849,
+          "width": 137.2187168545193,
+          "height": 91.48435618082682
+        },
+        "font": 30.05,
+        "scrollWidth": 137,
+        "clientWidth": 137,
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "fits": true,
+        "inside": true
+      },
+      "screenInViewportTop": 0,
+      "screenInViewportBottom": 0.68017578125,
+      "safeTop": 0,
+      "safeBottom": 0,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 30,
+        "action": 0,
+        "primary": 0,
+        "heading": 30.02,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0,
+        "coreActive": 0,
+        "coreReserve": 29.97,
+        "coreHand": 30,
+        "coreSide": 30.05,
+        "corePrivate": 30.05
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 3,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_card_back_source_v1.png\")",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v26b-print-labels/print60-720x1280.png"
+    },
+    {
+      "kind": "concept-only DOM source/layout checks; not game or device evidence",
+      "state": "print60",
+      "size": "720x1600",
+      "expectedFigures": 0,
+      "boundsPass": true,
+      "hitPass": true,
+      "statePass": true,
+      "textPass": true,
+      "tallPass": true,
+      "backgroundPass": true,
+      "clipPass": true,
+      "largeTextPass": true,
+      "identityCounts": {},
+      "pass": true,
+      "nativeTextCount": 11,
+      "starterChoice": "",
+      "starterGrant": "",
+      "receiptCta": null,
+      "grants": [],
+      "figures": 0,
+      "activeCount": 0,
+      "reserveCount": 0,
+      "hasFixtureFigures": true,
+      "fixtureFigures": 0,
+      "cards": 0,
+      "roster": 0,
+      "kitCards": 0,
+      "teamArt": 0,
+      "teamCreatures": [],
+      "duplicateMarked": false,
+      "teamGeometry": true,
+      "kitFaces": 0,
+      "kitCounts": [],
+      "kitTallies": [],
+      "kitGeometry": true,
+      "folioText": "",
+      "glyphsFit": true,
+      "folioOwnerPass": true,
+      "glyphDiagnostics": [],
+      "systemState": "",
+      "systemOwnerNames": [],
+      "systemGeometry": true,
+      "systemTextFits": true,
+      "systemTextValues": [],
+      "systemTextDiagnostics": [],
+      "focusProof": false,
+      "focusedOwner": "",
+      "genericWorkshopActions": 0,
+      "disabledSystemOwners": [],
+      "reducedMotionChecked": "",
+      "coreState": "print60",
+      "coreRecords": [
+        {
+          "seat": "rival",
+          "creature": "cinder",
+          "status": "Printing"
+        },
+        {
+          "seat": "rival",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "rival",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "cinder",
+          "status": "Printing"
+        },
+        {
+          "seat": "player",
+          "creature": "aquafin",
+          "status": "Unspent"
+        },
+        {
+          "seat": "player",
+          "creature": "mossmunk",
+          "status": "Unspent"
+        }
+      ],
+      "coreRecordMap": {
+        "rival:cinder": "Printing",
+        "rival:aquafin": "Unspent",
+        "rival:mossmunk": "Unspent",
+        "player:cinder": "Printing",
+        "player:aquafin": "Unspent",
+        "player:mossmunk": "Unspent"
+      },
+      "coreSeatActiveCounts": {
+        "rival": 0,
+        "player": 0
+      },
+      "coreReserveOwners": [
+        "r1",
+        "r2",
+        "p1",
+        "p2"
+      ],
+      "coreTextFits": true,
+      "coreTextDiagnostics": [
+        {
+          "text": "4 · Next 6",
+          "scrollWidth": 382,
+          "clientWidth": 382,
+          "scrollHeight": 56,
+          "clientHeight": 56
+        },
+        {
+          "text": "Rival ×3",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "Cycle 1RunPrintingCinderpaw60%Post 4Next 6",
+          "scrollWidth": 230,
+          "clientWidth": 230,
+          "scrollHeight": 376,
+          "clientHeight": 376
+        },
+        {
+          "text": "1",
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "AquafinUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "MossmunkUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "1",
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "AquafinUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "MossmunkUnspent",
+          "scrollWidth": 278,
+          "clientWidth": 278,
+          "scrollHeight": 91,
+          "clientHeight": 91
+        },
+        {
+          "text": "1: Cinderpaw",
+          "scrollWidth": 441,
+          "clientWidth": 441,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        },
+        {
+          "text": "1: Cinderpaw",
+          "scrollWidth": 600,
+          "clientWidth": 600,
+          "scrollHeight": 49,
+          "clientHeight": 49
+        }
+      ],
+      "coreInputs": [
+        {
+          "kind": "fabrication",
+          "id": "",
+          "seat": "player",
+          "creature": "aquafin",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(246, 231, 197)",
+          "disabled": true,
+          "aria": "Aquafin Unspent unavailable: Need 1 filament"
+        },
+        {
+          "kind": "fabrication",
+          "id": "",
+          "seat": "player",
+          "creature": "mossmunk",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(246, 231, 197)",
+          "disabled": true,
+          "aria": "Mossmunk Unspent unavailable: Need 1 filament"
+        },
+        {
+          "kind": "hand",
+          "id": "suit",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution"
+        },
+        {
+          "kind": "hand",
+          "id": "gem",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution"
+        },
+        {
+          "kind": "hand",
+          "id": "surge",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgba(16, 16, 16, 0.3)",
+          "disabled": true,
+          "aria": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution"
+        },
+        {
+          "kind": "run",
+          "id": "",
+          "seat": "player",
+          "creature": "",
+          "pressed": "false",
+          "outlineWidth": 3,
+          "outlineColor": "rgb(255, 246, 213)",
+          "disabled": true,
+          "aria": "Run Cycle unavailable: locked during resolution"
+        }
+      ],
+      "coreJobs": [
+        {
+          "owner": "rival",
+          "id": "cinder",
+          "progress": 60,
+          "scanY": 224.42662887573243,
+          "solid": true,
+          "wire": true
+        },
+        {
+          "owner": "player",
+          "id": "cinder",
+          "progress": 60,
+          "scanY": 975.4493392944336,
+          "solid": true,
+          "wire": true
+        }
+      ],
+      "coreHand": 3,
+      "coreCards": [
+        {
+          "id": "suit",
+          "label": "Suit2",
+          "aria": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        },
+        {
+          "id": "gem",
+          "label": "Gem2",
+          "aria": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        },
+        {
+          "id": "surge",
+          "label": "Surge2",
+          "aria": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution",
+          "pressed": "false",
+          "disabled": true
+        }
+      ],
+      "coreGear": [],
+      "coreGearGeometry": true,
+      "coreQueues": {
+        "rival": "1: Cinderpaw",
+        "player": "1: Cinderpaw"
+      },
+      "coreGeometry": false,
+      "accessibilityFlags": {
+        "text150": true,
+        "highContrast": true,
+        "reducedMotion": true
+      },
+      "largeText": {
+        "title": {
+          "x": 279.359375,
+          "y": 44.109375,
+          "width": 382.2656151665582,
+          "height": 55.546873876783586
+        },
+        "back": {
+          "x": 26.124999014536538,
+          "y": 19.999998172124226,
+          "width": 133.9531206448873,
+          "height": 78.50000092718336
+        },
+        "backLabel": {
+          "x": 26.124999014536538,
+          "y": 19.999998172124226,
+          "width": 71.85937963061862,
+          "height": 78.50000092718336
+        },
+        "backText": "←",
+        "backAria": "Back to Workshop",
+        "run": {
+          "x": 748.0000263637967,
+          "y": 1362.9999489678278,
+          "width": 173.99998160468206,
+          "height": 242.00010002983942
+        },
+        "side": {
+          "x": 22.85937538411882,
+          "y": 539.0937235938178,
+          "width": 230.34373342725965,
+          "height": 375.6875381893582
+        },
+        "private": {
+          "x": 22.85937538411882,
+          "y": 359.4062522464328,
+          "width": 230.34373342725965,
+          "height": 49.0000067392985
+        },
+        "activeRival": null,
+        "activePlayer": null,
+        "queueRival": {
+          "x": 347.89063902960885,
+          "y": 343.0625067392985,
+          "width": 441.0937101152208,
+          "height": 49.0000067392985
+        },
+        "queuePlayer": {
+          "x": 295.6875056160821,
+          "y": 1287.328073035346,
+          "width": 599.5937884860568,
+          "height": 48.999966854519315
+        },
+        "readyLabels": [],
+        "readyMinis": [],
+        "dockets": [
+          {
+            "text": "1",
+            "rect": {
+              "x": 111.07812289132012,
+              "y": 65.34375224643283,
+              "width": 91.48436615202162,
+              "height": 48.999996768103706
+            },
+            "aria": "Cinderpaw Printing, 60% complete",
+            "owner": "core-docket rival"
+          },
+          {
+            "text": "1",
+            "rect": {
+              "x": 93.1093717681037,
+              "y": 1058.625,
+              "width": 91.48436615202162,
+              "height": 48.999966854519315
+            },
+            "aria": "Cinderpaw Printing, 60% complete",
+            "owner": "core-docket player"
+          }
+        ],
+        "tokens": [
+          {
+            "text": "Aquafin\nUnspent",
+            "rect": {
+              "x": 303.8906280941433,
+              "y": 191.39062279595268,
+              "width": 277.7187544928657,
+              "height": 91.48437612321642
+            },
+            "parent": {
+              "x": 303.8906280941433,
+              "y": 163.39063034057617,
+              "width": 277.7968488905165,
+              "height": 177.99998622470432
+            }
+          },
+          {
+            "text": "Mossmunk\nUnspent",
+            "rect": {
+              "x": 610.9999977535672,
+              "y": 191.39062279595268,
+              "width": 277.7187146080865,
+              "height": 91.48437612321642
+            },
+            "parent": {
+              "x": 610.9999977535672,
+              "y": 163.39063034057617,
+              "width": 277.79688877529566,
+              "height": 177.99998622470432
+            }
+          },
+          {
+            "text": "Aquafin\nUnspent",
+            "rect": {
+              "x": 303.8906280941433,
+              "y": 1136.9999471876356,
+              "width": 277.7187544928657,
+              "height": 91.4844359503852
+            },
+            "parent": {
+              "x": 303.8906280941433,
+              "y": 1108.999954732259,
+              "width": 277.7968488905165,
+              "height": 178.0000261094835
+            }
+          },
+          {
+            "text": "Mossmunk\nUnspent",
+            "rect": {
+              "x": 610.9999977535672,
+              "y": 1136.9999471876356,
+              "width": 277.7187146080865,
+              "height": 91.4844359503852
+            },
+            "parent": {
+              "x": 610.9999977535672,
+              "y": 1108.999954732259,
+              "width": 277.79688877529566,
+              "height": 178.0000261094835
+            }
+          }
+        ],
+        "titleText": "4 · Next 6",
+        "titleAria": "CYCLE 1 · RUN; POST 4 · NEXT 6",
+        "sideText": "Cycle 1\nRun\nPrinting\nCinderpaw\n60%\nPost 4\nNext 6",
+        "privateText": "Rival ×3",
+        "privateAria": "Rival private hand: 3 concealed Support cards",
+        "activeText": [],
+        "queueAria": [
+          "Rival queue: 1: Cinderpaw",
+          "Player queue: 1: Cinderpaw"
+        ],
+        "fonts": {
+          "title": 30.02,
+          "back": 29.99,
+          "backLabel": 29.94,
+          "run": 30,
+          "side": 30.05,
+          "private": 30.05,
+          "active": 0,
+          "ready": 0,
+          "docket": 30.16,
+          "token": 29.97,
+          "queue": 30.01,
+          "card": 30
+        },
+        "cardLabels": [
+          "Suit\n2",
+          "Gem\n2",
+          "Surge\n2"
+        ]
+      },
+      "duplicateStatusRows": 0,
+      "coreThirdBay": 0,
+      "controls": [
+        {
+          "name": "Back to Workshop",
+          "width": 102.49335479736328,
+          "height": 60.06376266479492,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Aquafin Unspent unavailable: Need 1 filament",
+          "width": 212.554443359375,
+          "height": 136.195556640625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Mossmunk Unspent unavailable: Need 1 filament",
+          "width": 212.55447387695312,
+          "height": 136.195556640625,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Full Suit, cost 2, one print-work, auto-fit +8 ablative armor, one armor slot unavailable: locked during resolution",
+          "width": 111.71094512939453,
+          "height": 166.0361328125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Iron Gem, cost 2, one print-work, auto-fit +2 attack, one gem slot, replaces not stacks unavailable: locked during resolution",
+          "width": 111.7109375,
+          "height": 166.0361328125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Forge Surge, cost 2, this-cycle attack 150% rounded down, consumed even with no hit unavailable: locked during resolution",
+          "width": 111.7109375,
+          "height": 166.0361328125,
+          "inViewport": true,
+          "topmost": true
+        },
+        {
+          "name": "Run Cycle unavailable: locked during resolution",
+          "width": 133.13494873046875,
+          "height": 185.164794921875,
+          "inViewport": true,
+          "topmost": true
+        }
+      ],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 1600,
+        "top": 0,
+        "right": 720,
+        "bottom": 1600,
+        "left": 0
+      },
+      "screen": {
+        "x": 0,
+        "y": 24,
+        "width": 720,
+        "height": 1279.31982421875,
+        "top": 24,
+        "right": 720,
+        "bottom": 1303.31982421875,
+        "left": 0
+      },
+      "print60Markers": [
+        {
+          "seat": "rival",
+          "text": "1",
+          "aria": "Cinderpaw Printing, 60% complete",
+          "rect": {
+            "x": 111.07812289132012,
+            "y": 65.34375224643283,
+            "width": 91.48436615202162,
+            "height": 48.999996768103706
+          },
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49,
+          "fits": true,
+          "inside": true
+        },
+        {
+          "seat": "player",
+          "text": "1",
+          "aria": "Cinderpaw Printing, 60% complete",
+          "rect": {
+            "x": 93.1093717681037,
+            "y": 1058.625,
+            "width": 91.48436615202162,
+            "height": 48.999966854519315
+          },
+          "scrollWidth": 91,
+          "clientWidth": 91,
+          "scrollHeight": 49,
+          "clientHeight": 49,
+          "fits": true,
+          "inside": true
+        }
+      ],
+      "print60RunLabel": {
+        "text": "RUN\nWAIT",
+        "aria": "Run Cycle unavailable: locked during resolution",
+        "rect": {
+          "x": 767.8281061808268,
+          "y": 1444.1562213473849,
+          "width": 137.2187168545193,
+          "height": 91.48435618082682
+        },
+        "font": 30.05,
+        "scrollWidth": 137,
+        "clientWidth": 137,
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "fits": true,
+        "inside": true
+      },
+      "screenInViewportTop": 24,
+      "screenInViewportBottom": 296.68017578125,
+      "safeTop": 24,
+      "safeBottom": 24,
+      "fonts": {
+        "reserve": 0,
+        "active": 0,
+        "hand": 30,
+        "action": 0,
+        "primary": 0,
+        "heading": 30.02,
+        "queue": 0,
+        "editorOrder": 0,
+        "editorEligibility": 0,
+        "editorStatus": 0,
+        "teamCaption": 0,
+        "kitName": 0,
+        "kitCount": 0,
+        "systemButton": 0,
+        "settingsHeader": 0,
+        "settingsBody": 0,
+        "settingsDial": 0,
+        "recoveryMessage": 0,
+        "coreActive": 0,
+        "coreReserve": 29.97,
+        "coreHand": 30,
+        "coreSide": 30.05,
+        "corePrivate": 30.05
+      },
+      "activeHolderCount": 0,
+      "nestedReceiptCount": 0,
+      "resultScreenCount": 0,
+      "starterPhase": "",
+      "starterBlueprints": 0,
+      "forgeSolid": 0,
+      "forgeWire": 0,
+      "printedInPrinter": 0,
+      "privateBacks": 3,
+      "backgroundImages": {
+        "screen": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png\")",
+        "card": "",
+        "kit": "",
+        "magazine": "",
+        "privateBack": "url(\"file:///E:/AI%20Projects/games/3d%20print%20battler/assets/cards/support_card_back_source_v1.png\")",
+        "sprite": "",
+        "printed": ""
+      },
+      "backgroundLoaded": {
+        "screen": true,
+        "card": true,
+        "kit": true,
+        "magazine": true,
+        "privateBack": true,
+        "sprite": true,
+        "printed": true
+      },
+      "clippedText": [],
+      "identities": [],
+      "capture": "docs/art/team-prototype-20260912/captures/v26b-print-labels/print60-720x1600.png"
+    }
+  ],
+  "browserTreeAfterClose": {
+    "known": true,
+    "items": []
+  },
+  "finishedAt": "2026-09-12T21:22:06.858Z",
+  "userDataCleanup": "removed exact task-owned Edge profile after tracked browser descendants exited"
+}

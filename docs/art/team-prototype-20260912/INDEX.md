@@ -1,92 +1,153 @@
-# PrintForge solo team prototype — visual review index
+# PrintForge solo team prototype — approval atlas
 
-Status: partial M0 candidate, not a playable build. These are offline HTML compositions over ImageGen masters and existing creature art. All dynamic labels remain separate from art. User approval, accessibility/tall-screen completion, and runtime validation are pending.
+**M0 static visual review complete; awaiting your approval. This is not a playable build.**
 
-The current [design](../../design/team-prototype-20260912.md), [gate](../../checkpoints/team-prototype-preproduction-20260912.md), and [review findings](REVIEW.md) govern acceptance. The normal-size composition families below have scoped read-only visual review; selected/disabled controls have a separate follow-up. Historical rejected folders are deliberately excluded.
+The candidate follows the [solo prototype design](../../design/team-prototype-20260912.md):
+three unique printed companions, a 15-card Support Kit, one Active plus two Reserves,
+automatic Run Cycles, and team-defeat results. No printer HP, ads, multiplayer, or
+40-card deck route is included.
 
-## Starter and first print
+These are offline HTML compositions over ImageGen masters and existing creature art.
+Names, values, cards, states, and controls remain separate native layers.
+The [checkpoint](../../checkpoints/team-prototype-preproduction-20260912.md) and
+[review record](REVIEW.md) document evidence and limitations.
 
-- [starter-choice — 576x1024](captures/v18-starter-grants/starter-choice-576x1024.png)
-- [Aquafin starter choice — 576x1024](captures/v18-starter-grants/starter-choice-aquafin-576x1024.png)
-- [Voltwig starter choice — 576x1024](captures/v18-starter-grants/starter-choice-voltwig-576x1024.png)
-- [starter-inspect — 576x1024](captures/v4-starter-forge-576f/starter-inspect-576x1024.png)
-- [starter-voucher — 576x1024](captures/v4-starter-forge-576f/starter-voucher-576x1024.png)
-- [starter-print-early — 576x1024](captures/v4-starter-forge-576f/starter-print-early-576x1024.png)
-- [starter-print-60 — 576x1024](captures/v4-starter-forge-576f/starter-print-60-576x1024.png)
-- [starter-rawcomplete — 576x1024](captures/v4-starter-forge-576f/starter-rawcomplete-576x1024.png)
-- [starter-awaken — 576x1024](captures/v4-starter-forge-576f/starter-awaken-576x1024.png)
-- [Cinderpaw starter receipt — 576x1024](captures/v18-starter-grants/guaranteedstarterreceipt-576x1024.png)
-- [Aquafin starter receipt — 576x1024](captures/v18-starter-grants/receipt-aquafin-576x1024.png)
-- [Voltwig starter receipt — 576x1024](captures/v18-starter-grants/receipt-voltwig-576x1024.png)
+## Start here
 
-## Team and Support Kit
+1. [Workshop navigation](captures/v24b-normal-registry/workshop-prototype-nav-576x1024.png)
+2. [Choose a starter blueprint](captures/v24b-normal-registry/starter-choice-576x1024.png)
+3. [First print at 60%](captures/v24b-normal-registry/starter-print-60-576x1024.png)
+4. [Guaranteed companions → Team setup](captures/v25-receipt-final/guaranteedstarterreceipt-576x1024.png)
+5. [Three-companion Team](captures/v24b-normal-registry/teamvalid-576x1024.png)
+6. [Recommended 15-card Support Kit](captures/v24b-normal-registry/supportkit-576x1024.png)
+7. [Fabrication + Support Plan](captures/v24b-normal-registry/combined-second-plan-576x1024.png)
+8. [Battlefield printing](captures/v24b-normal-registry/print60-576x1024.png)
+9. [Swap Plan](captures/v24b-normal-registry/swap-plan-576x1024.png)
+10. [Team-defeat result](captures/v24b-normal-registry/win-result-m2-576x1024.png)
 
-- [team-empty — 576x1024](captures/v6-team-support/team-empty-576x1024.png)
-- [team-one — 576x1024](captures/v6-team-support/team-one-576x1024.png)
-- [teaminvalid — 576x1024](captures/v19-folio-drafts/teaminvalid-576x1024.png)
-- [teamvalid — 576x1024](captures/v6-team-support/teamvalid-576x1024.png)
-- [supportkit — 576x1024](captures/v19-folio-drafts/supportkit-576x1024.png)
-- [supportkit-excluded — 576x1024](captures/v19-folio-drafts/supportkit-excluded-576x1024.png)
+## What approval covers
 
-## Workshop and system states
+Approve this screen family and its physical control placement as the direction for
+implementation. The user-approved battle loop is unchanged. This does **not** claim
+working gameplay, animation playback, save safety, Android Back, real-device touch,
+or all-route native accessibility; those must be implemented and tested in M1–M3.
 
-- [workshop-prototype-nav — 576x1024](captures/v7-nav-system/workshop-prototype-nav-576x1024.png)
-- [preflight-error — 576x1024](captures/v7-nav-system/preflight-error-576x1024.png)
-- [recovery — 576x1024](captures/v7-nav-system/recovery-576x1024.png)
-- [focus-sheet — 576x1024](captures/v7-nav-system/focus-sheet-576x1024.png)
-- [reduced-motion — 576x1024](captures/v7-nav-system/reduced-motion-576x1024.png)
+There are **58 canonical states × three portrait sizes**, plus **three representative
+large-text/HC/reduced-motion states × three sizes**: 183 selected images.
+Tall is uniformly fitted with a synthetic 24px safe top and inert aspect letterbox,
+not an ad reserve or proof of one-handed reach. Voltwig uses its documented legacy
+art exception here; front/rear completion remains an M3 visual gate. The equipment
+draft's production transparency also remains unresolved; do not ship its RGB source.
 
-## Battle and results
+[Offline fixture viewer](atlas.html) · [Masters and provenance](README.md)
 
-- [preflight-empty — 576x1024](captures/v15-visible-controls/preflight-empty-576x1024.png)
-- [choosefirstprint — 576x1024](captures/v12-battle-verified/choosefirstprint-576x1024.png)
-- [printEarly — 576x1024](captures/v12-battle-verified/printEarly-576x1024.png)
-- [print60 — 576x1024](captures/v12-battle-verified/print60-576x1024.png)
-- [rawcomplete — 576x1024](captures/v12-battle-verified/rawcomplete-576x1024.png)
-- [awaken — 576x1024](captures/v12-battle-verified/awaken-576x1024.png)
-- [first-entry-active — 576x1024](captures/v12-battle-verified/first-entry-active-576x1024.png)
-- [combined-second-plan — 576x1024](captures/v15-visible-controls/combined-second-plan-576x1024.png)
-- [second-print — 576x1024](captures/v12-battle-verified/second-print-576x1024.png)
-- [reserve-1-entry — 576x1024](captures/v12-battle-verified/reserve-1-entry-576x1024.png)
-- [third-plan-behind-gear — 576x1024](captures/v12-battle-verified/third-plan-behind-gear-576x1024.png)
-- [queue-capacity-reject — 576x1024](captures/v15-visible-controls/queue-capacity-reject-576x1024.png)
-- [equipment-auto-fit — 576x1024](captures/v15-visible-controls/equipment-auto-fit-576x1024.png)
-- [equipment-fitted — 576x1024](captures/v12-battle-verified/equipment-fitted-576x1024.png)
-- [printing-wait-plan — 576x1024](captures/v12-battle-verified/printing-wait-plan-576x1024.png)
-- [third-print-awaken — 576x1024](captures/v12-battle-verified/third-print-awaken-576x1024.png)
-- [reserve-2-entry — 576x1024](captures/v12-battle-verified/reserve-2-entry-576x1024.png)
-- [swap-plan — 576x1024](captures/v15-visible-controls/swap-plan-576x1024.png)
-- [swap-and-attack — 576x1024](captures/v12-battle-verified/swap-and-attack-576x1024.png)
-- [swap-result — 576x1024](captures/v12-battle-verified/swap-result-576x1024.png)
-- [replacement-risk-plan — 576x1024](captures/v12-battle-verified/replacement-risk-plan-576x1024.png)
-- [replacement-attack — 576x1024](captures/v12-battle-verified/replacement-attack-576x1024.png)
-- [auto-replacement — 576x1024](captures/v12-battle-verified/auto-replacement-576x1024.png)
-- [empty-active-required — 576x1024](captures/v12-battle-verified/empty-active-required-576x1024.png)
-- [last-member-printing — 576x1024](captures/v12-battle-verified/last-member-printing-576x1024.png)
-- [last-member-active — 576x1024](captures/v12-battle-verified/last-member-active-576x1024.png)
-- [empty-active-replenish — 576x1024](captures/v15-visible-controls/empty-active-replenish-576x1024.png)
-- [replenish-run — 576x1024](captures/v12-battle-verified/replenish-run-576x1024.png)
-- [replenish-next-plan — 576x1024](captures/v15-visible-controls/replenish-next-plan-576x1024.png)
-- [replenish-last-printing — 576x1024](captures/v12-battle-verified/replenish-last-printing-576x1024.png)
-- [replenish-last-active — 576x1024](captures/v12-battle-verified/replenish-last-active-576x1024.png)
-- [hand-exhausted — 576x1024](captures/v12-battle-verified/hand-exhausted-576x1024.png)
-- [win-result-m2 — 576x1024](captures/v12-battle-verified/win-result-m2-576x1024.png)
-- [loss-result-m2 — 576x1024](captures/v12-battle-verified/loss-result-m2-576x1024.png)
-- [draw-result-m2 — 576x1024](captures/v12-battle-verified/draw-result-m2-576x1024.png)
+## Large-text battle examples
 
-## Portrait fit comparisons
+Nominal 150% text is shown as at least 24px at 576 and 30px at 720. Native full names,
+effects, queue identity, and disabled reasons remain accessible when labels shorten.
+These static examples do not establish animation/reduced-motion equivalence.
 
-Static fit evidence only; tall uses aspect letterboxing and a synthetic 24px top inset, not an ad reserve or real-device test.
-
-| Screen | 576×1024 | 720×1280 | 720×1600 |
+| State | 576×1024 | 720×1280 | 720×1600 |
 |---|---|---|---|
-| combined-second-plan | [View](captures/v20-uniform-fit/combined-second-plan-576x1024.png) | [View](captures/v20-uniform-fit/combined-second-plan-720x1280.png) | [View](captures/v20-uniform-fit/combined-second-plan-720x1600.png) |
-| teamvalid | [View](captures/v20-uniform-fit/teamvalid-576x1024.png) | [View](captures/v20-uniform-fit/teamvalid-720x1280.png) | [View](captures/v20-uniform-fit/teamvalid-720x1600.png) |
-| supportkit-excluded | [View](captures/v20-uniform-fit/supportkit-excluded-576x1024.png) | [View](captures/v20-uniform-fit/supportkit-excluded-720x1280.png) | [View](captures/v20-uniform-fit/supportkit-excluded-720x1600.png) |
-| guaranteedstarterreceipt | [View](captures/v20-uniform-fit/guaranteedstarterreceipt-576x1024.png) | [View](captures/v20-uniform-fit/guaranteedstarterreceipt-720x1280.png) | [View](captures/v20-uniform-fit/guaranteedstarterreceipt-720x1600.png) |
-| starter-choice | [View](captures/v20-uniform-fit/starter-choice-576x1024.png) | [View](captures/v20-uniform-fit/starter-choice-720x1280.png) | [View](captures/v20-uniform-fit/starter-choice-720x1600.png) |
-| starter-print-60 | [View](captures/v20-uniform-fit/starter-print-60-576x1024.png) | [View](captures/v20-uniform-fit/starter-print-60-720x1280.png) | [View](captures/v20-uniform-fit/starter-print-60-720x1600.png) |
-| preflight-error | [View](captures/v20-uniform-fit/preflight-error-576x1024.png) | [View](captures/v20-uniform-fit/preflight-error-720x1280.png) | [View](captures/v20-uniform-fit/preflight-error-720x1600.png) |
-| workshop-prototype-nav | [View](captures/v20-uniform-fit/workshop-prototype-nav-576x1024.png) | [View](captures/v20-uniform-fit/workshop-prototype-nav-720x1280.png) | [View](captures/v20-uniform-fit/workshop-prototype-nav-720x1600.png) |
+| combined-second-plan | [View](captures/v23c-battle-accessibility/combined-second-plan-576x1024.png) | [View](captures/v23c-battle-accessibility/combined-second-plan-720x1280.png) | [View](captures/v23c-battle-accessibility/combined-second-plan-720x1600.png) |
+| swap-plan | [View](captures/v23c-battle-accessibility/swap-plan-576x1024.png) | [View](captures/v23c-battle-accessibility/swap-plan-720x1280.png) | [View](captures/v23c-battle-accessibility/swap-plan-720x1600.png) |
+| print60 | [View](captures/v26b-print-labels/print60-576x1024.png) | [View](captures/v26b-print-labels/print60-720x1280.png) | [View](captures/v26b-print-labels/print60-720x1600.png) |
 
-[Historical capture archive](captures/) — includes superseded and rejected diagnostics; not current approval evidence.
+## Complete normal workflow
+
+Current normal evidence is v24b's 55 unchanged states plus v25's three corrected
+receipts. Current large evidence is v23c Combined/Swap plus v26b Print60. Earlier
+captures are historical and must not substitute for these selected versions.
+
+### Starter and first print
+
+| State | 576×1024 | 720×1280 | 720×1600 |
+|---|---|---|---|
+| starter-choice | [View](captures/v24b-normal-registry/starter-choice-576x1024.png) | [View](captures/v24b-normal-registry/starter-choice-720x1280.png) | [View](captures/v24b-normal-registry/starter-choice-720x1600.png) |
+| starter-choice-aquafin | [View](captures/v24b-normal-registry/starter-choice-aquafin-576x1024.png) | [View](captures/v24b-normal-registry/starter-choice-aquafin-720x1280.png) | [View](captures/v24b-normal-registry/starter-choice-aquafin-720x1600.png) |
+| starter-choice-voltwig | [View](captures/v24b-normal-registry/starter-choice-voltwig-576x1024.png) | [View](captures/v24b-normal-registry/starter-choice-voltwig-720x1280.png) | [View](captures/v24b-normal-registry/starter-choice-voltwig-720x1600.png) |
+| starter-inspect | [View](captures/v24b-normal-registry/starter-inspect-576x1024.png) | [View](captures/v24b-normal-registry/starter-inspect-720x1280.png) | [View](captures/v24b-normal-registry/starter-inspect-720x1600.png) |
+| starter-voucher | [View](captures/v24b-normal-registry/starter-voucher-576x1024.png) | [View](captures/v24b-normal-registry/starter-voucher-720x1280.png) | [View](captures/v24b-normal-registry/starter-voucher-720x1600.png) |
+| starter-print-early | [View](captures/v24b-normal-registry/starter-print-early-576x1024.png) | [View](captures/v24b-normal-registry/starter-print-early-720x1280.png) | [View](captures/v24b-normal-registry/starter-print-early-720x1600.png) |
+| starter-print-60 | [View](captures/v24b-normal-registry/starter-print-60-576x1024.png) | [View](captures/v24b-normal-registry/starter-print-60-720x1280.png) | [View](captures/v24b-normal-registry/starter-print-60-720x1600.png) |
+| starter-rawcomplete | [View](captures/v24b-normal-registry/starter-rawcomplete-576x1024.png) | [View](captures/v24b-normal-registry/starter-rawcomplete-720x1280.png) | [View](captures/v24b-normal-registry/starter-rawcomplete-720x1600.png) |
+| starter-awaken | [View](captures/v24b-normal-registry/starter-awaken-576x1024.png) | [View](captures/v24b-normal-registry/starter-awaken-720x1280.png) | [View](captures/v24b-normal-registry/starter-awaken-720x1600.png) |
+| guaranteedstarterreceipt | [View](captures/v25-receipt-final/guaranteedstarterreceipt-576x1024.png) | [View](captures/v25-receipt-final/guaranteedstarterreceipt-720x1280.png) | [View](captures/v25-receipt-final/guaranteedstarterreceipt-720x1600.png) |
+| receipt-aquafin | [View](captures/v25-receipt-final/receipt-aquafin-576x1024.png) | [View](captures/v25-receipt-final/receipt-aquafin-720x1280.png) | [View](captures/v25-receipt-final/receipt-aquafin-720x1600.png) |
+| receipt-voltwig | [View](captures/v25-receipt-final/receipt-voltwig-576x1024.png) | [View](captures/v25-receipt-final/receipt-voltwig-720x1280.png) | [View](captures/v25-receipt-final/receipt-voltwig-720x1600.png) |
+
+### Team and Support Kit
+
+| State | 576×1024 | 720×1280 | 720×1600 |
+|---|---|---|---|
+| team-empty | [View](captures/v24b-normal-registry/team-empty-576x1024.png) | [View](captures/v24b-normal-registry/team-empty-720x1280.png) | [View](captures/v24b-normal-registry/team-empty-720x1600.png) |
+| team-one | [View](captures/v24b-normal-registry/team-one-576x1024.png) | [View](captures/v24b-normal-registry/team-one-720x1280.png) | [View](captures/v24b-normal-registry/team-one-720x1600.png) |
+| teaminvalid | [View](captures/v24b-normal-registry/teaminvalid-576x1024.png) | [View](captures/v24b-normal-registry/teaminvalid-720x1280.png) | [View](captures/v24b-normal-registry/teaminvalid-720x1600.png) |
+| teamvalid | [View](captures/v24b-normal-registry/teamvalid-576x1024.png) | [View](captures/v24b-normal-registry/teamvalid-720x1280.png) | [View](captures/v24b-normal-registry/teamvalid-720x1600.png) |
+| supportkit | [View](captures/v24b-normal-registry/supportkit-576x1024.png) | [View](captures/v24b-normal-registry/supportkit-720x1280.png) | [View](captures/v24b-normal-registry/supportkit-720x1600.png) |
+| supportkit-excluded | [View](captures/v24b-normal-registry/supportkit-excluded-576x1024.png) | [View](captures/v24b-normal-registry/supportkit-excluded-720x1280.png) | [View](captures/v24b-normal-registry/supportkit-excluded-720x1600.png) |
+
+### Workshop and system states
+
+| State | 576×1024 | 720×1280 | 720×1600 |
+|---|---|---|---|
+| workshop-prototype-nav | [View](captures/v24b-normal-registry/workshop-prototype-nav-576x1024.png) | [View](captures/v24b-normal-registry/workshop-prototype-nav-720x1280.png) | [View](captures/v24b-normal-registry/workshop-prototype-nav-720x1600.png) |
+| preflight-error | [View](captures/v24b-normal-registry/preflight-error-576x1024.png) | [View](captures/v24b-normal-registry/preflight-error-720x1280.png) | [View](captures/v24b-normal-registry/preflight-error-720x1600.png) |
+| recovery | [View](captures/v24b-normal-registry/recovery-576x1024.png) | [View](captures/v24b-normal-registry/recovery-720x1280.png) | [View](captures/v24b-normal-registry/recovery-720x1600.png) |
+| focus-sheet | [View](captures/v24b-normal-registry/focus-sheet-576x1024.png) | [View](captures/v24b-normal-registry/focus-sheet-720x1280.png) | [View](captures/v24b-normal-registry/focus-sheet-720x1600.png) |
+| reduced-motion | [View](captures/v24b-normal-registry/reduced-motion-576x1024.png) | [View](captures/v24b-normal-registry/reduced-motion-720x1280.png) | [View](captures/v24b-normal-registry/reduced-motion-720x1600.png) |
+
+### Battle and results
+
+| State | 576×1024 | 720×1280 | 720×1600 |
+|---|---|---|---|
+| preflight-empty | [View](captures/v24b-normal-registry/preflight-empty-576x1024.png) | [View](captures/v24b-normal-registry/preflight-empty-720x1280.png) | [View](captures/v24b-normal-registry/preflight-empty-720x1600.png) |
+| choosefirstprint | [View](captures/v24b-normal-registry/choosefirstprint-576x1024.png) | [View](captures/v24b-normal-registry/choosefirstprint-720x1280.png) | [View](captures/v24b-normal-registry/choosefirstprint-720x1600.png) |
+| printEarly | [View](captures/v24b-normal-registry/printEarly-576x1024.png) | [View](captures/v24b-normal-registry/printEarly-720x1280.png) | [View](captures/v24b-normal-registry/printEarly-720x1600.png) |
+| print60 | [View](captures/v24b-normal-registry/print60-576x1024.png) | [View](captures/v24b-normal-registry/print60-720x1280.png) | [View](captures/v24b-normal-registry/print60-720x1600.png) |
+| rawcomplete | [View](captures/v24b-normal-registry/rawcomplete-576x1024.png) | [View](captures/v24b-normal-registry/rawcomplete-720x1280.png) | [View](captures/v24b-normal-registry/rawcomplete-720x1600.png) |
+| awaken | [View](captures/v24b-normal-registry/awaken-576x1024.png) | [View](captures/v24b-normal-registry/awaken-720x1280.png) | [View](captures/v24b-normal-registry/awaken-720x1600.png) |
+| first-entry-active | [View](captures/v24b-normal-registry/first-entry-active-576x1024.png) | [View](captures/v24b-normal-registry/first-entry-active-720x1280.png) | [View](captures/v24b-normal-registry/first-entry-active-720x1600.png) |
+| combined-second-plan | [View](captures/v24b-normal-registry/combined-second-plan-576x1024.png) | [View](captures/v24b-normal-registry/combined-second-plan-720x1280.png) | [View](captures/v24b-normal-registry/combined-second-plan-720x1600.png) |
+| second-print | [View](captures/v24b-normal-registry/second-print-576x1024.png) | [View](captures/v24b-normal-registry/second-print-720x1280.png) | [View](captures/v24b-normal-registry/second-print-720x1600.png) |
+| reserve-1-entry | [View](captures/v24b-normal-registry/reserve-1-entry-576x1024.png) | [View](captures/v24b-normal-registry/reserve-1-entry-720x1280.png) | [View](captures/v24b-normal-registry/reserve-1-entry-720x1600.png) |
+| third-plan-behind-gear | [View](captures/v24b-normal-registry/third-plan-behind-gear-576x1024.png) | [View](captures/v24b-normal-registry/third-plan-behind-gear-720x1280.png) | [View](captures/v24b-normal-registry/third-plan-behind-gear-720x1600.png) |
+| queue-capacity-reject | [View](captures/v24b-normal-registry/queue-capacity-reject-576x1024.png) | [View](captures/v24b-normal-registry/queue-capacity-reject-720x1280.png) | [View](captures/v24b-normal-registry/queue-capacity-reject-720x1600.png) |
+| equipment-auto-fit | [View](captures/v24b-normal-registry/equipment-auto-fit-576x1024.png) | [View](captures/v24b-normal-registry/equipment-auto-fit-720x1280.png) | [View](captures/v24b-normal-registry/equipment-auto-fit-720x1600.png) |
+| equipment-fitted | [View](captures/v24b-normal-registry/equipment-fitted-576x1024.png) | [View](captures/v24b-normal-registry/equipment-fitted-720x1280.png) | [View](captures/v24b-normal-registry/equipment-fitted-720x1600.png) |
+| printing-wait-plan | [View](captures/v24b-normal-registry/printing-wait-plan-576x1024.png) | [View](captures/v24b-normal-registry/printing-wait-plan-720x1280.png) | [View](captures/v24b-normal-registry/printing-wait-plan-720x1600.png) |
+| third-print-awaken | [View](captures/v24b-normal-registry/third-print-awaken-576x1024.png) | [View](captures/v24b-normal-registry/third-print-awaken-720x1280.png) | [View](captures/v24b-normal-registry/third-print-awaken-720x1600.png) |
+| reserve-2-entry | [View](captures/v24b-normal-registry/reserve-2-entry-576x1024.png) | [View](captures/v24b-normal-registry/reserve-2-entry-720x1280.png) | [View](captures/v24b-normal-registry/reserve-2-entry-720x1600.png) |
+| swap-plan | [View](captures/v24b-normal-registry/swap-plan-576x1024.png) | [View](captures/v24b-normal-registry/swap-plan-720x1280.png) | [View](captures/v24b-normal-registry/swap-plan-720x1600.png) |
+| swap-and-attack | [View](captures/v24b-normal-registry/swap-and-attack-576x1024.png) | [View](captures/v24b-normal-registry/swap-and-attack-720x1280.png) | [View](captures/v24b-normal-registry/swap-and-attack-720x1600.png) |
+| swap-result | [View](captures/v24b-normal-registry/swap-result-576x1024.png) | [View](captures/v24b-normal-registry/swap-result-720x1280.png) | [View](captures/v24b-normal-registry/swap-result-720x1600.png) |
+| replacement-risk-plan | [View](captures/v24b-normal-registry/replacement-risk-plan-576x1024.png) | [View](captures/v24b-normal-registry/replacement-risk-plan-720x1280.png) | [View](captures/v24b-normal-registry/replacement-risk-plan-720x1600.png) |
+| replacement-attack | [View](captures/v24b-normal-registry/replacement-attack-576x1024.png) | [View](captures/v24b-normal-registry/replacement-attack-720x1280.png) | [View](captures/v24b-normal-registry/replacement-attack-720x1600.png) |
+| auto-replacement | [View](captures/v24b-normal-registry/auto-replacement-576x1024.png) | [View](captures/v24b-normal-registry/auto-replacement-720x1280.png) | [View](captures/v24b-normal-registry/auto-replacement-720x1600.png) |
+| empty-active-required | [View](captures/v24b-normal-registry/empty-active-required-576x1024.png) | [View](captures/v24b-normal-registry/empty-active-required-720x1280.png) | [View](captures/v24b-normal-registry/empty-active-required-720x1600.png) |
+| last-member-printing | [View](captures/v24b-normal-registry/last-member-printing-576x1024.png) | [View](captures/v24b-normal-registry/last-member-printing-720x1280.png) | [View](captures/v24b-normal-registry/last-member-printing-720x1600.png) |
+| last-member-active | [View](captures/v24b-normal-registry/last-member-active-576x1024.png) | [View](captures/v24b-normal-registry/last-member-active-720x1280.png) | [View](captures/v24b-normal-registry/last-member-active-720x1600.png) |
+| empty-active-replenish | [View](captures/v24b-normal-registry/empty-active-replenish-576x1024.png) | [View](captures/v24b-normal-registry/empty-active-replenish-720x1280.png) | [View](captures/v24b-normal-registry/empty-active-replenish-720x1600.png) |
+| replenish-run | [View](captures/v24b-normal-registry/replenish-run-576x1024.png) | [View](captures/v24b-normal-registry/replenish-run-720x1280.png) | [View](captures/v24b-normal-registry/replenish-run-720x1600.png) |
+| replenish-next-plan | [View](captures/v24b-normal-registry/replenish-next-plan-576x1024.png) | [View](captures/v24b-normal-registry/replenish-next-plan-720x1280.png) | [View](captures/v24b-normal-registry/replenish-next-plan-720x1600.png) |
+| replenish-last-printing | [View](captures/v24b-normal-registry/replenish-last-printing-576x1024.png) | [View](captures/v24b-normal-registry/replenish-last-printing-720x1280.png) | [View](captures/v24b-normal-registry/replenish-last-printing-720x1600.png) |
+| replenish-last-active | [View](captures/v24b-normal-registry/replenish-last-active-576x1024.png) | [View](captures/v24b-normal-registry/replenish-last-active-720x1280.png) | [View](captures/v24b-normal-registry/replenish-last-active-720x1600.png) |
+| hand-exhausted | [View](captures/v24b-normal-registry/hand-exhausted-576x1024.png) | [View](captures/v24b-normal-registry/hand-exhausted-720x1280.png) | [View](captures/v24b-normal-registry/hand-exhausted-720x1600.png) |
+| win-result-m2 | [View](captures/v24b-normal-registry/win-result-m2-576x1024.png) | [View](captures/v24b-normal-registry/win-result-m2-720x1280.png) | [View](captures/v24b-normal-registry/win-result-m2-720x1600.png) |
+| loss-result-m2 | [View](captures/v24b-normal-registry/loss-result-m2-576x1024.png) | [View](captures/v24b-normal-registry/loss-result-m2-720x1280.png) | [View](captures/v24b-normal-registry/loss-result-m2-720x1600.png) |
+| draw-result-m2 | [View](captures/v24b-normal-registry/draw-result-m2-576x1024.png) | [View](captures/v24b-normal-registry/draw-result-m2-720x1280.png) | [View](captures/v24b-normal-registry/draw-result-m2-720x1600.png) |
+
+## Verification records
+
+- [Full 174-check normal ledger](captures/v24b-normal-registry/render-ledger.json)
+- [Nine corrected receipt checks](captures/v25-receipt-final/render-ledger.json)
+- [Large-text Combined/Swap ledger](captures/v23c-battle-accessibility/render-ledger.json) — its Print60 images are superseded by v26b.
+- [Three final large Print60 checks](captures/v26b-print-labels/render-ledger.json)
+- [Read-only review and exact supersessions](REVIEW.md)
+
+[Historical capture archive](captures/) includes superseded and rejected diagnostics,
+including earlier previews shown in chat. It is not current approval evidence.
+
+No Godot, runtime, player-save, build, or Google Drive release action occurred in M0.
+After atlas approval: deterministic Battle Core → Collection Link → native UI/Android
+validation and a separately verified, non-overwriting review build.
