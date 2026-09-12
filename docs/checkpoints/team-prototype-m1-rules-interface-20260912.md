@@ -98,6 +98,9 @@ blocks another Run. Cursor acknowledgement is bound to receipt ID and expected
 cursor, ignores stale duplicates, persists before publication, and never reruns Rules.
 Skip advances only this cursor; reduced motion changes only durations in the UI.
 Save/resume retains authority, request receipts and cursor and validates all of them.
+The follow-on [session interface](team-prototype-m1-session-interface-20260912.md)
+specifies a small cursor-only persistence update for automatic stage acknowledgements;
+it must not rewrite the full growing match/profile on every animation stage.
 Stage completion/acknowledgement is an internal automatic callback, never a player
 phase button. Nonempty stages auto-play/ack, inapplicable stages auto-skip, and a
 nonterminal cycle automatically opens the next Plan. Skip consumes the same ordered

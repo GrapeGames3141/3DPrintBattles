@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'pacing', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30
 )
 
@@ -260,6 +260,12 @@ if ($Suite -in @('startup', 'all')) {
 if ($Suite -in @('core', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_battle_core.tscn' 'TEAM_BATTLE_CORE failures=0'
 }
+if ($Suite -in @('bot', 'all')) {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_battle_bot.tscn' 'TEAM_BATTLE_BOT failures=0'
+}
 if ($Suite -in @('pacing', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_battle_pacing.tscn' 'TEAM_BATTLE_PACING failures=0'
+}
+if ($Suite -in @('coordinator', 'all')) {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_battle_coordinator.tscn' 'TEAM_BATTLE_COORDINATOR failures=0'
 }

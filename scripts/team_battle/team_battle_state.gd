@@ -149,6 +149,24 @@ static func restore_test_1v1(snapshot: Variant) -> Dictionary:
 	return _restore_for_roster_count(snapshot, 1)
 
 
+## View APIs carry the viewer's complete private seat but not an authority state.
+## This narrow wrapper lets Rules reject malformed view payloads without cloning the
+## private-seat invariants or accepting an unvalidated dictionary.
+static func validate_private_seat(seat: Variant, expected_seat: String, roster_count: Variant, revision: Variant) -> Dictionary:
+	if expected_seat not in ["player", "rival"]:
+		return _failure("Private seat identity is invalid.")
+	if not _is_integer(roster_count) or int(roster_count) not in [1, 3]:
+		return _failure("Private seat roster count is invalid.")
+	if not _is_integer(revision) or int(revision) < 0:
+		return _failure("Private seat revision is invalid.")
+	if not seat is Dictionary:
+		return _failure("Private seat must be a dictionary.")
+	var error := _validate_seat(seat, expected_seat, int(roster_count), int(revision))
+	if not error.is_empty():
+		return _failure(error)
+	return {"ok": true}
+
+
 static func _restore_for_roster_count(snapshot: Variant, expected_roster_count: int) -> Dictionary:
 	if not snapshot is Dictionary:
 		return _failure("Snapshot must be a dictionary.")
@@ -303,7 +321,7 @@ static func _validate_state(state: Dictionary, expected_roster_count: int) -> St
 	return ""
 
 
-static func _validate_seat(seat: Dictionary, expected_seat: String, roster_count: int, state_cycle: int) -> String:
+static func _validate_seat(seat: Dictionary, expected_seat: String, roster_count: int, committed_revision: int) -> String:
 	if not _has_exact_keys(seat, SEAT_KEYS):
 		return "Seat has unknown or missing fields."
 	if not seat.seat_id is String or seat.seat_id != expected_seat:
@@ -358,7 +376,7 @@ static func _validate_seat(seat: Dictionary, expected_seat: String, roster_count
 	if not ready_from_status.is_empty() and active_identity.is_empty():
 		return "Ready companions require an Active companion at a settled boundary."
 
-	return _validate_cards(seat, expected_seat, member_records, state_cycle)
+	return _validate_cards(seat, expected_seat, member_records, committed_revision)
 
 
 static func _validate_member(member: Variant, expected_seat: String) -> String:
@@ -394,7 +412,7 @@ static func _validate_member(member: Variant, expected_seat: String) -> String:
 	return ""
 
 
-static func _validate_cards(seat: Dictionary, expected_seat: String, members: Dictionary, state_cycle: int) -> String:
+static func _validate_cards(seat: Dictionary, expected_seat: String, members: Dictionary, committed_revision: int) -> String:
 	for collection_key in ["draw_pile", "hand", "discard", "fifo", "original_kit"]:
 		if not seat[collection_key] is Array:
 			return "Seat %s collection is invalid." % collection_key
@@ -434,7 +452,7 @@ static func _validate_cards(seat: Dictionary, expected_seat: String, members: Di
 			job_ids,
 			job_kinds,
 			fifo_order,
-			state_cycle
+			committed_revision
 		)
 		if not job_error.is_empty():
 			return job_error
@@ -461,7 +479,7 @@ static func _validate_job(
 		job_ids: Dictionary,
 		job_kinds: Dictionary,
 		fifo_order: Dictionary,
-		state_cycle: int
+		committed_revision: int
 	) -> String:
 	if not job_value is Dictionary:
 		return "FIFO job is invalid."
@@ -476,7 +494,7 @@ static func _validate_job(
 		allowed_keys.append("card_copy")
 	if not _has_exact_keys(job, allowed_keys):
 		return "FIFO job has unknown or missing fields."
-	if not _is_integer(job.created_cycle) or int(job.created_cycle) < 1 or int(job.created_cycle) > state_cycle:
+	if not _is_integer(job.created_cycle) or int(job.created_cycle) < 1 or int(job.created_cycle) > committed_revision:
 		return "FIFO job created cycle is invalid."
 	if not _is_integer(job.work_total) or int(job.work_total) != 1:
 		return "FIFO job work total is invalid."
