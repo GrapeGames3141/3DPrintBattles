@@ -27,6 +27,11 @@ The historical 12–22 / maximum-30 proposal is not current authority while user
 clarification is pending. No timeout, fatigue, damage ramp, or end-cap result may be
 introduced as a substitute.
 
+The Android prototype entry is selected before any legacy bootstrap and exposes only
+the solo Team/Kit workflow. Preserved legacy code/profile data is compatibility and
+history, not a second visible battle mode; the old 40-card/printer-HP route is not
+reachable from prototype navigation.
+
 ## M0 required screen atlas
 
 Two first-pass text-free composition masters are now preserved with hashes and prompt
@@ -128,6 +133,19 @@ invalid-40-card-deck and old-ownership fixtures remain byte-identical. This
 preproduction pass reads or writes no actual player save, and the shipped APK is
 unchanged.
 
+### Bot and pacing evidence gate
+
+The deterministic bot reads the same opening public snapshot plus only its own checked
+hand and never peeks at the player's pending Plan. It fabricates the highest-priority
+legal unspent member, then chooses at most one Support or swap using the locked order
+in the design authority; ties are hand index, roster priority, then card ID.
+
+After 3v3 rules pass, run the specified 45-match, seeds-0–44 ordered starter-Team
+matrix. Report actual-result cycle median, p95, and longest alongside contact,
+replacement, Support/swap, Draw, and terminal evidence. A 500-cycle diagnostic stop is
+a softlock failure, never a forced result. The unsettled 12–2 wording and historical
+12–22/maximum-30 proposal provide no current pacing pass threshold.
+
 ### M0 — atlas and approval (current)
 
 Design documents and two first-pass masters are complete. The sole Terra writer owns
@@ -150,7 +168,8 @@ simultaneous damage/Draw, once-only deployment, same-identity swap, replacement,
 target/fizzle, bot privacy, no printer HP, finite Kit, save/reload trace equality, and
 legal deterministic bot. Start with 1v1 authority fixtures, then expand the same model
 to 3v3. Prove prototype selection bypasses legacy startup mutation and both legacy
-save fixtures remain byte-identical. Do not touch legacy constructors.
+save fixtures remain byte-identical. Validate the locked bot tie policy and descriptive
+pacing matrix without exposing a legacy battle route. Do not touch legacy constructors.
 
 ### M2 — Forge, Team, Kit, first-session ownership
 

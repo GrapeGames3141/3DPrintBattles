@@ -17,13 +17,17 @@ figurines—no humans, mechs, or space theme. The core relationship is:
 Preserve deterministic integer authority, receipt-safe presentation, native dynamic
 text, portrait-only layout, the exact card back, the active no-AdMob contract, catalog
 and asset identity, and existing profile bytes/history. The prototype is an isolated
-mode with additive versioned team/support data. It does not rewrite current catalog
+Android entry selected before any legacy bootstrap and exposes only the solo Team/Kit
+workflow; there is no player-facing legacy battle selector or old 40-card/printer-HP
+route in the prototype. Legacy code and profile data remain preserved for compatibility
+and history only. The prototype uses additive versioned team/support data and does not rewrite current catalog
 effects, import an old save shape, destroy or auto-migrate existing decks, or retain
 printer HP as a second victory system.
 
 Current v3's 40-card minimum, eight-card hand, three simultaneous field slots,
 repeat-creature deck, multiple freeform Main actions, and printer-HP victory remain
-historical mode behavior, not prototype rules. The historical 12–22 median / maximum
+preserved historical implementation/data, not a second player-facing prototype mode.
+The historical 12–22 median / maximum
 30-round proposal is not a settled target and never becomes fatigue, a timeout, or an
 end-cap result; user clarification is pending.
 
@@ -115,7 +119,8 @@ applied together; only then do stable, non-resurrecting automatic traits resolve
 ## F3 — battle entry and visible field
 
 - **Entry:** Solo bot preflight validates a saved Team 3/3, Kit 15/15, one deterministic
-  seed, and prototype schema/version.
+  seed, and prototype schema/version after the Android prototype entry was selected
+  before all legacy bootstrap/normalization.
 - **Player decision:** Confirm first fabrication and reserve priority, or Back without
   mutation.
 - **Result:** Each side has one active anchor, two reserve bays, a printer/FIFO of
@@ -191,7 +196,10 @@ inventory ownership.
 - **Entry:** Finish one complete Run Cycle damage/trigger beat, then inspect both teams.
 - **Player decision:** None during resolution. At the next Plan, if a side has no Active
   and no ready Reserve but has an unspent member, that highest-priority member becomes
-  the required/default fabrication choice.
+  the required/default fabrication choice when the complete Plan can legally afford
+  it. If it is unaffordable, the fabrication option is disabled/excluded but the legal
+  no-cost **Run Cycle** remains enabled so the next Plan can apply regeneration; no
+  extra confirmation is required when the member becomes affordable.
 - **Result:** Unprinted or printing surviving roster members are not defeat. With no
   legal creature target, attacks hold; printers have no HP and take no damage. A side
   loses only when all three roster identities are Defeated. If both third members are
@@ -199,12 +207,16 @@ inventory ownership.
 - **Failure:** Early result, hidden printer damage, sequential terminal checking inside
   a same-beat exchange, duplicate settlement, or a state with a surviving member but
   no eventual fabrication path fails acceptance.
-- **Disabled:** After Win/Loss/Draw, all gameplay input is disabled. No resurrection,
-  hidden fatigue, round-cap outcome, damage ramp, printer-HP fallback, or off-screen
-  tiebreak is permitted.
+- **Disabled:** An unaffordable fabrication choice and any explicit overspending Plan
+  are disabled; overspending still rejects atomically. Run Cycle itself is not disabled
+  when a legal no-cost Plan can advance to replenishment. After Win/Loss/Draw, all
+  gameplay input is disabled. No resurrection, hidden fatigue, round-cap outcome,
+  damage ramp, printer-HP fallback, or off-screen tiebreak is permitted.
 - **Feedback:** Defeat returns the unit to its printer; terminal copy names Team
-  defeated or Draw. Forecast identifies final-member risk without revealing hidden
-  rival choices.
+  defeated or Draw. An unaffordable last member reads `Need 1 filament · Run to
+  replenish · next 4` in the F2 fixture. With no legal creature target, attacks hold;
+  this is neither defeat nor printer damage. Forecast identifies final-member risk
+  without revealing hidden rival choices.
 - **Progression:** M1 uses reward-free fixtures. M2 uses Sol's provisional prototype
   table in a versioned owned ledger: Win 30 coins/40 XP; Loss 10 coins/20 XP; Draw 20
   coins/30 XP, settled exactly once through the existing receipt boundary. These are
@@ -228,7 +240,48 @@ inventory ownership.
 - **Feedback:** Event log and accessibility copy explain legal/disabled choices,
   forecast changes, auto-resolution, save recovery, and exact terminal cause.
 - **Progression:** Prototype schema is additive and versioned. Existing profile bytes,
-  legacy decks/mode, catalog, transactions, and historical saves remain intact.
+  legacy deck data/code, catalog, transactions, and historical saves remain intact
+  without exposing a second player-facing battle mode.
+
+### Deterministic solo bot policy
+
+The bot evaluates the same opening public snapshot as the player plus only its own
+checked private hand; it never reads the player's hand or pending Plan. It selects the
+highest-priority unspent roster identity that is legal under the complete composite
+Plan, using a legal printer aid if that aid is required to afford the fabrication.
+
+It then selects at most one Support or swap using this stable order:
+
+1. The lowest-gain printer aid that makes the required roster fabrication affordable
+   (`raw_filament` before `heated_spool` when either is sufficient).
+2. Swap when the active is at or below half its base HP and the highest-priority ready
+   reserve has strictly greater current HP plus armor.
+3. `standard_full_suit` for the first eligible empty armor slot, then `iron_gem` for
+   the first eligible empty gem slot; target order is Active, ready Reserves by saved
+   priority, then currently/same-Plan Printing by saved priority.
+4. `forge_surge` when a living attack is forecast this cycle.
+5. `raw_filament`, then `heated_spool`, when legal and below the filament cap.
+6. No tactical choice.
+
+Within one class, ties resolve by current hand index, target roster priority, then card
+ID. If the resulting composite Plan is illegal, the bot removes the tactical choice
+and retries the same roster fabrication once; if still illegal, it submits no
+fabrication and the first legal tactical choice under the same order. It never samples
+or reacts to the player's uncommitted Plan.
+
+### Pacing evaluation plan
+
+After deterministic 3v3 authority passes, run 45 bot-versus-bot matches: each of the
+three fixed starter-grant Teams as seat 0 against each of the three Teams as seat 1,
+giving nine ordered pairings including mirrors, with five replicates each. Assign seed
+`((seat0_index * 3 + seat1_index) * 5 + replicate_index)`, producing seeds 0–44. Record
+rounds/cycles to actual Win/Loss/Draw, median, p95, longest, first fabrication, first
+contact, replacement timing, Support/swap counts, Draw rate, and terminal cause.
+
+The harness may stop a trace at 500 cycles only to report a softlock/nontermination
+failure; it must not create a timeout Win, Loss, or Draw. Report pacing descriptively
+until the user clarifies the apparent 12–2 wording. Do not silently adopt the historical
+12–22/maximum-30 proposal as a pass gate.
 
 ## Implementation ownership and bounded modules
 
@@ -271,6 +324,8 @@ Prototype mode selection occurs before GameManager startup can call
 running legacy normalizer, deck auto-repair, ownership grants, review-coin floor, or
 any other write path. The versioned `team_prototype` namespace is created only by an
 explicit checked user transition; every old value and historical mode remains intact.
+After selection, navigation exposes only the solo Team/Kit prototype workflow; legacy
+code/data compatibility does not expose a second battle route.
 
 All QA launches, including prebootstrap/startup fixtures, must pass an explicit
 `--qa-save-root`. Legacy invalid-40-card-deck and old-ownership fixtures must remain
