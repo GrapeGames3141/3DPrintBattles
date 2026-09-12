@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('core', 'pacing', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'core', 'pacing', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30
 )
 
@@ -12,7 +12,7 @@ if (-not $projectRoot.StartsWith('E:\', [StringComparison]::OrdinalIgnoreCase)) 
 if (-not (Test-Path -LiteralPath $engine)) { throw "Missing engine: $engine" }
 
 function Write-Ledger([string]$Path, $Value) {
-    $Value | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $Path -Encoding utf8
+    ConvertTo-Json -InputObject $Value -Depth 12 | Set-Content -LiteralPath $Path -Encoding utf8
 }
 
 function Quote-CrtArgument([string]$Value) {
@@ -61,7 +61,18 @@ function Observe-Descendants([int]$RootId, [hashtable]$Records) {
     }
 }
 
-function Invoke-TeamTest([string]$Scene, [string]$Marker) {
+function Get-SaveManifest([string]$Root) {
+    $entries = @(Get-ChildItem -LiteralPath $Root -File -Recurse | Sort-Object FullName | ForEach-Object {
+        [ordered]@{
+            path = $_.FullName.Substring($Root.Length).TrimStart('\', '/')
+            size = $_.Length
+            sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
+        }
+    })
+    return (ConvertTo-Json -InputObject $entries -Depth 4 -Compress)
+}
+
+function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '') {
     # Denied process inspection must fail before an engine starts.
     if ($null -eq (Get-ProcessIdentity $PID)) { throw 'Process inspection unavailable.' }
     $name = [IO.Path]::GetFileNameWithoutExtension($Scene)
@@ -86,12 +97,27 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker) {
     $stopped = @()
     $windows = @()
     $survivors = @()
+    $saveBefore = ''
+    $saveAfter = ''
     $started = Get-Date
     $arguments = @('--headless', '--path', $projectRoot, '--log-file', $engineLog,
         $Scene, '--', "--qa-save-root=$qaRoot", '--team-prototype')
     $argumentString = ($arguments | ForEach-Object { Quote-CrtArgument $_ }) -join ' '
     try {
         New-Item -ItemType Directory -Path $qaRoot -ErrorAction Stop | Out-Null
+        if ($Fixture) {
+            $fixtureBase = Join-Path $projectRoot 'tests\team_battle\startup_fixtures'
+            foreach ($source in @((Join-Path $fixtureBase 'common'), (Join-Path $fixtureBase $Fixture))) {
+                if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw "Missing synthetic fixture: $source" }
+                foreach ($file in @(Get-ChildItem -LiteralPath $source -File)) {
+                    $destination = Join-Path $qaRoot $file.Name
+                    if (Test-Path -LiteralPath $destination) { throw 'Fixture files must not overwrite each other.' }
+                    Copy-Item -LiteralPath $file.FullName -Destination $destination -ErrorAction Stop
+                }
+            }
+        }
+        $saveBefore = Get-SaveManifest $qaRoot
+        Write-Ledger (Join-Path $runRoot 'save-before.json') @(ConvertFrom-Json $saveBefore)
         foreach ($key in @('APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP')) {
             $directory = Join-Path $runRoot ('isolated-' + $key.ToLowerInvariant())
             New-Item -ItemType Directory -Path $directory -ErrorAction Stop | Out-Null
@@ -142,6 +168,9 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker) {
         $combined = (@($engineLog, $stdoutLog, $stderrLog) | ForEach-Object { Get-Content -Raw -LiteralPath $_ }) -join [Environment]::NewLine
         if ($combined -match 'SCRIPT ERROR|Parse Error|ERROR:|Failed to load script') { throw 'Engine emitted a script/runtime error.' }
         if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
+        $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
+        if ($Compatibility) { $startupMarker += $Compatibility }
+        if ($combined -notmatch [regex]::Escape($startupMarker)) { throw 'Expected prototype startup guard marker missing.' }
     } catch {
         $failure = $_.Exception.Message
     } finally {
@@ -177,6 +206,11 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker) {
                     if (-not $process.WaitForExit(2000)) { $failure += ' Root process did not exit.' }
                 }
                 if (Test-Path -LiteralPath $runRoot) {
+                    if ($saveBefore -and (Test-Path -LiteralPath $qaRoot)) {
+                        $saveAfter = Get-SaveManifest $qaRoot
+                        Write-Ledger (Join-Path $runRoot 'save-after.json') @(ConvertFrom-Json $saveAfter)
+                        if ($saveAfter -cne $saveBefore) { $failure += ' Isolated startup save bytes or file set changed.' }
+                    }
                     Write-Ledger (Join-Path $runRoot 'process-ledger.json') ([ordered]@{
                         scene = $Scene
                         root_pid = if ($process) { $process.Id } else { $null }
@@ -193,6 +227,8 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker) {
                         failure = $failure
                         logs = @($engineLog, $stdoutLog, $stderrLog)
                         qa_root = $qaRoot
+                        fixture = $Fixture
+                        save_bytes_unchanged = $saveBefore -ne '' -and $saveBefore -ceq $saveAfter
                     })
                 }
             } finally {
@@ -208,6 +244,19 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker) {
     Write-Output "PASS: $name (engine exit $exitCode, no task process survivors)"
 }
 
+if ($Suite -in @('state', 'all')) {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_battle_state.tscn' 'TEAM_BATTLE_STATE failures=0'
+}
+if ($Suite -in @('startup', 'all')) {
+    foreach ($case in @(
+        @{ fixture = 'invalid-deck'; compatibility = 'ready' },
+        @{ fixture = 'future-schema'; compatibility = 'future_schema' },
+        @{ fixture = 'backup-recovered'; compatibility = 'backup_recovered' },
+        @{ fixture = 'corrupt-backup'; compatibility = 'corrupt_backup' }
+    )) {
+        Invoke-TeamTest 'res://tests/team_battle/test_team_battle_state.tscn' 'TEAM_BATTLE_STATE failures=0' $case.fixture $case.compatibility
+    }
+}
 if ($Suite -in @('core', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_battle_core.tscn' 'TEAM_BATTLE_CORE failures=0'
 }

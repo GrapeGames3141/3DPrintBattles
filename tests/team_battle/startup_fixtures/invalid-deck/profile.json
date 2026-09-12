@@ -1,0 +1,14 @@
+{
+  "schema_version": 31,
+  "synthetic_fixture": true,
+  "revision": 9,
+  "forge_coins": 7,
+  "onboarding": {"state": "complete", "starter_id": "cinderpaw"},
+  "owned_cards": {"cinderpaw": 2, "raw_filament": 3, "legacy-unknown-card": 7},
+  "owned_blueprints": {"cinderpaw": true, "legacy-blueprint": true},
+  "printed_models": {"historic-print": {"blueprint_id": "cinderpaw", "finish": "original"}},
+  "decks": [{"id": "preserve-invalid-deck", "cards": ["cinderpaw", "raw_filament"]}],
+  "active_deck_id": "preserve-invalid-deck",
+  "starter_pack_rewards": {"entitled": 3, "opened": 1},
+  "unknown_historical_payload": {"must_remain": [1, "unchanged", false]}
+}

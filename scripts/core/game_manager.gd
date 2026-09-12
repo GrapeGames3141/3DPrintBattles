@@ -25,8 +25,26 @@ func _ready() -> void:
 	else:
 		print("PRINTFORGE_STARTUP marker=qa_storage profile=%s journal=%s receipt_ui=%s user_data=%s" % [SaveService.profile_path, SaveService.journal_path, SaveService.pack_ui_session_path, OS.get_user_data_dir()])
 	print("PRINTFORGE_STARTUP marker=profile_load path=%s" % SaveService.profile_path)
-	_initialize_loaded_profile(SaveService.load_profile())
+	var loaded := SaveService.load_profile()
+	if _team_prototype_requested():
+		# This internal M1 selector is deliberately before legacy normalization,
+		# grants, repair, review floors, or any persistence path.  It only reads
+		# the existing v3 snapshot into memory for isolated prototype QA.
+		profile = loaded.duplicate(true)
+		if SaveService.recovery_status in ["corrupt_primary", "corrupt_backup", "backup_recovered"]:
+			save_compatibility = {"compatible":false, "state":SaveService.recovery_status, "message":"Team prototype startup is read-only; existing save recovery state was preserved."}
+		else:
+			save_compatibility = ProfileRules.compatibility(loaded)
+		print("PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility=%s" % str(save_compatibility.get("state", "ready")))
+		return
+	_initialize_loaded_profile(loaded)
 	print("PRINTFORGE_STARTUP marker=profile_ready compatibility=%s has_starter=%s" % [str(save_compatibility.get("state", "ready")), str(has_selected_starter())])
+
+func _team_prototype_requested() -> bool:
+	if OS.has_feature("team_prototype"): return true
+	for argument in OS.get_cmdline_user_args():
+		if str(argument) == "--team-prototype": return true
+	return false
 
 ## Kept narrow and callable by isolated save-compatibility tests. It is the only
 ## bootstrap path that is allowed to migrate or persist a loaded profile.

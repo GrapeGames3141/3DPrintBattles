@@ -13,10 +13,14 @@ selector cannot prevent those writes. `SaveService` already owns the validated
 Legacy BattleState/UnifiedBattleState have incompatible HP, phase, and deck models;
 do not reuse their constructors or alter their effects/catalog.
 
-The sole Terra writer owns `scripts/team_battle/`, new `tests/team_battle/`,
-`tools/run_team_battle_tests.ps1`, and the narrow early prototype branch in
-`scripts/core/game_manager.gd`. Primary owns approval/checkpoint metadata, review,
-staging and commits. No art promotion, main-scene rewrite, export, or actual player
+The sole Terra runtime writer owns `scripts/team_battle/`, new GDScript/scenes in
+`tests/team_battle/`, and the narrow early prototype branch in
+`scripts/core/game_manager.gd`. Following the documented first-run harness failure,
+primary owns the non-runtime `tools/run_team_battle_tests.ps1` verification harness
+and invented JSON startup fixtures, as well as approval/checkpoint metadata, review,
+staging and commits. The audited harness may be invoked by Terra for isolated
+validation; direct engine launches and concurrent engine tests remain prohibited.
+No art promotion, main-scene rewrite, export, or actual player
 save access in M1. Existing unrelated files and untracked assets are preserved.
 
 ## Decision-complete implementation
