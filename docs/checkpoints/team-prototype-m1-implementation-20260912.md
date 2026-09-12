@@ -37,15 +37,26 @@ save access in M1. Existing unrelated files and untracked assets are preserved.
    mutation. Exact keys and native failure reasons reject stale/unknown/extra choices.
    Filament arithmetic is `min(cap, opening + aid) - costs`; capacity checks count
    both new jobs. Default highest-priority fabrication applies when Active/Ready are
-   empty and the entire composite is legal; otherwise an unaffordable empty Plan may
-   Run to replenish. Resolve the locked 14-step order from F4, one FIFO work/no carry.
+   empty and the entire composite is legal; otherwise a no-choice Plan may Run when
+   fabrication is temporarily blocked by insufficient filament or FIFO capacity, to
+   replenish or advance exactly one existing work unit. Corrupt or permanently
+   inconsistent state rejects instead of entering that escape path. Resolve the locked
+   14-step order from F4, one FIFO work/no carry.
    Pending equipment moves out of hand at commit into its job, then discard at fit
    or fizzle; immediate cards discard at commit. Suit replaces armor with eight,
    not +8 stacking; its slot remains occupied after armor is depleted. Mossmunk's
    trait adds two to current armor capped at eight, never resurrects or adds a slot.
-   Gem replaces the gem slot (+2 derived attack, no stacking). Forge Surge applies
-   to the post-swap Active attack in that cycle, consumed even without a target.
-   A landed attack includes a legal hit fully absorbed by armor; HOLD is not landed.
+   Gem replaces the gem slot (+2 derived attack, no stacking). Player replacement and
+   repeated pending jobs for the same slot are legal: each FIFO fit sets Suit armor to
+   exactly eight or the Gem modifier to exactly +2, never a sum; the bot still chooses
+   only empty slots. Forge Surge applies to the post-swap Active attack in that cycle,
+   consumed even without a target. A landed attack includes a legal hit fully absorbed
+   by armor; HOLD is not landed. Lock damage as
+   `floor((base attack + Gem 2) * Surge multiplier)`, then add Cinderpaw's +2 on each
+   third landed attack before simultaneous damage. That locked bonus survives a lethal
+   simultaneous return hit. After damage, Aquafin clamps its heal to base HP and only
+   heals above zero, Voltwig obeys the filament cap, and Mossmunk may gain trait armor
+   without occupying an empty equipment slot.
 4. Player equipment intent includes an explicit same-seat roster target. All eligible
    targets are exposed by a pure query for later native UI selection; no resolution
    modal. Bot target order and tactical tie-breaking follow F7 exactly. Bot receives
@@ -82,6 +93,21 @@ snapshot validation, save-failure rollback, duplicate receipt/ack and determinis
 trace equality across reload/presentation modes. Synthetic legacy invalid-deck and
 ownership snapshots plus backup/journal/sidecars stay byte-identical on actual
 prototype startup; a clean root remains without a newly written profile.
+
+Acceptance includes: a third Cinderpaw hit with Gem and Surge has the exact locked
+integer result and still lands when Cinderpaw dies in the same beat; a fully absorbed
+legal hit advances its counter while HOLD does not; Aquafin cannot heal above base HP
+or from zero; repeated queued Suit/Gem fits replace rather than stack; Mossmunk's
+trait armor leaves an empty equipment slot eligible; and an empty Active with an
+unspent member plus a full temporary FIFO can Run without choice, advance one work,
+avoid early defeat, and auto-select fabrication at the first later legal Plan. A
+corrupt equivalent rejects. The named test-only 1v1 factory alone uses one configured
+identity while production constructors require three; authority loops use the
+configured roster count so simultaneous final KO settles one 1v1 Draw and only the
+third-member final KO settles the equivalent 3v3 result. If either seat's checked Plan
+is invalid, neither seat changes any field: filament, hand/deck/discard, FIFO, roster,
+priority, cycle, revision, terminal receipt, and event/presentation cursor all remain
+unchanged.
 
 Run F7's 45 deterministic bot matches, seeds 0–44; report median/p95/max actual
 cycles, first print/contact, replacements, Support/swap use, Draws and terminal

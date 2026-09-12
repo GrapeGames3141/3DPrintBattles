@@ -71,8 +71,17 @@ prototype balance row exists. This is not a broad 24-creature content pass.
 
 M1 has no manual abilities, Defense mode, or element multiplier; element identity and
 art remain visible. Every locked living attack hits for at least 1 before normal
-ablative armor. Both active attacks are calculated from the same beat snapshot and
-applied together; only then do stable, non-resurrecting automatic traits resolve.
+ablative armor. At attack lock, a legal hit increments the attacker's landed-attack
+counter even if armor will absorb all damage; HOLD does not. Attack damage is
+`floor((base attack + gem bonus) * Forge Surge multiplier)`, where gem bonus is 0 or
+2 and the multiplier is `3 / 2` with Surge or 1 without it, then Cinderpaw adds 2 on
+its third landed attack. The minimum-1 rule applies to that locked total. Both active
+attacks are calculated from the same beat snapshot and applied together, so a lethal
+simultaneous return hit still carries Cinderpaw's already-locked bonus. Only then do Aquafin,
+Voltwig, and Mossmunk resolve their stable non-resurrecting after-damage traits.
+Aquafin heals to `min(base HP, current HP + 3)` only when its post-damage HP is above
+zero. Voltwig's gain obeys the filament cap. Mossmunk's armor gain does not occupy an
+empty armor-equipment slot.
 
 ## F1 — deterministic first-session grant
 
@@ -154,7 +163,8 @@ applied together; only then do stable, non-resurrecting automatic traits resolve
 - **Disabled:** A second roster fabrication, second Support, Support plus swap, manual
   phase advance, and inputs during Run Cycle remain disabled with exact reasons.
 - **Feedback:** Forecast identifies both queued jobs in order, locked equipment target,
-  resource arithmetic, expected completions, and automatic cycle order.
+  resource arithmetic, expected completions, same-slot replacement/refresh, and
+  automatic cycle order.
 - **Progression:** Plan/Run Cycle state is match-local. Reduced motion and Skip change
   presentation duration only, never revision, result, RNG, resource, or receipts.
 
@@ -163,14 +173,23 @@ peeks at hidden player hand or choice data. Deterministic Run Cycle order is: co
 both checked Plans atomically in stable seat order; resolve printer-aid gains and
 costs; append roster then equipment jobs; advance exactly one FIFO work unit; deploy
 or auto-fit completions; resolve selected swaps; resolve immediate spells; lock both
-living active attacks; apply same-beat damage together; resolve non-resurrecting traits
-in stable `(cycle, beat, seat, source ID)` order; mark defeats; auto-replace; evaluate
-terminal state; open the next Plan.
+living active attacks including landed counters and Cinderpaw's locked damage bonus;
+apply same-beat damage together; resolve Aquafin, Voltwig, and Mossmunk after-damage
+traits in stable `(cycle, beat, seat, source ID)` order; mark defeats; auto-replace;
+evaluate terminal state; open the next Plan.
 
 Gear may target a living, currently printing, or same-Plan roster identity. If that
 identity is defeated before auto-fit, the gear job fizzles with native feedback and
 moves to the finite discard; it creates no manual prompt and does not remove permanent
 inventory ownership.
+
+Player gear replacement and repeated pending jobs for the same slot are legal. Jobs
+remain FIFO and never stack: each Standard Full Suit fit sets current armor to exactly
+8 and leaves the armor slot occupied even after that armor reaches zero; each Iron Gem
+fit leaves exactly one occupied gem slot and one +2 derived-attack bonus. A later job
+for the same slot deterministically replaces or refreshes that value when it reaches
+the head. Mossmunk may hold trait armor while its armor-equipment slot remains empty.
+The bot's F7 equipment policy still selects only empty slots.
 
 ## F5 — once-only deployment, reserves, and swaps
 
@@ -197,28 +216,34 @@ inventory ownership.
 - **Player decision:** None during resolution. At the next Plan, if a side has no Active
   and no ready Reserve but has an unspent member, that highest-priority member becomes
   the required/default fabrication choice when the complete Plan can legally afford
-  it. If it is unaffordable, the fabrication option is disabled/excluded but the legal
-  no-cost **Run Cycle** remains enabled so the next Plan can apply regeneration; no
-  extra confirmation is required when the member becomes affordable.
+  and enqueue it. If it is unaffordable or temporarily blocked by FIFO capacity, the
+  fabrication option is disabled/excluded but the legal no-choice **Run Cycle** remains
+  enabled so the next Plan can apply regeneration or exactly one existing FIFO work
+  unit can advance. No extra confirmation is required when the member first becomes
+  fully legal.
 - **Result:** Unprinted or printing surviving roster members are not defeat. With no
   legal creature target, attacks hold; printers have no HP and take no damage. A side
   loses only when all three roster identities are Defeated. If both third members are
   defeated in the same fully resolved beat, settle Draw exactly once.
 - **Failure:** Early result, hidden printer damage, sequential terminal checking inside
-  a same-beat exchange, duplicate settlement, or a state with a surviving member but
-  no eventual fabrication path fails acceptance.
-- **Disabled:** An unaffordable fabrication choice and any explicit overspending Plan
-  are disabled; overspending still rejects atomically. Run Cycle itself is not disabled
-  when a legal no-cost Plan can advance to replenishment. After Win/Loss/Draw, all
-  gameplay input is disabled. No resurrection, hidden fatigue, round-cap outcome,
-  damage ramp, printer-HP fallback, or off-screen tiebreak is permitted.
+  a same-beat exchange, duplicate settlement, a capacity-blocked empty-Active softlock,
+  or a state with a surviving member but no eventual fabrication path fails acceptance.
+  A corrupt or permanently inconsistent roster/FIFO state is rejected rather than
+  being advanced indefinitely as a no-choice Plan.
+- **Disabled:** An unaffordable or capacity-blocked fabrication choice and any explicit
+  overspending Plan are disabled; overspending still rejects atomically. Run Cycle
+  itself is not disabled when a legal no-choice Plan can advance to replenishment or
+  free FIFO capacity. After Win/Loss/Draw, all gameplay input is disabled. No
+  resurrection, hidden fatigue, round-cap outcome, damage ramp, printer-HP fallback,
+  or off-screen tiebreak is permitted.
 - **Feedback:** The defeated creature leaves the field and its roster record reads
   Defeated. Only the current FIFO head occupies the printer chamber; defeat never
   replaces or obscures a working print. Terminal copy names Team defeated or Draw.
   An unaffordable last member reads `Need 1 filament · Run to
   replenish · next 4` in the F2 fixture. With no legal creature target, attacks hold;
-  this is neither defeat nor printer damage. Forecast identifies final-member risk
-  without revealing hidden rival choices.
+  this is neither defeat nor printer damage. A temporarily full FIFO identifies the
+  blocking jobs and says Run will advance one work unit. Forecast identifies
+  final-member risk without revealing hidden rival choices.
 - **Progression:** M1 uses reward-free fixtures. M2 uses Sol's provisional prototype
   table in a versioned owned ledger: Win 30 coins/40 XP; Loss 10 coins/20 XP; Draw 20
   coins/30 XP, settled exactly once through the existing receipt boundary. These are
@@ -311,6 +336,11 @@ legacy printer-HP/deck constructors:
    queue-capacity atomic rejection, all five kit IDs, hand cap, finite exhaustion,
    once-only deploy, legal repeat swaps of the same identity, auto-replacement,
    empty-Active printing, stale callbacks, simultaneous final KO, and exactly-once Draw.
+   The deliberately named test-only 1v1 factory is the only constructor allowed to set
+   a configured roster count of one; production construction remains exactly three.
+   Terminal, default-fabrication, replacement, and roster-conservation rules iterate
+   the configured identities, so a simultaneous 1v1 final KO settles Draw once and an
+   equivalent 3v3 fixture settles only after each side's third identity is defeated.
 3. First-session fixtures prove each starter mapping, empty starter print bed, exactly
    one voucher use, two named preprinted common grants, Team 3/3, Kit 15/15, top-up
    idempotence, reload/recovery, and zero RNG/pack/purchase dependency.
