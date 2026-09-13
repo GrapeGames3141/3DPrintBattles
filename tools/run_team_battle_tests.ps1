@@ -315,7 +315,7 @@ if ($Suite -eq 'collection-parser') {
     Invoke-TeamTest 'res://scripts/team_collection/team_collection_projection.gd' '' '' '' $true
     Invoke-TeamTest 'res://scripts/team_collection/team_collection_session.gd' '' '' '' $true
 }
-if ($Suite -eq 'match') {
+if ($Suite -in @('match', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_match_session.tscn' 'TEAM_MATCH_SESSION failures=0'
 }
 if ($Suite -eq 'match-parser') {

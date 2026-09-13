@@ -63,6 +63,11 @@ persist_ledger, persist_cursor)` returns a session or exact error, never writes.
 Require valid callbacks. Compatibility must explicitly be ready/compatible;
 future schema, corrupt/recovered backup and other unsafe load states reject.
 CollectionProjection validates the retained deep profile snapshot. No legacy helper.
+The production compatibility envelope includes `compatible`, `state`, `message`,
+`schema_version`, and `supported_schema`. Require literal Boolean true, the exact
+String ready state and a String message; permit read-only metadata rather than
+requiring an exact three-key envelope. Do not use truthiness or a new `ready` flag. Explicit
+`"ready"`/`"compatible"` strings may be test shorthand only.
 
 `update_collection(raw_profile, compatibility)` is a read-only refresh of the
 private Collection snapshot following a separately committed Collection action.

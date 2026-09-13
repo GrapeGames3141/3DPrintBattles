@@ -61,3 +61,19 @@ Most recent observed build remains0.8.11/code107 until this checkpoint completes
 No physical Android device was connected at the readiness check. A review delivery
 may accurately state that limitation; do not uninstall, clear app data or erase
 device logs to manufacture a clean-install result.
+
+## Verified binary launch-path audit seam
+
+Primary read the existing0.8.11 APK's `assets/project.binary` directly, without
+launching it or extracting player data. It is an `ECFG` envelope:4-byte magic,
+little-endian u32 property count, then each property's u32 UTF-8 key byte length,
+key bytes, u32 Variant byte length, Variant bytes. String Variant type is4, followed
+by u32 UTF-8 byte length and padded string bytes. Validate every bound/type and
+complete consumption; do not search arbitrary binary strings for apparent success.
+
+The historical APK decoded `application/run/main_scene=res://scenes/main.tscn`
+and `_custom_features=unified_playtest`. The new APK must independently decode
+`application/run/main_scene=res://scenes/team_prototype.tscn` and contain
+`team_prototype` (not `unified_playtest`) in its comma-separated custom features.
+Checking that a new scene merely exists in the ZIP is insufficient to prove launch.
+Reuse this small read-only parser in the final audit with explicit size bounds.

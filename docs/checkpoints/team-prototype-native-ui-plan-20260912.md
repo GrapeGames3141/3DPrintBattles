@@ -108,6 +108,8 @@ Blueprint imprints use the approved v2 transparent ink family on parchment.
   Both sides keep their real inward front/rear views, including neutral two-view
   Voltwig. Finite breathing/windup/contact/return is native for Voltwig and respects
   the common planted root. Shadows follow movement and return to the same root.
+  Use `team-prototype-sprite-root-audit-20260912.md` for measured per-frame root
+  inputs and the airborne-contact rule; never normalize every sprite to y455.
 - Both locked attacks resolve visually without changing simultaneous damage rules.
   Replacement enters the chosen ready priority automatically. A zero-active wait
   still permits the legal replenishing Run. No manual phases, printer targets,
@@ -136,6 +138,11 @@ selector so both a normal source launch and Android export enter this exact mode
 Android custom feature must be `team_prototype`, not `unified_playtest`. Retain old
 source for history without exposing old battle/deck routes in the new prototype.
 Do not export an APK which silently launches the historical game.
+At that entry change, keep prototype autoload loading strictly read-only and validate
+untrusted top-level schema types before calling any legacy compatibility helper that
+casts `schema_version` with `int()`. The accepted Collection projection/file boundary
+must decide malformed/future profile recovery without a startup script error or
+normalization. Preserve the explicit ready/future/recovered startup evidence states.
 
 Run deterministic first-session/actions/back/resume/receipt/legality tests and actual
 native captures specified in the M3 reuse audit at 576x1024, 720x1280 and 720x1600.
