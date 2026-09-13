@@ -6,6 +6,12 @@ All rects are x,y,w,h in the uniformly fitted941x1672 design layer. The current
 prototype explicitly has **no ads or banner reserve**; respect all safe insets.
 Derived states below require native normal/150% captures before visual sign-off.
 
+Promote the approved941x1672 Battle master byte-identically from
+`docs/art/team-prototype-20260912/BA-R1-team-autobattle-chassis-text-free-v1.png`
+to `assets/ui/team_prototype/BA-R1-team-autobattle-chassis-text-free-v1.png`.
+Source is2068110bytes, SHA-256
+`F967088054521889012A5C63D989DE74EA71AB8AA4DB644709CD65918977EA99`.
+
 ## Plan source owners
 
 - Choose Print uses the player roster records, not an unrelated floating control.
@@ -94,6 +100,16 @@ Use the shared passive print compositor with cached frame/alpha/root geometry.
 First Forge owns a local Sequence; battle owns its accepted receipt/cursor clock.
 No renderer advances rules or grants, and no heavy snapshots or image IO occur per frame.
 
+BA-R1 already paints its printer hardware. Battle passes empty carriage geometry to
+the passive compositor; do not overlay the large First Forge guide/head on this
+different master. The registered scan, progressive raw/wire reveal and Awaken/Enter
+provide its finite fabrication presentation. Empty/no-job printers show no subject
+or seed; `presentation_visible=false` must suppress the seed as well as raw/living
+layers. Preserve the normal First Forge seed at an actual zero-progress voucher.
+The battle printer contact shadow uses111.13x14.70 design pixels (not the First
+Forge compositor's hard-coded132x18 default); expose a bounded passive display
+input with unchanged First Forge defaults rather than scale the entire chamber.
+
 ## First playable presentation cadence
 
 Primary selects these bounded initial presentation durations, in seconds. They do
@@ -165,3 +181,37 @@ approved completed object for Fit with the same root. Remove both after Fit;
 living creature pixels remain unchanged. Persistent fitted feedback is native
 status and authoritative Armor/Attack values, with the target named accessibly.
 No empty suit or gem is pasted over a living sprite. Verify small-scale edges at576.
+
+## Hand and roster-token material registration
+
+Read-only UI source review found no missing ImageGen asset. BA-R1 paints only the
+leather hand tray. Use the already-approved `PhysicalControlFamily` `tall` material
+(`live-correction-r1/controls/tall_index/normal.png`) for each of the four
+146x217 hand bodies; keep the parent Button caption empty. The native passive
+card-face region occupies local `(6,7,134,89)` and the normal native name owner is
+`(4,142,138,68)`, font27/line27. Use only V3Catalog artwork with
+`SupportCardView.atlas_region`, never its unrelated generic framed composition.
+
+At150, preserve card/art geometry and use native label `(4,118,138,92)`,
+font39.21/line42.48. Match final atlas `CORE_CARDS` title-case pairs:
+`Suit / 2`, `Gem / 2`, `Surge / 2`, `Raw / +2`, `Heated / +3`.
+Normal examples are Full Suit · 2, Iron Gem · 2, Forge Surge · 2, Raw Filament +2,
+Heated Spool +3. Values/effects come from authoritative support data, not this
+example table or V3's older stats. Full names, effects, selection and disabled
+reason remain accessible. Children ignore pointer events; the parent alone owns
+selection, disabled state and the cyan/white focus ring. Inspect small-scale
+ornament/art seams before sign-off; no extra card back on the player's fronts.
+
+Nonliving roster tokens are not new bitmap controls over already-painted bays.
+Match the approved semantic material with a small native StyleBox/gradient:
+local `(30,43,218,84)`, navy `#163449` to `#07141f` near85% alpha, brass1px
+`#bb934c`, radius5, native `#d9f8fb` text27/30. At150 the approved token is
+text-only local `(0,28,277.73,91.49)`, cream `#fff0c8`,39.21/42.48.
+The reserve parent is the hit. Do not add tall/binding ornament inside its bay.
+
+Rival backs reuse the exact `assets/cards/support_card_back_source_v1.png`,
+container origin32,439, each43x64 with5px gap (four span187). They are passive,
+linear/mipmapped where available, with no private IDs. Normal count owner is
+`(32,360,194,72)` with RIVAL HAND / N HIDDEN at27/33; at150 use
+`(22.87,359.41,230.35,49.01)` with Rival ×N at39.21/42.48. Never treat these
+decorative back images as48px interactive card targets.

@@ -126,3 +126,13 @@ Its6 parser self-tests passed, and it decoded the historical0.8.11 artifact with
 explicit historical expectations, matching its282461896bytes and recorded SHA-256.
 The default expectations reject that old main/feature. This is tooling validation,
 not evidence that a new APK exists or that an Android device has launched it.
+
+`tools/audit_team_android.ps1` now independently checks manifest/launcher/portrait,
+review signing v2/v3,16KiB alignment, ECFG main/feature, compiled directional and
+prototype assets, arm64-only/stock native dependencies and absent ad identifiers.
+PowerShell parsing passed. A negative run against the historical0.8.11 APK passed
+its expected rejection at the old `res://scenes/main.tscn` launch identity; logs are
+in `build/evidence/team-release-tooling/20260913-negative-old-apk`. This intentionally
+does not produce a passing new-build audit receipt. A new signed candidate is still
+required. Scoped elevation was used after sandbox evidence-directory access denied;
+no ACL, player save or existing APK was changed.
