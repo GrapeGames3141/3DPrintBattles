@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'facing', 'facing-capture', 'raw-render', 'import', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'facing', 'facing-capture', 'raw-render', 'import', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30,
     [ValidateRange(320, 1440)][int]$Width = 576,
     [ValidateRange(568, 3200)][int]$Height = 1024,
@@ -321,6 +321,13 @@ if ($Suite -eq 'match') {
 if ($Suite -eq 'match-parser') {
     Invoke-TeamTest 'res://scripts/team_runtime/team_match_ledger.gd' '' '' '' $true
     Invoke-TeamTest 'res://scripts/team_runtime/team_match_session.gd' '' '' '' $true
+}
+if ($Suite -eq 'adapter') {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_prototype_runtime.tscn' 'TEAM_PROTOTYPE_RUNTIME failures=0'
+}
+if ($Suite -eq 'adapter-parser') {
+    Invoke-TeamTest 'res://scripts/team_runtime/team_prototype_store.gd' '' '' '' $true
+    Invoke-TeamTest 'res://scripts/team_runtime/team_prototype_runtime.gd' '' '' '' $true
 }
 if ($Suite -eq 'import') {
     Invoke-TeamTest 'resource-import' '' '' '' $false $true

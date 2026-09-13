@@ -188,3 +188,63 @@ print, raw-complete retry, grant receipt, Team/Kit dirty draft, preflight, Plan,
 mid-stage, cursor failure, Result before acknowledgement, and Result after
 acknowledgement. At each point assert the exact zero-write, discard, Resume, or
 next-route behavior above and confirm no rival-private data reaches native controls.
+
+## Read-only UI audit resolutions
+
+Primary accepted these bounded implementation details after the UI agent compared
+the final M0 CSS with the reusable native APIs. They fill interactive states on the
+approved masters, not a new visual direction or a runtime visual sign-off.
+
+- Team bay taps open a focus-trapped selector on the same TM-R1 master's central
+  parchment; do not invisibly cycle through companions. Use a native title at
+  `(133,534,674,43)`, up to three blueprint/name row hits at y588/684/780, each
+  `(133,y,674,88)`, then page studs `(133,880,92,92)` and `(718,880,92,92)` with
+  a centered page readout. Rows show only eligible owned Printed companions, plus
+  disabled duplicate reason when occupied elsewhere. Choosing applies to the local
+  draft and closes the selector; Back closes it with no selection/write.
+- Kit has four authored card slots per page at `(71.88,1042.5,596.27,248.4)`;
+  page2 exposes the fifth support type with a visible page indicator. Use the same
+  lower-parchment page studs above, not swipe-only navigation. A chip opens a native
+  inspector on central parchment with name, effect and owned/selected counts.
+  While inspecting, replace page studs with wide Minus/Plus hits
+  `(150,865,250,104)` and `(541,865,250,104)`. Back closes the inspector first.
+  Count changes affect the draft only. Page controls use the generated `square`
+  family and +/- use `wide`, because those seats have no baked control.
+- Priority order is the existing three-slot order. The default Print Order readout
+  `(127.42,591.55,686.51,72.06)` is an expanded transparent48px-minimum hit opening
+  a separate Print Order sheet on the central parchment. Its three rows select a
+  draft index; Move Up/Move Down use the same two wide central-parchment control
+  seats. Endpoints are disabled with a reason. Back closes the sheet; no save or
+  drag-only dependency. The companion-selection sheet remains a separate state.
+- Do not reuse `PhysicalSettingsRecoveryComponent.render_settings()` wholesale:
+  it exposes unapproved 125% and audio callbacks. Build only the accepted draft on
+  ST-01's normalized seats: text plate `(.222,.085,.285,.120)`, text dial
+  `(.545,.085,.320,.120)`, HC `(.222,.452,.646,.090)`, RM
+  `(.222,.551,.646,.090)`, preview `(.160,.670,.700,.185)`, Back
+  `(.165,.886,.215,.076)`, Apply `(.474,.900,.386,.080)`. Other scenery/hardware
+  remains decorative, with no interactive or accessibility control pretending to work.
+- Reuse `PhysicalControlFamily.apply(...,transparent_hit=true)` over baked controls,
+  `M1PhysicalUiComponent.add_inset_button_focus_ring`, Workshop-only
+  `add_complete_focus_ring`, and `PhysicalNavigationComponent.configure_back`.
+  Do not draw `ArcaneFoundryThemeKit.panel/button(high_contrast=true)` over masters.
+- `M1PhysicalUiComponent.place_design` assumes the exact fitted design layer.
+  Minimum hit size in that layer is `required_final_pixels / fit_scale`; e.g.
+  48px final is78.42 design pixels at576wide. Enlarge transparent hit bounds around
+  authored centers, not the art itself. All four safe insets are respected.
+- `PhysicalCatalogImprint.blueprint_texture(definition)` and `add_blueprint_card`
+  use normalized rects, so divide design x/w by941 and y/h by1672. Reuse only
+  `SupportCardView.atlas_region(definition)` and `card_back_for_test()`; do not
+  instantiate its generic framed/text card composition inside the new master.
+- Use deterministic `ThemeDB.fallback_font` sans on the prototype root Theme.
+  Existing Arvo display font does not match approved M0 typography. Baseline is
+  26–27 design pixels; approved150% battle overrides use39.21px/42.48px line height
+  from final atlas CSS, not a second content-layer scale. Ink tokens are cream
+  `#fff0c8` on dark, `#24160b`/`#162536` on parchment, cyan `#8bf6ff` focus
+  (white focus in HC). Required decision text cannot disappear behind ellipsis.
+- Add150% overflow/focus captures for every route family at576x1024 and720x1600:
+  Workshop, Starter/Inspect, Forge/Retry, Team selector/Kit inspector (fifth type),
+  Grant/Result, Settings/Recovery. No clipping or sub48px final hit. These are
+  runtime accessibility checks, not a request to regenerate the approved atlas.
+
+Use `team-prototype-native-copy-20260912.md` for concise native wording. Authority
+values/events win if a textual example conflicts; do not encode rules in copy helpers.

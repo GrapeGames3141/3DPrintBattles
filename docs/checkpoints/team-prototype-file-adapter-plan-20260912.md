@@ -71,6 +71,10 @@ saves during tests. Primary owns the audited runner and validation checkpoint.
 - Expose narrow views/actions/error state, no public full-history per-frame polling.
   Reuse the accepted authority classes; do not duplicate validation or battle rules
   in the facade. Cache the active session until an explicit reload is necessary.
+- Avoid RefCounted ownership cycles between runtime, sessions, Coordinator and
+  bound persistence callbacks. Use weak-owner dispatch or an explicitly verified
+  disposal boundary; repeated open/close and failed-open fixtures must release
+  objects and file handles without relying on application exit.
 
 ## Evidence
 
