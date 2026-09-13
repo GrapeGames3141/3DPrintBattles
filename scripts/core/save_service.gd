@@ -86,6 +86,28 @@ func load_profile() -> Dictionary:
 	else: recovery_status = "new_profile"
 	return {}
 
+
+func quiet_load_profile() -> Dictionary:
+	# Prototype entry is intentionally read-only.  Unlike the legacy loader, it
+	# distinguishes an absent profile from a valid literal `{}` and never repairs
+	# or normalizes either primary or backup evidence while merely opening the UI.
+	var primary := _quiet_profile_entry(profile_path)
+	if str(primary.get("status", "")) == "valid":
+		recovery_status = "primary"
+		return {"status":"primary", "profile":(primary.get("profile", {}) as Dictionary).duplicate(true)}
+	var backup := _quiet_profile_entry(profile_backup_path)
+	if str(backup.get("status", "")) == "valid":
+		recovery_status = "backup_recovered"
+		return {"status":"backup_recovered", "profile":(backup.get("profile", {}) as Dictionary).duplicate(true)}
+	if str(primary.get("status", "")) == "invalid":
+		recovery_status = "corrupt_primary"
+		return {"status":"corrupt_primary", "profile":{}}
+	if str(backup.get("status", "")) == "invalid":
+		recovery_status = "corrupt_backup"
+		return {"status":"corrupt_backup", "profile":{}}
+	recovery_status = "new_profile"
+	return {"status":"missing", "profile":{}}
+
 func commit_snapshot(profile: Dictionary) -> bool:
 	last_commit_error = ""
 	var file := FileAccess.open(profile_temp_path, FileAccess.WRITE)
@@ -253,3 +275,17 @@ func _read_profile(path: String) -> Dictionary:
 	if file == null: return {}
 	var parsed = JSON.parse_string(file.get_as_text())
 	return parsed if parsed is Dictionary else {}
+
+
+func _quiet_profile_entry(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {"status":"missing", "profile":{}}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {"status":"invalid", "profile":{}}
+	var text := file.get_as_text()
+	file.close()
+	var parser := JSON.new()
+	if parser.parse(text) != OK or not parser.data is Dictionary:
+		return {"status":"invalid", "profile":{}}
+	return {"status":"valid", "profile":(parser.data as Dictionary).duplicate(true)}

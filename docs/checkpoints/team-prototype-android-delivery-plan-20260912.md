@@ -207,3 +207,23 @@ require compiled `team_prototype_entry.gdc` as well as Shell and Battle resource
 
 This source plan is ready but entry edits remain downstream of the current native
 Battle acceptance gate. No default launch, version or export change has been made.
+
+### 2026-09-13 sequencing update
+
+The final corrected Battle runtime is source-reviewed and frozen with clean native
+and true-pixel captures. Main permits the sole writer to implement this independent
+Entry/startup slice while the read-only reviewer finishes those frozen images.
+This avoids an idle handoff; it does not waive visual acceptance. Export remains
+blocked until final Battle UI findings close, all entry/regression checks pass,
+and main reviews/commits the complete source. No second writer or new art scope.
+
+### Delivery source freeze
+
+Entry, final serial regressions, design review and the Battle visual gate are now
+complete. Main reviewed the full diff and exact run ledgers. See
+[entry/release validation](team-prototype-entry-release-validation-20260913.md)
+for final roots, the excluded overlapping runs and the disclosed unreproduced
+Windows headless allocator failure. No speculative runtime workaround was added.
+The sole writer has handed engine ownership to main for commit-qualified signed
+export, independent APK audit, remote push and verified non-overwriting DriveFS
+delivery. Physical Android validation and cloud sync must be reported separately.

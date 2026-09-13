@@ -30,21 +30,20 @@ Source is2068110bytes, SHA-256
   Its full accessibility name includes Unspent and Choose Fabrication. Two text
   lines cannot fit its79-design-pixel height. Ready-bay150% height is185 and its
   name/status owner has height91.49 as in the final atlas accessibility overrides.
-  In the large Print fixture only, a docket matching the actual companion FIFO head
-  may use the approved sole-head marker1 at rival `(111.09,65.35,91.49,49.01)` or
-  player `(93.12,1058.63,91.49,49.01)`; full name/status/progress remain accessible.
-  A Printing member waiting behind another job is not head1: keep its one-line name.
+  In large Print, keep the canonical creature name visibly on the paper. Current
+  FIFO head1/status belong in its full native accessibility name, not an orphan
+  visual ordinal. A Printing member waiting behind another job is not head1.
 - Docket text belongs on the existing cream printer-roof paper, not the opaque
   navy bay-record panel. Normal rival text owner is `(105,85,140,64)`; normal player
   is `(29.4,1053,215.65,79)`, centered native name/status in dark `#241708` with no
   StyleBox, shadow, border or token-local offset. Player's transparent empty-caption
   choice owner and its selected/focus ring remain; rival text ignores pointer input.
-  Large rival uses one name line at `(29.4,98.5,215.65,42.48)`; large player uses one
-  name line in its existing79-high owner. Keep the explicit Print-head ordinal
-  exception above. The large rival label is noninteractive: its owner overlaps the
-  lowest part of Back's hit box, but rendered ink must be clear of Back and pointer
-  ownership remains with Back. Verify this derived registration in the final150
-  Plan capture; it is not a change to the master artwork.
+  Large rival uses one centered clipped name line at `(29.4,115,215.65,42.48)`;
+  large player uses one name line in its existing79-high owner. Preserve39px dark
+  ink. This final reviewed roof-paper band clears Back's end111.18 and printer
+  body beginning159. It supersedes the earlier98.5 owner after actual-pixel tall
+  review. Both paper names remain noninteractive except the existing player choice
+  hit; no master artwork is changed.
 - Ready controls keep an empty parent Button caption. The normal child caption is
   local `(12,119.2,253.8,58.8)`, cream `#f7ebca`, centered27/26, below the mini.
   Normal parent owners are rival `(303.9,163.4,277.8,178)` and

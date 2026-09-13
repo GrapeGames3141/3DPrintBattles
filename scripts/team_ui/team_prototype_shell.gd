@@ -17,6 +17,8 @@ const Widgets := preload("res://scripts/team_ui/team_prototype_native_widgets.gd
 const SystemPresenter := preload("res://scripts/team_ui/team_prototype_system_presenter.gd")
 const CollectionPresenter := preload("res://scripts/team_ui/team_prototype_collection_presenter.gd")
 const OnboardingPresenter := preload("res://scripts/team_ui/team_prototype_onboarding_presenter.gd")
+const BattleController := preload("res://scripts/team_ui/team_prototype_battle_controller.gd")
+const BattlePresenter := preload("res://scripts/team_ui/team_prototype_battle_presenter.gd")
 
 const DESIGN := Vector2(941, 1672)
 const WORKSHOP := "res://assets/ui/physical_ui/workshop-backplate-text-free-v1.png"
@@ -41,6 +43,7 @@ var selected_support := ""
 var route_error := ""
 var leave_confirmation := false
 var recovery_details := false
+var presentation_recovery_reason := ""
 var first_print: Variant = null
 var _forge_compositor: Variant = null
 var _forge_action: Button = null
@@ -51,6 +54,9 @@ var _blueprint_mipmap_cache: Dictionary = {}
 var _system_presenter := SystemPresenter.new()
 var _collection_presenter := CollectionPresenter.new()
 var _onboarding_presenter := OnboardingPresenter.new()
+var battle_controller: Variant = null
+var _battle_presenter := BattlePresenter.new()
+var _battle_visual: Variant = null
 var _back_dispatch_queued := false
 var synthetic_safe_insets := Rect2(Vector2.ZERO, Vector2.ZERO)
 var synthetic_safe_insets_enabled := false
@@ -58,9 +64,35 @@ var _fit_rebuild_queued := false
 var _restore_focus_name := ""
 
 func configure_runtime(value: Variant) -> void:
+	presentation_recovery_reason = ""
 	runtime = value
+	battle_controller = BattleController.new()
+	battle_controller.configure(runtime)
 	_refresh_cache()
 	_render()
+
+
+func configure_recovery(reason: String) -> void:
+	# Entry can fail before Runtime.open returns an object.  Keep that state
+	# presentation-only: Recovery offers Back/Leave but has no writable facade.
+	runtime = null
+	battle_controller = null
+	presentation_recovery_reason = reason.strip_edges()
+	route = "recovery"
+	route_stack.clear()
+	_render()
+
+
+func is_recovery_presentation() -> bool:
+	return not presentation_recovery_reason.is_empty() or (runtime != null and runtime.is_recovery())
+
+
+func recovery_reason() -> String:
+	if not presentation_recovery_reason.is_empty():
+		return presentation_recovery_reason
+	if runtime != null:
+		return str(runtime.view().get("recovery", "Recovery required."))
+	return "Recovery required."
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -97,14 +129,31 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		_queue_back_dispatch()
 		return
-	if first_print == null:
-		return
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
-		first_print.set_paused(true)
+		if first_print != null:
+			first_print.set_paused(true)
+		if battle_controller != null:
+			battle_controller.set_presentation_paused(true)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
-		first_print.set_paused(false)
+		if first_print != null:
+			first_print.set_paused(false)
+		if battle_controller != null:
+			battle_controller.set_presentation_paused(false)
 
 func _process(_delta: float) -> void:
+	if route == "battle" and battle_controller != null:
+		var was_paused: bool = bool(battle_controller.presentation_paused)
+		var prior_error: String = str(battle_controller.last_error)
+		var battle_update: Dictionary = battle_controller.advance_presentation(_delta, bool(settings_draft.get("reduced_motion", false)))
+		var needs_render: bool = bool(battle_update.get("changed", false)) or (not was_paused and bool(battle_controller.presentation_paused)) or prior_error != str(battle_controller.last_error)
+		if needs_render:
+			_render()
+			return
+		if _battle_visual != null and is_instance_valid(_battle_visual):
+			var live_stage: Dictionary = battle_controller.cached_stage()
+			if not live_stage.is_empty():
+				_battle_visual.set_stage(live_stage, battle_controller.stage_progress_bps(bool(settings_draft.get("reduced_motion", false))), bool(settings_draft.get("reduced_motion", false)), battle_controller.stage_identity())
+		return
 	if route != "forge" or first_print == null or first_print.sequence == null:
 		return
 	var voucher: Dictionary = cached_collection.get("voucher", {})
@@ -158,18 +207,21 @@ func _clear() -> void:
 	# the durable FirstPrintController deliberately survives route changes.
 	_forge_action = null
 	_forge_compositor = null
+	_battle_visual = null
 	Chassis.remove_route_children(_content)
 
 func _render() -> void:
 	if not is_node_ready():
 		return
 	_clear()
+	if is_recovery_presentation():
+		route = "recovery"
+		_recovery()
+		return
 	if runtime == null:
 		_background(WORKSHOP)
 		_label("Loading Collection…", Rect2(250, 760, 440, 64), 30)
 		return
-	if runtime.is_recovery():
-		route = "recovery"
 	match route:
 		"workshop": _workshop()
 		"starter", "starter_inspect": _onboarding_presenter.render_starter(self)
@@ -179,6 +231,8 @@ func _render() -> void:
 		"settings": _settings()
 		"recovery": _recovery()
 		"preflight": _preflight()
+		"battle": _battle()
+		"result": _result()
 		_: _workshop()
 
 func _background(path: String) -> void:
@@ -502,11 +556,26 @@ func _recovery() -> void:
 	_system_presenter.render_recovery(self)
 
 func _preflight() -> void:
-	_background(WORKSHOP)
-	_back("Workshop")
-	var match: Dictionary = runtime.view().get("match", {})
-	_label("BATTLE PREFLIGHT", Rect2(200, 650, 540, 70), 34)
-	_label("%s" % ("Resume Battle is available." if bool(match.get("resume", false)) else "Apply a valid Team and Support Kit before starting."), Rect2(160, 750, 620, 100), 26)
+	if battle_controller == null:
+		battle_controller = BattleController.new()
+		battle_controller.configure(runtime)
+	_battle_presenter.render_preflight(self, battle_controller)
+
+
+func _battle() -> void:
+	if battle_controller == null:
+		battle_controller = BattleController.new()
+		battle_controller.configure(runtime)
+	_battle_presenter.render_battle(self, battle_controller)
+	if modal == "battle_equipment":
+		_battle_presenter.render_equipment_modal(self, battle_controller)
+
+
+func _result() -> void:
+	if battle_controller == null:
+		battle_controller = BattleController.new()
+		battle_controller.configure(runtime)
+	_battle_presenter.render_result(self, battle_controller)
 
 func navigate(next: String) -> void:
 	if route != next:
@@ -533,7 +602,7 @@ func back() -> void:
 	# Recovery is deliberately read-only. Its Back owner opens the same explicit
 	# Leave/Stay confirmation as the Workshop root instead of briefly routing to
 	# Workshop and having _render() force Recovery again.
-	if runtime != null and runtime.is_recovery():
+	if is_recovery_presentation():
 		if recovery_details:
 			recovery_details = false
 			_render()
@@ -542,6 +611,10 @@ func back() -> void:
 		_render()
 		return
 	if not modal.is_empty():
+		if modal == "battle_equipment" and battle_controller != null:
+			# The equipment card is provisional until a target is chosen. Back is
+			# identical to Cancel: clear both card and target without a write.
+			battle_controller.set_support("")
 		_restore_focus_name = modal_return_focus
 		modal_return_focus = ""
 		modal = ""

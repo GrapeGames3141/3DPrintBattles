@@ -46,7 +46,7 @@ func render_recovery(shell: Variant) -> void:
 	if shell.leave_confirmation:
 		render_leave_confirmation_content(shell)
 		return
-	var details := str(shell.runtime.view().get("recovery", "Recovery required."))
+	var details := str(shell.recovery_reason())
 	var summary := "Profile data is damaged." if details == "profile_corrupt" else "Your save opened read-only. Nothing was changed."
 	var detail_copy := "Profile data is damaged. You can leave safely." if details == "profile_corrupt" and shell.recovery_details else ("This save cannot be used right now. You can leave safely." if shell.recovery_details else summary)
 	shell._label("RECOVERY REQUIRED", Rect2(95, 290, 752, 80), 34)

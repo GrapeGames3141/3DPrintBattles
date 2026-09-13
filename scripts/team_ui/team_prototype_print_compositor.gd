@@ -100,10 +100,14 @@ func render_state(subject: Texture2D, source_region: Rect2, source_root: Vector2
 	scan.size = Vector2(subject_rect.size.x, 3)
 	seed.position = Vector2(planted_root.x - 5, planted_root.y - 5)
 	seed.size = Vector2(10, 10)
-	seed.visible = raw_progress == 0 and blend == 0
+	seed.visible = presentation_visible and raw_progress == 0 and blend == 0
 	var grounded_departure := Vector2.ZERO if reduced_motion else departure_offset
 	var opacity := clampf(presentation_opacity, 0.0, 1.0)
-	var shadow_size := Vector2(132, 18) * (1.0 - float(blend) * 0.12 / 10000.0)
+	var declared_shadow: Variant = _hardware_geometry.get("shadow_size", Vector2(132, 18))
+	var base_shadow := Vector2(132, 18)
+	if declared_shadow is Vector2 and (declared_shadow as Vector2).x > 0.0 and (declared_shadow as Vector2).y > 0.0:
+		base_shadow = declared_shadow as Vector2
+	var shadow_size: Vector2 = base_shadow * (1.0 - float(blend) * 0.12 / 10000.0)
 	shadow.size = shadow_size
 	shadow.position = planted_root + grounded_departure + Vector2(0, -3) - shadow_size * 0.5
 	shadow.modulate.a = opacity

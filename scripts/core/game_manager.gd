@@ -24,27 +24,54 @@ func _ready() -> void:
 		SaveService.configure_unified_playtest_paths()
 	else:
 		print("PRINTFORGE_STARTUP marker=qa_storage profile=%s journal=%s receipt_ui=%s user_data=%s" % [SaveService.profile_path, SaveService.journal_path, SaveService.pack_ui_session_path, OS.get_user_data_dir()])
-	print("PRINTFORGE_STARTUP marker=profile_load path=%s" % SaveService.profile_path)
-	var loaded := SaveService.load_profile()
 	if _team_prototype_requested():
-		# This internal M1 selector is deliberately before legacy normalization,
-		# grants, repair, review floors, or any persistence path.  It only reads
-		# the existing v3 snapshot into memory for isolated prototype QA.
-		profile = loaded.duplicate(true)
-		if SaveService.recovery_status in ["corrupt_primary", "corrupt_backup", "backup_recovered"]:
-			save_compatibility = {"compatible":false, "state":SaveService.recovery_status, "message":"Team prototype startup is read-only; existing save recovery state was preserved."}
+		# Select this read-only branch before the historical loader.  It preserves a
+		# literal empty Dictionary and malformed evidence without invoking legacy
+		# normalization, grants, repair, or any persistence path.
+		print("PRINTFORGE_STARTUP marker=profile_load path=%s" % SaveService.profile_path)
+		var quiet: Dictionary = SaveService.quiet_load_profile()
+		profile = (quiet.get("profile", {}) as Dictionary).duplicate(true)
+		var quiet_status := str(quiet.get("status", "missing"))
+		if quiet_status in ["corrupt_primary", "corrupt_backup", "backup_recovered"]:
+			save_compatibility = {"compatible":false, "state":quiet_status, "message":"Team prototype startup is read-only; existing save recovery state was preserved."}
 		else:
-			save_compatibility = ProfileRules.compatibility(loaded)
+			save_compatibility = _prototype_compatibility(profile)
 		print("PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility=%s" % str(save_compatibility.get("state", "ready")))
 		return
+	print("PRINTFORGE_STARTUP marker=profile_load path=%s" % SaveService.profile_path)
+	var loaded := SaveService.load_profile()
 	_initialize_loaded_profile(loaded)
 	print("PRINTFORGE_STARTUP marker=profile_ready compatibility=%s has_starter=%s" % [str(save_compatibility.get("state", "ready")), str(has_selected_starter())])
 
 func _team_prototype_requested() -> bool:
+	if str(ProjectSettings.get_setting("application/run/main_scene", "")) == "res://scenes/team_prototype.tscn": return true
 	if OS.has_feature("team_prototype"): return true
 	for argument in OS.get_cmdline_user_args():
 		if str(argument) == "--team-prototype": return true
 	return false
+
+
+func _prototype_compatibility(source: Dictionary) -> Dictionary:
+	# ProfileRules.compatibility deliberately supports old callers and casts its
+	# input. Validate untrusted JSON here before that cast so entry never invokes
+	# int() on null, arrays, strings, fractions, or huge values.
+	if not source.has("schema_version"):
+		return ProfileRules.compatibility(source)
+	var raw_version: Variant = source.get("schema_version")
+	if raw_version is bool or not (raw_version is int or raw_version is float):
+		return _prototype_schema_failure("schema_invalid", "The save schema value is invalid. It is open read-only and has not been changed.")
+	if raw_version is float and (not is_finite(raw_version) or floor(raw_version) != raw_version):
+		return _prototype_schema_failure("schema_invalid", "The save schema value is invalid. It is open read-only and has not been changed.")
+	# Compare in the parsed numeric representation before converting to an int.
+	if raw_version < 1:
+		return _prototype_schema_failure("schema_invalid", "The save schema value is invalid. It is open read-only and has not been changed.")
+	if raw_version > Catalog.SCHEMA_VERSION:
+		return _prototype_schema_failure("future_schema", "This save was created by a newer PrintForge build. It is open read-only and has not been changed.")
+	return ProfileRules.compatibility(source)
+
+
+func _prototype_schema_failure(state: String, message: String) -> Dictionary:
+	return {"compatible":false, "state":state, "schema_version":0, "supported_schema":Catalog.SCHEMA_VERSION, "message":message}
 
 ## Kept narrow and callable by isolated save-compatibility tests. It is the only
 ## bootstrap path that is allowed to migrate or persist a loaded profile.

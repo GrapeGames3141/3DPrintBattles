@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="PrintForge Legends"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/team_prototype.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 boot_splash/bg_color=Color(0.027, 0.075, 0.14, 1)
 boot_splash/image="res://assets/ui/physical_ui/title-backplate-text-free-v2.png"

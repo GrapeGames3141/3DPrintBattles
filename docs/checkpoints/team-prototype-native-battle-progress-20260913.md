@@ -477,3 +477,45 @@ actually720x1280/720x1600, so their earlier dimensions remain valid. Battle06223
 062924 are actually576x1024 and remain rejected. Reviewer accepted the atlas-based
 Ready width correction and withdrew the unproven same-species Replace ghost claim;
 canonical identity, not species appearance alone, decides whether a figure is stale.
+
+True720x1280 normal `20260913-064643-3db7b5302fff40bd863b4e60a504f930`
+(PID153376) now passes pixel-size assertion, exact12-frame capture marker, clean
+engine/QA/process ledger and UI review. It has zero synthetic insets; no inset
+claim is made. Interactions `20260913-064941-9f53aa36f919445eaa7f52ed0b0dd29a`
+(PID122128) passes32, including real five-Support face owners and checked Heated
+filament cap. A mistaken Full Suit test used its internal ID as visible copy; its
+failed evidence remains retained rather than changing correct player-facing text.
+
+True tall progression `20260913-065037-1fe717dedceb4a82a2060d044f284435`
+exposed a new metric error and is rejected. Main found the exact cause: the new
+forecast code passed final39px into a helper that applies150%, yielding59px. Use
+base26 or explicit final39/42.48 metrics. Hand two-line labels require the same
+final metric containment; long Replace/HOLD/Fit feedback needs bounded native
+copy plus complete accessibility text. Main also found capture insets set after
+Shell's ready-time fit; set them before mounting or explicitly refit. Actual PNG
+dimensions alone are not evidence that synthetic insets were applied.
+
+[Rejected tall Swap exposing double text scaling](<E:/AI Projects/games/3d print battler/build/evidence/team-battle/20260913-065037-1fe717dedceb4a82a2060d044f284435/captures/battle-swap-mid-720x1600.png>)
+
+Progression `20260913-065559-6aa1fbaf687645dcbd07c675fd2b2f6e` (PID73884)
+passes26 including both Swap identities visible at0/50/100%, proper incoming/outgoing
+size endpoints, and separated shadow lanes. Main rejected a transient implementation
+that hid both figures mid-Swap; it was removed. Final source interpolates Replace
+Ready-to-Active root, scale, and continuous shadow too. The initial ghost claim was
+not used to hide a valid living figure or modify the Rules snapshot.
+
+Corrected tall progression `20260913-065628-6f8fb28163f54b1f8b96cb3c3698d61e`
+(PID137060) saves6 true720x1600 frames after base26-to39 metrics and an actual fit
+after synthetic inset configuration. Main verified exact markers, exit0, empty
+stderr, no survivors and unchanged QA bytes for both roots. Targeted visual review
+and a final tall lifecycle/Plan/modal capture remain pending.
+
+### Final visual closure
+
+Read-only UI review accepted final normal progression
+`20260913-070847-903924ef30714fea9336a4e1d7f7edc8` (PID139776) and final tall
+lifecycle `20260913-070926-115af4d026c74714bd9fd9861829a488` (PID137000).
+Ready-to-Active replacement now keeps the correct scale throughout. Large-text
+canonical paper names clear Back and contain no orphan ordinal. There are no
+remaining P0/P1 findings in the assigned Battle matrix. This closes desktop visual
+review, not physical Android validation. See the final validation checkpoint.
