@@ -28,6 +28,10 @@ duplicate data models. Stable native control names support tests and focus resto
    inert dark workshop letterbox. No ad reserve, stretch or second scaled content
    layer. Minimum48 final viewport pixels,56 for primary controls. Enlarging a hit
    must not move/repaint its art or overlap a neighboring active hit.
+   Godot reports display safe area in display coordinates and the client window's
+   origin/size separately. Convert the intersection to local viewport coordinates
+   before fitting; don't treat desktop usable-monitor bounds as mobile insets.
+   [DisplayServer API](https://docs.godotengine.org/en/stable/classes/class_displayserver.html#class-displayserver-method-get-display-safe-area)
 2. Deterministic fallback sans theme. Real100/150% fonts independent of contrast.
    Correct native ink/cream/outline tokens per physical material. No generic panel
    or duplicate image over baked hardware. Expose meaningful accessibility names,
@@ -87,6 +91,10 @@ duplicate data models. Stable native control names support tests and focus resto
 
 Use the audited runner and sibling `ui-fixtures`, never player/qa-save mutation.
 Tests must exercise native actions instead of asserting that a Button merely exists.
+At least one complete first-session/editor walkthrough sends synthetic viewport
+mouse press/release events at the actual fitted hit centers plus a Back key. Direct
+signal emission alone cannot prove that passive art or a stale modal doesn't block
+the player's input. Keep this inside the isolated Godot fixture, not OS window control.
 Assert exact five successful profile writes for fresh Choose/Begin/Complete/Ack/Apply;
 zero writes from inspect, navigation, draft, cancellation, focus and presentation.
 Exercise each starter guarantee mapping, pending/reopened print, actual file fault

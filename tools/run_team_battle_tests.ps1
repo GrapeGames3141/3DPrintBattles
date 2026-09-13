@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'ui-collection', 'ui-collection-capture', 'facing', 'facing-capture', 'raw-render', 'import', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'ui-collection', 'ui-collection-capture', 'facing', 'facing-capture', 'raw-render', 'import', 'library', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30,
     [ValidateRange(320, 1440)][int]$Width = 576,
     [ValidateRange(568, 3200)][int]$Height = 1024,
@@ -78,7 +78,7 @@ function Get-SaveManifest([string]$Root) {
     return (ConvertTo-Json -InputObject $entries -Depth 4 -Compress)
 }
 
-function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false, [bool]$ImportOnly = $false, [bool]$Rendered = $false, [string[]]$UserArguments = @()) {
+function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false, [bool]$ImportOnly = $false, [bool]$Rendered = $false, [string[]]$UserArguments = @(), [bool]$ExportOnly = $false) {
     # Denied process inspection must fail before an engine starts.
     if ($null -eq (Get-ProcessIdentity $PID)) { throw 'Process inspection unavailable.' }
     $name = [IO.Path]::GetFileNameWithoutExtension($Scene)
@@ -112,7 +112,10 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     } else {
         $arguments += '--headless'
     }
-    if ($ImportOnly) {
+    if ($ExportOnly) {
+        if ($CheckOnly -or $ImportOnly -or $Rendered -or $Fixture) { throw 'Export mode cannot be combined with test modes.' }
+        $arguments += @('--export-debug', 'Android', (Join-Path $runRoot 'unsigned.apk'))
+    } elseif ($ImportOnly) {
         $arguments += @('--editor', '--import')
     } else {
         if ($CheckOnly) { $arguments += @('--check-only', '--script') }
@@ -167,7 +170,9 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         $startRecord['window_handle'] = $process.MainWindowHandle.ToInt64()
         $startRecord['window_title'] = $process.MainWindowTitle
         Write-Ledger (Join-Path $runRoot 'started.json') $startRecord
-        $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+        $operationLimit = if ($ExportOnly) { 600 } else { $TimeoutSeconds }
+        $deadline = [DateTime]::UtcNow.AddSeconds($operationLimit)
+        $nextProgress = [DateTime]::UtcNow.AddSeconds(10)
         while (-not $process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
             Observe-Descendants $process.Id $records
             Write-Ledger (Join-Path $runRoot 'observed-processes.json') @($records.Values)
@@ -184,8 +189,12 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
             }
             Start-Sleep -Milliseconds 200
             $process.Refresh()
+            if ($ExportOnly -and [DateTime]::UtcNow -ge $nextProgress) {
+                Write-Output "Export running: PID $($process.Id); evidence $runRoot"
+                $nextProgress = [DateTime]::UtcNow.AddSeconds(10)
+            }
         }
-        if (-not $process.HasExited) { throw "Engine timeout after $TimeoutSeconds seconds." }
+        if (-not $process.HasExited) { throw "Engine timeout after $operationLimit seconds." }
         $process.WaitForExit()
         $process.Refresh()
         $exitCode = $process.ExitCode
@@ -195,7 +204,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         }
         $combined = (@($engineLog, $stdoutLog, $stderrLog) | ForEach-Object { Get-Content -Raw -LiteralPath $_ }) -join [Environment]::NewLine
         if ($combined -match 'SCRIPT ERROR|Parse Error|ERROR:|Failed to load script') { throw 'Engine emitted a script/runtime error.' }
-        if (-not $CheckOnly -and -not $ImportOnly) {
+        if (-not $CheckOnly -and -not $ImportOnly -and -not $ExportOnly) {
             if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
             $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
             if ($Compatibility) { $startupMarker += $Compatibility }
@@ -245,6 +254,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
                         scene = $Scene
                         check_only = $CheckOnly
                         import_only = $ImportOnly
+                        export_only = $ExportOnly
                         rendered = $Rendered
                         root_pid = if ($process) { $process.Id } else { $null }
                         engine = $engine
@@ -274,7 +284,12 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     }
     Write-Output "Evidence: $runRoot"
     if ($failure) { throw $failure }
-    if ($ImportOnly) {
+    if ($ExportOnly) {
+        $script:LastTeamExportRoot = $runRoot
+        $script:LastTeamExportUnsigned = Join-Path $runRoot 'unsigned.apk'
+        if (-not (Test-Path -LiteralPath $script:LastTeamExportUnsigned -PathType Leaf)) { throw 'Successful export did not produce its unsigned APK.' }
+        Write-Output "EXPORT ONLY: engine exit $exitCode, no task process survivors; APK audit still required"
+    } elseif ($ImportOnly) {
         Write-Output "IMPORT ONLY: engine exit $exitCode, no gameplay test executed"
     } elseif ($CheckOnly) {
         Write-Output "PARSE ONLY: $name (engine exit $exitCode, no gameplay test executed)"

@@ -39,6 +39,11 @@ exporting the historical main scene as the new prototype.
    compiled new main scene and Team runtime resources, all24 directional creature
    sources (including Voltwig2x1), approved armor and promoted Team/Battle masters.
    Reference atlases, docs, tests, build evidence and rejected art must stay out.
+   Explicitly exclude the legacy humanoid raw suit
+   `assets/armor/raw/full_suit_raw_print_alpha_v2.png` and its import/cache payload
+   from this prototype APK, while preserving the historical source on disk. Its
+   old Catalog entries are string paths, not a dependency of the Team renderer;
+   the approved quadruped EQ-R1 is the new runtime equipment source.
 6. Verify signing certificate, alignment, source commit and APK byte count/SHA-256.
    Check task-owned process/window cleanup. Do not claim physical-device validation
    from an APK archive inspection or a desktop capture.
@@ -80,3 +85,44 @@ and `_custom_features=unified_playtest`. The new APK must independently decode
 `team_prototype` (not `unified_playtest`) in its comma-separated custom features.
 Checking that a new scene merely exists in the ZIP is insufficient to prove launch.
 Reuse this small read-only parser in the final audit with explicit size bounds.
+
+## Normal-entry smoke boundary
+
+After native Collection/Battle acceptance, the entry task must open the real
+`team_prototype.tscn` and construct its Runtime from the configured absolute
+SaveService profile path. A non-ready compatibility result or Runtime.open failure
+must show the read-only Recovery presenter with Back/Leave, not stay on Loading,
+pretend a writable Runtime exists, or rewrite the Store to bypass compatibility.
+
+Extend the audited runner with a normal-entry smoke that omits `--team-prototype`
+while retaining isolated `--qa-save-root`. The default project main setting itself
+must select read-only prototype autoload startup. Quit after a bounded first-frame
+marker without taking any granting action; verify every fixture byte unchanged.
+Keep the explicit selector available for older isolated tests.
+
+Cover missing fresh profile, an existing valid Collection, future schema, valid
+backup recovery, malformed schema type (string/array/null), zero/negative schema,
+and malformed JSON. Validate numeric type/finite/safe-whole bounds before any
+legacy integer cast; preserve the accepted absence-of-schema compatibility rather
+than silently imposing a new schema rule. Do not reset journals or collection data.
+
+The normal-entry scene must expose the expected initial Starter/Workshop/Recovery
+route and a native working Back path. Package inspection and desktop isolated smoke
+remain separate from physical Android launch, Back, touch and lifecycle evidence.
+
+## Release tooling readiness (not an export result)
+
+`tools/export_team_android.ps1` accepts one full source commit and refuses dirty
+tracked source, old launch/version configuration and an existing APK filename.
+It reuses the audited runner's process-identity and save-manifest cleanup through
+an inert `library` mode and explicit export-only operation. Export progress yields
+every10seconds; the600second operation bound does not change normal test timeouts.
+Its final signed candidate still requires independent manifest/signature/resource
+audit. Signing secrets are read privately and passed through an ephemeral process
+environment variable, not printed or stored in evidence.
+
+`tools/inspect_godot_apk_launch.py` is the bounded read-only ECFG/scene-remap audit.
+Its6 parser self-tests passed, and it decoded the historical0.8.11 artifact with
+explicit historical expectations, matching its282461896bytes and recorded SHA-256.
+The default expectations reject that old main/feature. This is tooling validation,
+not evidence that a new APK exists or that an Android device has launched it.

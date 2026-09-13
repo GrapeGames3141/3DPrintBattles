@@ -12,6 +12,14 @@ Derived states below require native normal/150% captures before visual sign-off.
   The printer's Unspent docket is `(29.40,1053.00,215.65,79.00)`; player staging
   bays are `(303.90,1109.00,277.80,178.00)` and `(611.00,1109.00,277.80,178.00)`.
   Occupants derive from roster/status/priority, never hard-coded species.
+- Match M0's `coreSeat` ownership, generalized to the projected roster: with an
+  Active, show that member on the floor and the other two records in the bays;
+  leave the extra printer docket empty. Without an Active, use one non-Ready record
+  for the docket (Printing before Unspent before Defeated, tie by projected priority)
+  and the other two records in the bays. A Ready record has a living bay mini;
+  Unspent/Printing/Defeated has native status only. This is presentation seating,
+  not fabrication or replacement authority. The current FIFO head independently
+  owns the sole printer subject. Never show a second living copy in its record bay.
 - At150%, the short docket shows only the native creature name at39.21/42.48.
   Its full accessibility name includes Unspent and Choose Fabrication. Two text
   lines cannot fit its79-design-pixel height. Ready-bay150% height is185 and its
@@ -124,3 +132,36 @@ static carriage; printing may reveal four discrete25% bands over the same1.60s.
 No motion setting changes transactions, damage, print work, grants or cursor rules.
 Test clocks may advance deterministically for coverage; label those tests honestly
 and also capture real renderer poses at normal phase boundaries.
+
+## Approved equipment source registration
+
+Read-only original-resolution review, 2026-09-13. These are renderer inputs for
+existing support rules, not new equipment or a creature-costume feature.
+
+| Subject | Source | Full source size | Stable source floor root | Meaningful alpha bounds (inclusive) |
+| --- | --- | --- | --- | --- |
+| Standard Full Suit | `docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1.png` | 1254x1254 | 632,1042 | 112,201 through1152,1042 |
+| Iron Gem raw | `assets/ui/physical_ui/m11/iron_gem-raw-alpha-v1.png` | 1254x1254 | 634.5,1092 | 159,144 through1110,1092 |
+| Iron Gem completed | `assets/ui/physical_ui/m11/iron-gem-completed-transparent-imagegen-v1.png` | 1254x1254 | 634.5,1092 | 161,144 through1110,1092 |
+
+Promote the approved Full Suit byte-identically to
+`assets/ui/physical_ui/team-prototype/EQ-R1-quadruped-armor-alpha-v1.png`.
+Its approved SHA-256 is
+`6C8DC945F0809E2B46E9A9C86274F4B3418BA84D932BCADB7E0D240AF458262C`.
+Do not use the rejected humanoid suit. Existing Iron Gem raw/completed hashes are
+`DE06034FE1B80AE866334840E730608B4F4419FD15F54BE7D5B82DA6075BCBE6` and
+`A9505932FC06C0C0A50C32EC3ED6E84279FC2A86595988FDFD9F0FE8AE16915C`.
+
+Use full `Rect2(0,0,1254,1254)` source, uniform scale156.83/1254, at least
+linear filtering, with cached alpha bounds. Physical clips are rival
+`Rect2(85,204.2,156.83,156.83)` and player `Rect2(85,1181,156.83,156.83)`.
+Bed roots are rival163.4,333.3 and player163.4,1310.6. Root-aligned full canvases
+are suit84.360,202.984 /84.360,1180.284 and gem84.047,196.730 /
+84.047,1174.030, each156.83square. Transparent padding may extend outside the
+clip; meaningful alpha and the raft remain inside. Never crop-to-fill.
+
+Suit is a printer/Fit object only, without Awaken. Iron Gem changes raw to the
+approved completed object for Fit with the same root. Remove both after Fit;
+living creature pixels remain unchanged. Persistent fitted feedback is native
+status and authoritative Armor/Attack values, with the target named accessibly.
+No empty suit or gem is pasted over a living sprite. Verify small-scale edges at576.
