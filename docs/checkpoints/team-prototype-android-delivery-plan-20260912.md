@@ -180,3 +180,30 @@ fresh and existing valid Collection; all initially show Workshop without a write
 Do not bypass Runtime.open failure by creating a fake writable Runtime. Shell may
 offer an explicit presentation-only `configure_recovery(reason)` path with the
 same physical Back/Leave sheet when opening returns no Runtime object.
+
+### Primary entry implementation boundary
+
+Use a small dedicated `scripts/team_ui/team_prototype_entry.gd` subclass of the
+existing Shell and point `scenes/team_prototype.tscn` to it. This normal-scene owner
+calls the established Shell setup, opens exactly one Runtime using
+`ProjectSettings.globalize_path(SaveService.profile_path)` and the read-only
+`GameManager.save_compatibility`, then configures the Shell. Close only that owned
+Runtime in its exit hook. Existing isolated tests instantiate Shell directly and
+must retain explicit Runtime injection; do not make every Shell instance silently
+open another Store or replace its test-owned Runtime.
+
+The normal-entry selector in GameManager must also recognize the configured default
+main scene, before any legacy loading. Keep the explicit feature/QA selector for
+existing tools. Reuse the quiet loader/type validation described above; preserve
+all legacy paths for callers outside this selector.
+
+Shell's explicit presentation-only recovery reason must take precedence over its
+runtime-null Loading state. Centralize the read-only recovery predicate/reason so
+rendering, Back/Leave and the SystemPresenter do not call `.view()` on null. Do not
+create a fake writable Runtime or modify Store semantics. This path has no settings,
+grant or save action. Entry smoke must exercise actual visible Back and Stay with
+the same zero-write fixture manifest guards. The packaged resource audit must
+require compiled `team_prototype_entry.gdc` as well as Shell and Battle resources.
+
+This source plan is ready but entry edits remain downstream of the current native
+Battle acceptance gate. No default launch, version or export change has been made.

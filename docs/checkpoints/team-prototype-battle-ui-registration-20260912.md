@@ -30,13 +30,56 @@ Source is2068110bytes, SHA-256
   Its full accessibility name includes Unspent and Choose Fabrication. Two text
   lines cannot fit its79-design-pixel height. Ready-bay150% height is185 and its
   name/status owner has height91.49 as in the final atlas accessibility overrides.
+  In the large Print fixture only, a docket matching the actual companion FIFO head
+  may use the approved sole-head marker1 at rival `(111.09,65.35,91.49,49.01)` or
+  player `(93.12,1058.63,91.49,49.01)`; full name/status/progress remain accessible.
+  A Printing member waiting behind another job is not head1: keep its one-line name.
+- Docket text belongs on the existing cream printer-roof paper, not the opaque
+  navy bay-record panel. Normal rival text owner is `(105,85,140,64)`; normal player
+  is `(29.4,1053,215.65,79)`, centered native name/status in dark `#241708` with no
+  StyleBox, shadow, border or token-local offset. Player's transparent empty-caption
+  choice owner and its selected/focus ring remain; rival text ignores pointer input.
+  Large rival uses one name line at `(29.4,98.5,215.65,42.48)`; large player uses one
+  name line in its existing79-high owner. Keep the explicit Print-head ordinal
+  exception above. The large rival label is noninteractive: its owner overlaps the
+  lowest part of Back's hit box, but rendered ink must be clear of Back and pointer
+  ownership remains with Back. Verify this derived registration in the final150
+  Plan capture; it is not a change to the master artwork.
+- Ready controls keep an empty parent Button caption. The normal child caption is
+  local `(12,119.2,253.8,58.8)`, cream `#f7ebca`, centered27/26, below the mini.
+  Normal parent owners are rival `(303.9,163.4,277.8,178)` and
+  `(611,163.4,277.8,178)`, player `(303.9,1109,277.8,178)` and
+  `(611,1109,277.8,178)`. At150, rival parent height183/player185; caption local
+  rival `(0,91.45,277.8,91.49)` or player `(0,93.39,277.8,91.49)`, creamfff0c8,
+  centered39.21/42.48. Native two-line copy is Name / Ready · N HP normal and
+  Name / Ready NHP large. Full parent owns the selected/focus ring, inset4px cyan
+  `#8bf6ff` (white HC), never the caption or mini. Read-only UI reviewer rechecked
+  these exact `.core-reserve/.core-label` values in approved `atlas.html` on09-13.
 - A Ready staging bay is the Swap hit; the Active caption is not. Selected bay,
   fabrication owner or support card has a cyan ring, white in high contrast.
   Tapping the selected owner clears the local selection. Support and Swap are
   mutually exclusive: disable the conflicting owners with an accessible reason.
+- Ready figure size follows the approved atlas `.core-reserve .core-mini`:
+  normal86.60x115.43, large61.26x81.68 design pixels. Runtime preserves aspect with
+  its safe380x508 source; width is authoritative. The previous runtime0.30 scale
+  (114px width) was not the atlas size. Preserve floor Active width202.60; the
+  generic117.62 width belongs to printer figures, not floor Actives. Normal Ready
+  roots remain x442.8/749.9, y279.1/1225.1. Large Ready roots end above their
+  earlier caption owners (rival y251.85/player1199.39). Scale shadows consistently.
+- Swap interpolates both prior/current root and role-specific scale within the
+  unchanged.60second stage, with opposite horizontal80*sin(PI*q) travel lanes.
+  Both living identities remain visible; never hide them to avoid overlap. The
+  alternative staggered timing was rejected because both share the same bay and
+  would collide or disappear halfway. Moving origin/destination static labels are suppressed
+  until the next stage; full native accessibility and side feedback remain. Replace
+  also interpolates Ready-to-Active scale/shadow, must not retain a stale defeated transient or prematurely label its incoming
+  identity at the origin. No new gameplay timing, snapshot, or identity is invented.
 - Hand owners are `(51,1360,146,217)`, `(209,1360,146,217)`,
   `(367,1360,146,217)`, `(525,1360,146,217)`. Four is the maximum visible hand.
   Rival controls never receive private card IDs, hidden Plan, or private draw order.
+- Run Cycle's painted lever owner is `(748,1363,174,242)`, unchanged at150, with
+  native RUN / CYCLE creamfff6d5, normal27/29 or large39.21/42.48. It is a
+  transparent hit over existing hardware, not a new bitmap button.
 - The player queue rail's visual text owner is `(295.70,1290.60,599.60,44.10)`.
   When a local selection exists, it may also be the redundant Clear Plan hit at
   derived `(295.70,1281.20,599.60,78.40)`, ending before the hand. Keep concise
@@ -57,6 +100,9 @@ Freeze/disable underlying controls and focus; the modal owns all interaction.
   Printing means an existing queued member; Next means the checked same-Plan
   fabrication, including a legal default. Never label an existing print as Next.
 - Cancel uses the generated `binding` family at `(654,859,249,82)`, cream text.
+  Its material is visible rather than a transparent text-only hit; the modal heading
+  is cream `#fff0c8` (high contrast white) on its navy blocker. Initial target/Cancel
+  focus has the native cyan/high-contrast-white inset indicator.
   Every hit remains at least48 final viewport pixels after safe fitting.
 - Only `Rules.eligible_equipment_targets` supplies eligibility, including a legal
   default or explicit same-Plan fabrication. Preserve full canonical member IDs.
@@ -82,6 +128,9 @@ At150%, short header Battle retains full accessibility name Battle Preflight.
 Body has at most3–4 lines: Team3/3, Support15/15, first print/order ready, or current
 match cycle/phase. Lever says Start Battle, Resume, or Open Team when loadout invalid.
 Use normal27/33 or large39.21/42.48 native text; decorative dial stays noninteractive.
+The context lever has a dark painted surface: its native action label is cream
+`#fff0c8` with a dark edge, never the dark ink used on its parchment header. Ready
+copy says `Print order ready.` rather than the ambiguous `First to Print ready.`
 Start freezes the stable sequence-derived seed once; Resume never replaces a match.
 An unacknowledged terminal receipt is Resume Result, not New Battle.
 
@@ -240,6 +289,14 @@ Result uses `assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png` unchanged:
 Battle top title normal `(292.40,39.20,369.20,70.20)`,27/32 dark241708;
 large `(279.36,44.11,382.28,55.55)`,39.21/42.48. Keep Cycle/phase here;
 accessible title may additionally announce forecast.
+Large Enter/Fit uses event-aware one-line visual `CYCLE N · ENTER` for companion
+entry only and `CYCLE N · FIT` for equipment only. A stage containing both uses
+`ENTER / FIT`, retaining the cycle and full stage in its accessibility name. This
+supersedes the earlier FIT-only abbreviation, which incorrectly described companion
+entry as equipment fitting, without moving the title owner. Large active captions use the
+registered rival `(300.60,637.14,339.81,91.49)` and player
+`(300.60,931.20,339.81,91.49)`, centered39.21/42.48, clipped to exactly two lines.
+Equipped compact copy is Name / N HP · Armor N; full gear/status stays accessible.
 
 The one painted forecast rail is `(22.90,539.10,230.40,375.70)`, left aligned
 normal27/33 e8f4e6 with dark shadow; large `(22.87,539.10,230.35,375.70)`

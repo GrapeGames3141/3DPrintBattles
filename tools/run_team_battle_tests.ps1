@@ -4,7 +4,10 @@ param(
     [ValidateRange(320, 1440)][int]$Width = 576,
     [ValidateRange(568, 3200)][int]$Height = 1024,
     [ValidateSet('voltwig', 'cinderpaw', 'aquafin', 'mossmunk')][string]$Creature = 'voltwig',
+    [ValidateSet('voltwig', 'cinderpaw', 'aquafin', 'mossmunk')][string]$BattleCreature = 'cinderpaw',
+    [ValidateSet('lifecycle', 'progression', 'hold', 'result')][string]$BattleCaptureCase = 'lifecycle',
     [ValidateSet(10000, 15000)][int]$TextScaleBps = 10000,
+    [ValidateSet('all', 'preflight', 'foundation', 'terminal', 'terminal-loss', 'terminal-draw', 'interactions', 'playback', 'progression', 'hold')][string]$BattleCase = 'all',
     [switch]$HighContrast,
     [switch]$ReducedMotion,
     [switch]$SyntheticSafeInsets,
@@ -214,6 +217,23 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         if ($combined -match '(?im)^WARNING:.*(?:RID|ObjectDB).*leaked') { throw 'Engine reported leaked rendering or ObjectDB resources.' }
         if (-not $CheckOnly -and -not $ImportOnly -and -not $ExportOnly) {
             if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
+            if ($Scene -eq 'res://tests/team_battle/test_team_native_battle_ui.tscn') {
+                $selectedCases = @($UserArguments | Where-Object { $_.StartsWith('--native-battle-case=') })
+                if ($selectedCases.Count -ne 1) { throw 'Native Battle test requires exactly one case selector.' }
+                $selectedCase = $selectedCases[0].Substring('--native-battle-case='.Length)
+                if ($combined -notmatch ('(?m)^TEAM_NATIVE_BATTLE_UI case=' + [regex]::Escape($selectedCase) + ' requires=[1-9][0-9]* failures=0\r?$')) {
+                    throw 'Selected native Battle case did not execute any passing assertions.'
+                }
+            }
+            if ($Scene -eq 'res://tests/team_battle/capture_team_native_battle_ui.tscn') {
+                $captureCases = @($UserArguments | Where-Object { $_.StartsWith('--battle-capture-case=') })
+                $captureCreatures = @($UserArguments | Where-Object { $_.StartsWith('--battle-creature=') })
+                if ($captureCases.Count -ne 1 -or $captureCreatures.Count -ne 1) { throw 'Native Battle capture requires one case and one creature selector.' }
+                $captureCase = $captureCases[0].Substring('--battle-capture-case='.Length)
+                $captureCreature = $captureCreatures[0].Substring('--battle-creature='.Length)
+                $captureMarker = '(?m)^TEAM_NATIVE_BATTLE_UI_CAPTURE case=' + [regex]::Escape($captureCase) + ' creature=' + [regex]::Escape($captureCreature) + ' frames=[1-9][0-9]* failures=0\r?$'
+                if ($combined -notmatch $captureMarker) { throw 'Selected native Battle capture did not save any verified frames.' }
+            }
             $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
             if ($Compatibility) { $startupMarker += $Compatibility }
             if ($combined -notmatch [regex]::Escape($startupMarker)) { throw 'Expected prototype startup guard marker missing.' }
@@ -293,6 +313,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     }
     Write-Output "Evidence: $runRoot"
     if ($failure) { throw $failure }
+    $script:LastTeamEvidenceRoot = $runRoot
     if ($ExportOnly) {
         $script:LastTeamExportRoot = $runRoot
         $script:LastTeamExportUnsigned = Join-Path $runRoot 'unsigned.apk'
@@ -386,10 +407,34 @@ if ($Suite -eq 'import') {
     Invoke-TeamTest 'resource-import' '' '' '' $false $true
 }
 if ($Suite -eq 'ui-battle') {
-    Invoke-TeamTest 'res://tests/team_battle/test_team_native_battle_ui.tscn' 'TEAM_NATIVE_BATTLE_UI failures=0'
+    $battleCases = if ($BattleCase -eq 'all') { @('preflight', 'foundation', 'interactions', 'playback', 'progression', 'hold', 'terminal', 'terminal-loss', 'terminal-draw') } else { @($BattleCase) }
+    foreach ($selectedBattleCase in $battleCases) {
+        $battleArgs = @("--native-battle-case=$selectedBattleCase")
+        if ($selectedBattleCase -in @('terminal', 'terminal-loss', 'terminal-draw')) {
+            $terminalOutcome = switch ($selectedBattleCase) { 'terminal-loss' { 'Loss' }; 'terminal-draw' { 'Draw' }; default { 'Win' } }
+            Invoke-TeamTest 'res://tests/team_battle/test_team_native_battle_ui.tscn' 'TEAM_NATIVE_BATTLE_UI failures=0' '' '' $false $false $false @('--native-battle-case=terminal-setup', "--terminal-outcome=$terminalOutcome")
+            $preparedRoot = Join-Path $script:LastTeamEvidenceRoot 'ui-battle-fixtures\terminal-setup'
+            foreach ($preparedName in @('profile.json', 'profile.team-match.json', 'profile.team-cursor.json')) {
+                if (-not (Test-Path -LiteralPath (Join-Path $preparedRoot $preparedName) -PathType Leaf)) {
+                    throw "Successful terminal setup omitted $preparedName"
+                }
+            }
+            $battleArgs += @("--terminal-setup-root=$preparedRoot", "--terminal-outcome=$terminalOutcome")
+        }
+        Invoke-TeamTest 'res://tests/team_battle/test_team_native_battle_ui.tscn' 'TEAM_NATIVE_BATTLE_UI failures=0' '' '' $false $false $false $battleArgs
+    }
 }
 if ($Suite -eq 'ui-battle-capture') {
-    $captureArgs = @([string]$Width, [string]$Height, "--text-scale-bps=$TextScaleBps")
+    $captureArgs = @([string]$Width, [string]$Height, "--text-scale-bps=$TextScaleBps", "--battle-creature=$BattleCreature", "--battle-capture-case=$BattleCaptureCase")
+    if ($BattleCaptureCase -eq 'result') {
+        if ($BattleCreature -ne 'cinderpaw') { throw 'The verified Win Result fixture requires Cinderpaw.' }
+        Invoke-TeamTest 'res://tests/team_battle/test_team_native_battle_ui.tscn' 'TEAM_NATIVE_BATTLE_UI failures=0' '' '' $false $false $false @('--native-battle-case=terminal-setup', '--terminal-outcome=Win')
+        $preparedRoot = Join-Path $script:LastTeamEvidenceRoot 'ui-battle-fixtures\terminal-setup'
+        foreach ($primary in @('profile.json', 'profile.team-match.json', 'profile.team-cursor.json')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $preparedRoot $primary) -PathType Leaf)) { throw 'Prepared Result capture fixture is incomplete.' }
+        }
+        $captureArgs += @("--terminal-setup-root=$preparedRoot", '--terminal-outcome=Win')
+    }
     if ($HighContrast) { $captureArgs += '--high-contrast' }
     if ($ReducedMotion) { $captureArgs += '--reduced-motion' }
     if ($SyntheticSafeInsets) { $captureArgs += '--synthetic-safe-insets=24,48,24,48' }
