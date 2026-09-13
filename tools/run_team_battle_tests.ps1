@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30
 )
 
@@ -72,7 +72,7 @@ function Get-SaveManifest([string]$Root) {
     return (ConvertTo-Json -InputObject $entries -Depth 4 -Compress)
 }
 
-function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '') {
+function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false) {
     # Denied process inspection must fail before an engine starts.
     if ($null -eq (Get-ProcessIdentity $PID)) { throw 'Process inspection unavailable.' }
     $name = [IO.Path]::GetFileNameWithoutExtension($Scene)
@@ -100,8 +100,9 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     $saveBefore = ''
     $saveAfter = ''
     $started = Get-Date
-    $arguments = @('--headless', '--path', $projectRoot, '--log-file', $engineLog,
-        $Scene, '--', "--qa-save-root=$qaRoot", '--team-prototype')
+    $arguments = @('--headless', '--path', $projectRoot, '--log-file', $engineLog)
+    if ($CheckOnly) { $arguments += @('--check-only', '--script') }
+    $arguments += @($Scene, '--', "--qa-save-root=$qaRoot", '--team-prototype')
     $argumentString = ($arguments | ForEach-Object { Quote-CrtArgument $_ }) -join ' '
     try {
         New-Item -ItemType Directory -Path $qaRoot -ErrorAction Stop | Out-Null
@@ -178,10 +179,12 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         }
         $combined = (@($engineLog, $stdoutLog, $stderrLog) | ForEach-Object { Get-Content -Raw -LiteralPath $_ }) -join [Environment]::NewLine
         if ($combined -match 'SCRIPT ERROR|Parse Error|ERROR:|Failed to load script') { throw 'Engine emitted a script/runtime error.' }
-        if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
-        $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
-        if ($Compatibility) { $startupMarker += $Compatibility }
-        if ($combined -notmatch [regex]::Escape($startupMarker)) { throw 'Expected prototype startup guard marker missing.' }
+        if (-not $CheckOnly) {
+            if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
+            $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
+            if ($Compatibility) { $startupMarker += $Compatibility }
+            if ($combined -notmatch [regex]::Escape($startupMarker)) { throw 'Expected prototype startup guard marker missing.' }
+        }
     } catch {
         $failure = $_.Exception.Message
     } finally {
@@ -224,6 +227,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
                     }
                     Write-Ledger (Join-Path $runRoot 'process-ledger.json') ([ordered]@{
                         scene = $Scene
+                        check_only = $CheckOnly
                         root_pid = if ($process) { $process.Id } else { $null }
                         engine = $engine
                         arguments = $arguments
@@ -252,7 +256,11 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     }
     Write-Output "Evidence: $runRoot"
     if ($failure) { throw $failure }
-    Write-Output "PASS: $name (engine exit $exitCode, no task process survivors)"
+    if ($CheckOnly) {
+        Write-Output "PARSE ONLY: $name (engine exit $exitCode, no gameplay test executed)"
+    } else {
+        Write-Output "PASS: $name (engine exit $exitCode, no task process survivors)"
+    }
 }
 
 if ($Suite -in @('state', 'all')) {
@@ -279,4 +287,11 @@ if ($Suite -in @('pacing', 'all')) {
 }
 if ($Suite -in @('coordinator', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_battle_coordinator.tscn' 'TEAM_BATTLE_COORDINATOR failures=0'
+}
+if ($Suite -in @('collection', 'all')) {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_collection.tscn' 'TEAM_COLLECTION failures=0'
+}
+if ($Suite -eq 'collection-parser') {
+    Invoke-TeamTest 'res://scripts/team_collection/team_collection_projection.gd' '' '' '' $true
+    Invoke-TeamTest 'res://scripts/team_collection/team_collection_session.gd' '' '' '' $true
 }

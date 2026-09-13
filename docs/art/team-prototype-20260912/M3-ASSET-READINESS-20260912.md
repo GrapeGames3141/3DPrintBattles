@@ -49,6 +49,9 @@ actual alpha, not a painted checkerboard, with no character or new anatomy.
 - Output: 1254x1254 PNG, RGB (PNG color type2), 2,204,641 bytes.
 - SHA-256: `E369A6E46068E6CA7919E11BB39E75392452144F785869307E4FEE231E4D0CE3`.
 - Durable E: copy matches the generated source by size and SHA-256.
+- The redundant tool-managed C: intermediate was removed by exact path after
+  rechecking both copies as 2,204,641 bytes with the SHA-256 above. The rejected
+  draft remains recoverable from its identical E: copy.
 - Result: failed transparency; checkerboard remains baked. No runtime promotion.
 
 Exact final prompt:

@@ -1,7 +1,10 @@
 # M2 collection and first-session grant plan — 2026-09-12
 
-Status: **NOT STARTED — DECISION-COMPLETE PLANNING ONLY; NO IMPLEMENTATION,
-RUNTIME EVIDENCE, RELEASE AUTHORITY, OR PLAYER-SAVE ACCESS.**
+Status: **M2 PURE COLLECTION CORE ACCEPTED on 2026-09-12.** Primary reviewed the
+implementation and independently verified 176 Collection checks plus State/startup
+preservation regressions. See the [acceptance record](team-prototype-m2-collection-validation-20260912.md).
+Storage/reward adapters and playable UI remain pending; this does not complete all
+of M2 or authorize release or actual player-save QA.
 
 Rules authority: [solo team prototype](../design/team-prototype-20260912.md), F1–F2.
 M2 begins only after M1 is accepted. This checkpoint does not relax the approved
@@ -203,5 +206,10 @@ These resolve implementation ambiguity only and add no gameplay or approval gate
    behavior. Each successful transition asserts structural equality for every
    preexisting top-level key/value other than `team_prototype`.
 
-No M2 implementation, runtime test, screen capture, Godot invocation, build, export,
-or release work is authorized by this planning checkpoint.
+Primary delegated the bounded pure projection/session slice to the sole Terra writer
+after M1 acceptance. Ownership: `scripts/team_collection/` and
+`tests/team_battle/test_team_collection.gd/.tscn`. Primary owns the audited runner
+and checkpoint/review/commit metadata. The `collection` suite uses isolated E-based
+Godot and in-memory stores; actual player saves and existing runtime entry stay
+untouched. Storage/reward adapters, UI integration and delivery remain subsequent
+bounded tasks, not implicit permissions of this pure Collection slice.

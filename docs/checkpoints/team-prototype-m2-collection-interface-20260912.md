@@ -1,8 +1,9 @@
 # M2 collection implementation interface
 
-Primary inspection and API plan only. M1 acceptance is a prerequisite; this file
-does not authorize early runtime work. Product semantics are in the
-[M2 feature plan](team-prototype-m2-collection-plan-20260912.md).
+Primary inspection and API plan. M1 was accepted at `470b200`; the bounded pure
+Collection slice is now accepted after sole-Terra implementation and primary review.
+See the [validation record](team-prototype-m2-collection-validation-20260912.md).
+Product semantics are in the [M2 feature plan](team-prototype-m2-collection-plan-20260912.md).
 
 ## Inspected integration seams
 
@@ -27,6 +28,8 @@ M1 State/Rules or bury raw profile normalization in an adapter.
 - `project(raw_profile)` returns effective eligible ownership, source information,
   namespace revision/fingerprint, current first-session state and saved loadout.
   A missing namespace stays missing. Pure preview never calls persistence.
+  The public namespace projection key is `prototype_state`; the persisted profile
+  key remains `team_prototype`. Bare `namespace` is reserved by Godot 4.7.1.
 - `create(raw_profile, persist)` validates and retains a deep private snapshot;
   creation itself is read-only. `snapshot()` is an internal deep persistence copy.
 - `request(action, request_id, expected_revision, ownership_fingerprint, payload)`
