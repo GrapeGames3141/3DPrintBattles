@@ -1,0 +1,375 @@
+{
+  "status": "review_only_deterministic_cleanup_pending_primary_and_read_only_ui_review",
+  "user_authorization": "Yes\u2014clean up Voltwig and continue (2026-09-12).",
+  "source": {
+    "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/voltwig-neutral-facing-v1.png",
+    "sha256": "B713B090FAE2E648CF6BEC0FEA8807EEC4DF7A74C002D762DC1A2D6A934FA216",
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "mode": "RGB",
+    "source_rgb_sha256": "07A38D7B98895B5B0490380651D42B4D4C2B5EE97AA461F27592D5C8298699CB"
+  },
+  "algorithm": {
+    "name": "edge_seeded_binary_non_core_topology_alpha_extraction",
+    "description": "Top-band sampled checker clusters establish two seeded Voltwig cores. A binary flood clears only non-core pixels reachable from the source perimeter, restoring every enclosed interior pixel regardless of colour; thin near-checker exterior spikes are then removed without repainting RGB. No global grayscale/saturation key is used.",
+    "source_rgb_preserved_byte_for_byte_in_full_resolution_rgba": true,
+    "no_crop_repaint_redraw_or_pose_generation": true,
+    "extraction": {
+      "checker_clusters_srgb": [
+        [
+          211,
+          212,
+          218
+        ],
+        [
+          253,
+          253,
+          253
+        ]
+      ],
+      "thresholds": {
+        "background_cluster_brightness": 235,
+        "bridge_distance": 28.0,
+        "foreground_seed_distance": 70.0,
+        "partial_alpha_boundary": "disabled: v3 removes only thin near-checker opaque spikes from the exterior boundary, preventing a white matte fringe without repainting RGB",
+        "minimum_component_pixels": 64
+      },
+      "component_audit": {
+        "candidate_component_count": 10830,
+        "retained_component_count": 2,
+        "retained_components": [
+          {
+            "pixels": 242783,
+            "seeded": true,
+            "retained": true,
+            "max_distance": 370.12,
+            "bounds": [
+              166,
+              15,
+              619,
+              948
+            ]
+          },
+          {
+            "pixels": 233135,
+            "seeded": true,
+            "retained": true,
+            "max_distance": 370.12,
+            "bounds": [
+              908,
+              16,
+              1371,
+              961
+            ]
+          }
+        ]
+      },
+      "binary_edge_seeded_non_core_topology": {
+        "core_pixels": 475918,
+        "edge_reachable_non_core_pixels": 1096071,
+        "enclosed_non_core_pixels_restored": 875
+      },
+      "boundary_spike_cleanup": {
+        "passes": 2,
+        "removed_near_checker_thin_spikes": 374,
+        "distance_ceiling": 55.0
+      },
+      "alpha_counts": {
+        "zero": 1096445,
+        "partial": 0,
+        "opaque": 476419
+      }
+    }
+  },
+  "full_resolution_alpha": {
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "mode": "RGBA",
+    "hard_alpha_bounds": [
+      166,
+      15,
+      1371,
+      961
+    ],
+    "corner_alpha": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "verified_negative_space_alpha": {
+      "front_ear_gap": 0,
+      "front_inner_ear_gap": 0,
+      "front_tail_body_gap": 0,
+      "front_leg_gap": 0,
+      "rear_ear_gap": 0,
+      "rear_inner_ear_gap": 0,
+      "rear_side_gap": 0,
+      "rear_leg_gap": 0
+    },
+    "verified_cream_identity_alpha": {
+      "front_left_eye_ring": 255,
+      "front_right_eye_ring": 255,
+      "front_muzzle": 255,
+      "front_left_toes": 255,
+      "front_right_toes": 255,
+      "rear_tail_cream": 255,
+      "rear_right_toes": 255
+    },
+    "verified_interior_opaque_rois": {
+      "front_left_eye": {
+        "rect": [
+          295,
+          460,
+          350,
+          505
+        ],
+        "minimum_alpha": 255,
+        "non_opaque_pixels": 0
+      },
+      "front_right_eye": {
+        "rect": [
+          446,
+          466,
+          498,
+          517
+        ],
+        "minimum_alpha": 255,
+        "non_opaque_pixels": 0
+      },
+      "front_muzzle": {
+        "rect": [
+          350,
+          542,
+          451,
+          578
+        ],
+        "minimum_alpha": 255,
+        "non_opaque_pixels": 0
+      },
+      "rear_tail": {
+        "rect": [
+          1097,
+          689,
+          1150,
+          730
+        ],
+        "minimum_alpha": 255,
+        "non_opaque_pixels": 0
+      }
+    }
+  },
+  "atlas": {
+    "dimensions": [
+      768,
+      512
+    ],
+    "cell_dimensions": [
+      384,
+      512
+    ],
+    "layout": "2x1: front column 0, rear column 1; no action or extra pose cells",
+    "common_uniform_scale": 0.454,
+    "nominal_source_root": [
+      384,
+      950
+    ],
+    "atlas_root": [
+      192,
+      455
+    ],
+    "registration": "Each complete cell keeps the common scale and is translated vertically only so its measured hard-alpha planted-foot baseline lands at y=455.",
+    "resized_source_cell_dimensions": [
+      349,
+      465
+    ],
+    "per_cell": [
+      {
+        "cell": 0,
+        "direction": "front",
+        "hard_alpha_bounds": [
+          94,
+          35,
+          297,
+          456
+        ],
+        "clearance_pixels": {
+          "left": 94,
+          "top": 35,
+          "right": 87,
+          "bottom": 56
+        },
+        "pre_registration_hard_alpha_bounds": [
+          94,
+          32,
+          297,
+          453
+        ],
+        "pre_registration_baseline": 452,
+        "vertical_translation_pixels": 3,
+        "planted_baseline": 455,
+        "root_target": [
+          192,
+          455
+        ]
+      },
+      {
+        "cell": 1,
+        "direction": "rear",
+        "hard_alpha_bounds": [
+          82,
+          28,
+          292,
+          456
+        ],
+        "clearance_pixels": {
+          "left": 82,
+          "top": 28,
+          "right": 92,
+          "bottom": 56
+        },
+        "pre_registration_hard_alpha_bounds": [
+          82,
+          32,
+          292,
+          460
+        ],
+        "pre_registration_baseline": 459,
+        "vertical_translation_pixels": -4,
+        "planted_baseline": 455,
+        "root_target": [
+          192,
+          455
+        ]
+      }
+    ]
+  },
+  "outputs": {
+    "rgba_full_resolution": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-alpha-v3.png",
+      "bytes": 2160092,
+      "sha256": "5D88E0A72B88E68AC06F48EA7F802F816B0FBF19AC27A18FD8CCCC244D0B82ED",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "mode": "RGBA"
+    },
+    "full_light_composite": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-alpha-v3-light.png",
+      "bytes": 865934,
+      "sha256": "81AE8AAE44F73E212664831F2518C4350D9223C08E57FF3B5DA0A41CACFF28EC",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    "full_navy_composite": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-alpha-v3-navy.png",
+      "bytes": 872368,
+      "sha256": "F8BFDA428E9A9DC096E9E3C2D3C2E7DC9C757194D5D6D544AE5996528D5F4E87",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    "runtime_ready_atlas": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-2x1-384x512-v3.png",
+      "bytes": 262755,
+      "sha256": "80883C09C69B52E296152C56E14C3E61DFECDB4031B84100487EB6C8915F9280",
+      "dimensions": [
+        768,
+        512
+      ],
+      "mode": "RGBA"
+    },
+    "atlas_light_proof": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-2x1-384x512-v3-light.png",
+      "bytes": 211416,
+      "sha256": "8232BC709F19E6B50CE3D6A2394A016C5E19FA4BD396D89FBB08CFEE6AD275F8",
+      "dimensions": [
+        768,
+        512
+      ],
+      "mode": "RGB"
+    },
+    "atlas_navy_proof": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-2x1-384x512-v3-navy.png",
+      "bytes": 218802,
+      "sha256": "8F5DF8CCF503FE8A251EF7F878115B5DA7EF3754C3022CC24809CF917B4DE260",
+      "dimensions": [
+        768,
+        512
+      ],
+      "mode": "RGB"
+    },
+    "atlas_root_guide_proof": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-2x1-384x512-v3-root-guide.png",
+      "bytes": 218824,
+      "sha256": "3C3CA80452D18DBD548F0A83039A03B0D0D7873A7AF9408C49EDE4C63E775EC7",
+      "dimensions": [
+        768,
+        512
+      ],
+      "mode": "RGB"
+    },
+    "silhouette_80_navy": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-silhouette-80-navy-v3.png",
+      "bytes": 15128,
+      "sha256": "D48B3DBD42ACADFFA06FD9DACE3545E413A4AD597EBBEA62DA79384CF4B040D1",
+      "dimensions": [
+        160,
+        107
+      ],
+      "mode": "RGB"
+    },
+    "silhouette_80_cream": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-silhouette-80-cream-v3.png",
+      "bytes": 14469,
+      "sha256": "B68C053FF638E5ED5DE9CE62D6D134DA8F747DF9BE86902B7196A2AD1A7BE434",
+      "dimensions": [
+        160,
+        107
+      ],
+      "mode": "RGB"
+    },
+    "silhouette_96_navy": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-silhouette-96-navy-v3.png",
+      "bytes": 20427,
+      "sha256": "75A5B959CD4B1DCA33397A9E701C31C2532A124D9B6A962B8A01C72D18D68A71",
+      "dimensions": [
+        192,
+        128
+      ],
+      "mode": "RGB"
+    },
+    "silhouette_96_cream": {
+      "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/voltwig-neutral-facing-silhouette-96-cream-v3.png",
+      "bytes": 19579,
+      "sha256": "1372187520E8CA6184FAE7E5DE099060A87B89936AFEDF4F405BD934BD0C7D18",
+      "dimensions": [
+        192,
+        128
+      ],
+      "mode": "RGB"
+    }
+  },
+  "approval_record": "docs/art/team-prototype-20260912/voltwig-neutral-facing/cleaned-v3/approval-record.md",
+  "tool": {
+    "path": "tools/extract_voltwig_neutral_alpha.py",
+    "python": "3.12.14",
+    "pillow": "12.3.0",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "non_promotion": [
+    "No source candidate was overwritten.",
+    "No runtime, Godot, build, export, staging, or commit change was made.",
+    "Primary and read-only UI review are required before any promotion decision."
+  ]
+}

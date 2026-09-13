@@ -300,7 +300,7 @@ func _sync() -> void:
 					continue
 				atlas.atlas = facing_texture
 				var attacking_unit := active_kind == "attack" and seat == int(event.get("actor", -1)) and slot == int(event.get("source_slot", event.get("slot", -1)))
-				atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.frame_for_creature(id, seat, _elapsed, active_kind if attacking_unit else "", float(active_beat.get("progress", 1.0))))
+				atlas.region = FACING_CACHE.safe_source_region_for_creature(id, FACING_CACHE.frame_for_creature(id, seat, _elapsed, active_kind if attacking_unit else "", float(active_beat.get("progress", 1.0))))
 				_sprites[index].texture = atlas
 				_sprites[index].position = _event_offset(seat, slot, rect.size)
 				_sprites[index].scale = Vector2.ONE * _presentation_scale(id)
@@ -367,7 +367,7 @@ func _sync() -> void:
 				if facing_texture != null:
 					var printer_atlas := _printer_facing_atlases[seat]
 					printer_atlas.atlas = facing_texture
-					printer_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.raw_frame_for_creature(preview_id, seat))
+					printer_atlas.region = FACING_CACHE.safe_source_region_for_creature(preview_id, FACING_CACHE.raw_frame_for_creature(preview_id, seat))
 					raw_texture = printer_atlas
 					_printer_sprites[seat].material = _printer_filament_materials[seat]
 				else:
@@ -453,7 +453,7 @@ func _sync_deploy_overlay() -> void:
 			_deploy_sprite.visible = false
 			return
 		_deploy_atlas.atlas = raw_facing_texture
-		_deploy_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.raw_frame_for_creature(card_id, actor))
+		_deploy_atlas.region = FACING_CACHE.safe_source_region_for_creature(card_id, FACING_CACHE.raw_frame_for_creature(card_id, actor))
 		_deploy_sprite.texture = _deploy_atlas
 		_deploy_sprite.material = _deploy_filament_material
 	elif p < .36:
@@ -466,7 +466,7 @@ func _sync_deploy_overlay() -> void:
 			_deploy_sprite.visible = false
 			return
 		_deploy_atlas.atlas = facing_texture
-		_deploy_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.frame_for_creature(card_id, actor, _elapsed, "deploy", p))
+		_deploy_atlas.region = FACING_CACHE.safe_source_region_for_creature(card_id, FACING_CACHE.frame_for_creature(card_id, actor, _elapsed, "deploy", p))
 		_deploy_sprite.texture = _deploy_atlas
 		_deploy_sprite.material = null
 	_deploy_sprite.modulate = Color.WHITE; _deploy_sprite.scale = Vector2.ONE * (1.0 + sin(p * PI) * .08)
@@ -518,7 +518,7 @@ func _sync_attack_overlay() -> void:
 		_report_facing_fallback(card_id, actor, "attack_contact")
 		return
 	_attack_atlas.atlas = facing_texture
-	_attack_atlas.region = FACING_CACHE.safe_source_region(FACING_CACHE.frame_for_creature(card_id, actor, _elapsed, "attack", p))
+	_attack_atlas.region = FACING_CACHE.safe_source_region_for_creature(card_id, FACING_CACHE.frame_for_creature(card_id, actor, _elapsed, "attack", p))
 	_attack_sprite.texture = _attack_atlas
 	_attack_sprite.modulate = Color("ffffff") if not reduced else Color("ffe5a8")
 	_attack_sprite.visible = true

@@ -1,6 +1,12 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'all')][string]$Suite = 'core',
-    [ValidateRange(1, 60)][int]$TimeoutSeconds = 30
+    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'facing', 'facing-capture', 'raw-render', 'import', 'all')][string]$Suite = 'core',
+    [ValidateRange(1, 60)][int]$TimeoutSeconds = 30,
+    [ValidateRange(320, 1440)][int]$Width = 576,
+    [ValidateRange(568, 3200)][int]$Height = 1024,
+    [ValidateSet('voltwig', 'cinderpaw', 'aquafin', 'mossmunk')][string]$Creature = 'voltwig',
+    [ValidateSet(10000, 15000)][int]$TextScaleBps = 10000,
+    [switch]$HighContrast,
+    [switch]$ReducedMotion
 )
 
 $ErrorActionPreference = 'Stop'
@@ -72,7 +78,7 @@ function Get-SaveManifest([string]$Root) {
     return (ConvertTo-Json -InputObject $entries -Depth 4 -Compress)
 }
 
-function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false) {
+function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false, [bool]$ImportOnly = $false, [bool]$Rendered = $false, [string[]]$UserArguments = @()) {
     # Denied process inspection must fail before an engine starts.
     if ($null -eq (Get-ProcessIdentity $PID)) { throw 'Process inspection unavailable.' }
     $name = [IO.Path]::GetFileNameWithoutExtension($Scene)
@@ -100,9 +106,19 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     $saveBefore = ''
     $saveAfter = ''
     $started = Get-Date
-    $arguments = @('--headless', '--path', $projectRoot, '--log-file', $engineLog)
-    if ($CheckOnly) { $arguments += @('--check-only', '--script') }
-    $arguments += @($Scene, '--', "--qa-save-root=$qaRoot", '--team-prototype')
+    $arguments = @('--path', $projectRoot, '--log-file', $engineLog)
+    if ($Rendered) {
+        $arguments += @('--rendering-method', 'forward_plus', '--audio-driver', 'Dummy')
+    } else {
+        $arguments += '--headless'
+    }
+    if ($ImportOnly) {
+        $arguments += @('--editor', '--import')
+    } else {
+        if ($CheckOnly) { $arguments += @('--check-only', '--script') }
+        $arguments += @($Scene)
+    }
+    $arguments += @('--') + $UserArguments + @("--qa-save-root=$qaRoot", '--team-prototype')
     $argumentString = ($arguments | ForEach-Object { Quote-CrtArgument $_ }) -join ' '
     try {
         New-Item -ItemType Directory -Path $qaRoot -ErrorAction Stop | Out-Null
@@ -179,7 +195,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         }
         $combined = (@($engineLog, $stdoutLog, $stderrLog) | ForEach-Object { Get-Content -Raw -LiteralPath $_ }) -join [Environment]::NewLine
         if ($combined -match 'SCRIPT ERROR|Parse Error|ERROR:|Failed to load script') { throw 'Engine emitted a script/runtime error.' }
-        if (-not $CheckOnly) {
+        if (-not $CheckOnly -and -not $ImportOnly) {
             if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
             $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
             if ($Compatibility) { $startupMarker += $Compatibility }
@@ -228,6 +244,8 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
                     Write-Ledger (Join-Path $runRoot 'process-ledger.json') ([ordered]@{
                         scene = $Scene
                         check_only = $CheckOnly
+                        import_only = $ImportOnly
+                        rendered = $Rendered
                         root_pid = if ($process) { $process.Id } else { $null }
                         engine = $engine
                         arguments = $arguments
@@ -256,7 +274,9 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     }
     Write-Output "Evidence: $runRoot"
     if ($failure) { throw $failure }
-    if ($CheckOnly) {
+    if ($ImportOnly) {
+        Write-Output "IMPORT ONLY: engine exit $exitCode, no gameplay test executed"
+    } elseif ($CheckOnly) {
         Write-Output "PARSE ONLY: $name (engine exit $exitCode, no gameplay test executed)"
     } else {
         Write-Output "PASS: $name (engine exit $exitCode, no task process survivors)"
@@ -294,4 +314,27 @@ if ($Suite -in @('collection', 'all')) {
 if ($Suite -eq 'collection-parser') {
     Invoke-TeamTest 'res://scripts/team_collection/team_collection_projection.gd' '' '' '' $true
     Invoke-TeamTest 'res://scripts/team_collection/team_collection_session.gd' '' '' '' $true
+}
+if ($Suite -eq 'match') {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_match_session.tscn' 'TEAM_MATCH_SESSION failures=0'
+}
+if ($Suite -eq 'match-parser') {
+    Invoke-TeamTest 'res://scripts/team_runtime/team_match_ledger.gd' '' '' '' $true
+    Invoke-TeamTest 'res://scripts/team_runtime/team_match_session.gd' '' '' '' $true
+}
+if ($Suite -eq 'import') {
+    Invoke-TeamTest 'resource-import' '' '' '' $false $true
+}
+if ($Suite -eq 'facing') {
+    Invoke-TeamTest 'res://tests/test_m11_battle_facing_cache.tscn' 'PASS: Battle-facing cache covers all 24 directional species'
+    Invoke-TeamTest 'res://tests/test_m11_facing_roster.tscn' 'PASS: M11 facing roster stage proof covers all 24 catalog creatures on both seats'
+}
+if ($Suite -eq 'facing-capture') {
+    $captureArgs = @([string]$Width, [string]$Height, "--fixture=$Creature", "--text-scale-bps=$TextScaleBps")
+    if ($HighContrast) { $captureArgs += '--high-contrast' }
+    if ($ReducedMotion) { $captureArgs += '--reduced-motion' }
+    Invoke-TeamTest 'res://tests/capture_m11_facing_lifecycle.tscn' "PASS: M11 facing lifecycle captures both coordinator seats for $Creature" '' '' $false $false $true $captureArgs
+}
+if ($Suite -eq 'raw-render') {
+    Invoke-TeamTest 'res://tests/test_m11_battle_raw_filament.tscn' 'PASS: M11 raw filament render is warm and preserves facing alpha' '' '' $false $false $true
 }

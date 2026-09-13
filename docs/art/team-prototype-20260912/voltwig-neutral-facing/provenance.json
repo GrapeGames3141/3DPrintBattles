@@ -1,0 +1,44 @@
+{
+  "record_version": 1,
+  "status": "candidate_only_pending_read_only_visual_review",
+  "generated_on": "2026-09-12",
+  "user_authorization": "User requested fixing Voltwig and delivering a build. Primary selected the narrower neutral front/rear production strategy after read-only UI feasibility review; no separate human aesthetic approval was obtained. No alternate tool/model or further attempt was authorized if rejected.",
+  "tool": {
+    "mode": "built_in_imagegen",
+    "request_count_for_this_target": 1,
+    "result": "returned_candidate"
+  },
+  "references": [
+    {
+      "path": "assets/creatures/2d/voltwig_sprite_sheet.png",
+      "role": "exact_character_identity_only",
+      "sha256": "3C760E619D0E3CB52B1BEDA1B2D53A789B5486B727A589F9A4EE9B65B660DB98"
+    },
+    {
+      "path": "docs/art/m11-facing-minis-20260910/cinderpaw-directional-source-v4.png",
+      "role": "camera_direction_only_not_species_anatomy",
+      "sha256": "DB00724EBDAF97363F58B248C8051E15B863624516118F93DDBCE204E0FAFA1E"
+    }
+  ],
+  "prompt": "Use case: identity-preserve production game sprite sheet. Image 1 is the exact Voltwig character identity reference. Preserve its golden-yellow rabbit/fox quadruped sculpt: exactly two very tall forked lightning-bolt ears with charcoal inner inserts, cream muzzle/chest/toes, charcoal accents, one short lightning-shaped tail, and visible FDM 3D-printed plastic layer lines. Do not use Image 1's side-profile camera. Image 2 is camera reference only; never borrow its creature anatomy, colors, tail, or species details. Create one 1536x1024 sprite sheet containing exactly TWO equal 768x1024 cells. LEFT cell: a true FRONT view of Voltwig, facing toward the viewer/down-board. RIGHT cell: a true REAR view, facing away/up-board. Both show the same neutral alert planted four-legged pose and same body mass, viewed about 30 degrees above a tabletop. The rear must show back of head, back, hips, ears, and tail only: no visible eyes, muzzle, or turned head. Full silhouette remains inside each cell with at least 60px clearance; feet root at x384,y910 in each cell. Prefer a genuinely transparent alpha background. If alpha cannot be supplied, use one perfectly uniform pure magenta matte, no checkerboard. No side-profile flip, no extra anatomy, effects, electricity, attack poses, text, humans, mechs, equipment, scenery, floor, base, or shadows. Text-free, clean game-ready miniature.",
+  "generated_source": {
+    "path": "C:/Users/Tak/.codex/generated_images/01a096ba-3b9f-78e1-aba0-3ce5b0e8d4bd/exec-7e43df60-d495-4a05-bffb-13a5653891a8.png",
+    "bytes": 1957994,
+    "sha256": "B713B090FAE2E648CF6BEC0FEA8807EEC4DF7A74C002D762DC1A2D6A934FA216"
+  },
+  "durable_candidate": {
+    "path": "docs/art/team-prototype-20260912/voltwig-neutral-facing/voltwig-neutral-facing-v1.png",
+    "bytes": 1957994,
+    "sha256": "B713B090FAE2E648CF6BEC0FEA8807EEC4DF7A74C002D762DC1A2D6A934FA216",
+    "width": 1536,
+    "height": 1024,
+    "pixel_format": "RGB/Format24bppRgb",
+    "alpha": "none; opaque baked checkerboard observed",
+    "copy_verification": "Generated C: source and durable E: candidate match exactly in bytes and SHA-256."
+  },
+  "non_promotion": [
+    "No deterministic cleanup was run.",
+    "No runtime, Godot, UI, export, staging, or commit change was made.",
+    "The Android/release hold remains until primary and read-only UI review accept a proper front/rear asset and the separate integration/release gates pass."
+  ]
+}

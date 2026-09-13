@@ -8,8 +8,11 @@ const ATLAS_GUTTER := 2
 const IDLE_FPS := 2.0
 const FACING_DIRECTORY := "res://assets/creatures/2d/battle-facing"
 const FACING_SUFFIX := "_battle_facing_4x2.png"
-const LEGACY_VOLTWIG_ID := "voltwig"
-const LEGACY_VOLTWIG_PATH := "res://assets/creatures/2d/voltwig_sprite_sheet.png"
+const VOLTWIG_ID := "voltwig"
+const VOLTWIG_FACING_PATH := FACING_DIRECTORY + "/voltwig_battle_facing_2x1.png"
+const DIRECTIONAL_ATLAS_SIZE := Vector2i(1536, 1024)
+const VOLTWIG_ATLAS_SIZE := Vector2i(768, 512)
+const INVALID_SOURCE_REGION := Rect2(Vector2.ZERO, Vector2.ONE)
 
 static var _textures: Dictionary = {}
 static var _texture_loads: Dictionary = {}
@@ -17,8 +20,8 @@ static var _reported_missing: Dictionary = {}
 static var _catalog_ids: Dictionary = {}
 
 static func sprite_path_for(creature_id: String) -> String:
-	if uses_legacy_art(creature_id):
-		return LEGACY_VOLTWIG_PATH
+	if creature_id == VOLTWIG_ID:
+		return VOLTWIG_FACING_PATH
 	return "%s/%s%s" % [FACING_DIRECTORY, creature_id, FACING_SUFFIX]
 
 static func texture_for_creature(creature_id: String) -> Texture2D:
@@ -37,17 +40,22 @@ static func texture_for_creature(creature_id: String) -> Texture2D:
 		_report_missing(creature_id, path)
 		_textures[path] = null
 		return null
+	var expected_size := atlas_size_for_creature(creature_id)
+	if texture.get_size() != Vector2(expected_size):
+		_report_missing(creature_id, "%s (expected %s, got %s)" % [path, expected_size, texture.get_size()])
+		_textures[path] = null
+		return null
 	_textures[path] = texture
 	_texture_loads[path] = int(_texture_loads.get(path, 0)) + 1
 	return texture
 
 static func uses_legacy_art(creature_id: String) -> bool:
-	# The approved interim exception is intentionally exact and battle-local.
-	# No CreatureSpriteCache fallback is consulted for any other missing species.
-	return creature_id == LEGACY_VOLTWIG_ID
+	# Compatibility query retained for callers migrating from the interim release.
+	# Voltwig is now genuine directional-neutral battle art, never a legacy sheet.
+	return false
 
 static func has_directional_coverage(creature_id: String) -> bool:
-	return _is_catalog_creature(creature_id) and not uses_legacy_art(creature_id) and ResourceLoader.exists(sprite_path_for(creature_id))
+	return _is_catalog_creature(creature_id) and ResourceLoader.exists(sprite_path_for(creature_id))
 
 static func has_interim_coverage(creature_id: String) -> bool:
 	if not _is_catalog_creature(creature_id):
@@ -57,11 +65,34 @@ static func has_interim_coverage(creature_id: String) -> bool:
 static func coverage_kind_for(creature_id: String) -> String:
 	if not has_interim_coverage(creature_id):
 		return "missing"
-	return "legacy_voltwig" if uses_legacy_art(creature_id) else "directional"
+	return "directional_neutral" if creature_id == VOLTWIG_ID else "directional"
 
 static func safe_source_region(frame: int) -> Rect2:
+	# The original 4x2 API remains explicit directional geometry only. Species-aware
+	# callers must use safe_source_region_for_creature.
 	var normalized := clampi(frame, 0, 7)
 	var origin := Vector2((normalized % 4) * CELL.x, (normalized / 4) * CELL.y)
+	return Rect2(origin + Vector2.ONE * ATLAS_GUTTER, Vector2(CELL) - Vector2.ONE * ATLAS_GUTTER * 2.0)
+
+static func atlas_size_for_creature(creature_id: String) -> Vector2i:
+	if not _is_catalog_creature(creature_id):
+		return Vector2i.ZERO
+	return VOLTWIG_ATLAS_SIZE if creature_id == VOLTWIG_ID else DIRECTIONAL_ATLAS_SIZE
+
+static func frame_count_for_creature(creature_id: String) -> int:
+	if not _is_catalog_creature(creature_id):
+		return 0
+	return 2 if creature_id == VOLTWIG_ID else 8
+
+static func is_valid_frame_for_creature(creature_id: String, frame: int) -> bool:
+	return frame >= 0 and frame < frame_count_for_creature(creature_id)
+
+static func safe_source_region_for_creature(creature_id: String, frame: int) -> Rect2:
+	if not is_valid_frame_for_creature(creature_id, frame):
+		# AtlasTexture interprets Rect2() as its full atlas. A one-pixel corner is
+		# safe because every valid atlas has the two-pixel transparent gutter.
+		return INVALID_SOURCE_REGION
+	var origin := Vector2(frame * CELL.x, 0) if creature_id == VOLTWIG_ID else Vector2((frame % 4) * CELL.x, (frame / 4) * CELL.y)
 	return Rect2(origin + Vector2.ONE * ATLAS_GUTTER, Vector2(CELL) - Vector2.ONE * ATLAS_GUTTER * 2.0)
 
 static func frame_for(seat: int, idle_elapsed: float, beat_kind: String = "", beat_progress := 1.0) -> int:
@@ -81,8 +112,10 @@ static func frame_for(seat: int, idle_elapsed: float, beat_kind: String = "", be
 static func frame_for_creature(creature_id: String, seat: int, idle_elapsed: float, beat_kind: String = "", beat_progress := 1.0) -> int:
 	if not _is_catalog_creature(creature_id) or seat != 0 and seat != 1:
 		return -1
-	if uses_legacy_art(creature_id):
-		return _legacy_voltwig_frame(idle_elapsed, beat_kind, beat_progress)
+	if creature_id == VOLTWIG_ID:
+		# Genuine neutral cells are front for rival (0) and rear for friendly (1).
+		# Finite beats retain this authored direction rather than inventing poses.
+		return 1 if seat == 0 else 0
 	return frame_for(seat, idle_elapsed, beat_kind, beat_progress)
 
 static func raw_frame_for(seat: int) -> int:
@@ -95,19 +128,17 @@ static func raw_frame_for(seat: int) -> int:
 static func raw_frame_for_creature(creature_id: String, seat: int) -> int:
 	if not _is_catalog_creature(creature_id) or seat != 0 and seat != 1:
 		return -1
-	# Legacy Voltwig is not classified as a front/rear row. Both seats use its
-	# neutral legacy idle pose during raw clipping.
-	return 0 if uses_legacy_art(creature_id) else raw_frame_for(seat)
+	if creature_id == VOLTWIG_ID:
+		return 1 if seat == 0 else 0
+	return raw_frame_for(seat)
 
 static func release_coverage_errors() -> Array[String]:
 	var errors: Array[String] = []
 	for definition in Catalog.CREATURES:
 		var creature_id := str((definition as Dictionary).get("id", ""))
 		var path := sprite_path_for(creature_id)
-		if creature_id.is_empty() or not has_interim_coverage(creature_id):
-			errors.append("Missing required interim battle art for %s: %s" % [creature_id, path])
-		elif uses_legacy_art(creature_id) and path != LEGACY_VOLTWIG_PATH:
-			errors.append("Voltwig legacy exception must resolve only %s, got %s" % [LEGACY_VOLTWIG_PATH, path])
+		if creature_id.is_empty() or not has_directional_coverage(creature_id):
+			errors.append("Missing required directional battle art for %s: %s" % [creature_id, path])
 	return errors
 
 static func debug_stats() -> Dictionary:
@@ -123,7 +154,7 @@ static func _report_missing(creature_id: String, path: String) -> void:
 	if _reported_missing.has(path):
 		return
 	_reported_missing[path] = creature_id
-	push_error("Battle-facing art is unavailable for %s (%s). Legacy side-view art is intentionally not used on the battlefield except the explicit Voltwig mapping." % [creature_id, path])
+	push_error("Battle-facing art is unavailable for %s (%s). No side-view fallback is permitted on the battlefield." % [creature_id, path])
 
 static func _is_catalog_creature(creature_id: String) -> bool:
 	if creature_id.is_empty():
@@ -134,18 +165,3 @@ static func _is_catalog_creature(creature_id: String) -> bool:
 			if not catalog_id.is_empty():
 				_catalog_ids[catalog_id] = true
 	return _catalog_ids.has(creature_id)
-
-static func _legacy_voltwig_frame(idle_elapsed: float, beat_kind: String, beat_progress: float) -> int:
-	# Legacy Voltwig preserves its original sheet semantics: idle frames 0..3,
-	# action frames 4..7 only while the finite attack beat is active. These are
-	# never described as the reviewed directional front/rear rows.
-	if beat_kind == "attack":
-		if beat_progress < .21:
-			return 4
-		if beat_progress < .42:
-			return 5
-		if beat_progress < .63:
-			return 6
-		if beat_progress < .84:
-			return 7
-	return int(floor(idle_elapsed * IDLE_FPS)) % 4

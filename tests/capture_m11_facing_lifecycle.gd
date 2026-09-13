@@ -1,6 +1,6 @@
 extends Node
 ## Real Main/coordinator receipt proof for both seats. The optional Voltwig
-## fixture verifies the explicit legacy exception without calling it directional.
+## fixture verifies its genuine front/rear neutral atlas without invented poses.
 const MAIN := preload("res://scenes/main.tscn")
 const STATE := preload("res://scripts/battle/unified_battle_state.gd")
 const RULES := preload("res://scripts/core/unified_rules.gd")
@@ -23,7 +23,10 @@ func _deck(card_id: String) -> Array:
 	return deck
 
 func _save_capture(image: Image, stem: String, metadata: Dictionary) -> void:
-	var path := SaveService.profile_path.get_base_dir().path_join("%s-%dx%d.png" % [stem, width, height])
+	var run_root := SaveService.profile_path.get_base_dir().get_base_dir()
+	var capture_root := run_root.path_join("captures")
+	require(DirAccess.make_dir_recursive_absolute(capture_root) == OK, "%s capture directory is available outside qa-save." % stem)
+	var path := capture_root.path_join("%s-%dx%d.png" % [stem, width, height])
 	require(image != null and image.save_png(path) == OK, "%s rendered capture saved" % stem)
 	var metadata_file := FileAccess.open(path.get_basename() + ".json", FileAccess.WRITE)
 	require(metadata_file != null, "%s metadata sidecar opened" % stem)
@@ -121,14 +124,14 @@ func _capture_seat(seat: int) -> void:
 	var friendly_caption := stage.find_child("LivingPrintCaption%d" % (seat * 3),true,false) as Label if stage != null else null
 	var enemy_caption := stage.find_child("LivingPrintCaption%d" % (opponent * 3),true,false) as Label if stage != null else null
 	require(friendly != null and enemy != null and friendly.visible and enemy.visible and friendly_caption != null and enemy_caption != null and friendly_caption.visible and enemy_caption.visible and friendly_caption.text.to_lower().contains(friendly_card) and enemy_caption.text.to_lower().contains(enemy_card), "seat %d settled board shows both legal living units with their final authoritative identities after the presentation acknowledgement" % seat)
-	var expected_y := int(FACING.safe_source_region(FACING.frame_for_creature(friendly_card, seat, 0.0)).position.y)
-	var opposite_expected_y := int(FACING.safe_source_region(FACING.frame_for_creature(enemy_card, opponent, 0.0)).position.y)
+	var expected_region := FACING.safe_source_region_for_creature(friendly_card, FACING.frame_for_creature(friendly_card, seat, 0.0))
+	var opposite_expected_region := FACING.safe_source_region_for_creature(enemy_card, FACING.frame_for_creature(enemy_card, opponent, 0.0))
 	var atlas := friendly.texture as AtlasTexture if friendly != null else null
 	var enemy_atlas := enemy.texture as AtlasTexture if enemy != null else null
-	require(atlas != null and int(atlas.region.position.y) == expected_y, "seat %d settled unit uses its physical inward-facing row with the cache gutter applied (expected=%d actual=%d)" % [seat, expected_y, int(atlas.region.position.y) if atlas != null else -1])
-	require(enemy_atlas != null and int(enemy_atlas.region.position.y) == opposite_expected_y, "seat %d settled opposite-side unit uses its physical inward-facing row with the cache gutter applied (expected=%d actual=%d)" % [seat, opposite_expected_y, int(enemy_atlas.region.position.y) if enemy_atlas != null else -1])
+	require(atlas != null and atlas.region == expected_region, "seat %d settled unit uses its physical species-aware cache region (expected=%s actual=%s)" % [seat, expected_region, atlas.region if atlas != null else Rect2()])
+	require(enemy_atlas != null and enemy_atlas.region == opposite_expected_region, "seat %d settled opposite-side unit uses its physical species-aware cache region (expected=%s actual=%s)" % [seat, opposite_expected_region, enemy_atlas.region if enemy_atlas != null else Rect2()])
 	image = get_viewport().get_texture().get_image()
-	_save_capture(image, "m11-facing-seat%d-settled" % seat, {"kind":"print_settled","authority_actor":seat,"presentation_actor":int(stage.event.get("actor",-1)) if stage != null else -1,"receipt_serial":int(receipt.get("serial",-1)),"friendly_card":friendly_card,"opposite_card":enemy_card,"friendly_row_y":expected_y,"opposite_row_y":opposite_expected_y,"fixture":fixture_creature,"text_scale_bps":text_scale_bps,"high_contrast":high_contrast,"reduced_motion":reduced_motion,"width":width,"height":height})
+	_save_capture(image, "m11-facing-seat%d-settled" % seat, {"kind":"print_settled","authority_actor":seat,"presentation_actor":int(stage.event.get("actor",-1)) if stage != null else -1,"receipt_serial":int(receipt.get("serial",-1)),"friendly_card":friendly_card,"opposite_card":enemy_card,"friendly_region":str(expected_region),"opposite_region":str(opposite_expected_region),"fixture":fixture_creature,"text_scale_bps":text_scale_bps,"high_contrast":high_contrast,"reduced_motion":reduced_motion,"width":width,"height":height})
 	await _dispose_shell(shell)
 
 func _capture_attack(actor: int) -> void:
@@ -187,9 +190,9 @@ func _capture_attack(actor: int) -> void:
 	# front-facing. This deliberately avoids hotseat's lower-seat remap.
 	var presentation_actor := int(stage.event.get("actor", -1)) if stage != null else -1
 	var expected_frame := FACING.frame_for_creature(expected_card, actor if reduced_motion else presentation_actor, 0.0, "attack", contact_progress)
-	var expected_region := FACING.safe_source_region(expected_frame)
+	var expected_region := FACING.safe_source_region_for_creature(expected_card, expected_frame)
 	require(presentation_actor == actor, "training viewer retains authority actor %d as physical actor %d rather than remapping its battle direction" % [actor, presentation_actor])
-	var presentation_kind := "legacy selected presentation" if FACING.uses_legacy_art(expected_card) else "required inward"
+	var presentation_kind := FACING.coverage_kind_for(expected_card)
 	require(stage != null and stage.attack_contact_reached() and contact != null and contact.visible and contact_atlas != null and contact_atlas.atlas != null and contact_atlas.atlas.resource_path == FACING.sprite_path_for(expected_card) and contact_atlas.region.position == expected_region.position and is_equal_approx(float(stage._active_beat().get("progress", -1.0)), contact_progress), "authority actor %d / physical actor %d deterministic presentation frame retains real contact HUD refresh and samples %s's %s action cell at requested progress %.2f." % [actor, presentation_actor, expected_card, presentation_kind, contact_progress])
 	require(JSON.stringify(receipt) == authority_signature, "actor %d authority receipt remains unchanged through visual contact" % actor)
 	_save_capture(get_viewport().get_texture().get_image(), "m11-facing-actor%d-attack-contact-p%02d" % [actor, int(contact_progress * 100.0)], {"kind":"attack_deterministic_presentation_frame","authority_actor":actor,"presentation_actor":presentation_actor,"actor_card":expected_card,"receipt_serial":int(receipt.get("serial",-1)),"requested_progress":contact_progress,"actual_progress":float(stage._active_beat().get("progress", -1.0)),"contact_frame":int(contact_atlas.region.position.x / 384.0) + int(contact_atlas.region.position.y / 512.0) * 4 if contact_atlas != null else -1,"contact_region":str(contact_atlas.region if contact_atlas != null else Rect2()),"authority_signature":authority_signature,"fixture":fixture_creature,"timing_note":"Deterministic presentation-frame capture; Run Cycle remains the real elapsed timing proof.","width":width,"height":height})
@@ -205,6 +208,6 @@ func _capture_attack(actor: int) -> void:
 	await _dispose_shell(shell)
 
 func _card_for_seat(seat: int) -> String:
-	if fixture_creature == "voltwig":
-		return "voltwig"
+	if not fixture_creature.is_empty():
+		return fixture_creature
 	return "cinderpaw" if seat == 0 else "aquafin"

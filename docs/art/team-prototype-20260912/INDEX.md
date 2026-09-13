@@ -36,7 +36,9 @@ There are **58 canonical states × three portrait sizes**, plus **three represen
 large-text/HC/reduced-motion states × three sizes**: 183 selected images.
 Tall is uniformly fitted with a synthetic 24px safe top and inert aspect letterbox,
 not an ad reserve or proof of one-handed reach. Voltwig uses its documented legacy
-art exception here; front/rear completion remains an M3 visual gate. The equipment
+art exception in these unchanged historical compositions. Its new
+[genuine front/rear derivative](voltwig-neutral-facing/README.md) passed offline
+asset review on 2026-09-12; actual runtime integration remains an M3 gate. The equipment
 draft now has a [reviewed transparent derivative](armor-alpha-v1/README.md) for M3;
 do not ship its original RGB source. The approved atlas images are unchanged.
 
