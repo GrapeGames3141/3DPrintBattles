@@ -1,0 +1,134 @@
+{
+  "status": "review-only deterministic alpha derivative; no runtime promotion",
+  "user_approval": {
+    "date": "2026-09-12",
+    "text": "User explicitly approved deterministic background removal preserving exact shape."
+  },
+  "source": {
+    "path": "docs/art/team-prototype-20260912/EQ-R1-quadruped-armor-kit-raw-draft-v2.png",
+    "mode": "RGB",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "99A51C4EFA77BDAB1A82AB5548FC19439CA2CED3283F7F05427357E42D78C36F",
+    "rgb_bytes_sha256": "FA235A167B492E6A37D0A052368CE9E690E437E147C85502F527F5891BE49497"
+  },
+  "algorithm": {
+    "description": "sRGB alpha = clamp(4R - 4B - 0.1), quantized to 8-bit alpha",
+    "color_space": "sRGB",
+    "negative_bias": 0.1,
+    "source_rgb_preserved": true,
+    "no_crop_repaint_or_reshaping": true
+  },
+  "verification": {
+    "synthetic_threshold_tests": "passed",
+    "rgba_dimensions": [
+      1254,
+      1254
+    ],
+    "rgba_mode": "RGBA",
+    "rgba_rgb_bytes_sha256": "FA235A167B492E6A37D0A052368CE9E690E437E147C85502F527F5891BE49497",
+    "rgb_matches_source": true,
+    "alpha": {
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "transparent_pixel_count": 961348,
+      "support_pixel_count_alpha_ge_16": 610746,
+      "support_bounds_alpha_ge_16": [
+        112,
+        201,
+        1153,
+        1043
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "transparent_corners": true
+  },
+  "outputs": {
+    "rgba": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1.png",
+      "mode": "RGBA",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "sha256": "6C8DC945F0809E2B46E9A9C86274F4B3418BA84D932BCADB7E0D240AF458262C",
+      "bytes": 2482928
+    },
+    "full_light": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1-light.png",
+      "mode": "RGB",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "sha256": "5CDD344C2798A40FD08FF92FDB0C17DF1B6B1E1F90FEE6727CC855C1B3332D79",
+      "bytes": 1014544
+    },
+    "full_dark": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1-dark.png",
+      "mode": "RGB",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "sha256": "2C272F680DBD581C868271993363BFA221EA838DE4E918E63263556177DF0BE6",
+      "bytes": 1021064
+    },
+    "proof_light_80": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1-proof-light-80.png",
+      "mode": "RGB",
+      "dimensions": [
+        160,
+        160
+      ],
+      "sha256": "64163DFC7B90CBF4345362DFB39954D2493A8F22813788EB96126C4E9019A00A",
+      "bytes": 8062
+    },
+    "proof_dark_80": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1-proof-dark-80.png",
+      "mode": "RGB",
+      "dimensions": [
+        160,
+        160
+      ],
+      "sha256": "5AAEF19541D0A448947EF1A16699CDB915023ACB0CD5693D84CC090A29913341",
+      "bytes": 8025
+    },
+    "proof_light_96": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1-proof-light-96.png",
+      "mode": "RGB",
+      "dimensions": [
+        192,
+        192
+      ],
+      "sha256": "121D497712D8901ECC849517D07763F273365B6ECBC6AE6CED97A706B054671D",
+      "bytes": 11070
+    },
+    "proof_dark_96": {
+      "path": "docs/art/team-prototype-20260912/armor-alpha-v1/EQ-R1-quadruped-armor-alpha-v1-proof-dark-96.png",
+      "mode": "RGB",
+      "dimensions": [
+        192,
+        192
+      ],
+      "sha256": "2A75C53D9E8523E3E372EA09867015EFAB6452673C32F96B963EBDAD71581A57",
+      "bytes": 11048
+    }
+  },
+  "tool": {
+    "python": "3.11.9",
+    "pillow": "12.3.0",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "rejected_history": {
+    "v3": "EQ-R1-quadruped-armor-alpha-attempt-v3.png remains an RGB failed-alpha draft; it was not read or used.",
+    "old_humanoid": "assets/armor/raw/full_suit_raw_print_alpha_v2.png remains rejected and was not read or used."
+  }
+}
