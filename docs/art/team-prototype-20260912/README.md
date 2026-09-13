@@ -119,7 +119,10 @@ Dynamic identities, cards, values, text, states, and interaction owners remain n
 
 The RGB armor drafts below are **not transparent production assets**. Only their
 quadruped subject/material direction and the offline chamber-mask composition passed.
-Resolve production alpha before runtime use; do not ship baked checkerboard artwork.
+The later [deterministic alpha derivative](armor-alpha-v1/README.md) now passes
+read-only UI and primary review under the explicit user cleanup approval. Use that
+reviewed derivative for planned M3 integration, never the baked-checker RGB drafts.
+Actual runtime print-reveal and device validation remain pending.
 
 No Godot/runtime/build/export/player-save action or new APK/Drive release is claimed.
 No-PC/no-backend/no-ads scope remains in force. Full native application accessibility

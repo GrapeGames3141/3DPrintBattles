@@ -37,7 +37,8 @@ large-text/HC/reduced-motion states × three sizes**: 183 selected images.
 Tall is uniformly fitted with a synthetic 24px safe top and inert aspect letterbox,
 not an ad reserve or proof of one-handed reach. Voltwig uses its documented legacy
 art exception here; front/rear completion remains an M3 visual gate. The equipment
-draft's production transparency also remains unresolved; do not ship its RGB source.
+draft now has a [reviewed transparent derivative](armor-alpha-v1/README.md) for M3;
+do not ship its original RGB source. The approved atlas images are unchanged.
 
 [Offline fixture viewer](atlas.html) · [Masters and provenance](README.md)
 
