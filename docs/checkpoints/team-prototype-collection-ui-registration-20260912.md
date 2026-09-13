@@ -97,3 +97,62 @@ Do not reuse the legacy recovery renderer wholesale.
 All new derived150% cases require actual576x1024 and720x1600 captures: Starter
 type/voucher, full names, Forge plates, all three receipt captions and future/corrupt
 recovery detail. This fills approved composition interactions, not a new art gate.
+
+## Team / Support Kit exact hardware owners
+
+Additional read-only review resolved these M0 CSS registrations after rejecting the
+first native scaffold. They are not a runtime visual pass. All rects remain in the
+941x1672 uniformly fitted layer.
+
+- Back occupies the left header plate `(134,158,250,80)`, cream `#fff0c8` with
+  dark outline. The right title plate `(557,158,237,80)` uses ink `#231708`.
+  Do not add another Back over the lamp.
+- Front-idle living mini owners are `(122.54,284.23,104.54,140.50)`,
+  `(414.95,284.23,104.54,140.50)`, `(704.72,284.23,104.54,140.50)`.
+  Planted roots are `(174.81,417.6)`, `(467.22,417.6)`, `(756.99,417.6)`.
+  Apply the audited per-species front root, not the image rectangle bottom.
+  These Team bays show printed companions; Starter and Forge docks use blueprint ink.
+- Native name owners are `(78.40,428.29,204.27,47)`,
+  `(369.61,428.29,204.27,47)`, `(661.14,428.29,205.90,47)`.
+  Use centered ink `#20160b`, normal font27. Passive mini/name children do not
+  intercept the parent bay hit.
+- Four Support chip owners use x71.88/220.58/372.48/524.38,
+  widths138.88/143.78/143.78/143.78, y1042.50, height248.40.
+  Within those x/widths, face apertures use y1055.57,height104.54; name owners
+  y1162.50,height55; count owners y1217.50,height34. Use actual V3 catalog art
+  with prototype Data values. Legacy `BattleCatalog.support_card()` lacks three
+  prototype IDs and must not silently substitute card backs.
+- The magazine `(715.58,1032.94,171.54,281.05)` is already painted. Do not add a
+  duplicate card-back rectangle. Its Recommended hit is `(715.58,1228,171.54,80)`,
+  cream `#f6e6bd` with dark `#1a0d04` outline. Recommended changes draft only.
+- The derived page readout is `(245,880,453,92)` between the previously registered
+  studs. Page2 shows the fifth type in slot1; other slots remain physically empty.
+- Apply and Cancel use their existing registered rects, normal font27, cream
+  `#fff6d5` with dark `#2a1608` outline2. High contrast uses white and outline3+.
+  Plain cream without outline is insufficient on these light physical controls.
+
+First-draft captures at `build/evidence/team-battle/20260912-231216-2c4aad3a6daf4570b47d90e9faecf4e2`
+were rejected for missing art, wrong physical owners, unreadable control typography,
+and false raw-print state. Their successful capture-process marker is not UI sign-off.
+
+## Derived150% Kit and grant fit
+
+Primary accepts the bounded read-only review on2026-09-13. These are display-only
+short tokens, never catalog IDs or renamed companions. Normal size keeps full names;
+native accessibility/inspectors always retain the complete identity and meaning.
+Actual native glyph bounds/captures remain required.
+
+- Keep full Kit chip hits and face apertures. At150%, one-line tokens are RAW,
+  HEAT, SUIT, GEM, SURGE (HEAT is deliberately shorter than HEATED in the narrow
+  slot). Token owner uses each slot x/width,y1162.50,h49; count owner y1217,h49.
+  Both use39.21 font/42.48 line and centered dark parchment ink. Full accessible
+  name includes e.g. Heated Spool,2 selected. Page2 reuses slot1 for the fifth type.
+- Grant150% icon rects:217,838.6,36.6,49;446.55,838.6,36.6,49;
+  686.6,838.6,36.6,49. Caption rects:153.6,890.6,163.4,86;
+  377.4,890.6,174.9,86;609.3,890.6,191.2,86. First slot uses CINDER/AQUA/VOLT
+  then FIRST; guaranteed slots use CINDER/AQUA/VOLT/MOSS then PRINTED. Full accessible
+  identity says chosen first printed starter or guaranteed printed companion.
+  Do not add a new tap affordance to a passive receipt icon.
+- Verify all three grant mappings and both Kit pages at576 and tall720 with150%
+  independent of high contrast. If actual font metrics still overflow, report the
+  measured owner/glyph issue; do not silently reduce the requested text scale.

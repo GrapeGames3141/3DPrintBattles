@@ -109,6 +109,52 @@ func collection_view() -> Dictionary:
 	}
 
 
+func settings_view() -> Dictionary:
+	var raw: Variant = _profile.get("team_prototype_settings", {})
+	var settings: Dictionary = raw.duplicate(true) if raw is Dictionary else {}
+	var stored_scale: Variant = settings.get("text_scale_bps", 10000)
+	var scale := 10000
+	if (stored_scale is int or stored_scale is float) and not stored_scale is bool and int(stored_scale) in [10000, 15000] and float(stored_scale) == float(int(stored_scale)):
+		scale = int(stored_scale)
+	var stored_high_contrast: Variant = settings.get("high_contrast", false)
+	var stored_reduced_motion: Variant = settings.get("reduced_motion", false)
+	return {
+		"ok": true,
+		"text_scale_bps": scale,
+		"high_contrast": stored_high_contrast if stored_high_contrast is bool else false,
+		"reduced_motion": stored_reduced_motion if stored_reduced_motion is bool else false,
+	}
+
+
+func apply_settings(draft: Variant) -> Dictionary:
+	if not _can_mutate() or not draft is Dictionary:
+		return _failure("Settings are unavailable.")
+	var text_scale: Variant = draft.get("text_scale_bps", null)
+	if not text_scale is int or int(text_scale) not in [10000, 15000] or not draft.get("high_contrast", null) is bool or not draft.get("reduced_motion", null) is bool:
+		return _failure("Settings draft is invalid.")
+	var candidate := _profile.duplicate(true)
+	var existing: Variant = candidate.get("team_prototype_settings", {})
+	var merged: Dictionary = existing.duplicate(true) if existing is Dictionary else {}
+	merged["text_scale_bps"] = int(text_scale)
+	merged["high_contrast"] = bool(draft.high_contrast)
+	merged["reduced_motion"] = bool(draft.reduced_motion)
+	candidate["team_prototype_settings"] = merged
+	var current := settings_view()
+	if int(current.text_scale_bps) == int(text_scale) and bool(current.high_contrast) == bool(draft.high_contrast) and bool(current.reduced_motion) == bool(draft.reduced_motion):
+		return {"ok": true, "settings": current, "duplicate": true}
+	if not _persist_profile(candidate):
+		return _failure("Settings could not be saved.")
+	var recreated_collection := CollectionSession.create(_profile, Callable(_proxy, "profile"))
+	if not bool(recreated_collection.get("ok", false)):
+		return _failure("Settings saved but Collection refresh failed.")
+	_collection = recreated_collection.session
+	var recreated_match := MatchSession.create(_profile, _compatibility, _store.ledger_exists(), _store.ledger_value(), _store.cursor_value(), Callable(_proxy, "ledger"), Callable(_proxy, "cursor"))
+	if not bool(recreated_match.get("ok", false)):
+		return _failure("Settings saved but Match refresh failed.")
+	_match = recreated_match.session
+	return {"ok": true, "settings": settings_view()}
+
+
 func preview_loadout(team: Variant, priority: Variant, kit: Variant) -> Dictionary:
 	if _collection == null:
 		return _failure("No active collection session.")
