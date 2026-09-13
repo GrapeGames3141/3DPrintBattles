@@ -39,6 +39,21 @@ changing tools/prompts to evade the filter. A supplied approved directional asse
 or explicit temporary release exception is still needed if service access remains
 unavailable. The old interim release exception is not silently carried into M3.
 
+### Renewed art/build request: latest retry still blocked
+
+The user subsequently requested finishing the art, pushing the remote and delivering
+a new Android build to Google Drive. The sole Terra writer made one ordinary
+built-in ImageGen retry with the existing identity/grid references and directional
+brief. It again returned HTTP400 `moderation_blocked`, output stage, category
+`other`, request ID `f97f6f1b-73cc-48a2-8783-11251d2bbb02`. No candidate was returned;
+there was no alternate prompt, model or service attempt and no runtime-art change.
+
+The art hold is not cleared by this request or failure. No fresh Android build or
+Drive release was produced. Independently, the current branch has accepted battle
+and Collection cores, but the new prototype's storage/reward adapter and native
+playable UI integration remain unfinished. Exporting the existing default entry
+would still open the historical game, not deliver the approved new prototype.
+
 ## Armor: alpha attempt failed; not a runtime asset
 
 Retained draft: [EQ-R1 v3](EQ-R1-quadruped-armor-alpha-attempt-v3.png).
