@@ -11,6 +11,9 @@ exporting the historical main scene as the new prototype.
 - Preserve package `com.tak.printforge.legends.playtest` and the configured review
   signing identity so this can update the existing review app without uninstalling.
 - Native app label: `PrintForge`. Retain the approved icon and portrait orientation.
+- Keep `application/config/name="PrintForge Legends"` as the existing Godot
+  user-data namespace; change the Android launcher label only. Renaming the project
+  without a deliberately approved storage migration would hide existing desktop saves.
 - Use custom feature `team_prototype`; normal source launch and packaged main scene
   must both enter the new Team prototype without command-line QA flags.
 - Arm64 only, no ads/IAP/network backend integration, no additional ad-area reserve.

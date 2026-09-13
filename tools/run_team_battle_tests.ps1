@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'facing', 'facing-capture', 'raw-render', 'import', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'ui-collection', 'ui-collection-capture', 'facing', 'facing-capture', 'raw-render', 'import', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30,
     [ValidateRange(320, 1440)][int]$Width = 576,
     [ValidateRange(568, 3200)][int]$Height = 1024,
@@ -322,12 +322,21 @@ if ($Suite -eq 'match-parser') {
     Invoke-TeamTest 'res://scripts/team_runtime/team_match_ledger.gd' '' '' '' $true
     Invoke-TeamTest 'res://scripts/team_runtime/team_match_session.gd' '' '' '' $true
 }
-if ($Suite -eq 'adapter') {
+if ($Suite -in @('adapter', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_prototype_runtime.tscn' 'TEAM_PROTOTYPE_RUNTIME failures=0'
 }
 if ($Suite -eq 'adapter-parser') {
     Invoke-TeamTest 'res://scripts/team_runtime/team_prototype_store.gd' '' '' '' $true
     Invoke-TeamTest 'res://scripts/team_runtime/team_prototype_runtime.gd' '' '' '' $true
+}
+if ($Suite -eq 'ui-collection') {
+    Invoke-TeamTest 'res://tests/team_battle/test_team_collection_ui.tscn' 'TEAM_COLLECTION_UI failures=0'
+}
+if ($Suite -eq 'ui-collection-capture') {
+    $captureArgs = @([string]$Width, [string]$Height, "--text-scale-bps=$TextScaleBps")
+    if ($HighContrast) { $captureArgs += '--high-contrast' }
+    if ($ReducedMotion) { $captureArgs += '--reduced-motion' }
+    Invoke-TeamTest 'res://tests/team_battle/capture_team_collection_ui.tscn' 'TEAM_COLLECTION_UI_CAPTURE failures=0' '' '' $false $false $true $captureArgs
 }
 if ($Suite -eq 'import') {
     Invoke-TeamTest 'resource-import' '' '' '' $false $true

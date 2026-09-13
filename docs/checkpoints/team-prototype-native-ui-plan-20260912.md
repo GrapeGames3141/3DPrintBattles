@@ -30,6 +30,8 @@ Use the exact masters and registration coordinates in
 `team-prototype-m3-reuse-audit-20260912.md` and the final approved atlas CSS, including
 its last accessibility overrides. Promote only the reviewed Team/Battle masters and
 accepted armor RGBA into runtime assets. Keep all reference atlases/docs out of APK.
+Remaining Starter/Forge/receipt/recovery registrations and the shared prototype
+print-compositor decision are in `team-prototype-collection-ui-registration-20260912.md`.
 
 Design space is 941x1672. Fit uniformly inside the viewport's safe content rectangle;
 never stretch a tall screen. Convert platform safe area from physical display space
@@ -255,3 +257,37 @@ approved masters, not a new visual direction or a runtime visual sign-off.
 
 Use `team-prototype-native-copy-20260912.md` for concise native wording. Authority
 values/events win if a textual example conflicts; do not encode rules in copy helpers.
+
+## Verified presentation API boundaries
+
+Gameplay-designer source audit, recorded by primary; no Sequence/rules edits needed:
+
+- Voucher `available`: IDLE/empty bed. Persist `begin_starter_print` before calling
+  `ArcaneForgeSequence.begin()`. Failed Begin stays IDLE; do not expose IDLE Skip,
+  which would cancel that local sequence.
+- Voucher `printing`: advance local presentation only; display
+  `layer_reveal_bps()`, not internal `progress_bps` (printing ends internally at7000).
+  Skip reaches RAW_COMPLETE, not living art or a grant.
+- At RAW_COMPLETE, latch `request_commit()` once and submit Complete using the
+  persisted print ID and retained request envelope. **Do not call
+  `resolve_commit(false)` for a retryable save failure**: that API permanently
+  sets FAILED/resolved, hides the raw figure and cannot later resolve successfully.
+  Instead retain RAW_COMPLETE and the latched request, show Retry, resubmit the
+  identical Collection action, then call `resolve_commit(true)` only on success.
+- Successful Complete permits RAW_HOLD, AWAKENING, DEPARTING, AWAKENED. Later Skip
+  settles visuals only. Reopen `printing` restarts presentation without Begin;
+  reopen `settled` shows its existing receipt without Complete; `acknowledged`
+  proceeds to Team/Workshop. Creature sequences must not use `raw_only=true`.
+- Battle Queue snapshot is post-Plan commit but has no living newly queued mini.
+  Print snapshot is PRE-work decrement: interpolate raw reveal from the event's
+  `work_before`, `work_after`, `work_total`, not snapshot work alone.
+- Awaken snapshot is POST-decrement/PRE-dequeue. Only an `awaken_ready` event with
+  `work_remaining==0` permits that companion's living transition. Equipment has
+  no awaken event; a stage name alone never implies a living figure.
+- Enter/Fit snapshot is post-dequeue/post-status change. Move the same transient
+  figure from the prior printer pose to its final Active/Ready root; suppress its
+  settled home sprite until arrival. Equipment fits/fizzles without living art.
+- Coordinator current authority already contains the entire Run result. While a
+  receipt is pending, use only its cached viewer-projected opening/stage snapshots,
+  not `view()`'s final authority, to prevent premature living units, gear, defeat or
+  Result. These are visual timing constraints; no second battle resolution occurs.
