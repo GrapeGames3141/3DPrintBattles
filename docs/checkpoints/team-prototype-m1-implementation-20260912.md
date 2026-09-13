@@ -1,7 +1,10 @@
 # M1 Battle Core implementation checkpoint
 
-Status: implementation authorized by the user's 2026-09-12 approval of M0 at
-`ae8ad71`. Rules authority: [design](../design/team-prototype-20260912.md), F3–F7.
+Status: isolated M1 implementation accepted at `470b200` after the user's 2026-09-12
+approval of M0 at `ae8ad71`. Rules authority:
+[design](../design/team-prototype-20260912.md), F3–F7. See the Rules/Bot and
+[Coordinator validation](team-prototype-m1-coordinator-validation-20260912.md)
+checkpoints for executed evidence; the specifications below remain the contract.
 This checkpoint is a deterministic core, not a playable/release build.
 
 ## Inspected boundary and ownership
@@ -115,8 +118,9 @@ unchanged.
 
 Run F7's 45 deterministic bot matches, seeds 0–44; report median/p95/max actual
 cycles, first print/contact, replacements, Support/swap use, Draws and terminal
-causes. A 500-cycle harness stop is a failure, never a result. No claimed pacing
-threshold until the user's ambiguous “12–2” wording is clarified.
+causes. A 500-cycle harness stop is a failure, never a result. The user accepted the
+observed median16 on 2026-09-12 ("that sounds ok"); keep that balance and do not
+invent a different target interval from the earlier “12–2” typo.
 
 After tests: primary reviews diff and an independent read-only contract/maintenance
 audit, sends substantive fixes to Terra, reruns checks and commits exact files.

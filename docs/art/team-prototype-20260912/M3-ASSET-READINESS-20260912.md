@@ -13,6 +13,12 @@ is claimed here.
 
 ## Voltwig: still blocked
 
+User decision on 2026-09-12: **"Hold the build until front/rear art is supplied."**
+No temporary side-view exception is authorized for this prototype. Continue safe
+implementation/testing, but do not export or stage an Android review build before
+proper Voltwig front/rear art is supplied, reviewed and integrated. Existing side-view
+art remains usable only in its approved non-directional contexts/static history.
+
 The legacy `assets/creatures/2d/voltwig_sprite_sheet.png` has eight side-view frames,
 not friendly-rear/rival-front views. No directional replacement exists. Preserve
 its exact character identity. Do not borrow Cinderpaw anatomy or flip a side view
