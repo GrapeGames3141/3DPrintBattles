@@ -1,12 +1,14 @@
 param(
-    [ValidateSet('state', 'startup', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'ui-collection', 'ui-collection-capture', 'ui-battle', 'ui-battle-capture', 'facing', 'facing-capture', 'raw-render', 'import', 'library', 'all')][string]$Suite = 'core',
+    [ValidateSet('state', 'startup', 'normal-entry', 'core', 'bot', 'pacing', 'coordinator', 'collection', 'collection-parser', 'match', 'match-parser', 'adapter', 'adapter-parser', 'ui-collection', 'ui-collection-capture', 'ui-battle', 'ui-battle-capture', 'facing', 'facing-capture', 'raw-render', 'import', 'library', 'all')][string]$Suite = 'core',
     [ValidateRange(1, 60)][int]$TimeoutSeconds = 30,
     [ValidateRange(320, 1440)][int]$Width = 576,
     [ValidateRange(568, 3200)][int]$Height = 1024,
     [ValidateSet('voltwig', 'cinderpaw', 'aquafin', 'mossmunk')][string]$Creature = 'voltwig',
     [ValidateSet(10000, 15000)][int]$TextScaleBps = 10000,
     [switch]$HighContrast,
-    [switch]$ReducedMotion
+    [switch]$ReducedMotion,
+    [switch]$SyntheticSafeInsets,
+    [switch]$EngineVerbose
 )
 
 $ErrorActionPreference = 'Stop'
@@ -78,7 +80,7 @@ function Get-SaveManifest([string]$Root) {
     return (ConvertTo-Json -InputObject $entries -Depth 4 -Compress)
 }
 
-function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false, [bool]$ImportOnly = $false, [bool]$Rendered = $false, [string[]]$UserArguments = @(), [bool]$ExportOnly = $false) {
+function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '', [string]$Compatibility = '', [bool]$CheckOnly = $false, [bool]$ImportOnly = $false, [bool]$Rendered = $false, [string[]]$UserArguments = @(), [bool]$ExportOnly = $false, [bool]$NormalEntry = $false) {
     # Denied process inspection must fail before an engine starts.
     if ($null -eq (Get-ProcessIdentity $PID)) { throw 'Process inspection unavailable.' }
     $name = [IO.Path]::GetFileNameWithoutExtension($Scene)
@@ -107,6 +109,10 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
     $saveAfter = ''
     $started = Get-Date
     $arguments = @('--path', $projectRoot, '--log-file', $engineLog)
+    if ($EngineVerbose) { $arguments += '--verbose' }
+    if ($NormalEntry -and ($Scene -or $ExportOnly -or $ImportOnly -or $CheckOnly)) {
+        throw 'Normal-entry smoke must use the project default scene without other engine modes.'
+    }
     if ($Rendered) {
         $arguments += @('--rendering-method', 'forward_plus', '--audio-driver', 'Dummy')
     } else {
@@ -119,9 +125,10 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         $arguments += @('--editor', '--import')
     } else {
         if ($CheckOnly) { $arguments += @('--check-only', '--script') }
-        $arguments += @($Scene)
+        if ($Scene) { $arguments += @($Scene) }
     }
-    $arguments += @('--') + $UserArguments + @("--qa-save-root=$qaRoot", '--team-prototype')
+    $arguments += @('--') + $UserArguments + @("--qa-save-root=$qaRoot")
+    if (-not $NormalEntry) { $arguments += '--team-prototype' }
     $argumentString = ($arguments | ForEach-Object { Quote-CrtArgument $_ }) -join ' '
     try {
         New-Item -ItemType Directory -Path $qaRoot -ErrorAction Stop | Out-Null
@@ -204,6 +211,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
         }
         $combined = (@($engineLog, $stdoutLog, $stderrLog) | ForEach-Object { Get-Content -Raw -LiteralPath $_ }) -join [Environment]::NewLine
         if ($combined -match 'SCRIPT ERROR|Parse Error|ERROR:|Failed to load script') { throw 'Engine emitted a script/runtime error.' }
+        if ($combined -match '(?im)^WARNING:.*(?:RID|ObjectDB).*leaked') { throw 'Engine reported leaked rendering or ObjectDB resources.' }
         if (-not $CheckOnly -and -not $ImportOnly -and -not $ExportOnly) {
             if ($combined -notmatch ('(?m)^' + [regex]::Escape($Marker) + '\r?$')) { throw 'Exact test success marker missing.' }
             $startupMarker = 'PRINTFORGE_STARTUP marker=team_prototype_read_only compatibility='
@@ -255,6 +263,7 @@ function Invoke-TeamTest([string]$Scene, [string]$Marker, [string]$Fixture = '',
                         check_only = $CheckOnly
                         import_only = $ImportOnly
                         export_only = $ExportOnly
+                        normal_entry = $NormalEntry
                         rendered = $Rendered
                         root_pid = if ($process) { $process.Id } else { $null }
                         engine = $engine
@@ -314,6 +323,25 @@ if ($Suite -in @('startup', 'all')) {
 if ($Suite -in @('core', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_battle_core.tscn' 'TEAM_BATTLE_CORE failures=0'
 }
+if ($Suite -eq 'normal-entry') {
+    foreach ($case in @(
+        @{ fixture = ''; route = 'workshop' },
+        @{ fixture = 'entry-empty-profile'; route = 'workshop' },
+        @{ fixture = 'entry-valid'; route = 'workshop' },
+        @{ fixture = 'future-schema'; route = 'recovery' },
+        @{ fixture = 'backup-recovered'; route = 'recovery' },
+        @{ fixture = 'schema-string'; route = 'recovery' },
+        @{ fixture = 'schema-array'; route = 'recovery' },
+        @{ fixture = 'schema-null'; route = 'recovery' },
+        @{ fixture = 'schema-zero'; route = 'recovery' },
+        @{ fixture = 'schema-negative'; route = 'recovery' },
+        @{ fixture = 'schema-fraction'; route = 'recovery' },
+        @{ fixture = 'schema-huge'; route = 'recovery' },
+        @{ fixture = 'malformed-json'; route = 'recovery' }
+    )) {
+        Invoke-TeamTest -Scene '' -Marker 'TEAM_PROTOTYPE_ENTRY failures=0' -Fixture $case.fixture -NormalEntry $true -UserArguments @('--team-entry-smoke', "--expect-route=$($case.route)")
+    }
+}
 if ($Suite -in @('bot', 'all')) {
     Invoke-TeamTest 'res://tests/team_battle/test_team_battle_bot.tscn' 'TEAM_BATTLE_BOT failures=0'
 }
@@ -351,6 +379,7 @@ if ($Suite -eq 'ui-collection-capture') {
     $captureArgs = @([string]$Width, [string]$Height, "--text-scale-bps=$TextScaleBps")
     if ($HighContrast) { $captureArgs += '--high-contrast' }
     if ($ReducedMotion) { $captureArgs += '--reduced-motion' }
+    if ($SyntheticSafeInsets) { $captureArgs += '--synthetic-safe-insets=24,48,24,48' }
     Invoke-TeamTest 'res://tests/team_battle/capture_team_collection_ui.tscn' 'TEAM_COLLECTION_UI_CAPTURE failures=0' '' '' $false $false $true $captureArgs
 }
 if ($Suite -eq 'import') {
@@ -363,6 +392,7 @@ if ($Suite -eq 'ui-battle-capture') {
     $captureArgs = @([string]$Width, [string]$Height, "--text-scale-bps=$TextScaleBps")
     if ($HighContrast) { $captureArgs += '--high-contrast' }
     if ($ReducedMotion) { $captureArgs += '--reduced-motion' }
+    if ($SyntheticSafeInsets) { $captureArgs += '--synthetic-safe-insets=24,48,24,48' }
     Invoke-TeamTest 'res://tests/team_battle/capture_team_native_battle_ui.tscn' 'TEAM_NATIVE_BATTLE_UI_CAPTURE failures=0' '' '' $false $false $true $captureArgs
 }
 if ($Suite -eq 'facing') {

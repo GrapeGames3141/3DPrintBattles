@@ -136,3 +136,47 @@ in `build/evidence/team-release-tooling/20260913-negative-old-apk`. This intenti
 does not produce a passing new-build audit receipt. A new signed candidate is still
 required. Scoped elevation was used after sandbox evidence-directory access denied;
 no ACL, player save or existing APK was changed.
+
+### Prepared normal-entry runner protocol
+
+Main added `-Suite normal-entry`, not yet executed or included in `all`. It launches
+the actual project default with no scene override and **without** `--team-prototype`.
+Only isolated `--qa-save-root`, `--team-entry-smoke`, and `--expect-route` are supplied.
+The future source-entry implementation must restrict this bounded smoke hook to an
+explicit validated QA root; observe the native first frame and Back/Stay with zero
+writes, print `TEAM_PROTOTYPE_ENTRY failures=0`, then quit. Existing startup guard
+marker and full exact-PID/save-manifest cleanup are still required by the harness.
+
+Fixture directories to add under `tests/team_battle/startup_fixtures` during the
+entry task: `entry-valid` (compatible existing Collection), `schema-string`,
+`schema-array`, `schema-null`, `schema-zero`, `schema-negative`, `schema-fraction`,
+`schema-huge`, `malformed-json`. Reuse existing future-schema/backup-recovered.
+The fresh-profile case has no fixture directory. Fresh/valid initially show Workshop;
+invalid/recovered show Recovery. None grants, normalizes, repairs or deletes data.
+Fixture copies remain outside actual player paths. This protocol is tooling readiness,
+not a normal-launch or device pass.
+
+### Primary source review: quiet prototype startup
+
+Before entry edits, note `GameManager._ready` currently calls legacy
+`SaveService.load_profile()` before checking the prototype selector. That loader
+uses `JSON.parse_string` and treats every empty dictionary as invalid. Both are
+wrong for the accepted prototype boundary: malformed JSON must enter Recovery
+without engine error output, and an existing literal `{}` is a compatible empty
+Collection profile (not a corrupted file merely because it contains no keys).
+
+For the entry task, select the read-only prototype path before that legacy load.
+Introduce a narrow quiet load-result path in SaveService (or a small shared startup
+reader) using `JSON.new().parse` and explicit missing/valid-Dictionary/invalid
+status. Preserve legacy public loading behavior; do not normalize data. Valid
+empty Dictionary is valid only by the explicit prototype contract. Recovered
+backup remains read-only, not automatic restoration. Validate present top schema
+types/bounds before calling legacy ProfileRules.compatibility; no int(Array/null/
+nonfinite/huge) casts. The accepted Runtime/Store still validates actual Collection,
+ledger and cursor values and owns all later writes.
+
+Add an `entry-empty-profile` fixture containing literal `{}` alongside missing
+fresh and existing valid Collection; all initially show Workshop without a write.
+Do not bypass Runtime.open failure by creating a fake writable Runtime. Shell may
+offer an explicit presentation-only `configure_recovery(reason)` path with the
+same physical Back/Leave sheet when opening returns no Runtime object.

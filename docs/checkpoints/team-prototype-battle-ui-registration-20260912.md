@@ -215,3 +215,44 @@ linear/mipmapped where available, with no private IDs. Normal count owner is
 `(32,360,194,72)` with RIVAL HAND / N HIDDEN at27/33; at150 use
 `(22.87,359.41,230.35,49.01)` with Rival ×N at39.21/42.48. Never treat these
 decorative back images as48px interactive card targets.
+
+## Result receipt and forecast subrows
+
+Read-only final M0 atlas/native-copy review resolves the remaining native owners.
+These are faithful derived text states on approved masters, not new art.
+
+Result uses `assets/ui/physical_ui/m3/BA-05-result-receipt-v4.png` unchanged:
+
+- Back `(25,22,118,100)`, native cream on painted hardware, normal27/32 or
+  large39.21/42.48, cyan/HC-white focus.
+- RESULT title `(230,90,480,58)`, dark231708, centered27/32 or39.21/42.48.
+- Outcome `(188,355,565,58)`: TEAM VICTORY / TEAM DEFEAT / DRAW, dark24160b,
+  centered34 normal, **39.21 at150, not51**.
+- Body `(188,425,565,130)`, centered, at most2lines, normal26/31.72 or
+  large39.21/42.48. Explanatory ink322417 and reward ink0a5260, with readable HC
+  overrides. Native settled values e.g. +30 Coins · +40 XP, +10 Coins · +20 XP,
+  or Both Teams fell / +20 Coins · +30 XP. Keep blank card wells blank; no icons.
+- Continue `(616,1300,268,300)`, transparent painted lever owner, CONTINUE in
+  dark24160b, no shadow, normal27/30 or39.21/42.48. Same seats for RESULT PAUSED
+  + RETRY / MATCH RESULT + CONTINUE. Back remains live; Continue only acknowledges
+  the terminal cursor. Show bounded failure copy, full reason accessibly.
+
+Battle top title normal `(292.40,39.20,369.20,70.20)`,27/32 dark241708;
+large `(279.36,44.11,382.28,55.55)`,39.21/42.48. Keep Cycle/phase here;
+accessible title may additionally announce forecast.
+
+The one painted forecast rail is `(22.90,539.10,230.40,375.70)`, left aligned
+normal27/33 e8f4e6 with dark shadow; large `(22.87,539.10,230.35,375.70)`
+39.21/42.48 creamfff0c8. Split native copy, not art, into these owners:
+
+| State | Four one-line value rows | Summary |
+| --- | --- | --- |
+| Normal | x22.90,w230.40,h33; y539.10/572.10/605.10/638.10 | 22.90,671.10,230.40,243.70 |
+| Large | x22.87,w230.35,h42.48; y539.10/581.58/624.06/666.54 | 22.87,709.02,230.35,205.78 |
+
+Rows say Available N / Spend N / After N / Next N using checked projection fields
+only. Summary max7normal/4large lines (Aquafin / + Suit / Equip / Cinderpaw).
+Full aid/cost/FIFO/default-failure details and Base forecast/cap remain accessible
+from the same checked values; never recompute resource arithmetic in UI. No generic
+subpanels over the painted rail. Large Result/forecast must be captured at576 before
+acceptance; the M0 atlas did not explicitly supply the Result150 override.

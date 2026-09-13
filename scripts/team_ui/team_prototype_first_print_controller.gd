@@ -43,7 +43,7 @@ func start() -> Dictionary:
 	if runtime == null:
 		return {"ok": false, "error": "First Print runtime is unavailable."}
 	if begin_request_id.is_empty():
-		begin_request_id = "ui-begin-starter-%d" % Time.get_ticks_usec()
+		begin_request_id = _new_request_id("begin")
 	var result: Dictionary = runtime.collection_request("begin_starter_print", begin_request_id, {})
 	if bool(result.get("ok", false)):
 		begin_error = ""
@@ -88,7 +88,7 @@ func advance(step_bps: int, print_id: String) -> Dictionary:
 		if runtime == null:
 			return {"ok": true, "raw_complete": true, "phase": sequence.phase}
 		if complete_request_id.is_empty():
-			complete_request_id = "ui-complete-starter-%d" % Time.get_ticks_usec()
+			complete_request_id = _new_request_id("complete")
 		var completion: Dictionary = runtime.collection_request("complete_starter_print", complete_request_id, {"print_id":print_id})
 		if bool(completion.get("ok", false)):
 			sequence.resolve_commit(true)
@@ -109,3 +109,7 @@ func retry(print_id: String) -> Dictionary:
 		sequence.resolve_commit(true)
 		save_error = ""
 	return completion
+
+
+func _new_request_id(action: String) -> String:
+	return "team-ui-%s-%d-%s" % [action, Time.get_unix_time_from_system(), Crypto.new().generate_random_bytes(16).hex_encode()]

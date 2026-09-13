@@ -179,3 +179,62 @@ texture, not a filter flag alone. Settings Apply uses the full registered lever
 hit with a separately positioned inset label. Native reduced-motion ON must name
 Reduced Motion, not imply normal motion is enabled. Apply ink consistently after
 the shared style helper, including focused and disabled states and high contrast.
+
+## Frozen458 boundary — final large-type correction task
+
+Writer behavior458 passed `20260913-015818-918435c772034089b3d39896d0688fff`,
+PID153292. Primary independently passed458 at
+`20260913-020106-38627ba3fcb04e608e7fc36114c590de`, PID141896. Both exit0,
+QA unchanged, empty stderr/no surviving task processes. Source extraction and
+actual mipmapped blueprint cache are now implemented. Normal captures015837 and
+large015906 (full roots in progress log) are **not accepted**:150 Team and Forge
+are still unreadable. This is not permission to repeat old normal-layout code.
+
+Complete this bounded pass before any more whole-matrix capture runs:
+
+1. `CollectionPresenter.render_team`: actual `enlarged` branch. Bay names use
+   CINDER/AQUA/VOLT/MOSS with full accessible identity. Four independent central
+   owners: PRINT ORDER `(130.69,534.37,679.97,43)`; `[SHORT] FIRST`
+   `(127.42,591.55,686.51,50)`; TEAM3/3·UNIQUE `(133.02,676.25,673.39,50)`;
+   SUPPORT15/15 `(133.02,761.18,673.39,50)`. Priority hit enlarges independently.
+   No old eligibility prose or second Support label. Large chip token/count owners
+   have49px height and26base font ->39; keep normal names/counts as accepted.
+2. Large selector rows are **one line**, e.g. CINDER · PRINTED / AQUA · IN TEAM /
+   VOLT · NEEDS PRINT. Full identity/reason stays accessible. Keep existing row
+   rects588/684/780h88, heading534 and page readout880. A two-line Button's intrinsic
+   minimum is what enlarged these rows into neighbors. Do not shrink the font.
+3. Priority has one-line index/name rows `(133,y,674,80)` at y588/678/768, with
+   minimum48-final transparent hit expansion and no overlaps. Move Up/Down use
+   **the registered250x104 controls at x150/541,y865**, not177px side buttons.
+   Header534. Short tokens permitted at150 with full accessibility. Remove CLOSE.
+4. Kit150 total/page is one concise `15 / 15 · PAGE 1 / 2` native readout in
+   `(245,880,453,92)` between studs. No overlapping second Page label.
+5. First Forge150 center removes redundant full identity (the dock already shows
+   the chosen blueprint): PRINTING / N% / SKIP, RAW / COMPLETE / SKIP,
+   AWAKEN / SKIP, JOINING / TEAM, AWAKENED, and concise Retry/Start states.
+   Keep all copy within center224x149; full identity/phase/action is accessible.
+   No extra panel or smaller font. Test 0/60/raw/retry/awaken/depart and RM.
+6. Normal and150 disabled selector/reorder/+ ink must remain readable against its
+   darkened physical control. Use cream with dark outline for disabled wide owners,
+   not dark ink darkened again; keep true disabled input state and native reason.
+7. Recovery visible code maps profile_corrupt to Profile data is damaged.; preserve
+   raw diagnostic access. Settings toggles get dark ink/contrast on pale switches.
+   Primary resolves the ambiguous MOTION/REDUCED token as **REDUCED\nMOTION** in
+   the existing282x151 plate at both scales; this fits2large lines, explains ON/OFF
+   truthfully, and keeps full Reduced Motion accessibility on the toggle itself.
+8. Closing a selector/inspector/priority with actual pointer Back or Escape restores
+   its stable source focus. Add source-name bookkeeping rather than anonymous
+   generated names. Choose/Apply save failures must immediately rerender a visible
+   Retry and bounded reason in the existing status owner, not wait for another tap.
+   Retain failed request identity, zero writes on Back, and no overlapping status.
+9. Kit inspector must actually explain each support effect. Replace the redundant
+   Support remains... second body line with concise cost/effect/work from
+   TeamBattleData.support_definition, not V3's older stats. Keep Owned N · Selected N
+   first; e.g. Cost0 · Filament+2, Cost2 · Armor+8 · Print1, Cost2 · Attack+2 · Print1,
+   Cost2 · Attack150%. Existing110px body supports2large lines; full effects and
+   permanent ownership explanation remain accessible. Assert all5card types.
+
+The reviewer treats Grant150 border-tight captions/Continue as minor, not blocking;
+do not move approved art or reopen that layout in this batch. Fresh first evidence
+should be behavior+576normal+576150withoutHC. Once those are reviewed, capture
+720normal/tall150HC/RM and missing selectorpage2/emptyTeam/Retry/focus states.

@@ -114,7 +114,9 @@ func settings_view() -> Dictionary:
 	var settings: Dictionary = raw.duplicate(true) if raw is Dictionary else {}
 	var stored_scale: Variant = settings.get("text_scale_bps", 10000)
 	var scale := 10000
-	if (stored_scale is int or stored_scale is float) and not stored_scale is bool and int(stored_scale) in [10000, 15000] and float(stored_scale) == float(int(stored_scale)):
+	if stored_scale is int and not stored_scale is bool and stored_scale in [10000, 15000]:
+		scale = stored_scale
+	elif stored_scale is float and is_finite(stored_scale) and stored_scale >= 10000.0 and stored_scale <= 15000.0 and floor(stored_scale) == stored_scale and int(stored_scale) in [10000, 15000]:
 		scale = int(stored_scale)
 	var stored_high_contrast: Variant = settings.get("high_contrast", false)
 	var stored_reduced_motion: Variant = settings.get("reduced_motion", false)
