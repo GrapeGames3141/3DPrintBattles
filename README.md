@@ -31,7 +31,7 @@ window or phone turns.
 | **Tools** | 16 one-shot cards, each a real 3D-printing tool: Heat Gun, Calipers, Bed Scraper, Hex Keys, Emergency Stop and so on. |
 | **Upgrades** | 7 pieces of printed armor that bolt onto a print for the rest of the battle. |
 | **Printers** | 6 heroes, each with its own Power (2 Filament, once a turn). Prints that share their Printer's element get +1 Health. |
-| **Card packs** | Blueprint Pack (100 coins) and Golden Spool Pack (250). Spare copies are recycled into coins. Any card can also be printed directly for coins. |
+| **Card packs** | Blueprint Pack (100 coins) and Golden Spool Pack (250): foil pouches you rip open with a swipe, then flick through the cards one at a time. Spare copies are recycled into coins. Any card can also be printed directly for coins. |
 | **Workshop upgrades** | Reinforced Frame, Heated Bed, Bigger Spool and Coin Sorter: permanent bonuses bought with coins. |
 | **Tutorial** | A guided first battle with on-screen tips that follow what you do. Replay it from the Battle menu or How to Play. |
 | **Vs computer** | A 10-rival campaign with first-win pack rewards, and Quick Battle at Apprentice, Craftsman or Master. |
@@ -104,8 +104,12 @@ New art in this version was made with open-source tools only:
   by `tools/make_printer_variants.py` (Pillow + numpy).
 - **The print-in animation**: a shader (`assets/shaders/print_reveal.gdshader`),
   not extra frames.
+- **Card packs**: the foil pouch, its creases, its gloss and the tear are all
+  one shader (`assets/shaders/foil_pack.gdshader`); the figure on the front is
+  existing creature art.
 
-Audio is the script-generated placeholder set from the `phase1-build` branch.
+Audio is the script-generated placeholder set from the `phase1-build` branch,
+plus pack-opening sounds synthesised by `tools/make_sfx.py` (numpy).
 The Arvo font is under the SIL Open Font License (`assets/fonts/Arvo-OFL.txt`).
 
 ## Builds

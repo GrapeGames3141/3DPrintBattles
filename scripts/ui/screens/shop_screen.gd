@@ -2,9 +2,14 @@ extends GameScreen
 ## Buy card packs with Forge Coins and open them.
 
 var _body: Control
-var _opening: Control
-var _revealed := 0
-var _slots: Array = []
+## The pack being opened right now: its kind and the cards that were in it.
+var _open_kind := ""
+var _open_cards: Array = []
+var _opener: PackOpener
+var _modal: Control
+## Where to pick the opening back up after the screen turns.
+var _resume_stage := "sealed"
+var _resume_index := 0
 
 
 func build() -> void:
@@ -14,39 +19,25 @@ func build() -> void:
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_body)
 	_refresh()
+	if not _open_cards.is_empty():
+		_start_opener(_resume_stage, _resume_index)
 
 
-## A sealed pack, drawn as a printed filament box.
-static func pack_art(kind: String, px: float = 1.0) -> Control:
-	var def: Dictionary = GameData.PACKS[kind]
-	var tint := Color(def["tint"])
-	var root := Control.new()
-	root.size = Vector2(210, 290)
-	root.scale = Vector2(px, px)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.panel(root, Rect2(0, 0, 210, 290), UI.box(tint.darkened(0.62), tint, 5, 16, 10))
-	UI.panel(root, Rect2(14, 14, 182, 262), UI.box(tint.darkened(0.78), tint.darkened(0.3), 2, 10))
-	var lines := ColorRect.new()
-	lines.material = CardView.lines_material()
-	lines.position = Vector2(8, 8)
-	lines.size = Vector2(194, 274)
-	lines.modulate.a = 2.0
-	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(lines)
-	var spool := IconView.make("spool", 120, tint)
-	spool.position = Vector2(45, 44)
-	root.add_child(spool)
-	var star := IconView.make("star" if kind == "premium" else "hex", 40, UI.GOLD if kind == "premium" else UI.CREAM)
-	star.position = Vector2(85, 84)
-	root.add_child(star)
-	var band := UI.panel(root, Rect2(0, 186, 210, 62), UI.box(Color(0.03, 0.05, 0.1, 0.9), tint, 2, 0))
-	var nm := UI.label(def["name"], 19, UI.CREAM)
-	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	nm.size = band.size
-	band.add_child(nm)
-	return root
+func relayout() -> void:
+	if is_instance_valid(_opener):
+		_resume_stage = _opener.stage
+		_resume_index = _opener.index
+	super.relayout()
+
+
+## A sealed pack placed by its top-left corner, optionally tipped over a bit.
+func _pack_at(kind: String, top_left: Vector2, s: float, lean: float = 0.0) -> PackView:
+	var pack := PackView.make(kind, s)
+	pack.pivot_offset = Vector2(PackView.W, PackView.H) * 0.5
+	pack.position = top_left - pack.pivot_offset * (1.0 - s)
+	pack.rotation = lean
+	_body.add_child(pack)
+	return pack
 
 
 func _refresh() -> void:
@@ -57,15 +48,33 @@ func _refresh() -> void:
 	var ph := 520.0 if P else 580.0
 	# Vertical offsets inside a pack panel: art, text, buy, count, open.
 	var off: Array = [14.0, 312.0, 346.0, 406.0, 440.0] if P else [20.0, 322.0, 362.0, 432.0, 470.0]
+	var ps := 0.56
+	var art_w := PackView.W * ps
+	var art_h := PackView.H * ps
 	for i in kinds.size():
 		var kind: String = kinds[i]
 		var def: Dictionary = GameData.PACKS[kind]
 		var x := (W - pw) * 0.5 if P else 150.0 + i * 520.0
 		var y := 92.0 + i * (ph + 12.0) if P else 104.0
 		UI.panel(_body, Rect2(x, y, pw, ph))
-		var art := pack_art(kind)
-		art.position = Vector2(x + 125, y + off[0])
-		_body.add_child(art)
+		var have := Profile.packs(kind)
+		# Unopened packs pile up behind the front one.
+		var corner := Vector2(x + (pw - art_w) * 0.5, y + off[0])
+		if have >= 3:
+			_pack_at(kind, corner + Vector2(26, 4), ps, 0.11)
+		if have >= 2:
+			_pack_at(kind, corner + Vector2(-24, 4), ps, -0.1)
+		var front := _pack_at(kind, corner, ps)
+		if have <= 0:
+			front.modulate = Color(0.72, 0.74, 0.8)
+		else:
+			var tap := Button.new()
+			tap.flat = true
+			tap.focus_mode = Control.FOCUS_NONE
+			for stl in ["normal", "hover", "pressed", "focus"]:
+				tap.add_theme_stylebox_override(stl, StyleBoxEmpty.new())
+			tap.pressed.connect(_open.bind(kind))
+			UI.place(_body, tap, corner, Vector2(art_w, art_h))
 		var desc := UI.label(def["text"], 18, UI.CREAM, false)
 		desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(_body, desc, Vector2(x, y + off[1]), Vector2(pw, 26))
@@ -73,7 +82,6 @@ func _refresh() -> void:
 		buy.disabled = Profile.coins() < int(def["price"])
 		buy.pressed.connect(_buy.bind(kind))
 		UI.place(_body, buy, Vector2(x + 80, y + off[2]))
-		var have := Profile.packs(kind)
 		var hl := UI.label("You have %d to open" % have if have > 0 else "None waiting to be opened", 18, UI.GOLD if have > 0 else UI.MUTED, false)
 		hl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(_body, hl, Vector2(x, y + off[3]), Vector2(pw, 26))
@@ -101,100 +109,25 @@ func _open(kind: String) -> void:
 	var cards := Profile.open_pack(kind)
 	if cards.is_empty():
 		return
-	Audio.sfx("print")
-	_opening = modal()
-	_revealed = 0
-	_slots = []
-	var title := UI.label(GameData.PACKS[kind]["name"], 40, UI.GOLD, true, 8)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.place(_opening, title, Vector2(0, 62), Vector2(W, 52))
-	var sub := UI.label("Tap each card to reveal it", 20, UI.MUTED, false)
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.place(_opening, sub, Vector2(0, 116), Vector2(W, 28))
-	# Landscape: five in a row. Portrait: three, then two.
-	var s := 0.64 if P else 0.7
-	var w := CardView.W * s
-	var h := CardView.H * s
-	var gap := 26.0 if P else 30.0
-	var rows: Array = [[0, 1, 2], [3, 4]] if P else [[0, 1, 2, 3, 4]]
-	var y := 180.0 if P else 170.0
-	for row in rows:
-		var x0: float = (W - (row.size() * w + (row.size() - 1) * gap)) * 0.5
-		for k in row.size():
-			var i: int = row[k]
-			if i >= cards.size():
-				continue
-			var info: Dictionary = cards[i]
-			var pos := Vector2(x0 + k * (w + gap), y)
-			var hit := Button.new()
-			hit.flat = true
-			hit.focus_mode = Control.FOCUS_NONE
-			for stl in ["normal", "hover", "pressed", "focus"]:
-				hit.add_theme_stylebox_override(stl, StyleBoxEmpty.new())
-			UI.place(_opening, hit, pos, Vector2(w, h))
-			var card := CardView.make("?", s)
-			# Flip around the card's middle, so offset for the centred pivot.
-			card.pivot_offset = Vector2(CardView.W, CardView.H) * 0.5
-			card.position = -card.pivot_offset * (1.0 - s)
-			hit.add_child(card)
-			var tag := UI.label("", 20, UI.GOLD, true, 6)
-			tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			UI.place(_opening, tag, pos + Vector2(-20, h + 12), Vector2(w + 40, 28))
-			_slots.append({"hit": hit, "card": card, "tag": tag, "info": info, "open": false})
-			hit.pressed.connect(_flip.bind(_slots.size() - 1))
-			card.modulate.a = 0.0
-			var tw := card.create_tween()
-			tw.tween_interval(0.08 * i)
-			tw.tween_property(card, "modulate:a", 1.0, 0.18)
-		y += h + 60.0
-
-	var by := y + 6.0 if P else 590.0
-	var all := UI.button("Reveal all", "plain", Vector2(200, 54), 22)
-	all.pressed.connect(func():
-		for i in _slots.size():
-			_flip(i))
-	UI.place(_opening, all, Vector2(W * 0.5 - 210, by))
-	var done := UI.button("Done", "go", Vector2(200, 54), 22)
-	done.pressed.connect(func():
-		close_modal(_opening)
-		_refresh())
-	UI.place(_opening, done, Vector2(W * 0.5 + 10, by))
-	if Profile.packs(kind) > 0:
-		var again := UI.button("Open another (%d left)" % Profile.packs(kind), "primary", Vector2(300, 54), 20)
-		again.pressed.connect(func():
-			close_modal(_opening)
-			_open(kind))
-		UI.place(_opening, again, Vector2(W * 0.5 - 150, by + 64))
+	_open_kind = kind
+	_open_cards = cards
+	_start_opener("sealed", 0)
 
 
-func _flip(i: int) -> void:
-	var slot: Dictionary = _slots[i]
-	if slot["open"]:
-		return
-	slot["open"] = true
-	var card: CardView = slot["card"]
-	var info: Dictionary = slot["info"]
-	var def := GameData.card(info["id"])
-	var rank: int = GameData.RARITY_ORDER.find(def["rarity"])
-	Audio.sfx("reveal" if rank >= 3 else "card", 1.0 + rank * 0.06)
-	var base := card.scale
-	var tw := card.create_tween()
-	tw.tween_property(card, "scale:x", 0.0, 0.12)
-	tw.tween_callback(func():
-		card.set_card(info["id"])
-		if rank >= 2:
-			card.set_glow(GameData.rarity_color(def["rarity"])))
-	tw.tween_property(card, "scale:x", base.x, 0.14)
-	if rank >= 3:
-		tw.tween_property(card, "scale", base * 1.08, 0.1)
-		tw.tween_property(card, "scale", base, 0.14)
-	var tag: Label = slot["tag"]
-	if int(info["recycled"]) > 0:
-		tag.text = "Spare copy: +%d coins" % int(info["recycled"])
-		tag.add_theme_color_override("font_color", UI.MUTED)
-		tag.add_theme_font_size_override("font_size", 16)
-	elif bool(info["new"]):
-		tag.text = "NEW!"
-	else:
-		tag.text = GameData.RARITIES[def["rarity"]]["name"]
-		tag.add_theme_color_override("font_color", GameData.rarity_color(def["rarity"]))
+func _start_opener(at_stage: String, at_index: int) -> void:
+	_modal = modal(0.94)
+	_opener = PackOpener.make(_open_kind, _open_cards, Profile.packs(_open_kind), Vector2(W, H), P, at_stage, at_index)
+	_opener.done.connect(_close_opener)
+	_opener.another.connect(func():
+		var kind := _open_kind
+		_close_opener()
+		_open(kind))
+	_modal.add_child(_opener)
+
+
+func _close_opener() -> void:
+	close_modal(_modal)
+	_modal = null
+	_opener = null
+	_open_cards = []
+	_refresh()

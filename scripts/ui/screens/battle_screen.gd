@@ -1443,8 +1443,8 @@ func _show_result_panel() -> void:
 		UI.place(box, UI.label("+%d Forge Coins" % int(_reward["coins"]), 28, UI.GOLD), Vector2(bw * 0.5 - 98, y + 2), Vector2(320, 36))
 		y += 56.0
 	if has_pack:
-		var pack: Control = (load("res://scripts/ui/screens/shop_screen.gd") as GDScript).pack_art(_reward["pack"], 0.5)
-		pack.position = Vector2(bw * 0.5 - 190, y)
+		var pack := PackView.make(_reward["pack"], 0.29)
+		pack.position = Vector2(bw * 0.5 - 180, y - 2)
 		box.add_child(pack)
 		var pl := UI.label("First win reward:\n%s" % GameData.PACKS[_reward["pack"]]["name"], 21, UI.CYAN)
 		UI.place(box, pl, Vector2(bw * 0.5 - 60, y + 34), Vector2(260, 70))

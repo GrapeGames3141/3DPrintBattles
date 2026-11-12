@@ -216,10 +216,14 @@ const UPGRADES := [
 	{"id": "sorter", "name": "Coin Sorter", "icon": "coin", "text": "Earn +5 Forge Coins per win for each level.", "costs": [100, 250, 500]},
 ]
 
+## `foil` and `foil_deep` colour the pouch, `holo` is its rainbow sheen (0-1),
+## and `art` is the creature printed on the front (`art_raw`: as a bare print).
 const PACKS := {
 	"standard": {"name": "Blueprint Pack", "price": 100, "size": 5, "guarantee": "rare", "tint": "#3fa7ff",
+		"foil": "#4aa8ff", "foil_deep": "#10307a", "holo": 0.12, "art": "cinderpaw", "art_raw": true,
 		"text": "5 cards. At least one Rare or better."},
 	"premium": {"name": "Golden Spool Pack", "price": 250, "size": 5, "guarantee": "epic", "tint": "#ffc93c",
+		"foil": "#ffcf4d", "foil_deep": "#8a4a08", "holo": 0.7, "art": "starloom", "art_raw": false,
 		"text": "5 cards. At least one Epic or better."},
 }
 const PACK_WEIGHTS := {"common": 580, "uncommon": 250, "rare": 120, "epic": 40, "legendary": 10}

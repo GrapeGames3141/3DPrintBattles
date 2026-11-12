@@ -12,6 +12,9 @@ const SFX := {
 	"win": "res://assets/audio/sfx_victory.wav",
 	"lose": "res://assets/audio/sfx_defeat.wav",
 	"reveal": "res://assets/audio/sfx_levelup.wav",
+	"rip": "res://assets/audio/sfx_rip.wav",
+	"foil": "res://assets/audio/sfx_foil.wav",
+	"swipe": "res://assets/audio/sfx_swipe.wav",
 }
 const MUSIC := {
 	"workshop": "res://assets/audio/music_workshop.wav",

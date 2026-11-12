@@ -83,6 +83,7 @@ func run() -> void:
 	await wait(0.5)
 	ok(app.current != null and app.current.get_script().resource_path.ends_with("menu_screen.gd"), "boots to the menu")
 
+	await pack_checks(profile)
 	await input_checks(profile)
 	Engine.time_scale = 12.0
 	await full_match("tutorial", Session.tutorial(), profile)
@@ -92,6 +93,79 @@ func run() -> void:
 	Engine.time_scale = 1.0
 	print("\nui smoke: %d failed" % fails)
 	quit(1 if fails > 0 else 0)
+
+
+## Opens a pack the way a player does: swipe to rip it, flick and tap through
+## the cards, with a turn of the screen in the middle.
+func pack_checks(profile) -> void:
+	print("card packs")
+	var owned_before: int = profile.packs("standard")
+	app.go("shop")
+	await wait(0.6)
+	var scr = app.current
+	scr._open("standard")
+	await wait(0.6)
+	var op = scr._opener
+	ok(op != null and op.stage == "sealed" and profile.packs("standard") == owned_before - 1, "opening a pack shows it sealed")
+	var box: Rect2 = op._pack_rect()
+	var y: float = box.position.y + 40.0
+	# A short swipe only starts the tear.
+	await drag(Vector2(box.position.x + 20.0, y), Vector2(box.position.x + box.size.x * 0.4, y))
+	ok(op.stage == "sealed" and op._tear > 0.2 and op._tear < 0.7, "a short swipe tears the strip part of the way (%.2f)" % op._tear)
+	await drag(Vector2(box.position.x + box.size.x * 0.4, y), Vector2(box.end.x + 30.0, y))
+	ok(op.stage != "sealed", "swiping the rest of the way rips the pack open")
+	await wait(1.8)
+	ok(op.stage == "flip" and op.index == 0 and op._nodes.size() == 5, "the cards come out as a stack")
+	var c: Vector2 = op._stack_center()
+	await drag(c, c + Vector2(30, 0))
+	await wait(0.3)
+	ok(op.index == 0, "a small nudge leaves the top card where it is")
+	await drag(c, c + Vector2(200, -20))
+	await wait(0.5)
+	ok(op.index == 1, "flicking the top card shows the next one")
+	await click(c)
+	await wait(0.5)
+	ok(op.index == 2, "tapping the top card also moves on")
+	root.size = Vector2i(720, 1280)
+	await wait(0.6)
+	scr = app.current
+	op = scr._opener
+	ok(app.portrait and op != null and op.stage == "flip" and op.index == 2, "turning the screen keeps the place in the pack")
+	c = op._stack_center()
+	for i in 3:
+		await click(c)
+		await wait(0.5)
+	await wait(0.8)
+	ok(op.stage == "summary", "after the last card everything is laid out")
+	root.size = Vector2i(1280, 720)
+	await wait(0.6)
+	scr = app.current
+	op = scr._opener
+	ok(not app.portrait and op != null and op.stage == "summary", "and the summary survives turning back")
+	var again: Button = null
+	for b in op.find_children("*", "Button", true, false):
+		if b.text.begins_with("Open another"):
+			again = b
+	ok(again != null, "Open another is offered while packs remain")
+	if again != null:
+		again.pressed.emit()
+		await wait(0.6)
+		op = scr._opener
+		ok(op != null and op.stage == "sealed" and profile.packs("standard") == owned_before - 2, "Open another starts the next pack")
+		# A tap on the pack rips it without a swipe; Skip jumps to the spread.
+		await click(op._pack_center())
+		await wait(2.0)
+		ok(op.stage == "flip", "tapping the pack rips it open too")
+		op._skip.pressed.emit()
+		await wait(0.2)
+		ok(op.stage == "summary", "Skip goes straight to the spread")
+	for b in op.find_children("*", "Button", true, false):
+		if b.text == "Done":
+			b.pressed.emit()
+	await wait(0.3)
+	ok(scr._opener == null and scr._open_cards.is_empty(), "Done closes the pack")
+	app.go("menu")
+	await wait(0.5)
 
 
 func input_checks(profile) -> void:

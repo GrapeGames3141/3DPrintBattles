@@ -64,11 +64,50 @@ func run() -> void:
 		await go("shop")
 		await shot("shop")
 		app.current._open("standard")
-		await wait(0.6)
-		for i in 5:
-			app.current._flip(i)
-		await wait(0.6)
+		await wait(0.9)
+		await shot("pack_sealed")
+		var op = app.current._opener
+		op._tear_dir = 1
+		op._touch_pack()
+		op._tear = 0.55
+		op._apply_tear()
+		await shot("pack_tearing")
+		op._auto_rip()
+		await wait(0.62)
+		await shot("pack_pulling")
+		await wait(1.2)
+		await shot("pack_flip")
+		op._press = op._stack_center()
+		op._drag_card(op._stack_center() + Vector2(150, -30))
+		await shot("pack_flip_drag")
+		op._send_top(1)
+		await wait(0.5)
+		op._send_top(-1)
+		await wait(0.5)
+		await shot("pack_flip_3")
+		for i in 3:
+			op._send_top(1)
+			await wait(0.45)
+		await wait(1.0)
 		await shot("pack_open")
+		app.current._close_opener()
+		# A premium pack with a great card waiting under the top one.
+		app.current._open_kind = "premium"
+		app.current._open_cards = [
+			{"id": "heat_gun", "new": false, "recycled": 5}, {"id": "starloom", "new": true, "recycled": 0},
+			{"id": "glassdrake", "new": true, "recycled": 0}, {"id": "helm", "new": false, "recycled": 0},
+			{"id": "voltwig", "new": false, "recycled": 5}]
+		app.current._start_opener("sealed", 0)
+		await wait(0.9)
+		await shot("pack_premium")
+		op = app.current._opener
+		op.show_stage("flip", 0)
+		await wait(0.5)
+		await shot("pack_under_glow")
+		op._send_top(1)
+		await wait(0.7)
+		await shot("pack_legendary")
+		app.current._close_opener()
 	if want("workshop"):
 		await go("workshop")
 		await shot("workshop")
