@@ -127,8 +127,8 @@ const CARDS := [
 		"text": "Give a friendly print +3 Attack.", "target": "friendly_print",
 		"effects": [{"op": "buff", "atk": 3, "hp": 0, "to": "target"}]},
 	{"id": "test_print", "name": "Test Print", "type": "tool", "cost": 2, "rarity": "common",
-		"text": "Print two 1/1 Calibration Cubes.",
-		"effects": [{"op": "summon", "card": "cali_cube", "n": 2}]},
+		"text": "Print two 1/1 Test Bots.",
+		"effects": [{"op": "summon", "card": "test_bot", "n": 2}]},
 	{"id": "calipers", "name": "Calipers", "type": "tool", "cost": 3, "rarity": "common",
 		"text": "Draw 2 cards.",
 		"effects": [{"op": "draw", "n": 2}]},
@@ -178,7 +178,7 @@ const CARDS := [
 	{"id": "titan_plate", "name": "Titan Plate", "type": "upgrade", "cost": 5, "rarity": "legendary",
 		"text": "Give a friendly print +4/+6 and Guard.", "target": "friendly_print", "buff": {"atk": 4, "hp": 6, "kw": ["guard"]}},
 	# ---------------------------------------------------------------- tokens
-	{"id": "cali_cube", "name": "Calibration Cube", "type": "creature", "cost": 1, "atk": 1, "hp": 1, "element": "Neutral", "rarity": "common",
+	{"id": "test_bot", "name": "Test Bot", "type": "creature", "cost": 1, "atk": 1, "hp": 1, "element": "Neutral", "rarity": "common",
 		"kw": [], "text": "", "token": true},
 	{"id": "filament_scrap", "name": "Filament Scrap", "type": "tool", "cost": 0, "rarity": "common",
 		"text": "Gain 1 Filament this turn.", "token": true,
@@ -194,8 +194,8 @@ const PRINTERS := [
 		"power": {"name": "Coolant Flush", "text": "Repair 2 damage.", "target": "friendly", "icon": "drop",
 			"effects": [{"op": "heal", "n": 2, "to": "target"}]}},
 	{"id": "volt_rig", "name": "Volt Rig", "element": "Lightning", "price": 0,
-		"power": {"name": "Test Cube", "text": "Print a 1/1 Calibration Cube.", "target": "", "icon": "cube",
-			"effects": [{"op": "summon", "card": "cali_cube", "n": 1}]}},
+		"power": {"name": "Test Bot", "text": "Print a 1/1 Test Bot.", "target": "", "icon": "cube",
+			"effects": [{"op": "summon", "card": "test_bot", "n": 1}]}},
 	{"id": "stone_kiln", "name": "Stone Kiln", "element": "Stone", "price": 400,
 		"power": {"name": "Reinforce", "text": "Your Printer gains 2 Armor.", "target": "", "icon": "shield",
 			"effects": [{"op": "armor", "n": 2}]}},
@@ -235,6 +235,19 @@ const STARTER_DECK := {
 	"frostling": 2, "stoneback": 2, "galehopper": 2, "heat_gun": 2, "glue_stick": 1, "calipers": 1,
 }
 const STARTER_EXTRA := {"glue_stick": 1, "calipers": 1, "hobby_knife": 2, "test_print": 2, "helm": 2, "leg_guards": 2}
+
+## The guided first battle: fixed hands and draw order (top of deck first).
+const TUTORIAL := {
+	"coins": 50,
+	"player": {"printer": "ember_forge",
+		"hand": ["voltwig", "cinderpaw", "heat_gun", "mossmunk"],
+		"deck": ["stoneback", "galehopper", "helm", "cinderpaw", "aquafin", "frostling", "heat_gun", "sparkotter",
+			"glue_stick", "mossmunk", "voltwig", "stoneback", "galehopper", "aquafin", "calipers", "frostling"]},
+	"foe": {"printer": "volt_rig", "hp_bonus": -16,
+		"hand": ["mossmunk", "sparkotter", "voltwig", "aquafin", "filament_scrap"],
+		"deck": ["mossmunk", "aquafin", "voltwig", "sparkotter", "cinderpaw", "stoneback", "mossmunk", "aquafin",
+			"voltwig", "sparkotter", "cinderpaw", "stoneback", "galehopper", "frostling", "galehopper", "frostling"]},
+}
 
 const AI_LEVELS := ["Apprentice", "Craftsman", "Master"]
 const WIN_COINS := [30, 45, 60]
@@ -389,8 +402,8 @@ static func rules_text(def: Dictionary) -> String:
 static func art_path(def: Dictionary) -> String:
 	match def.get("type", ""):
 		"creature":
-			if def["id"] == "cali_cube":
-				return TOOL_ART % "cali_cube_sprite"
+			if def["id"] == "test_bot":
+				return TOOL_ART % "test_bot_sprite"
 			return SPRITE % def["id"]
 		"upgrade":
 			return ARMOR_ART % def["id"]

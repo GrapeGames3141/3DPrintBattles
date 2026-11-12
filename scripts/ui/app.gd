@@ -1,8 +1,13 @@
 extends Control
-## Root of the game: owns the background, the 1280x720 stage every screen is
-## laid out on, and screen-to-screen navigation.
+## Root of the game: owns the background, the stage every screen is laid out
+## on, and screen-to-screen navigation.
+##
+## The stage is 1280x720 in landscape and 720x1280 in portrait. When the
+## window (or phone) changes shape, the stage flips and the current screen is
+## laid out again on the spot.
 
-const STAGE := Vector2(1280, 720)
+const STAGE_L := Vector2(1280, 720)
+const STAGE_P := Vector2(720, 1280)
 const SCREENS := {
 	"starter": "res://scripts/ui/screens/starter_screen.gd",
 	"menu": "res://scripts/ui/screens/menu_screen.gd",
@@ -18,7 +23,10 @@ var shade: ColorRect
 var stage: Control
 var current: GameScreen
 var net: NetLink
+var portrait := false
+var stage_size := STAGE_L
 var _switching := false
+var _fitted := false
 
 
 func _ready() -> void:
@@ -37,21 +45,38 @@ func _ready() -> void:
 	add_child(shade)
 	stage = Control.new()
 	stage.set_anchors_preset(Control.PRESET_CENTER)
-	stage.offset_left = -STAGE.x * 0.5
-	stage.offset_right = STAGE.x * 0.5
-	stage.offset_top = -STAGE.y * 0.5
-	stage.offset_bottom = STAGE.y * 0.5
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(stage)
 	net = NetLink.new()
 	net.name = "Net"
 	add_child(net)
 	apply_fullscreen()
+	_fit()
+	get_tree().root.size_changed.connect(_fit)
 	go("menu" if Profile.started() else "starter")
 
 
+## Picks the landscape or portrait stage from the window's shape.
+func _fit() -> void:
+	var win := Vector2(get_window().size)
+	var want := win.y > win.x * 1.02
+	if _fitted and want == portrait:
+		return
+	_fitted = true
+	portrait = want
+	stage_size = STAGE_P if portrait else STAGE_L
+	get_window().content_scale_size = Vector2i(stage_size)
+	stage.offset_left = -stage_size.x * 0.5
+	stage.offset_right = stage_size.x * 0.5
+	stage.offset_top = -stage_size.y * 0.5
+	stage.offset_bottom = stage_size.y * 0.5
+	if current != null and not _switching:
+		current.size = stage_size
+		current.relayout()
+
+
 func apply_fullscreen() -> void:
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or OS.has_feature("mobile"):
 		return
 	var want := bool(Profile.setting("fullscreen"))
 	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if want else DisplayServer.WINDOW_MODE_WINDOWED
@@ -84,14 +109,18 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	var s: GameScreen = (load(SCREENS[screen]) as GDScript).new()
 	s.app = self
 	s.args = args
-	s.size = STAGE
+	s.size = stage_size
 	s.modulate.a = 0.0
 	stage.add_child(s)
 	current = s
 	s.build()
 	s.create_tween().tween_property(s, "modulate:a", 1.0, 0.16)
 	_switching = false
+	# The window may have turned while the old screen was fading out.
+	if s.size != stage_size:
+		s.size = stage_size
+		s.relayout()
 
 
 func toast(text: String, color: Color = UI.CREAM) -> void:
-	UI.floater(stage, text, Vector2(STAGE.x * 0.5, 120), color, 28, 30.0, 1.8)
+	UI.floater(stage, text, Vector2(stage_size.x * 0.5, 120), color, 22 if portrait else 28, 30.0, 1.8)

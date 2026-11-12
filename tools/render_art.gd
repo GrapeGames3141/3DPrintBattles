@@ -29,6 +29,8 @@ var stage: Node3D
 var cam: Camera3D
 var plate: MeshInstance3D
 var env: Environment
+var lights: Array = []
+var _holder: Node3D          # where group() puts new models (the stage, or a prop)
 
 
 func _initialize() -> void:
@@ -46,7 +48,7 @@ func _initialize() -> void:
 		"bed_scraper": [_bed_scraper, 50.0, 4.6, 0.1],
 		"cooling_fan": [_cooling_fan, 24.0, 4.6, 0.75],
 		"tree_supports": [_tree_supports, 24.0, 4.8, 0.75],
-		"test_print": [_test_print, 34.0, 4.4, 0.45],
+		"test_print": [_test_print, 22.0, 4.8, 0.75],
 		"printed_wrench": [_wrench, 52.0, 4.6, 0.05],
 		"hex_keys": [_hex_keys, 50.0, 4.6, 0.1],
 		"bed_leveling": [_bed_leveling, 36.0, 5.4, 0.45],
@@ -61,7 +63,7 @@ func _initialize() -> void:
 			continue
 		var job: Array = jobs[id]
 		await _shoot(id, job[0], job[1], job[2], job[3])
-	if only.is_empty() or only.has("cali_cube_sprite"):
+	if only.is_empty() or only.has("test_bot_sprite"):
 		await _shoot_sprite()
 	quit()
 
@@ -105,6 +107,7 @@ func _build_studio() -> void:
 	key.directional_shadow_max_distance = 20.0
 	vp.add_child(key)
 	key.rotation_degrees = Vector3(-52, 38, 0)
+	lights.append(key)
 
 	var rim := OmniLight3D.new()
 	rim.light_color = Color("47c8ff")
@@ -112,6 +115,7 @@ func _build_studio() -> void:
 	rim.omni_range = 9.0
 	rim.position = Vector3(-2.6, 1.8, -2.4)
 	vp.add_child(rim)
+	lights.append(rim)
 
 	var warm := OmniLight3D.new()
 	warm.light_color = Color("ffb057")
@@ -119,6 +123,7 @@ func _build_studio() -> void:
 	warm.omni_range = 8.0
 	warm.position = Vector3(3.0, 1.4, 1.6)
 	vp.add_child(warm)
+	lights.append(warm)
 
 	# The print bed: a dark textured sheet with a calibration grid that fades
 	# into the dark so there is no visible horizon.
@@ -151,6 +156,7 @@ void fragment() {
 
 	stage = Node3D.new()
 	vp.add_child(stage)
+	_holder = stage
 
 
 func _aim(elevation: float, dist: float, look_y: float) -> void:
@@ -181,7 +187,7 @@ func _shoot(id: String, builder: Callable, elevation: float, dist: float, look_y
 	print("rendered ", id)
 
 
-## The Calibration Cube token also stands on the battlefield, so it gets a
+## The Test Bot token also stands on the battlefield, so it gets a
 ## transparent cut-out the same shape as one creature sprite cell.
 func _shoot_sprite() -> void:
 	_clear()
@@ -192,13 +198,13 @@ func _shoot_sprite() -> void:
 	plate.visible = false
 	var r := Node3D.new()
 	stage.add_child(r)
-	_cube(r, 1.25, Vector3(0, 0.625, 0), -28.0, ORANGE)
+	_bot(r, Vector3(0, 0, 0), 1.0, -24.0, ORANGE)
 	cam.fov = 26.0
-	_aim(20.0, 5.6, 0.75)
+	_aim(14.0, 5.6, 0.72)
 	await _settle()
 	var img := vp.get_texture().get_image()
-	img.save_png(ProjectSettings.globalize_path(OUT % "cali_cube_sprite"))
-	print("rendered cali_cube_sprite")
+	img.save_png(ProjectSettings.globalize_path(OUT % "test_bot_sprite"))
+	print("rendered test_bot_sprite")
 
 
 # ---------------------------------------------------------------- helpers
@@ -293,7 +299,7 @@ func label(parent: Node3D, text: String, size: int, pos: Vector3, col: Color, ro
 
 func group(rot_y: float, pos := Vector3.ZERO) -> Node3D:
 	var r := Node3D.new()
-	stage.add_child(r)
+	_holder.add_child(r)
 	r.rotation_degrees = Vector3(0, rot_y, 0)
 	r.position = pos
 	return r
@@ -305,15 +311,27 @@ func csg(parent: Node3D, pos: Vector3, rot: Vector3) -> CSGCombiner3D:
 	return c
 
 
-func _cube(parent: Node3D, s: float, pos: Vector3, rot_y: float, col: Color) -> void:
+## A small printed robot: the 1/1 token. Big eyes so it reads as a creature.
+func _bot(parent: Node3D, pos: Vector3, size: float, rot_y: float, col: Color) -> void:
 	var c := Node3D.new()
 	_place(parent, c, pos, Vector3(0, rot_y, 0))
-	box(c, Vector3(s, s, s), Vector3.ZERO, col, Vector3.ZERO, mat(col, s / 18.0))
-	var fs := int(s * 62.0)
-	var dark := col.darkened(0.45)
-	label(c, "X", fs, Vector3(0, 0, s * 0.5), dark)
-	label(c, "Y", fs, Vector3(s * 0.5, 0, 0), dark, Vector3(0, 90, 0))
-	label(c, "Z", fs, Vector3(0, s * 0.5, 0), dark, Vector3(-90, 0, 0))
+	c.scale = Vector3.ONE * size
+	var m := mat(col, 0.035 * size)
+	var light := col.lerp(Color.WHITE, 0.22)
+	for sx in [-1.0, 1.0]:
+		ball(c, 0.17, Vector3(sx * 0.18, 0.1, 0.06), DARK, Vector3(1.0, 0.6, 1.35))
+		cyl(c, 0.085, 0.07, 0.36, Vector3(sx * 0.47, 0.5, 0.02), col, Vector3(0, 0, sx * 22.0), 20, m)
+		ball(c, 0.1, Vector3(sx * 0.54, 0.33, 0.02), DARK)
+		ball(c, 0.125, Vector3(sx * 0.15, 1.1, 0.27), WHITE)
+		ball(c, 0.062, Vector3(sx * 0.15, 1.1, 0.37), Color("10151c"))
+	cyl(c, 0.3, 0.36, 0.5, Vector3(0, 0.45, 0), col, Vector3.ZERO, 40, m)
+	ball(c, 0.36, Vector3(0, 0.7, 0), col, Vector3(1.0, 0.35, 1.0))
+	box(c, Vector3(0.3, 0.2, 0.04), Vector3(0, 0.46, 0.33), light, Vector3(-6, 0, 0))
+	cyl(c, 0.12, 0.12, 0.1, Vector3(0, 0.78, 0), DARK)
+	ball(c, 0.4, Vector3(0, 1.08, 0), col, Vector3(1.08, 0.86, 1.0))
+	box(c, Vector3(0.2, 0.035, 0.04), Vector3(0, 0.9, 0.36), Color("10151c"), Vector3(-18, 0, 0))
+	stick(c, Vector3(0, 1.4, 0), Vector3(0, 1.62, 0), 0.028, DARK)
+	ball(c, 0.075, Vector3(0, 1.66, 0), Color("35c6ff"))
 
 
 # ------------------------------------------------------------------ tools
@@ -343,7 +361,7 @@ func _glue_stick() -> void:
 
 func _spool(rainbow: bool) -> void:
 	var r := group(62.0)
-	var axis: Vector3 = r.transform.basis * Vector3.BACK
+	var axis: Vector3 = (r.global_transform.basis * Vector3.BACK).normalized()
 	var rx := Vector3(90, 0, 0)
 	cyl(r, 0.9, 0.9, 0.06, Vector3(0, 0.95, 0.31), DARK, rx, 64)
 	cyl(r, 0.9, 0.9, 0.06, Vector3(0, 0.95, -0.31), DARK, rx, 64)
@@ -449,8 +467,8 @@ func _tree_supports() -> void:
 
 func _test_print() -> void:
 	var r := group(0.0)
-	_cube(r, 0.82, Vector3(-0.5, 0.41, -0.1), 28.0, ORANGE)
-	_cube(r, 0.6, Vector3(0.56, 0.3, 0.4), -24.0, TEAL)
+	_bot(r, Vector3(-0.5, 0, -0.1), 1.0, 26.0, ORANGE)
+	_bot(r, Vector3(0.6, 0, 0.4), 0.74, -24.0, TEAL)
 
 
 func _wrench() -> void:

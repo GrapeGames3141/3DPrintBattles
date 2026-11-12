@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cadu8788yd5lq"
-path="res://.godot/imported/cali_cube_sprite.png-674934f8b06d4666c7cdc52768a407c3.ctex"
+uid="uid://b3a3ob0v2rv5j"
+path="res://.godot/imported/test_bot_sprite.png-3aa1e33f3db378355ea222ecbc33cc79.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tools/cali_cube_sprite.png"
-dest_files=["res://.godot/imported/cali_cube_sprite.png-674934f8b06d4666c7cdc52768a407c3.ctex"]
+source_file="res://assets/tools/test_bot_sprite.png"
+dest_files=["res://.godot/imported/test_bot_sprite.png-3aa1e33f3db378355ea222ecbc33cc79.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

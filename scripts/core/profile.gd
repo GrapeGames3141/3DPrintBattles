@@ -28,6 +28,7 @@ static func fresh() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
 		"started": false,
+		"tutorial_done": false,
 		"starter": "",
 		"coins": 0,
 		"cards": {},
@@ -427,11 +428,20 @@ func next_rival_index() -> int:
 	return GameData.RIVALS.size() - 1
 
 
-## Records a finished battle and pays out. mode: "rival" | "quick" | "lan" | "hotseat".
+## Records a finished battle and pays out. mode: "rival" | "quick" | "tutorial" | "lan" | "hotseat".
 ## Returns {"coins": int, "pack": String, "first_clear": bool}.
 func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "") -> Dictionary:
 	var reward := {"coins": 0, "pack": "", "first_clear": false}
 	if mode == "hotseat":
+		return reward
+	if mode == "tutorial":
+		# Practice: pays once, and never counts as a win or a loss.
+		if won and not bool(data["tutorial_done"]):
+			data["tutorial_done"] = true
+			reward["coins"] = int(GameData.TUTORIAL["coins"])
+			reward["first_clear"] = true
+			data["coins"] = coins() + int(reward["coins"])
+			save()
 		return reward
 	if won:
 		data["stats"]["wins"] = int(data["stats"]["wins"]) + 1

@@ -7,21 +7,33 @@ var _body: Control
 func build() -> void:
 	app.set_background("res://assets/ui/workshop/workshop_maker_closeup_v2.png", 0.78)
 	top_bar("Printers & Upgrades")
-	_body = Control.new()
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_body)
+	_body = null
 	_refresh()
 
 
 func _refresh() -> void:
-	for ch in _body.get_children():
-		ch.queue_free()
-	UI.place(_body, UI.label("Printers", 26, UI.GOLD, true, 4), Vector2(34, 82), Vector2(300, 32))
+	if is_instance_valid(_body):
+		var holder: Node = _body.get_parent() if _body.get_parent() != self else _body
+		if holder.get_parent() == self:
+			remove_child(holder)
+		holder.queue_free()
+	# Portrait stacks everything in one scrolling column.
+	var oy := 0.0
+	if P:
+		_body = scroll_body(76, 1640)
+		oy = -72.0
+	else:
+		_body = Control.new()
+		_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_body)
+	var cols := 2 if P else 3
+	var gx := 100.0 if P else 30.0
+	UI.place(_body, UI.label("Printers", 26, UI.GOLD, true, 4), Vector2(gx + 4, 82 + oy), Vector2(300, 32))
 	var note := UI.label("Prints that share their Printer's element get +1 Health.", 15, UI.MUTED, false)
-	UI.place(_body, note, Vector2(160, 90), Vector2(600, 22))
+	UI.place(_body, note, Vector2(gx + 130, 90 + oy), Vector2(480, 22))
 	for i in GameData.PRINTERS.size():
 		var p: Dictionary = GameData.PRINTERS[i]
-		var pos := Vector2(30 + (i % 3) * 262, 120 + (i / 3) * 296)
+		var pos := Vector2(gx + (i % cols) * 270, 120 + oy + (i / cols) * 296)
 		var col := GameData.element_color(p["element"])
 		var owned := Profile.owns_printer(p["id"])
 		var cell := UI.panel(_body, Rect2(pos, Vector2(250, 284)), UI.box(Color(UI.PANEL, 0.95), col if owned else UI.BRASS_DARK, 3 if owned else 2, 14, 6))
@@ -56,10 +68,12 @@ func _refresh() -> void:
 			buy.position = Vector2(30, 230)
 			cell.add_child(buy)
 
-	UI.place(_body, UI.label("Workshop Upgrades", 26, UI.GOLD, true, 4), Vector2(830, 82), Vector2(400, 32))
+	var ux := 145.0 if P else 826.0
+	var uy := 120.0 + oy + 3 * 296 + 50 if P else 120.0
+	UI.place(_body, UI.label("Workshop Upgrades", 26, UI.GOLD, true, 4), Vector2(ux + 4, uy - 38), Vector2(400, 32))
 	for i in GameData.UPGRADES.size():
 		var u: Dictionary = GameData.UPGRADES[i]
-		var pos := Vector2(826, 120 + i * 146)
+		var pos := Vector2(ux, uy + i * 146)
 		var lvl := Profile.upgrade_level(u["id"])
 		var top: int = (u["costs"] as Array).size()
 		var cell := UI.panel(_body, Rect2(pos, Vector2(430, 136)))

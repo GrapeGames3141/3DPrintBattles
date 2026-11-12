@@ -54,7 +54,7 @@ func run() -> void:
 		await shot("menu")
 		app.current._open_help()
 		await shot("help")
-		app.current.close_modal(app.current._settings)
+		app.current._close_popup()
 	if want("collection"):
 		await go("collection")
 		await shot("collection")
@@ -75,6 +75,16 @@ func run() -> void:
 	if want("play"):
 		await go("play")
 		await shot("play")
+	if want("tutorial"):
+		await go("battle", {"session": load("res://scripts/core/battle_session.gd").tutorial()})
+		await wait(0.8)
+		await shot("tutorial")
+		app.current._tips_done["goal"] = true
+		app.current._tips_done["filament"] = true
+		app.current._show_tip("")
+		app.current._coach_update()
+		await wait(0.3)
+		await shot("tutorial_action")
 	if want("battle"):
 		await battle_shots()
 	quit()
@@ -111,9 +121,9 @@ func battle_shots() -> void:
 				and not BattleEngine.needs_target(session.state, 0, c["id"]):
 			session.submit(0, {"t": "play", "hand": int(c["uid"])})
 			break
-	await wait(0.3)
+	await wait(0.75)
 	await shot("battle_printing")
-	await wait(1.2)
+	await wait(1.9)
 	# Attack with the first ready print.
 	for u in session.state["players"][0]["board"]:
 		var tg := BattleEngine.attack_targets(session.state, int(u["uid"]))

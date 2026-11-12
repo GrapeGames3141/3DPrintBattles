@@ -128,8 +128,47 @@ func set_ready(on: bool) -> void:
 		_base.queue_redraw()
 
 
+## Middle of the figure in the parent's coordinates (the node scales around
+## its plate, so the offset shrinks with it).
 func center() -> Vector2:
-	return position + Vector2(70, 80)
+	return position + PLATE + (Vector2(70, 80) - PLATE) * scale
+
+
+## The area that counts as "on this print" for taps and drops.
+func hit_rect() -> Rect2:
+	return Rect2(position + PLATE + (Vector2(4, 0) - PLATE) * scale, Vector2(132, 168) * scale)
+
+
+## Where the top printed layer is, for print progress 0..1 (parent coords).
+func layer_point(v: float) -> Vector2:
+	return position + PLATE + (Vector2(70, -12.0 + 166.0 * (1.0 - v)) - PLATE) * scale
+
+
+## Bare: just the figure, no plate or numbers (while it is on the Printer).
+func set_bare(on: bool) -> void:
+	for n in [_base, _fx, _atk, _hp, _gear]:
+		(n as Control).visible = not on
+
+
+func begin_print() -> void:
+	_busy_anim = true
+	_sprite.scale = Vector2.ONE
+	_mat.set_shader_parameter("progress", 0.0)
+	_mat.set_shader_parameter("colorize", 0.0)
+
+
+func set_print_progress(v: float) -> void:
+	_mat.set_shader_parameter("progress", v)
+
+
+func set_print_color(v: float) -> void:
+	_mat.set_shader_parameter("colorize", v)
+
+
+func end_print() -> void:
+	_mat.set_shader_parameter("progress", 1.0)
+	_mat.set_shader_parameter("colorize", 1.0)
+	_busy_anim = false
 
 
 func _ellipse(ci: Control, c: Vector2, rx: float, ry: float, col: Color) -> void:
@@ -182,20 +221,6 @@ func _draw_fx() -> void:
 
 # ------------------------------------------------------------- animations
 
-## Layer by layer from the bed up in raw filament, then the colour floods in.
-func play_print() -> void:
-	_busy_anim = true
-	_mat.set_shader_parameter("progress", 0.0)
-	_mat.set_shader_parameter("colorize", 0.0)
-	var tw := create_tween()
-	tw.tween_method(func(v: float): _mat.set_shader_parameter("progress", v), 0.0, 1.0, 0.6)
-	tw.tween_method(func(v: float): _mat.set_shader_parameter("colorize", v), 0.0, 1.0, 0.22)
-	tw.parallel().tween_property(_sprite, "scale", Vector2(1.12, 1.12), 0.1)
-	tw.tween_property(_sprite, "scale", Vector2.ONE, 0.12)
-	tw.tween_callback(func(): _busy_anim = false)
-	await tw.finished
-
-
 func flash() -> void:
 	var tw := create_tween()
 	tw.tween_method(func(v: float): _mat.set_shader_parameter("flash", v), 0.9, 0.0, 0.25)
@@ -210,9 +235,10 @@ func flash() -> void:
 
 
 func pulse(color: Color) -> void:
+	var base := scale
 	var tw := create_tween()
-	tw.tween_property(self, "scale", Vector2(1.16, 1.16), 0.1)
-	tw.tween_property(self, "scale", Vector2.ONE, 0.16)
+	tw.tween_property(self, "scale", base * 1.16, 0.1)
+	tw.tween_property(self, "scale", base, 0.16)
 	var m := create_tween()
 	m.tween_property(self, "modulate", color.lerp(Color.WHITE, 0.4) * 1.3, 0.1)
 	m.tween_property(self, "modulate", Color.WHITE, 0.2)

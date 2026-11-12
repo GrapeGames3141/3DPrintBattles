@@ -58,6 +58,19 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 	return st
 
 
+## Replaces a seat's hand and deck (deck given top card first). The tutorial
+## uses this so every new player sees the same opening.
+static func rig(st: Dictionary, seat: int, hand_ids: Array, deck_top_first: Array) -> void:
+	var p: Dictionary = st["players"][seat]
+	var hand: Array = []
+	for id in hand_ids:
+		hand.append({"uid": _next_uid(st), "id": str(id)})
+	p["hand"] = hand
+	var deck: Array = deck_top_first.duplicate()
+	deck.reverse()
+	p["deck"] = deck
+
+
 # ---------------------------------------------------------------- queries
 
 static func seat_of(ref: String) -> int:

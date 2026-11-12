@@ -7,7 +7,7 @@ extends RefCounted
 signal updated(events: Array, view: Dictionary)
 signal closed(reason: String)
 
-var mode := "quick"          # "rival" | "quick" | "hotseat" | "lan"
+var mode := "quick"          # "rival" | "quick" | "tutorial" | "hotseat" | "lan"
 var state: Dictionary = {}   # the real state (local, host) or the latest view (guest)
 var humans: Array = [0]      # seats played on this device
 var my_seat := 0
@@ -47,6 +47,23 @@ static func quick(deck: Dictionary, level: int) -> BattleSession:
 	s.arena = "daily_arena"
 	s.names = ["You", "%s Sparring Rig" % GameData.AI_LEVELS[level]]
 	s._start(player_config(deck), {"printer": r["printer"], "deck": GameData.expand(r["deck"])})
+	return s
+
+
+## The guided first battle against a weak, slow opponent.
+static func tutorial() -> BattleSession:
+	var s := BattleSession.new()
+	s.mode = "tutorial"
+	s.ai_level = 0
+	s.arena = "first_layers"
+	s.names = ["You", "Training Rig"]
+	var me: Dictionary = GameData.TUTORIAL["player"]
+	var foe: Dictionary = GameData.TUTORIAL["foe"]
+	s.state = BattleEngine.new_game({"seed": 11, "first": 0, "players": [
+		{"printer": me["printer"], "deck": (me["hand"] as Array) + (me["deck"] as Array)},
+		{"printer": foe["printer"], "deck": (foe["hand"] as Array).slice(0, 4) + (foe["deck"] as Array), "hp_bonus": int(foe["hp_bonus"])}]})
+	BattleEngine.rig(s.state, 0, me["hand"], me["deck"])
+	BattleEngine.rig(s.state, 1, foe["hand"], foe["deck"])
 	return s
 
 
@@ -120,7 +137,7 @@ func is_human(seat: int) -> bool:
 
 
 func is_ai_turn() -> bool:
-	return mode in ["rival", "quick"] and not state["over"] and not is_human(int(state["active"]))
+	return mode in ["rival", "quick", "tutorial"] and not state["over"] and not is_human(int(state["active"]))
 
 
 ## Sends a player's action. Returns "" or the reason it was refused.

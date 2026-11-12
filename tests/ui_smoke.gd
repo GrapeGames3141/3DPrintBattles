@@ -85,6 +85,7 @@ func run() -> void:
 
 	await input_checks(profile)
 	Engine.time_scale = 12.0
+	await full_match("tutorial", Session.tutorial(), profile)
 	await full_match("rival", Session.vs_rival(profile.active_deck(), GameData.RIVALS[0]), profile)
 	await full_match("quick", Session.quick(profile.active_deck(), 2), profile)
 	await full_match("hotseat", Session.hotseat(profile.active_deck(), profile.active_deck()), profile)
@@ -160,6 +161,35 @@ func input_checks(profile) -> void:
 	await settle(scr)
 	ok(bool(session.state["players"][0]["power_used"]), "Printer Power was used")
 
+	# 6b. Tap a card (no drag), then tap the bench: the touch way to play.
+	st = session.state
+	st["players"][0]["fil"] = 8
+	var tap_uid: int = int(st["uid"])
+	st["uid"] = tap_uid + 1
+	st["players"][0]["hand"].append({"uid": tap_uid, "id": "mossmunk"})
+	scr.st = session.view()
+	scr._sync()
+	await wait(0.3)
+	var before_board: int = session.state["players"][0]["board"].size()
+	await click(card_center(scr, tap_uid))
+	ok(scr._mode == "armed", "tapping a card arms it")
+	await click(scr.bed_me.get_center())
+	await settle(scr)
+	ok(session.state["players"][0]["board"].size() == before_board + 1, "tap card then tap bench plays it")
+
+	# 6c. Turn the screen: the battle re-lays itself out and keeps going.
+	var units_before: int = scr._units.size()
+	root.size = Vector2i(720, 1280)
+	await wait(0.6)
+	ok(app.portrait and app.stage_size == Vector2(720, 1280), "portrait window switches the stage to 720x1280")
+	scr = app.current
+	ok(scr._units.size() == units_before and scr._hand.size() == session.state["players"][0]["hand"].size(), "battle survives the turn to portrait")
+	ok(scr.bed_me.end.x <= 720.0 and scr._gauge.position.x + scr._gauge.size.x <= 720.0, "portrait layout fits the narrow stage")
+	root.size = Vector2i(1280, 720)
+	await wait(0.6)
+	ok(not app.portrait and app.current._units.size() == units_before, "and back to landscape")
+	scr = app.current
+
 	# 7. End Turn button, and the AI answers.
 	scr._end_turn()
 	await wait(0.3)
@@ -183,6 +213,13 @@ func full_match(label: String, session, profile) -> void:
 	while not session.state["over"] and guard < 3000:
 		guard += 1
 		await settle(scr)
+		if scr._tip_blocking:
+			# Tutorial tip: press Got it.
+			for b in scr.find_children("*", "Button", true, false):
+				if b.text == "Got it":
+					b.pressed.emit()
+			await wait(0.1)
+			continue
 		if scr._locked and not session.state["over"]:
 			# Pass-and-play curtain: press Ready.
 			var pressed := false
@@ -206,11 +243,15 @@ func full_match(label: String, session, profile) -> void:
 		if b.text == "Continue":
 			cont = b
 	ok(cont != null, "%s result screen appears" % label)
-	if label != "hotseat":
+	if label == "tutorial":
+		ok(scr._tips_done.size() >= 5, "tutorial showed its tips (%d done: %s)" % [scr._tips_done.size(), ", ".join(scr._tips_done.keys())])
+		ok(bool(profile.data["tutorial_done"]) == (int(session.state["winner"]) == 0), "tutorial completion is recorded when won")
+	elif label != "hotseat":
 		ok(profile.coins() > coins_before, "%s pays out coins (%d -> %d)" % [label, coins_before, profile.coins()])
 	else:
 		ok(profile.coins() == coins_before, "hotseat pays nothing")
 	if cont != null:
 		cont.pressed.emit()
 	await wait(1.0)
-	ok(app.current.get_script().resource_path.ends_with("play_screen.gd"), "Continue returns to the Battle menu")
+	var home := "menu_screen.gd" if label == "tutorial" else "play_screen.gd"
+	ok(app.current.get_script().resource_path.ends_with(home), "Continue returns to %s" % home)
