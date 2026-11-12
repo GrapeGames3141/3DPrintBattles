@@ -15,10 +15,87 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.7.1"
+  # One full Windows+Linux+Android build is ~470 MB. GitHub Free includes
+  # 500 MB of shared artifact/Packages storage, so keeping more than the
+  # latest build immediately hits quota.
+  KEEP_BUILDS: "1"
 
 jobs:
+  prune:
+    name: Free artifact space
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old PrintForge artifacts before upload
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const KEEP_BUILDS = Number(process.env.KEEP_BUILDS);
+            const PREFIXES = [
+              'PrintForgeLegends-Windows-',
+              'PrintForgeLegends-Linux-',
+              'PrintForgeLegends-Android-',
+            ];
+
+            const artifacts = await github.paginate(
+              github.rest.actions.listArtifactsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              }
+            );
+
+            const ours = artifacts.filter((artifact) =>
+              !artifact.expired &&
+              PREFIXES.some((prefix) => artifact.name.startsWith(prefix))
+            );
+
+            const runs = new Map();
+            for (const artifact of ours) {
+              const runId = artifact.workflow_run?.id;
+              if (!runId) {
+                continue;
+              }
+              const created = Date.parse(artifact.created_at);
+              const previous = runs.get(runId) || 0;
+              if (created > previous) {
+                runs.set(runId, created);
+              }
+            }
+
+            // Leave room for this run: keep N-1 previous builds, delete the rest.
+            const keepPrevious = Math.max(KEEP_BUILDS - 1, 0);
+            const keepIds = new Set(
+              [...runs.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, keepPrevious)
+                .map(([runId]) => runId)
+            );
+
+            let deleted = 0;
+            for (const artifact of ours) {
+              const runId = artifact.workflow_run?.id;
+              if (keepIds.has(runId)) {
+                continue;
+              }
+              try {
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                });
+                deleted += 1;
+                core.info(`Deleted ${artifact.name} (run ${runId})`);
+              } catch (error) {
+                core.warning(`Could not delete ${artifact.name}: ${error.message}`);
+              }
+            }
+
+            core.info(`Pruned ${deleted} artifacts; kept ${keepIds.size} previous builds`);
+
   desktop:
     name: Build ${{ matrix.target }}
+    needs: prune
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -69,6 +146,7 @@ jobs:
 
   mobile:
     name: Build mobile (${{ matrix.target }})
+    needs: prune
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -99,8 +177,8 @@ jobs:
         run: >-
           sdkmanager
           "platform-tools"
-          "platforms;android-35"
-          "build-tools;35.0.0"
+          "platforms;android-36"
+          "build-tools;36.0.0"
 
       - name: Install Godot and export templates
         uses: chickensoft-games/setup-godot@v2
@@ -109,19 +187,24 @@ jobs:
           use-dotnet: false
           include-templates: true
 
+      # Android only installs an update over an existing app when both builds
+      # are signed with the same key. Add the optional repository secret
+      # ANDROID_DEBUG_KEYSTORE_BASE64 (a base64 PKCS12/JKS keystore with alias
+      # "androiddebugkey" and password "android") to get a stable key; without
+      # it every run generates a new key and the previous build must be
+      # uninstalled first.
       - name: Configure Godot Android tools
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
         run: |
           mkdir -p "$HOME/.config/godot" "$HOME/.android"
-          cat > "$HOME/.config/godot/editor_settings-4.7.tres" <<EOF
-          [gd_resource type="EditorSettings" format=3]
-
-          [resource]
-          export/android/android_sdk_path = "$ANDROID_HOME"
-          export/android/java_sdk_path = "$JAVA_HOME"
-          EOF
-          if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            keytool -genkeypair -v \
-              -keystore "$HOME/.android/debug.keystore" \
+          KEYSTORE="$HOME/.android/debug.keystore"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "Using the keystore from the ANDROID_DEBUG_KEYSTORE_BASE64 secret."
+          else
+            keytool -genkeypair \
+              -keystore "$KEYSTORE" \
               -storepass android \
               -alias androiddebugkey \
               -keypass android \
@@ -129,7 +212,18 @@ jobs:
               -keysize 2048 \
               -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US"
+            echo "::notice::Signed with a freshly generated key. Uninstall the previous build before installing this one, or add the ANDROID_DEBUG_KEYSTORE_BASE64 secret for in-place updates."
           fi
+          cat > "$HOME/.config/godot/editor_settings-4.7.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$KEYSTORE"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
 
       - name: Import project
         run: godot --headless --path . --import
@@ -143,6 +237,23 @@ jobs:
           --export-debug "${{ matrix.preset }}"
           "${{ matrix.output }}"
 
+      - name: Verify the APK is signed and installable
+        run: |
+          APK="${{ matrix.output }}"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          SIZE=$(stat -c %s "$APK")
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          {
+            echo "### Android APK"
+            echo ""
+            echo "- File: \`$(basename "$APK")\` inside the artifact \`${{ matrix.artifact }}-${{ github.sha }}\`"
+            echo "- Size: $SIZE bytes"
+            echo "- SHA-256: \`$SHA\`"
+            echo ""
+            echo "Download the artifact from this run's page, unzip it, and open the APK on your phone (allow installs from your file manager or browser when asked)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Android build
         uses: actions/upload-artifact@v4
         with:
@@ -152,16 +263,16 @@ jobs:
           retention-days: 14
 
   cleanup:
-    name: Keep last 3 builds
+    name: Keep last build
     needs: [desktop, mobile]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Delete artifacts older than the last 3 builds
+      - name: Delete artifacts older than the last build
         uses: actions/github-script@v7
         with:
           script: |
-            const KEEP_BUILDS = 3;
+            const KEEP_BUILDS = Number(process.env.KEEP_BUILDS);
             const PREFIXES = [
               'PrintForgeLegends-Windows-',
               'PrintForgeLegends-Linux-',
