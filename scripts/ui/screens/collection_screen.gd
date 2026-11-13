@@ -29,15 +29,23 @@ func build() -> void:
 	_filter_buttons = []
 	_preview = null
 	_inspect = null
-	var fw := 72.0 if P else 104.0
+	# Tabs are laid out one after another by their real widths, so a long label
+	# ("Upgrades") can never run under the next button.
+	var fw := 64.0 if P else 104.0
+	var tx := 16.0 if P else 30.0
+	var tabs: Array = []
 	for i in FILTERS.size():
 		var b := UI.button(FILTERS[i][0], "plain", Vector2(fw, 40), 16 if P else 18)
 		b.pressed.connect(_set_filter.bind(FILTERS[i][1]))
-		UI.place(self, b, Vector2((16 if P else 30) + i * (fw + 8), 84))
+		tabs.append(b)
 		_filter_buttons.append(b)
-	_filter_btn = UI.button("Filter", "plain", Vector2(86 if P else 110, 40), 16 if P else 18)
+	_filter_btn = UI.button("Filter", "plain", Vector2(80 if P else 110, 40), 16 if P else 18)
 	_filter_btn.pressed.connect(_open_filters)
-	UI.place(self, _filter_btn, Vector2((16 if P else 30) + FILTERS.size() * (fw + 8) + 6, 84))
+	tabs.append(_filter_btn)
+	for i in tabs.size():
+		var b: Button = tabs[i]
+		UI.place(self, b, Vector2(tx, 84))
+		tx += maxf(b.size.x, b.get_combined_minimum_size().x) + (14.0 if i == FILTERS.size() - 1 else 8.0)
 	var px := 530.0 if P else 750.0
 	var prev := UI.button("<", "plain", Vector2(46, 40))
 	prev.pressed.connect(_turn.bind(-1))
