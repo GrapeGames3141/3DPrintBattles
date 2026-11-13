@@ -13,10 +13,11 @@ const LATE_DECK := {"mossmunk": 2, "voltwig": 1, "cinderpaw": 2, "aquafin": 2, "
 
 func _initialize() -> void:
 	var pilots := [
-		{"name": "starter/Craftsman", "deck": GameData.STARTER_DECK, "level": 1, "up": {}},
-		{"name": "starter/Master", "deck": GameData.STARTER_DECK, "level": 2, "up": {}},
-		{"name": "mid/Master", "deck": MID_DECK, "level": 2, "up": {"frame": 1, "bed": 1}},
-		{"name": "late/Master", "deck": LATE_DECK, "level": 2, "up": {"frame": 2, "bed": 2}},
+		{"name": "starter/Craftsman", "deck": GameData.STARTER_DECK, "level": 1, "up": {}, "tier": 1},
+		{"name": "mid/Master", "deck": MID_DECK, "level": 2, "up": {"frame": 1, "bed": 1}, "tier": 1},
+		{"name": "late/Master", "deck": LATE_DECK, "level": 2, "up": {"frame": 2, "bed": 2}, "tier": 1},
+		{"name": "late Mk II", "deck": LATE_DECK, "level": 2, "up": {"frame": 2, "bed": 2}, "tier": 2},
+		{"name": "late Mk III", "deck": LATE_DECK, "level": 2, "up": {"frame": 2, "bed": 2}, "tier": 3},
 	]
 	for pl in pilots:
 		assert(GameData.deck_error(GameData.expand(pl["deck"])) == "")
@@ -30,8 +31,10 @@ func _initialize() -> void:
 			var wins := 0
 			for i in GAMES:
 				var st := BattleEngine.new_game({"seed": 900 + i * 53, "players": [
-					{"printer": "ember_forge", "deck": GameData.expand(pl["deck"]), "mods": pl["up"]},
-					{"printer": r["printer"], "deck": GameData.expand(r["deck"]), "hp_bonus": r["hp_bonus"]}]})
+					{"printer": "ember_forge", "deck": GameData.expand(pl["deck"]), "mods": pl["up"],
+						"builds": GameData.uniform_builds(GameData.expand(pl["deck"]), int(pl["tier"]))},
+					{"printer": r["printer"], "deck": GameData.expand(r["deck"]), "hp_bonus": r["hp_bonus"],
+						"builds": GameData.uniform_builds(GameData.expand(r["deck"]), int(r.get("tier", 1)))}]})
 				var steps := 0
 				while not st["over"] and steps < 4000:
 					steps += 1

@@ -84,6 +84,7 @@ func run() -> void:
 	ok(app.current != null and app.current.get_script().resource_path.ends_with("menu_screen.gd"), "boots to the menu")
 
 	await pack_checks(profile)
+	await blueprint_checks(profile)
 	await input_checks(profile)
 	Engine.time_scale = 12.0
 	await full_match("tutorial", Session.tutorial(), profile)
@@ -164,6 +165,51 @@ func pack_checks(profile) -> void:
 			b.pressed.emit()
 	await wait(0.3)
 	ok(scr._opener == null and scr._open_cards.is_empty(), "Done closes the pack")
+	app.go("menu")
+	await wait(0.5)
+
+
+## The Blueprint screen: upgrade a card, fit a mod, paint it, and play it.
+func blueprint_checks(profile) -> void:
+	print("blueprints")
+	profile.data["xp"] = 6000
+	profile.data["coins"] = 5000
+	profile.data["cards"]["cinderpaw"] = 2
+	profile.data["spares"]["cinderpaw"] = 1
+	app.go("blueprints", {"card": "cinderpaw"})
+	await wait(0.6)
+	var scr = app.current
+	ok(scr._sel == "cinderpaw", "the Blueprint screen opens on the chosen card")
+	scr._upgrade()
+	await wait(0.4)
+	ok(int(profile.build_of("cinderpaw")["tier"]) == 2, "Upgrade takes the card to Mk II")
+	app.current._unlock_mod("sharp_nozzle")
+	app.current._fit_mod("sharp_nozzle")
+	app.current._paint("rose")
+	await wait(0.4)
+	var b: Dictionary = profile.build_of("cinderpaw")
+	ok(b["mod"] == "sharp_nozzle" and b["paint"] == "rose", "the mod and paint are saved on the card")
+	var deck: Dictionary = profile.active_deck()
+	var session = Session.vs_rival(deck, GameData.RIVALS[0])
+	var mine: Dictionary = session.state["players"][0]["builds"]
+	ok(mine.has("cinderpaw") and int(mine["cinderpaw"]["tier"]) == 2, "a battle with that deck uses the Blueprint")
+	var st: Dictionary = session.state
+	st["active"] = 0
+	st["players"][0]["hand"].clear()
+	st["players"][0]["hand"].append({"uid": 950, "id": "cinderpaw"})
+	st["players"][0]["flow"] = 9
+	app.go("battle", {"session": session})
+	await wait(1.4)
+	scr = app.current
+	await settle(scr)
+	var hand_card = scr._hand[0]["node"]
+	ok(int(GameData.built("cinderpaw", hand_card.build)["atk"]) == 6 and hand_card.build.get("paint", "") == "rose", "the card in hand shows its built stats and paint")
+	session.submit(0, {"t": "play", "hand": 950, "target": "p1"})
+	await settle(scr)
+	var board: Array = session.state["players"][0]["board"]
+	ok(board.size() == 1 and int(board[0]["atk"]) >= 6 and str(board[0]["paint"]) == "rose", "the print on the bench is the built one (Attack %d)" % int(board[0]["atk"]))
+	var shown = scr._units[int(board[0]["uid"])]
+	ok(shown.paint_id == "rose", "and it is painted rose on the bench")
 	app.go("menu")
 	await wait(0.5)
 

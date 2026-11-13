@@ -12,14 +12,17 @@ static var _gradients: Dictionary = {}
 static var _lines_mat: ShaderMaterial
 
 var card_id := ""
+## The card's Blueprint: {tier, mod, paint}. Empty means the plain card.
+var build: Dictionary = {}
 ## Show a creature as its raw, unpainted print (used for cards not yet owned).
 var raw := false
 var _glow: Panel
 var _count: Label
 
 
-static func make(id: String, card_scale: float = 1.0) -> CardView:
+static func make(id: String, card_scale: float = 1.0, card_build: Dictionary = {}) -> CardView:
 	var c := CardView.new()
+	c.build = card_build
 	c.size = Vector2(W, H)
 	c.custom_minimum_size = Vector2(W, H) * card_scale
 	c.scale = Vector2(card_scale, card_scale)
@@ -64,6 +67,11 @@ func set_card(id: String) -> void:
 		_build_front(GameData.card(id))
 	else:
 		_build_back()
+
+
+func set_build(new_build: Dictionary) -> void:
+	build = new_build
+	set_card(card_id)
 
 
 func set_raw(on: bool) -> void:
@@ -139,6 +147,10 @@ func _build_back() -> void:
 
 
 func _build_front(def: Dictionary) -> void:
+	# What is printed on the card is the card with its Blueprint applied.
+	var base_def := def
+	def = GameData.built(def["id"], build)
+	var paint_id := str(build.get("paint", "original"))
 	var rar := GameData.rarity_color(def["rarity"])
 	var body: Color
 	var accent: Color
@@ -168,7 +180,9 @@ func _build_front(def: Dictionary) -> void:
 	add_child(art)
 	var path := GameData.art_path(def)
 	if def["type"] == "tool":
-		art.add_child(UI.image(path, Rect2(Vector2.ZERO, art.size), true))
+		var tool_img := UI.image(path, Rect2(Vector2.ZERO, art.size), true)
+		tool_img.material = UI.paint_material(paint_id)
+		art.add_child(tool_img)
 	else:
 		var bg := TextureRect.new()
 		bg.texture = _radial(accent.lerp(Color.WHITE, 0.15), body.darkened(0.45))
@@ -205,6 +219,7 @@ func _build_front(def: Dictionary) -> void:
 		else:
 			fig.position = Vector2(44, 4)
 			fig.size = Vector2(180, 182)
+		fig.material = UI.paint_material(paint_id)
 		art.add_child(fig)
 	UI.panel(self, Rect2(13, 13, 274, 196), UI.box(Color.TRANSPARENT, body.darkened(0.55), 4, 10))
 
@@ -223,28 +238,55 @@ func _build_front(def: Dictionary) -> void:
 	rules.position = Vector2(22, 250)
 	rules.size = Vector2(256, 122)
 	rules.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	rules.add_theme_font_size_override("normal_font_size", 20)
-	rules.add_theme_font_size_override("bold_font_size", 20)
+	var rules_plain := GameData.rules_text(def)
+	var rules_size := 20 if rules_plain.length() <= 64 else (17 if rules_plain.length() <= 100 else 15)
+	rules.add_theme_font_size_override("normal_font_size", rules_size)
+	rules.add_theme_font_size_override("bold_font_size", rules_size)
 	rules.add_theme_constant_override("line_separation", 2)
-	rules.text = "[center]%s[/center]" % GameData.rules_text(def)
+	rules.text = "[center]%s[/center]" % rules_plain
 	add_child(rules)
 
+	if str(def.get("mod", "")) != "":
+		kind_text += "  -  " + str(GameData.card_mod(def["mod"])["name"])
 	var kind := UI.label(kind_text, 14, accent.lerp(Color.WHITE, 0.35), false)
 	kind.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	kind.position = Vector2(0, 388)
 	kind.size = Vector2(W, 20)
 	add_child(kind)
 
+	if int(def.get("mk", 1)) > 1:
+		_tier_tag(int(def["mk"]))
 	var cost := Badge.make("spool", COST_BLUE, 68)
 	cost.position = Vector2(-12, -12)
-	cost.set_value(int(def["cost"]))
+	cost.set_value(int(def["cost"]), _vs(int(def["cost"]), int(base_def["cost"]), true))
 	add_child(cost)
 	if def["type"] == "creature":
 		var atk := Badge.make("burst", ATK_AMBER, 66)
 		atk.position = Vector2(-10, 364)
-		atk.set_value(int(def["atk"]))
+		atk.set_value(int(def["atk"]), _vs(int(def["atk"]), int(base_def["atk"]), false))
 		add_child(atk)
 		var hp := Badge.make("hex", HP_RED, 66)
 		hp.position = Vector2(244, 364)
-		hp.set_value(int(def["hp"]))
+		hp.set_value(int(def["hp"]), _vs(int(def["hp"]), int(base_def["hp"]), false))
+		hp.z_index = 1
 		add_child(hp)
+
+
+## Number colour against the plain card: green is better, red is worse.
+## (For a cost, lower is better.)
+func _vs(now: int, base: int, lower_is_better: bool) -> Color:
+	if now == base:
+		return Color.WHITE
+	return UI.GOOD if (now < base) == lower_is_better else Color("ff8a8a")
+
+
+## "Mk II" marker for a built-up card (a gold tag under the cost badge).
+func _tier_tag(tier: int) -> void:
+	var names := ["", "", "Mk II", "Mk III"]
+	var tag := UI.panel(self, Rect2(56, 8, 72, 28), UI.box(Color("0b1220"), UI.GOLD, 2, 14))
+	tag.z_index = 3
+	var l := UI.label(names[tier], 16, UI.GOLD)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.size = tag.size
+	tag.add_child(l)

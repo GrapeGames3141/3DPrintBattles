@@ -401,7 +401,7 @@ func _make_cards(cover: Node = null) -> void:
 	_nodes.clear()
 	_nodes.resize(cards.size())
 	for k in range(cards.size() - 1, -1, -1):
-		var card := CardView.make(cards[k]["id"], 1.0)
+		var card := CardView.make(cards[k]["id"], 1.0, Profile.build_of(cards[k]["id"]))
 		add_child(card)
 		if cover != null:
 			move_child(card, cover.get_index())
@@ -442,7 +442,7 @@ func _tag_text(k: int) -> Array:
 	var rarity: String = GameData.card(info["id"])["rarity"]
 	var rarity_name: String = GameData.RARITIES[rarity]["name"]
 	if int(info["recycled"]) > 0:
-		return ["Spare copy: +%d coins" % int(info["recycled"]), UI.MUTED]
+		return ["Spare copy: +%d coins%s" % [int(info["recycled"]), ", +1 spare" if bool(info.get("spare", false)) else ""], UI.MUTED]
 	if bool(info["new"]):
 		return ["NEW!  %s" % rarity_name, UI.GOLD if _rank(k) < 2 else _rarity_color(k)]
 	return [rarity_name, _rarity_color(k)]

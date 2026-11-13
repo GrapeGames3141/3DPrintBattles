@@ -263,7 +263,7 @@ func _join() -> void:
 
 func _on_connected() -> void:
 	var d := Profile.active_deck()
-	app.net.send_hello({"deck": d["cards"], "printer": d["printer"], "mods": Profile.battle_mods(d["printer"])})
+	app.net.send_hello({"deck": d["cards"], "printer": d["printer"], "mods": Profile.battle_mods(d["printer"]), "builds": Profile.builds_for(d["cards"])})
 
 
 func _on_guest_ready(info: Dictionary) -> void:

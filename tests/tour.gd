@@ -108,6 +108,24 @@ func run() -> void:
 		await wait(0.7)
 		await shot("pack_legendary")
 		app.current._close_opener()
+	if want("blueprints"):
+		profile.data["xp"] = 5000
+		profile.data["coins"] = 9000
+		for id in ["mossmunk", "cinderpaw", "heat_gun", "glassdrake", "helm"]:
+			profile.data["cards"][id] = maxi(profile.owned_count(id), 1)
+		for i in 4:
+			profile.add_card("cinderpaw")
+		profile.upgrade_card("cinderpaw")
+		profile.buy_card_mod("sharp_nozzle")
+		profile.buy_paint("amber")
+		profile.set_paint("cinderpaw", "amber")
+		profile.set_card_mod("cinderpaw", "sharp_nozzle")
+		await go("blueprints", {"card": "cinderpaw"})
+		await shot("blueprints")
+		app.current._sel = "heat_gun"
+		app.current.relayout()
+		await wait(0.4)
+		await shot("blueprints_tool")
 	if want("workshop"):
 		profile.data["xp"] = 3000
 		profile.data["coins"] = 5000

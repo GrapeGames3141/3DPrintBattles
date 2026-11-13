@@ -22,6 +22,7 @@ var _fx: Control
 var _atk: Badge
 var _hp: Badge
 var _gear: Control
+var paint_id := "original"
 var _path := ""
 var _phase := 0.0
 var _busy_anim := false
@@ -37,6 +38,7 @@ static func make(unit: Dictionary, is_mirrored: bool) -> BoardUnit:
 	b.def = GameData.card(unit["id"])
 	b._path = GameData.art_path(b.def)
 	b._phase = randf() * TAU
+	b.paint_id = str(unit.get("paint", "original"))
 	b._build()
 	b.refresh(unit, false)
 	return b
@@ -57,7 +59,11 @@ func _build() -> void:
 	_sprite.pivot_offset = Vector2(64, 150)
 	_mat = ShaderMaterial.new()
 	_mat.shader = load("res://assets/shaders/print_reveal.gdshader")
-	_mat.set_shader_parameter("filament", GameData.element_color(def.get("element", "Neutral")))
+	var fil := GameData.element_color(def.get("element", "Neutral"))
+	var paint := GameData.paint(paint_id)
+	fil = Color.from_hsv(fposmod(fil.h + float(paint["hue"]) / 360.0, 1.0), clampf(fil.s * float(paint["sat"]), 0.0, 1.0), clampf(fil.v * float(paint["val"]), 0.0, 1.0))
+	_mat.set_shader_parameter("filament", fil)
+	UI.paint_params(_mat, paint_id)
 	_mat.set_shader_parameter("flip", 1.0 if mirrored else 0.0)
 	_sprite.material = _mat
 	add_child(_sprite)

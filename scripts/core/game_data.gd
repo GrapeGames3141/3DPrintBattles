@@ -292,6 +292,49 @@ const TUTORIAL := {
 			"voltwig", "sparkotter", "cinderpaw", "stoneback", "galehopper", "frostling", "galehopper", "frostling"]},
 }
 
+## ------------------------------------------------------------- Blueprints
+## Every card you own has a Blueprint: a tier (Mk I to Mk III), one mod once it
+## reaches Mk II, and a paint. Every copy of the card you print has them.
+const MAX_TIER := 3
+## Coins to reach Mk II by rarity (Mk III costs 2.5x). A spare copy is spent too.
+const TIER_COINS := {"common": 60, "uncommon": 100, "rare": 180, "epic": 320, "legendary": 600}
+## Maker Rank needed to reach tier 1, 2, 3 (index = tier).
+const TIER_RANK := [0, 1, 3, 10]
+## Spare copies spent to reach each tier.
+const TIER_SPARES := [0, 0, 1, 3]
+const MAX_SPARES := 9
+
+## `kinds` are the card types a mod fits. A mod trades something for something.
+const CARD_MODS := [
+	{"id": "sharp_nozzle", "name": "Sharp Nozzle", "icon": "burst", "kinds": ["creature"], "text": "+2 Attack, -1 Health.", "cost": 400, "rank": 4},
+	{"id": "infill", "name": "Extra Infill", "icon": "hex", "kinds": ["creature"], "text": "+3 Health, costs 1 more.", "cost": 400, "rank": 4},
+	{"id": "draft_mode", "name": "Draft Mode", "icon": "cube", "kinds": ["creature"], "text": "Costs 1 less, -1 Attack.", "cost": 700, "rank": 6},
+	{"id": "supports", "name": "Support Material", "icon": "shield", "kinds": ["creature"], "text": "Gains Guard, -1 Attack.", "cost": 500, "rank": 5},
+	{"id": "rapid_layers", "name": "Rapid Layers", "icon": "twin", "kinds": ["creature"], "text": "Gains Rush, -1 Health.", "cost": 600, "rank": 6},
+	{"id": "brim_coat", "name": "Brim Coat", "icon": "burst", "kinds": ["creature"], "text": "Gains Brim, costs 1 more.", "cost": 900, "rank": 9},
+	{"id": "siphon_core", "name": "Siphon Core", "icon": "drop", "kinds": ["creature"], "text": "Gains Siphon, costs 1 more.", "cost": 900, "rank": 9},
+	{"id": "overclock", "name": "Overclock", "icon": "flame", "kinds": ["creature"], "text": "+2 Attack, costs 1 more.", "cost": 700, "rank": 7},
+	{"id": "recycler", "name": "Recycler", "icon": "spool", "kinds": ["creature"], "text": "Shatter: +2 Filament on your Spool.", "cost": 800, "rank": 8},
+	{"id": "overcharge", "name": "Overcharge", "icon": "flame", "kinds": ["tool", "upgrade"], "text": "Its effect is 1 stronger, costs 1 more.", "cost": 600, "rank": 5},
+	{"id": "lean_print", "name": "Lean Print", "icon": "cube", "kinds": ["tool", "upgrade"], "text": "Costs 1 less, its effect is 1 weaker.", "cost": 600, "rank": 5},
+	{"id": "quick_draw", "name": "Quick Draw", "icon": "star", "kinds": ["creature", "tool", "upgrade"], "text": "Draw a card when used, costs 1 more.", "cost": 1000, "rank": 10},
+	{"id": "reclaim", "name": "Reclaim", "icon": "check", "kinds": ["creature", "tool", "upgrade"], "text": "Add 2 Filament to your Spool when used, costs 1 more.", "cost": 800, "rank": 8},
+]
+
+## Paints recolour a card's art, and the print on the bench. hue is a turn in degrees.
+const PAINTS := [
+	{"id": "original", "name": "Original", "hue": 0.0, "sat": 1.0, "val": 1.0, "price": 0, "rank": 1},
+	{"id": "sky", "name": "Sky", "hue": 200.0, "sat": 1.0, "val": 1.0, "price": 0, "rank": 1},
+	{"id": "rose", "name": "Rose", "hue": 320.0, "sat": 1.0, "val": 1.0, "price": 0, "rank": 1},
+	{"id": "lime", "name": "Lime", "hue": 95.0, "sat": 1.05, "val": 1.0, "price": 0, "rank": 1},
+	{"id": "amber", "name": "Amber", "hue": 38.0, "sat": 1.1, "val": 1.05, "price": 150, "rank": 3},
+	{"id": "teal", "name": "Teal", "hue": 165.0, "sat": 1.0, "val": 1.0, "price": 150, "rank": 3},
+	{"id": "violet", "name": "Violet", "hue": 265.0, "sat": 1.0, "val": 1.0, "price": 150, "rank": 3},
+	{"id": "ghost", "name": "Ghost", "hue": 0.0, "sat": 0.12, "val": 1.15, "price": 300, "rank": 6},
+	{"id": "midnight", "name": "Midnight", "hue": 230.0, "sat": 1.2, "val": 0.6, "price": 300, "rank": 6},
+	{"id": "gold", "name": "Gold", "hue": 45.0, "sat": 1.35, "val": 1.2, "price": 600, "rank": 12},
+]
+
 const AI_LEVELS := ["Apprentice", "Craftsman", "Master"]
 ## Coins and Maker XP for a battle, by AI level. Winning pays, but not a lot:
 ## this is a long game, and the rank gates matter as much as the coins.
@@ -325,34 +368,34 @@ static func rank_from_xp(xp: int) -> Dictionary:
 
 ## Campaign rivals, fought in order. `level` indexes AI_LEVELS.
 const RIVALS := [
-	{"id": "pip", "name": "Apprentice Pip", "title": "First Layers", "printer": "volt_rig", "level": 0, "hp_bonus": -6, "coins": 27, "pack": "standard",
+	{"id": "pip", "name": "Apprentice Pip", "title": "First Layers", "printer": "volt_rig", "level": 0, "tier": 1, "hp_bonus": -6, "coins": 27, "pack": "standard",
 		"arena": "first_layers",
 		"deck": {"mossmunk": 2, "voltwig": 2, "cinderpaw": 2, "aquafin": 2, "sparkotter": 2, "stoneback": 2, "galehopper": 2, "heat_gun": 2, "glue_stick": 2, "test_print": 2}},
-	{"id": "cora", "name": "Coolant Cora", "title": "Coolant Check", "printer": "tide_press", "level": 0, "hp_bonus": -6, "coins": 32, "pack": "standard",
+	{"id": "cora", "name": "Coolant Cora", "title": "Coolant Check", "printer": "tide_press", "level": 0, "tier": 1, "hp_bonus": -6, "coins": 32, "pack": "standard",
 		"arena": "first_layers",
 		"deck": {"mossmunk": 2, "aquafin": 2, "sparkotter": 2, "frostling": 2, "stoneback": 2, "coralisk": 2, "heat_gun": 2, "glue_stick": 2, "helm": 2, "calipers": 2}},
-	{"id": "flint", "name": "Foreman Flint", "title": "Hot End", "printer": "ember_forge", "level": 0, "hp_bonus": -4, "coins": 36, "pack": "standard",
+	{"id": "flint", "name": "Foreman Flint", "title": "Hot End", "printer": "ember_forge", "level": 0, "tier": 1, "hp_bonus": -4, "coins": 36, "pack": "standard",
 		"arena": "element_bench",
 		"deck": {"voltwig": 2, "cinderpaw": 2, "sparkotter": 2, "galehopper": 2, "glassdrake": 2, "frostling": 2, "heat_gun": 2, "hobby_knife": 2, "leg_guards": 2, "printed_wrench": 1, "coalgriffin": 1}},
-	{"id": "zed", "name": "Sparkwright Zed", "title": "Overclocked", "printer": "volt_rig", "level": 1, "hp_bonus": 2, "coins": 40, "pack": "standard",
+	{"id": "zed", "name": "Sparkwright Zed", "title": "Overclocked", "printer": "volt_rig", "level": 1, "tier": 1, "hp_bonus": 2, "coins": 40, "pack": "standard",
 		"arena": "element_bench",
 		"deck": {"voltwig": 2, "sparkotter": 2, "cinderpaw": 2, "galehopper": 2, "thunderelk": 2, "runestag": 2, "heat_gun": 2, "hobby_knife": 1, "gear_up": 1, "leg_guards": 2, "spare_spool": 2}},
-	{"id": "fern", "name": "Gardener Fern", "title": "Overgrowth", "printer": "verdant_loom", "level": 1, "hp_bonus": -2, "coins": 45, "pack": "standard",
+	{"id": "fern", "name": "Gardener Fern", "title": "Overgrowth", "printer": "verdant_loom", "level": 1, "tier": 1, "hp_bonus": -2, "coins": 45, "pack": "standard",
 		"arena": "reinforced_run",
 		"deck": {"mossmunk": 2, "voltwig": 2, "cinderpaw": 2, "sparkotter": 2, "brambleowl": 2, "coralisk": 2, "test_print": 2, "hex_keys": 2, "glue_stick": 2, "full_suit": 1, "verdantitan": 1}},
-	{"id": "brick", "name": "Mason Brick", "title": "Solid Infill", "printer": "stone_kiln", "level": 1, "hp_bonus": -8, "coins": 50, "pack": "standard",
+	{"id": "brick", "name": "Mason Brick", "title": "Solid Infill", "printer": "stone_kiln", "level": 1, "tier": 2, "hp_bonus": -8, "coins": 50, "pack": "standard",
 		"arena": "reinforced_run",
 		"deck": {"mossmunk": 2, "aquafin": 2, "stoneback": 2, "frostling": 2, "ironmaw": 2, "brambleowl": 2, "chest_plate": 2, "tree_supports": 2, "bed_scraper": 2, "calipers": 1, "tidewhale": 1}},
-	{"id": "lyra", "name": "Runekeeper Lyra", "title": "Arcane Circuit", "printer": "arcane_engine", "level": 2, "hp_bonus": 4, "coins": 58, "pack": "standard",
+	{"id": "lyra", "name": "Runekeeper Lyra", "title": "Arcane Circuit", "printer": "arcane_engine", "level": 2, "tier": 2, "hp_bonus": 4, "coins": 58, "pack": "standard",
 		"arena": "masterwork_circuit",
 		"deck": {"mossmunk": 2, "cinderpaw": 2, "sparkotter": 2, "stoneback": 2, "runestag": 2, "brambleowl": 2, "printed_wrench": 2, "bed_leveling": 1, "arcane_core": 1, "pyraxis": 1, "voidmanta": 1, "coalgriffin": 2}},
-	{"id": "gale", "name": "Stormsmith Gale", "title": "Cold Front", "printer": "tide_press", "level": 1, "hp_bonus": 0, "coins": 68, "pack": "premium",
+	{"id": "gale", "name": "Stormsmith Gale", "title": "Cold Front", "printer": "tide_press", "level": 1, "tier": 2, "hp_bonus": 0, "coins": 68, "pack": "premium",
 		"arena": "masterwork_circuit",
 		"deck": {"mossmunk": 2, "aquafin": 2, "frostling": 2, "galehopper": 2, "coralisk": 2, "aurorawing": 2, "skyforge": 2, "cooling_fan": 2, "bed_leveling": 1, "clean_nozzle": 1, "miragefox": 1, "tidewhale": 1}},
-	{"id": "atlas", "name": "Warden Atlas", "title": "Masterwork", "printer": "stone_kiln", "level": 2, "hp_bonus": -7, "coins": 80, "pack": "premium",
+	{"id": "atlas", "name": "Warden Atlas", "title": "Masterwork", "printer": "stone_kiln", "level": 2, "tier": 3, "hp_bonus": -7, "coins": 80, "pack": "premium",
 		"arena": "primordial_proof",
 		"deck": {"mossmunk": 2, "aquafin": 2, "stoneback": 2, "frostling": 2, "ironmaw": 2, "tidewhale": 2, "chest_plate": 2, "bed_scraper": 1, "emergency_stop": 1, "titan_plate": 1, "worldcoil": 1, "verdantitan": 1, "clean_nozzle": 1}},
-	{"id": "forge", "name": "Grandmaster Forge", "title": "Primordial Proof", "printer": "arcane_engine", "level": 2, "hp_bonus": 14, "coins": 135, "pack": "premium",
+	{"id": "forge", "name": "Grandmaster Forge", "title": "Primordial Proof", "printer": "arcane_engine", "level": 2, "tier": 3, "hp_bonus": 14, "coins": 135, "pack": "premium",
 		"arena": "primordial_proof",
 		"deck": {"voltwig": 2, "cinderpaw": 2, "sparkotter": 2, "galehopper": 2, "runestag": 2, "glassdrake": 2, "thunderelk": 1, "coalgriffin": 1, "heat_gun": 2, "printed_wrench": 1, "pyraxis": 1, "voidmanta": 1, "starloom": 1}},
 ]
@@ -508,6 +551,231 @@ static func rules_text(def: Dictionary) -> String:
 			text = text.replace(head, "[b]%s[/b]" % head)
 		parts.append(text)
 	return "\n".join(parts)
+
+
+# ------------------------------------------------------------- Blueprints
+
+static var _built: Dictionary = {}
+
+
+static func card_mod(id: String) -> Dictionary:
+	for m in CARD_MODS:
+		if m["id"] == id:
+			return m
+	return {}
+
+
+static func paint(id: String) -> Dictionary:
+	for p in PAINTS:
+		if p["id"] == id:
+			return p
+	return PAINTS[0]
+
+
+## A Blueprint of one tier for every card in a deck: how the campaign rivals
+## keep up with a player who has been building up their cards.
+static func uniform_builds(deck: Array, tier: int) -> Dictionary:
+	var out: Dictionary = {}
+	if tier > 1:
+		for id in deck:
+			out[str(id)] = {"tier": tier, "mod": "", "paint": "original"}
+	return out
+
+
+static func default_build() -> Dictionary:
+	return {"tier": 1, "mod": "", "paint": "original"}
+
+
+static func tier_coins(id: String, tier: int) -> int:
+	var base: int = int(TIER_COINS[card(id).get("rarity", "common")])
+	return base if tier <= 2 else base * 5 / 2
+
+
+## The first effect that scales with tier: where it is, or {} (draws, jams, destroys and copies do not).
+static func _strength(d: Dictionary) -> Dictionary:
+	if d["type"] == "upgrade":
+		return {"list": "", "key": "atk" if int(d["buff"]["atk"]) > 0 else "hp"}
+	for op in ["damage", "heal", "armor", "buff", "spool", "summon"]:
+		var list: Array = d.get("effects", [])
+		for i in list.size():
+			if list[i]["op"] == op:
+				var key := "n"
+				if op == "buff":
+					key = "atk" if int(list[i].get("atk", 0)) > 0 else "hp"
+				return {"list": "effects", "i": i, "key": key}
+	return {}
+
+
+const _WORDS := ["zero", "one", "two", "three", "four", "five", "six", "seven"]
+
+
+## Changes the first number in a card's rules text from `old` to `new`.
+static func _renumber(text: String, old: int, new: int) -> String:
+	var rx := RegEx.new()
+	rx.compile("(?<![0-9])%d(?![0-9])" % old)
+	var m := rx.search(text)
+	if m != null:
+		return text.substr(0, m.get_start()) + str(new) + text.substr(m.get_end())
+	if old < _WORDS.size() and new < _WORDS.size():
+		var at := text.find(_WORDS[old])
+		if at >= 0:
+			return text.substr(0, at) + _WORDS[new] + text.substr(at + _WORDS[old].length())
+	return text
+
+
+static func _bump(d: Dictionary, slot: Dictionary, by: int) -> void:
+	var holder: Dictionary = d["buff"] if slot["list"] == "" else (d["effects"] as Array)[int(slot["i"])]
+	var old: int = int(holder.get(slot["key"], 0))
+	var new: int = maxi(old + by, 1 if by < 0 else 0)
+	holder[slot["key"]] = new
+	d["text"] = _renumber(str(d["text"]), old, new)
+
+
+static func _cost_by(d: Dictionary, by: int) -> void:
+	var c: int = int(d["cost"])
+	if by < 0:
+		d["cost"] = c if c <= 1 else maxi(c + by, 1)
+	else:
+		d["cost"] = c + by
+
+
+static func _add_text(d: Dictionary, line: String) -> void:
+	d["text"] = (str(d.get("text", "")) + " " + line).strip_edges()
+
+
+static func _add_effect(d: Dictionary, effect: Dictionary, line: String) -> void:
+	var key := "on_print" if d["type"] == "creature" else "effects"
+	var list: Array = d.get(key, [])
+	list.append(effect)
+	d[key] = list
+	_add_text(d, line)
+
+
+## True when `mod_id` can go on this card (right kind, and it would actually do something).
+static func mod_fits(mod_id: String, id: String) -> bool:
+	var m := card_mod(mod_id)
+	var d := card(id)
+	if m.is_empty() or d.is_empty() or d.get("token", false) or not (m["kinds"] as Array).has(d["type"]):
+		return false
+	var kw: Array = d.get("kw", [])
+	match mod_id:
+		"draft_mode", "lean_print":
+			return int(d["cost"]) >= 2 and (mod_id == "draft_mode" or not _strength(d).is_empty())
+		"overcharge":
+			return not _strength(d).is_empty()
+		"supports":
+			return not kw.has("guard")
+		"rapid_layers":
+			return not kw.has("rush")
+		"brim_coat":
+			return not kw.has("brim")
+		"siphon_core":
+			return not kw.has("siphon")
+	return true
+
+
+static func _apply_mod(d: Dictionary, mod_id: String) -> void:
+	match mod_id:
+		"sharp_nozzle":
+			d["atk"] = int(d["atk"]) + 2
+			d["hp"] = maxi(int(d["hp"]) - 1, 1)
+		"infill":
+			d["hp"] = int(d["hp"]) + 3
+			_cost_by(d, 1)
+		"draft_mode":
+			_cost_by(d, -1)
+			d["atk"] = maxi(int(d["atk"]) - 1, 0)
+		"supports":
+			d["kw"] = (d.get("kw", []) as Array) + ["guard"]
+			d["atk"] = maxi(int(d["atk"]) - 1, 0)
+		"rapid_layers":
+			d["kw"] = (d.get("kw", []) as Array) + ["rush"]
+			d["hp"] = maxi(int(d["hp"]) - 1, 1)
+		"brim_coat":
+			d["kw"] = (d.get("kw", []) as Array) + ["brim"]
+			_cost_by(d, 1)
+		"siphon_core":
+			d["kw"] = (d.get("kw", []) as Array) + ["siphon"]
+			_cost_by(d, 1)
+		"overclock":
+			d["atk"] = int(d["atk"]) + 2
+			_cost_by(d, 1)
+		"recycler":
+			var list: Array = d.get("shatter", [])
+			list.append({"op": "spool", "n": 2})
+			d["shatter"] = list
+			_add_text(d, "Shatter: +2 Filament on your Spool.")
+		"overcharge":
+			_bump(d, _strength(d), 1)
+			_cost_by(d, 1)
+		"lean_print":
+			_cost_by(d, -1)
+			_bump(d, _strength(d), -1)
+		"quick_draw":
+			_add_effect(d, {"op": "draw", "n": 1}, "Also draw a card." if d["type"] != "creature" else "On Print: Draw a card.")
+			_cost_by(d, 1)
+		"reclaim":
+			_add_effect(d, {"op": "spool", "n": 2}, "Also add 2 Filament to your Spool." if d["type"] != "creature" else "On Print: +2 Filament on your Spool.")
+			_cost_by(d, 1)
+
+
+## The card as it is actually printed: the base card with its Blueprint applied.
+## Results are shared, so treat them as read-only.
+static func built(id: String, build: Dictionary) -> Dictionary:
+	var base := card(id)
+	var tier := clampi(int(build.get("tier", 1)), 1, MAX_TIER)
+	var mod_id := str(build.get("mod", "")) if tier >= 2 else ""
+	if base.is_empty() or (tier == 1 and mod_id == ""):
+		return base
+	var key := "%s|%d|%s" % [id, tier, mod_id]
+	if _built.has(key):
+		return _built[key]
+	var d: Dictionary = base.duplicate(true)
+	if d["type"] == "creature":
+		if tier >= 2:
+			d["atk"] = int(d["atk"]) + 1
+		if tier >= 3:
+			d["hp"] = int(d["hp"]) + 1
+	else:
+		var slot := _strength(d)
+		if tier >= 2:
+			if slot.is_empty():
+				_cost_by(d, -1)
+			else:
+				_bump(d, slot, 1)
+		if tier >= 3:
+			if int(d["cost"]) > 1 or slot.is_empty():
+				_cost_by(d, -1)
+			else:
+				_bump(d, slot, 1)
+	if mod_id != "" and mod_fits(mod_id, id):
+		_apply_mod(d, mod_id)
+	else:
+		mod_id = ""
+	d["mk"] = tier
+	d["mod"] = mod_id
+	_built[key] = d
+	return d
+
+
+## Builds cut down to what the deck can carry and the rules allow: only cards
+## in the deck, tier 1-3, a mod only from Mk II and only one that fits, a real paint.
+static func clean_builds(deck: Array, builds: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for id in deck:
+		if out.has(id) or not builds.get(id) is Dictionary or card(str(id)).is_empty():
+			continue
+		var b: Dictionary = builds[id]
+		var tier := clampi(int(b.get("tier", 1)), 1, MAX_TIER)
+		var mod_id := str(b.get("mod", ""))
+		if tier < 2 or not mod_fits(mod_id, str(id)):
+			mod_id = ""
+		var paint_id := str(b.get("paint", "original"))
+		if paint(paint_id)["id"] != paint_id:
+			paint_id = "original"
+		if tier > 1 or mod_id != "" or paint_id != "original":
+			out[str(id)] = {"tier": tier, "mod": mod_id, "paint": paint_id}
+	return out
 
 
 static func art_path(def: Dictionary) -> String:

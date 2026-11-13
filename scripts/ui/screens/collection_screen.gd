@@ -112,7 +112,7 @@ func _build_grid() -> void:
 		for stl in ["normal", "hover", "pressed", "focus"]:
 			hit.add_theme_stylebox_override(stl, StyleBoxEmpty.new())
 		UI.place(_grid, hit, pos, Vector2(cw, ch_px))
-		var card := CardView.make(id, s)
+		var card := CardView.make(id, s, Profile.build_of(id))
 		hit.add_child(card)
 		card.set_dimmed(owned == 0)
 		card.set_raw(owned == 0)
@@ -302,7 +302,7 @@ func _show_preview(id: String, on_left := false) -> void:
 	add_child(_preview)
 	var x := 560.0 if on_left else 920.0
 	UI.panel(_preview, Rect2(x - 16, 88, 332, 616), UI.box(Color(0.02, 0.04, 0.08, 0.96), UI.BRASS, 2, 14, 10))
-	var card := CardView.make(id, 1.0)
+	var card := CardView.make(id, 1.0, Profile.build_of(id))
 	card.position = Vector2(x, 104)
 	card.set_raw(Profile.owned_count(id) == 0)
 	_preview.add_child(card)
@@ -324,7 +324,7 @@ func _open_inspect(id: String) -> void:
 	var s := 1.5 if P else 1.2
 	var size_px := Vector2(CardView.W, CardView.H) * s
 	var top := (H - size_px.y - 170.0) * 0.5
-	var card := CardView.make(id, s)
+	var card := CardView.make(id, s, Profile.build_of(id))
 	card.position = Vector2((W - size_px.x) * 0.5, top)
 	card.set_raw(Profile.owned_count(id) == 0)
 	_inspect.add_child(card)
@@ -332,6 +332,10 @@ func _open_inspect(id: String) -> void:
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(_inspect, l, Vector2(40, top + size_px.y + 12), Vector2(W - 80, 96))
-	var done := UI.button("Close", "go", Vector2(220, 52))
+	var done := UI.button("Close", "go", Vector2(200, 52))
 	done.pressed.connect(func(): close_modal(_inspect))
-	UI.place(_inspect, done, Vector2(W * 0.5 - 110, top + size_px.y + 112))
+	UI.place(_inspect, done, Vector2(W * 0.5 - 210, top + size_px.y + 112))
+	if Profile.owned_count(id) > 0:
+		var bp := UI.button("Blueprint", "primary", Vector2(200, 52))
+		bp.pressed.connect(func(): app.go("blueprints", {"card": id}))
+		UI.place(_inspect, bp, Vector2(W * 0.5 + 10, top + size_px.y + 112))

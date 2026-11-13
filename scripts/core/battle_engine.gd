@@ -21,7 +21,8 @@ const SCRAP := "filament_scrap"
 # ------------------------------------------------------------------ setup
 
 ## cfg = {"seed": int, "first": -1|0|1,
-##        "players": [{"printer": id, "deck": [ids], "mods": {mod id: level}, "hp_bonus": int}, x2]}
+##        "players": [{"printer": id, "deck": [ids], "mods": {mod id: level},
+##                     "builds": {card id: {tier, mod, paint}}, "hp_bonus": int}, x2]}
 static func new_game(cfg: Dictionary) -> Dictionary:
 	var st := {
 		"rng": int(cfg.get("seed", 1)) & 0x7fffffff,
@@ -58,6 +59,7 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 			"first_draw": int(mods.get("quickstart", 0)),
 			"attune_atk": int(mods.get("mixer", 0)),
 			"turns": 0,
+			"builds": GameData.clean_builds(deck, pc.get("builds", {})),
 		})
 	var first: int = int(cfg.get("first", -1))
 	if first != 0 and first != 1:
@@ -89,6 +91,12 @@ static func rig(st: Dictionary, seat: int, hand_ids: Array, deck_top_first: Arra
 
 
 # ---------------------------------------------------------------- queries
+
+## A card as that player prints it: the catalog card with their Blueprint applied.
+static func def_of(st: Dictionary, seat: int, id: String) -> Dictionary:
+	var builds: Dictionary = st["players"][seat].get("builds", {})
+	return GameData.built(id, builds.get(id, {}))
+
 
 static func seat_of(ref: String) -> int:
 	return int(ref.substr(1)) if ref.begins_with("p") else -1
@@ -178,7 +186,7 @@ static func targets_for(st: Dictionary, seat: int, kind: String, max_atk: int = 
 
 ## Valid targets for playing a hand card. Empty for untargeted cards.
 static func play_targets(st: Dictionary, seat: int, card_id: String) -> Array:
-	var def := GameData.card(card_id)
+	var def := def_of(st, seat, card_id)
 	var kind: String = def.get("target", "")
 	if kind == "":
 		return []
@@ -202,7 +210,7 @@ static func play_error(st: Dictionary, seat: int, hand_uid: int) -> String:
 	var c := hand_card(st, seat, hand_uid)
 	if c.is_empty():
 		return "That card is not in your hand."
-	var def := GameData.card(c["id"])
+	var def := def_of(st, seat, c["id"])
 	var p: Dictionary = st["players"][seat]
 	var cost: int = int(def["cost"])
 	if cost > int(p["spool"]):
@@ -233,7 +241,7 @@ static func is_long(st: Dictionary, seat: int, hand_uid: int) -> bool:
 	var c := hand_card(st, seat, hand_uid)
 	if c.is_empty():
 		return false
-	return int(GameData.card(c["id"])["cost"]) > int(st["players"][seat]["flow"])
+	return int(def_of(st, seat, c["id"])["cost"]) > int(st["players"][seat]["flow"])
 
 
 ## The finished-or-not print on a seat's Printer, or {} when the bed is clear.
@@ -374,7 +382,7 @@ static func _play(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String
 		return err
 	var p: Dictionary = st["players"][seat]
 	var c := hand_card(st, seat, hand_uid)
-	var cost: int = int(GameData.card(c["id"])["cost"])
+	var cost: int = int(def_of(st, seat, c["id"])["cost"])
 
 	if cost > int(p["flow"]):
 		# A long print. The Filament is loaded now; the nozzle time is paid in
@@ -428,7 +436,7 @@ static func _deploy(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 ## Printer already finished instead of straight from the hand.
 static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_slot: int, built: bool, ev: Array) -> void:
 	var p: Dictionary = st["players"][seat]
-	var def := GameData.card(c["id"])
+	var def := def_of(st, seat, c["id"])
 	match def["type"]:
 		"creature":
 			var slot: int = clampi(want_slot, 0, (p["board"] as Array).size())
@@ -682,13 +690,15 @@ static func _heal(st: Dictionary, ref: String, n: int, ev: Array) -> void:
 ## `from_hand`: it was a card the player printed (not a token or a copy).
 ## `built`: it comes off the Printer already finished, after a long print.
 static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: Array, from_hand: bool, built: bool = false) -> Dictionary:
-	var def := GameData.card(card_id)
+	var def := def_of(st, seat, card_id)
 	var p: Dictionary = st["players"][seat]
 	var u := {
 		"uid": _next_uid(st), "id": card_id, "seat": seat,
 		"atk": int(def["atk"]), "hp": int(def["hp"]), "max_hp": int(def["hp"]),
 		"kw": (def.get("kw", []) as Array).duplicate(),
 		"fresh": true, "attacks": 0, "jam": 0, "gear": [],
+		"mk": int(def.get("mk", 1)),
+		"paint": str((st["players"][seat].get("builds", {}).get(card_id, {}) as Dictionary).get("paint", "original")),
 	}
 	# Prints that share their Printer's element come out a little sturdier.
 	var element: String = str(def.get("element", ""))
@@ -748,7 +758,7 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 				owner["spool"] = int(owner["spool"]) + int(owner["refund"])
 				ev.append({"e": "scrap", "seat": int(u["seat"]), "uid": int(u["uid"]), "n": int(owner["refund"]), "spool": int(owner["spool"])})
 		for u in dead:
-			_run(st, int(u["seat"]), GameData.card(u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
+			_run(st, int(u["seat"]), def_of(st, int(u["seat"]), u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
 	var down0: bool = int(st["players"][0]["hp"]) <= 0
 	var down1: bool = int(st["players"][1]["hp"]) <= 0
 	if down0 and down1:

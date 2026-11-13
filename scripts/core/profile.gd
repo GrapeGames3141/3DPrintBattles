@@ -6,7 +6,7 @@ signal changed
 
 const SAVE_VERSION := 2
 ## Save keys whose contents are free-form dictionaries (ids come from the save).
-const FREE_KEYS := ["cards", "mods", "installed"]
+const FREE_KEYS := ["cards", "mods", "installed", "builds", "spares"]
 const DECK_SLOTS := 3
 
 var path := "user://printforge_profile.json"
@@ -40,6 +40,10 @@ static func fresh() -> Dictionary:
 		"xp": 0,
 		"mods": {},
 		"installed": {},
+		"builds": {},
+		"spares": {},
+		"card_mods": [],
+		"paints": ["original", "sky", "rose", "lime"],
 		"packs": {"standard": 0, "premium": 0},
 		"rivals_beaten": [],
 		"stats": {"wins": 0, "losses": 0, "packs_opened": 0},
@@ -133,6 +137,28 @@ func _sanitize() -> void:
 			cards[str(id)] = mini(int(data["cards"][id]), GameData.max_copies(str(id)))
 	data["cards"] = cards
 	data["xp"] = maxi(0, int(data["xp"]))
+	var builds: Dictionary = {}
+	for id in data["builds"]:
+		if cards.has(str(id)) and data["builds"][id] is Dictionary:
+			var clean: Dictionary = GameData.clean_builds([str(id)], {str(id): data["builds"][id]})
+			if clean.has(str(id)):
+				builds[str(id)] = clean[str(id)]
+	data["builds"] = builds
+	var spares: Dictionary = {}
+	for id in data["spares"]:
+		if cards.has(str(id)) and int(data["spares"][id]) > 0:
+			spares[str(id)] = mini(int(data["spares"][id]), GameData.MAX_SPARES)
+	data["spares"] = spares
+	var card_mods: Array = []
+	for id in data["card_mods"]:
+		if not GameData.card_mod(str(id)).is_empty() and not card_mods.has(str(id)):
+			card_mods.append(str(id))
+	data["card_mods"] = card_mods
+	var paints: Array = []
+	for p in GameData.PAINTS:
+		if (data["paints"] as Array).has(p["id"]) or int(p["price"]) == 0:
+			paints.append(p["id"])
+	data["paints"] = paints
 	var mods: Dictionary = {}
 	for k in data["mods"]:
 		var level := clampi(int(data["mods"][k]), 0, GameData.mod_max(str(k)))
@@ -422,9 +448,13 @@ func _fill_score(c: Dictionary, element: String) -> float:
 func add_card(id: String) -> Dictionary:
 	var have := owned_count(id)
 	if have >= GameData.max_copies(id):
+		# A spare copy: a little coin, and a spare kept for the card's Blueprint.
 		var refund: int = int(GameData.RARITIES[GameData.card(id)["rarity"]]["recycle"])
 		data["coins"] = coins() + refund
-		return {"id": id, "new": false, "recycled": refund}
+		var kept := spares(id) < GameData.MAX_SPARES
+		if kept:
+			data["spares"][id] = spares(id) + 1
+		return {"id": id, "new": false, "recycled": refund, "spare": kept}
 	data["cards"][id] = have + 1
 	return {"id": id, "new": have == 0, "recycled": 0}
 
@@ -444,6 +474,154 @@ func craft(id: String) -> String:
 	data["cards"][id] = owned_count(id) + 1
 	save()
 	return ""
+
+
+# --------------------------------------------------------------- Blueprints
+
+func spares(id: String) -> int:
+	return int(data["spares"].get(id, 0))
+
+
+## The card's Blueprint, with defaults filled in.
+func build_of(id: String) -> Dictionary:
+	var b := GameData.default_build()
+	var saved: Dictionary = data["builds"].get(id, {})
+	for k in b:
+		if saved.has(k):
+			b[k] = saved[k]
+	return b
+
+
+func _set_build(id: String, b: Dictionary) -> void:
+	if int(b["tier"]) <= 1 and str(b["mod"]) == "" and str(b["paint"]) == "original":
+		data["builds"].erase(id)
+	else:
+		data["builds"][id] = b
+
+
+## "" if the card can go up a tier now, else why not.
+func tier_error(id: String) -> String:
+	if owned_count(id) <= 0:
+		return "You do not own that card."
+	var tier := int(build_of(id)["tier"])
+	if tier >= GameData.MAX_TIER:
+		return "Already Mk III."
+	var next := tier + 1
+	if rank_level() < GameData.TIER_RANK[next]:
+		return "Reach Maker Rank %d for Mk %s." % [GameData.TIER_RANK[next], ["", "I", "II", "III"][next]]
+	if spares(id) < GameData.TIER_SPARES[next]:
+		return "Needs %d spare cop%s (you have %d)." % [GameData.TIER_SPARES[next], "y" if GameData.TIER_SPARES[next] == 1 else "ies", spares(id)]
+	if coins() < GameData.tier_coins(id, next):
+		return "Not enough Forge Coins."
+	return ""
+
+
+func upgrade_card(id: String) -> String:
+	var err := tier_error(id)
+	if err != "":
+		return err
+	var b := build_of(id)
+	var next: int = int(b["tier"]) + 1
+	data["coins"] = coins() - GameData.tier_coins(id, next)
+	var left: int = spares(id) - int(GameData.TIER_SPARES[next])
+	if left > 0:
+		data["spares"][id] = left
+	else:
+		data["spares"].erase(id)
+	b["tier"] = next
+	_set_build(id, b)
+	save()
+	return ""
+
+
+## Print an extra copy of a card to keep as a spare for its Blueprint.
+func craft_spare(id: String) -> String:
+	if owned_count(id) <= 0:
+		return "You need the card itself first."
+	if spares(id) >= GameData.MAX_SPARES:
+		return "You are holding the most spares you can."
+	var cost := craft_cost(id)
+	if coins() < cost:
+		return "Not enough Forge Coins."
+	data["coins"] = coins() - cost
+	data["spares"][id] = spares(id) + 1
+	save()
+	return ""
+
+
+func owns_card_mod(id: String) -> bool:
+	return (data["card_mods"] as Array).has(id)
+
+
+func buy_card_mod(id: String) -> String:
+	var m := GameData.card_mod(id)
+	if m.is_empty():
+		return "Unknown mod."
+	if owns_card_mod(id):
+		return "You already have that mod."
+	if rank_level() < int(m["rank"]):
+		return "Reach Maker Rank %d to unlock that." % int(m["rank"])
+	if coins() < int(m["cost"]):
+		return "Not enough Forge Coins."
+	data["coins"] = coins() - int(m["cost"])
+	(data["card_mods"] as Array).append(id)
+	save()
+	return ""
+
+
+## Fits an unlocked mod onto a card (Mk II or higher), or "" to take it off.
+func set_card_mod(id: String, mod_id: String) -> String:
+	if owned_count(id) <= 0:
+		return "You do not own that card."
+	var b := build_of(id)
+	if mod_id != "":
+		if int(b["tier"]) < 2:
+			return "Mods fit from Mk II."
+		if not owns_card_mod(mod_id):
+			return "Unlock that mod first."
+		if not GameData.mod_fits(mod_id, id):
+			return "That mod does not fit this card."
+	b["mod"] = mod_id
+	_set_build(id, b)
+	save()
+	return ""
+
+
+func owns_paint(id: String) -> bool:
+	return (data["paints"] as Array).has(id)
+
+
+func buy_paint(id: String) -> String:
+	var p := GameData.paint(id)
+	if p["id"] != id:
+		return "Unknown paint."
+	if owns_paint(id):
+		return "You already have that paint."
+	if rank_level() < int(p["rank"]):
+		return "Reach Maker Rank %d for that paint." % int(p["rank"])
+	if coins() < int(p["price"]):
+		return "Not enough Forge Coins."
+	data["coins"] = coins() - int(p["price"])
+	(data["paints"] as Array).append(id)
+	save()
+	return ""
+
+
+func set_paint(id: String, paint_id: String) -> String:
+	if owned_count(id) <= 0:
+		return "You do not own that card."
+	if not owns_paint(paint_id):
+		return "Buy that paint first."
+	var b := build_of(id)
+	b["paint"] = paint_id
+	_set_build(id, b)
+	save()
+	return ""
+
+
+## The Blueprints for the cards in a deck, as a battle takes them.
+func builds_for(deck_cards: Array) -> Dictionary:
+	return GameData.clean_builds(deck_cards, data["builds"])
 
 
 # ------------------------------------------------------------------- packs

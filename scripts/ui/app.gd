@@ -14,12 +14,13 @@ const SCREENS := {
 	"play": "res://scripts/ui/screens/play_screen.gd",
 	"collection": "res://scripts/ui/screens/collection_screen.gd",
 	"shop": "res://scripts/ui/screens/shop_screen.gd",
+	"blueprints": "res://scripts/ui/screens/blueprint_screen.gd",
 	"workshop": "res://scripts/ui/screens/workshop_screen.gd",
 	"battle": "res://scripts/ui/screens/battle_screen.gd",
 }
 
 ## Which music plays on each screen (the battle picks its own).
-const MUSIC := {"starter": "menu", "menu": "menu", "play": "menu", "collection": "bench", "workshop": "bench", "shop": "shop"}
+const MUSIC := {"starter": "menu", "menu": "menu", "play": "menu", "collection": "bench", "workshop": "bench", "blueprints": "bench", "shop": "shop"}
 
 var bg: TextureRect
 var shade: ColorRect

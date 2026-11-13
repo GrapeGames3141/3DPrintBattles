@@ -340,6 +340,11 @@ func _rebuild() -> void:
 	_sync(false)
 
 
+## A seat's Blueprint for a card (empty for the plain card).
+func _build_of(seat: int, id: String) -> Dictionary:
+	return (st["players"][seat].get("builds", {}) as Dictionary).get(id, {})
+
+
 func _bed(seat: int) -> Rect2:
 	return bed_me if seat == me else bed_foe
 
@@ -357,7 +362,7 @@ func _job_view(seat: int, id: String) -> JobView:
 		return jv
 	_clear_job(seat)
 	var pv: PrinterView = _printers[seat]
-	jv = JobView.make(id, seat != me, pv.base_scale)
+	jv = JobView.make(id, seat != me, pv.base_scale, _build_of(seat, id))
 	jv.position = pv.bed_point()
 	jv.z_index = 12
 	_board.add_child(jv)
@@ -510,7 +515,7 @@ func _sync(animate := true) -> void:
 
 
 func _new_hand_card(id: String) -> CardView:
-	var c := CardView.make(id, hand_scale)
+	var c := CardView.make(id, hand_scale, _build_of(me, id))
 	c.pivot_offset = Vector2(CardView.W, CardView.H) * 0.5
 	c.position = deck_pos - c.pivot_offset
 	_hand_layer.add_child(c)
@@ -732,7 +737,7 @@ func _set_preview(uid: int) -> void:
 		if not is_instance_valid(_jobs[seat]):
 			return
 		var jv: JobView = _jobs[seat]
-		var job_card := CardView.make(jv.card_id, s)
+		var job_card := CardView.make(jv.card_id, s, _build_of(seat, jv.card_id))
 		job_card.set_meta("uid", uid)
 		job_card.z_index = 40
 		var box := jv.hit_rect()
@@ -744,7 +749,7 @@ func _set_preview(uid: int) -> void:
 	if uid < 0 or not _units.has(uid):
 		return
 	var node: BoardUnit = _units[uid]
-	var card := CardView.make(node.u["id"], s)
+	var card := CardView.make(node.u["id"], s, _build_of(int(node.u["seat"]), node.u["id"]))
 	card.set_meta("uid", uid)
 	card.z_index = 40
 	var at := Vector2.ZERO
@@ -1273,7 +1278,7 @@ func _ev_play(e: Dictionary) -> void:
 	if not _foe_backs.is_empty():
 		(_foe_backs.pop_back() as Node).queue_free()
 	_layout_hand()
-	await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.55 if def["type"] == "creature" else 0.95, def["type"] != "creature")
+	await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.55 if def["type"] == "creature" else 0.95, def["type"] != "creature", seat)
 
 
 ## A card of mine leaves the hand: it lifts and fades.
@@ -1291,8 +1296,8 @@ func _drop_hand_card(uid: int) -> void:
 
 
 ## Holds one of the opponent's cards up, face-up, long enough to read.
-func _show_foe_card(id: String, from: Vector2, hold: float, chime: bool) -> void:
-	var card := CardView.make(id, 0.3)
+func _show_foe_card(id: String, from: Vector2, hold: float, chime: bool, seat: int = -1) -> void:
+	var card := CardView.make(id, 0.3, _build_of(1 - me if seat < 0 else seat, id))
 	card.z_index = 42
 	card.position = from
 	_fx.add_child(card)
@@ -1324,7 +1329,7 @@ func _ev_job(e: Dictionary) -> void:
 			if not _foe_backs.is_empty():
 				(_foe_backs.pop_back() as Node).queue_free()
 			_layout_hand()
-			await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.7, false)
+			await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.7, false, seat)
 			if not is_inside_tree():
 				return
 	var jv := _job_view(seat, id)
@@ -1385,7 +1390,7 @@ func _ev_deploy(e: Dictionary) -> void:
 		Audio.sfx("attach" if def["type"] == "upgrade" else "tool")
 		await _wait(0.2)
 	else:
-		await _show_foe_card(id, from, 0.95, true)
+		await _show_foe_card(id, from, 0.95, true, seat)
 
 
 ## The print head that rides up the figure while it is being built.

@@ -9,9 +9,9 @@ func build() -> void:
 	app.set_background("res://assets/ui/workshop/workshop_overview_%s_v4.png" % ("portrait" if P else "landscape"), 0.18)
 	_popup = null
 	var px := 60.0 if P else 40.0
-	var py := 50.0 if P else 36.0
+	var py := 50.0 if P else 20.0
 	var pw := 600.0 if P else 420.0
-	var ph := 716.0 if P else 648.0
+	var ph := 780.0 if P else 680.0
 
 	UI.panel(self, Rect2(px, py, pw, ph), UI.box(Color(0.03, 0.05, 0.1, 0.86), UI.BRASS, 3, 18, 10))
 	var t1 := UI.label("PrintForge", 54, UI.GOLD, true, 8)
@@ -26,15 +26,16 @@ func build() -> void:
 		["Battle", "go", "play"],
 		["Collection & Decks", "primary", "collection"],
 		["Card Packs" + (" (%d to open)" % packs if packs > 0 else ""), "primary", "shop"],
-		["Printers & Upgrades", "primary", "workshop"],
+		["Blueprints", "primary", "blueprints"],
+		["Workshop: Printers & Mods", "primary", "workshop"],
 	]
 	var bw := pw - 60.0
-	var y := py + 136.0
+	var y := py + 128.0
 	for it in items:
-		var b := UI.button(it[0], it[1], Vector2(bw, 62), 26)
+		var b := UI.button(it[0], it[1], Vector2(bw, 56), 25)
 		b.pressed.connect(app.go.bind(it[2]))
 		UI.place(self, b, Vector2(px + 30, y))
-		y += 74.0
+		y += 66.0
 	var third := (bw - 16.0) / 3.0
 	var how := UI.button("How to Play", "plain" if bool(Profile.data["tutorial_done"]) else "go", Vector2(third + 24, 50), 16)
 	how.pressed.connect(_open_help)
@@ -49,18 +50,17 @@ func build() -> void:
 	var prog := Profile.collection_progress()
 	var beaten: int = (Profile.data["rivals_beaten"] as Array).size()
 	var lines := [
-		["coin", UI.GOLD, "%d Forge Coins" % Profile.coins()],
-		["burst", UI.CYAN, "Maker Rank %d" % Profile.rank_level()],
+		["coin", UI.GOLD, "%d Forge Coins   -   Maker Rank %d" % [Profile.coins(), Profile.rank_level()]],
 		["pack", UI.CYAN, "%d of %d cards collected" % [prog.x, prog.y]],
 		["star", UI.AMBER, "%d of %d rivals beaten" % [beaten, GameData.RIVALS.size()]],
 		["shield", UI.GOOD, "%d wins, %d losses" % [int(Profile.data["stats"]["wins"]), int(Profile.data["stats"]["losses"])]],
 	]
-	var ly := y + 74.0
+	var ly := y + 68.0
 	for l in lines:
 		var ic := IconView.make(l[0], 24, l[1])
 		UI.place(self, ic, Vector2(px + 44, ly + 2))
 		UI.place(self, UI.label(l[2], 19, UI.CREAM, false), Vector2(px + 80, ly), Vector2(pw - 100, 28))
-		ly += 31.0
+		ly += 30.0
 
 	# The active deck's printer, standing on the bench.
 	var d := Profile.active_deck()

@@ -20,7 +20,8 @@ var is_guest := false
 
 
 static func player_config(deck: Dictionary) -> Dictionary:
-	return {"printer": deck["printer"], "deck": (deck["cards"] as Array).duplicate(), "mods": Profile.battle_mods(deck["printer"])}
+	return {"printer": deck["printer"], "deck": (deck["cards"] as Array).duplicate(), "mods": Profile.battle_mods(deck["printer"]),
+		"builds": Profile.builds_for(deck["cards"])}
 
 
 static func vs_rival(deck: Dictionary, rival: Dictionary) -> BattleSession:
@@ -30,7 +31,9 @@ static func vs_rival(deck: Dictionary, rival: Dictionary) -> BattleSession:
 	s.ai_level = int(rival["level"])
 	s.arena = rival["arena"]
 	s.names = ["You", rival["name"]]
-	s._start(player_config(deck), {"printer": rival["printer"], "deck": GameData.expand(rival["deck"]), "hp_bonus": int(rival["hp_bonus"])})
+	var cards: Array = GameData.expand(rival["deck"])
+	s._start(player_config(deck), {"printer": rival["printer"], "deck": cards, "hp_bonus": int(rival["hp_bonus"]),
+		"builds": GameData.uniform_builds(cards, int(rival.get("tier", 1)))})
 	return s
 
 
@@ -116,7 +119,8 @@ static func guest_config(info: Dictionary) -> Dictionary:
 	# A guest only says which mods it has; the host cuts that down to what a
 	# Printer can legally carry.
 	var mods: Dictionary = GameData.clean_mods(printer, info.get("mods", {}) if info.get("mods", {}) is Dictionary else {})
-	return {"printer": printer, "deck": deck, "mods": mods}
+	var builds: Dictionary = GameData.clean_builds(deck, info.get("builds", {}) if info.get("builds", {}) is Dictionary else {})
+	return {"printer": printer, "deck": deck, "mods": mods, "builds": builds}
 
 
 func _start(cfg0: Dictionary, cfg1: Dictionary) -> void:

@@ -5,6 +5,7 @@ extends Control
 ## The node's origin is the spot on the bed the print stands on.
 
 var card_id := ""
+var build: Dictionary = {}
 var cost := 1
 var paid := 0
 ## 0..1, how much of the print is drawn right now.
@@ -24,9 +25,10 @@ const CARD_SIZE := Vector2(CardView.W, CardView.H) * CARD_SCALE
 
 
 ## `base` is the Printer's own scale, so the print fits its bed.
-static func make(id: String, is_mirrored: bool, base: float) -> JobView:
+static func make(id: String, is_mirrored: bool, base: float, card_build: Dictionary = {}) -> JobView:
 	var v := JobView.new()
 	v.card_id = id
+	v.build = card_build
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v._fig_scale = 0.56 * base
 	v._build(is_mirrored, base)
@@ -53,7 +55,7 @@ func _build(mirrored: bool, base: float) -> void:
 	add_child(_figure)
 	if def["type"] == "creature":
 		var unit := {"uid": -1, "id": card_id, "seat": 0, "atk": int(def["atk"]), "hp": int(def["hp"]), "max_hp": int(def["hp"]),
-			"kw": [], "fresh": true, "attacks": 0, "jam": 0, "gear": []}
+			"kw": [], "fresh": true, "attacks": 0, "jam": 0, "gear": [], "paint": str(build.get("paint", "original"))}
 		_unit = BoardUnit.make(unit, mirrored)
 		_unit.position = -BoardUnit.PLATE
 		_unit.set_bare(true)
@@ -62,7 +64,7 @@ func _build(mirrored: bool, base: float) -> void:
 	else:
 		# Tools and armor print as the card itself: a faint outline of the whole
 		# thing, filled in from the bottom.
-		var ghost := CardView.make(card_id, CARD_SCALE)
+		var ghost := CardView.make(card_id, CARD_SCALE, build)
 		ghost.position = Vector2(-CARD_SIZE.x * 0.5, -CARD_SIZE.y)
 		ghost.modulate = Color(0.55, 0.75, 1.0, 0.3)
 		_figure.add_child(ghost)
@@ -70,7 +72,7 @@ func _build(mirrored: bool, base: float) -> void:
 		_clip.clip_contents = true
 		_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_figure.add_child(_clip)
-		_card = CardView.make(card_id, CARD_SCALE)
+		_card = CardView.make(card_id, CARD_SCALE, build)
 		_clip.add_child(_card)
 
 	var chip_size := Vector2(64, 22) * base

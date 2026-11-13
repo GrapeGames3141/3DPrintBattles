@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_limits()
 	_printing()
 	_mods()
+	_blueprints()
 	_progression()
 	_network_view()
 	_ai_games()
@@ -632,6 +633,130 @@ func _progression() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
 	pr.free()
 	pm.free()
+
+
+func _blueprints() -> void:
+	print("blueprints")
+	var base := GameData.card("cinderpaw")
+	var mk2 := GameData.built("cinderpaw", {"tier": 2})
+	var mk3 := GameData.built("cinderpaw", {"tier": 3})
+	ok(int(mk2["atk"]) == int(base["atk"]) + 1 and int(mk2["hp"]) == int(base["hp"]), "Mk II creature: +1 Attack")
+	ok(int(mk3["atk"]) == int(base["atk"]) + 1 and int(mk3["hp"]) == int(base["hp"]) + 1, "Mk III creature: +1 Health too")
+	ok(GameData.card("cinderpaw")["atk"] == 3, "the catalog card itself never changes")
+	ok(GameData.built("cinderpaw", {}) == base and GameData.built("cinderpaw", {"tier": 1, "mod": "infill"}) == base, "Mk I is the plain card and takes no mod")
+	ok(GameData.built("heat_gun", {"tier": 2})["text"] == "Deal 3 damage.", "a Mk II Heat Gun deals 3 and says so")
+	ok(int(GameData.built("heat_gun", {"tier": 2})["effects"][0]["n"]) == 3 and int(GameData.card("heat_gun")["effects"][0]["n"]) == 2, "the numbers change in the effect too")
+	ok(GameData.built("test_print", {"tier": 2})["text"] == "Print three 1/1 Test Bots.", "word numbers are rewritten (two -> three)")
+	ok(int(GameData.built("calipers", {"tier": 2})["cost"]) == 2, "a card with no number gets cheaper instead")
+	ok(int(GameData.built("heat_gun", {"tier": 3})["cost"]) == 1 and int(GameData.built("printed_wrench", {"tier": 3})["cost"]) == 2, "Mk III: -1 cost, never below 1")
+	ok(GameData.built("helm", {"tier": 2})["text"] == "Give a friendly print +2/+2.", "equipment strengthens its first number")
+	ok(int(GameData.built("shadow_cloak", {"tier": 2})["buff"]["atk"]) == 2, "a +1 Attack Cloak becomes +2")
+
+	# Mods
+	var sharp := GameData.built("mossmunk", {"tier": 2, "mod": "sharp_nozzle"})
+	ok(int(sharp["atk"]) == 4 and int(sharp["hp"]) == 2, "Sharp Nozzle: +2/-1 on top of Mk II (1+1+2, 3-1)")
+	ok((GameData.built("mossmunk", {"tier": 2, "mod": "rapid_layers"})["kw"] as Array).has("rush"), "Rapid Layers gives Rush")
+	ok(not GameData.mod_fits("supports", "mossmunk") and GameData.mod_fits("supports", "voltwig"), "Support Material does not fit a card that already has Guard")
+	ok(not GameData.mod_fits("overcharge", "calipers") and GameData.mod_fits("overcharge", "heat_gun"), "Overcharge needs an effect with a number")
+	ok(not GameData.mod_fits("draft_mode", "voltwig") and GameData.mod_fits("draft_mode", "stoneback"), "Draft Mode needs a cost of 2 or more")
+	ok(not GameData.mod_fits("sharp_nozzle", "heat_gun") and not GameData.mod_fits("overcharge", "voltwig"), "creature mods fit creatures, tool mods fit tools")
+	var oc := GameData.built("heat_gun", {"tier": 2, "mod": "overcharge"})
+	ok(int(oc["cost"]) == 2 and oc["text"] == "Deal 4 damage.", "Overcharge: Mk II (3 damage) +1 and costs 1 more")
+	var qd := GameData.built("heat_gun", {"tier": 2, "mod": "quick_draw"})
+	ok(qd["text"].contains("draw a card") and (qd["effects"] as Array).size() == 2 and (GameData.card("heat_gun")["effects"] as Array).size() == 1, "Quick Draw adds a draw and leaves the catalog alone")
+	var rc := GameData.built("aquafin", {"tier": 2, "mod": "recycler"})
+	ok((rc["shatter"] as Array).size() == 1 and not GameData.card("aquafin").has("shatter"), "Recycler adds a Shatter effect")
+
+	# Every card at every tier with every fitting mod stays sane.
+	var combos := 0
+	for c in GameData.collectible():
+		for tier in [1, 2, 3]:
+			var mods: Array = [""]
+			for m in GameData.CARD_MODS:
+				if GameData.mod_fits(m["id"], c["id"]):
+					mods.append(m["id"])
+			for mod_id in mods:
+				var d := GameData.built(c["id"], {"tier": tier, "mod": mod_id})
+				combos += 1
+				ok(int(d["cost"]) >= 0 and str(d["text"]).length() >= str(GameData.card(c["id"])["text"]).length() - 3, "%s Mk%d %s is well formed" % [c["id"], tier, mod_id])
+				if c["type"] == "creature":
+					ok(int(d["atk"]) >= 0 and int(d["hp"]) >= 1, "%s Mk%d %s has sane stats" % [c["id"], tier, mod_id])
+	print("  (%d card/tier/mod combinations checked)" % combos)
+
+	# The engine plays the Blueprint.
+	var build := {"mossmunk": {"tier": 3, "mod": "sharp_nozzle", "paint": "gold"}, "heat_gun": {"tier": 2, "mod": "", "paint": "original"}}
+	var st := BattleEngine.new_game({"seed": 8, "first": 0, "players": [
+		{"printer": "delta_rig", "deck": GameData.expand(GameData.STARTER_DECK), "builds": build},
+		{"printer": "tide_press", "deck": GameData.expand(GameData.STARTER_DECK), "builds": {"mossmunk": {"tier": 3, "mod": "nonsense"}, "ghost_card": {"tier": 3}}}]})
+	ok(st["players"][0]["builds"].size() == 2 and st["players"][1]["builds"].size() == 1 and str(st["players"][1]["builds"]["mossmunk"]["mod"]) == "", "builds are cleaned when a battle starts")
+	var u := BattleEngine._summon(st, 0, "mossmunk", 99, [], true)
+	ok(int(u["atk"]) == 4 and int(u["hp"]) == 3 and int(u["mk"]) == 3 and str(u["paint"]) == "gold", "a printed Mossmunk has its Mk III Sharp Nozzle stats and paint")
+	var u2 := BattleEngine._summon(st, 1, "mossmunk", 99, [], true)
+	ok(int(u2["atk"]) == 2 and int(u2["hp"]) == 4, "the opponent's own Blueprint is applied to theirs")
+	st["players"][0]["flow"] = 3
+	st["players"][0]["hand"].append({"uid": 800, "id": "heat_gun"})
+	var foe := BattleEngine._summon(st, 1, "ironmaw", 99, [], false)
+	act(st, 0, {"t": "play", "hand": 800, "target": "u%d" % int(foe["uid"])})
+	ok(int(foe["hp"]) == 7 - 3 and int(st["players"][0]["flow"]) == 2, "a Mk II Heat Gun deals 3 for 1 Filament")
+
+	# A tier raises the cost of nothing, but a mod that costs more can make a card a long print.
+	var st2 := game([], [], "ember_forge", "tide_press")
+	st2["players"][0]["builds"] = {"ironmaw": {"tier": 2, "mod": "infill", "paint": "original"}}
+	var h := give(st2, 0, "ironmaw")
+	ok(BattleEngine.def_of(st2, 0, "ironmaw")["cost"] == 6, "Extra Infill makes a 5-cost print cost 6")
+	st2["players"][0]["flow"] = 5
+	ok(BattleEngine.is_long(st2, 0, h), "and it no longer fits in one turn at speed 5")
+
+	# Network: a guest's builds are cleaned by the host.
+	var cleaned := GameData.clean_builds(GameData.expand(GameData.STARTER_DECK),
+		{"mossmunk": {"tier": 9, "mod": "sharp_nozzle", "paint": "none"}, "dragon": {"tier": 3}, "voltwig": "junk"})
+	ok(cleaned == {"mossmunk": {"tier": 3, "mod": "sharp_nozzle", "paint": "original"}}, "a guest's builds are clamped; unknown cards, bad paint and junk are dropped")
+
+	# Profile: the Blueprint shop.
+	var pr := fresh_profile()
+	ok(pr.build_of("mossmunk")["tier"] == 1 and pr.spares("mossmunk") == 0, "everything starts at Mk I")
+	pr.data["coins"] = 100000
+	pr.data["xp"] = 0
+	ok(pr.tier_error("mossmunk") != "", "Mk II needs rank and a spare copy")
+	pr.data["xp"] = 1000
+	ok(pr.tier_error("mossmunk").begins_with("Needs 1 spare"), "...and the spare copy is what is missing")
+	var r1: Dictionary = pr.add_card("mossmunk")
+	ok(not bool(r1["new"]) and int(r1["recycled"]) > 0 and bool(r1["spare"]) and pr.spares("mossmunk") == 1, "a duplicate beyond the deck limit is kept as a spare (and pays a little)")
+	var c1: int = pr.coins()
+	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 2, "Mk II")
+	ok(c1 - pr.coins() == GameData.tier_coins("mossmunk", 2) and pr.spares("mossmunk") == 0, "it cost coins and the spare")
+	ok(pr.set_card_mod("mossmunk", "sharp_nozzle") != "", "a mod must be unlocked first")
+	ok(pr.buy_card_mod("sharp_nozzle") == "" and pr.set_card_mod("mossmunk", "sharp_nozzle") == "", "unlock it, then fit it")
+	ok(pr.set_card_mod("mossmunk", "heat_gun") != "" and pr.set_card_mod("mossmunk", "overcharge") != "", "only a known mod that fits (not a tool mod on a creature)")
+	ok(pr.set_card_mod("voltwig", "sharp_nozzle") == "Mods fit from Mk II.", "a Mk I card has no mod slot yet")
+	ok(pr.set_paint("mossmunk", "gold") != "", "an unbought paint cannot be applied")
+	pr.data["xp"] = 100000
+	ok(pr.buy_paint("gold") == "" and pr.set_paint("mossmunk", "gold") == "", "a bought paint can be applied")
+	ok(pr.builds_for(["mossmunk", "mossmunk", "voltwig"]) == {"mossmunk": {"tier": 2, "mod": "sharp_nozzle", "paint": "gold"}}, "a battle takes the Blueprints of the cards in the deck")
+	ok(pr.upgrade_card("mossmunk") != "", "Mk III needs three spares")
+	for i in 3:
+		pr.add_card("mossmunk")
+	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 3 and pr.upgrade_card("mossmunk") != "", "Mk III, and that is the top")
+	ok(pr.craft_spare("mossmunk") == "" and pr.spares("mossmunk") == 1, "a spare can be printed for coins")
+	pr.set_card_mod("mossmunk", "")
+	ok(pr.build_of("mossmunk")["mod"] == "", "a mod comes off freely")
+	pr.free()
+
+	# Whole matches with every kind of Blueprint go through the AI without an illegal move.
+	var wild: Dictionary = {}
+	for c in GameData.STARTER_DECK:
+		var fitting: Array = []
+		for m in GameData.CARD_MODS:
+			if GameData.mod_fits(m["id"], c):
+				fitting.append(m["id"])
+		wild[c] = {"tier": 3, "mod": fitting[0] if not fitting.is_empty() else "", "paint": "gold"}
+	var cfg: Dictionary = {"printer": "ember_forge", "deck": GameData.expand(GameData.STARTER_DECK), "builds": wild}
+	var bad := 0
+	for i in 6:
+		var r := play_out(300 + i, cfg, {"printer": "tide_press", "deck": GameData.expand(GameData.STARTER_DECK)}, 1, 1)
+		if int(r["winner"]) == -3:
+			bad += 1
+	ok(bad == 0, "matches with fully built cards finish")
 
 
 func _network_view() -> void:

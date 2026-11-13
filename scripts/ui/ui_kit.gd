@@ -16,8 +16,32 @@ const BAD := Color("ff6464")
 const GOLD := Color("ffd24a")
 
 static var _tex: Dictionary = {}
+static var _paints: Dictionary = {}
 static var _bold: FontFile
 static var _theme: Theme
+
+
+## A material that recolours art with a paint (null for the original colours).
+static func paint_material(paint_id: String) -> ShaderMaterial:
+	var p := GameData.paint(paint_id)
+	if p["id"] == "original":
+		return null
+	if not _paints.has(paint_id):
+		var m := ShaderMaterial.new()
+		m.shader = load("res://assets/shaders/paint.gdshader")
+		m.set_shader_parameter("hue_shift", float(p["hue"]) / 360.0)
+		m.set_shader_parameter("sat_mul", float(p["sat"]))
+		m.set_shader_parameter("val_mul", float(p["val"]))
+		_paints[paint_id] = m
+	return _paints[paint_id]
+
+
+## Applies a paint to a BoardUnit-style print_reveal material.
+static func paint_params(mat: ShaderMaterial, paint_id: String) -> void:
+	var p := GameData.paint(paint_id)
+	mat.set_shader_parameter("hue_shift", float(p["hue"]) / 360.0)
+	mat.set_shader_parameter("sat_mul", float(p["sat"]))
+	mat.set_shader_parameter("val_mul", float(p["val"]))
 
 
 static func bold() -> FontFile:
