@@ -23,4 +23,8 @@ const LIST := [
 	{"id": "quad_nozzle", "name": "Quad Nozzle", "type": "upgrade", "cost": 5, "rarity": "epic", "text": "Give a friendly print +3/+3 and Twin Nozzle, Scorch.", "target": "friendly_print", "buff": {"atk": 3, "hp": 3, "kw": ["twin", "scorch"]}},
 	{"id": "titan_exosuit", "name": "Titan Exosuit", "type": "upgrade", "cost": 6, "rarity": "legendary", "text": "Give a friendly print +5/+6 and Guard, Brim.", "target": "friendly_print", "buff": {"atk": 5, "hp": 6, "kw": ["guard", "brim"]}},
 	{"id": "omega_core", "name": "Omega Core", "type": "upgrade", "cost": 5, "rarity": "legendary", "text": "Give a friendly print +4/+4 and Twin Nozzle, Filament Thief, Scorch.", "target": "friendly_print", "buff": {"atk": 4, "hp": 4, "kw": ["twin", "thief", "scorch"]}},
+	{"id": "bowden_whip", "name": "Bowden Whip", "type": "upgrade", "cost": 2, "rarity": "uncommon", "text": "Give a friendly print +2/+1 and Filament Thief.", "target": "friendly_print", "buff": {"atk": 2, "hp": 1, "kw": ["thief"]}},
+	{"id": "glass_bed_shield", "name": "Glass Bed Shield", "type": "upgrade", "cost": 3, "rarity": "uncommon", "text": "Give a friendly print +1/+5 and Guard.", "target": "friendly_print", "buff": {"atk": 1, "hp": 5, "kw": ["guard"]}},
+	{"id": "lead_screw_lance", "name": "Lead Screw Lance", "type": "upgrade", "cost": 4, "rarity": "rare", "text": "Give a friendly print +4/+2 and Rush.", "target": "friendly_print", "buff": {"atk": 4, "hp": 2, "kw": ["rush"]}},
+	{"id": "hotend_crown", "name": "Hotend Crown", "type": "upgrade", "cost": 5, "rarity": "epic", "text": "Give a friendly print +3/+4 and Scorch, Brim.", "target": "friendly_print", "buff": {"atk": 3, "hp": 4, "kw": ["scorch", "brim"]}},
 ]

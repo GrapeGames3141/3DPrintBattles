@@ -156,4 +156,17 @@ C("oracledrake", "Oracle Drake", A, 6, 5, 5, "epic", [], ability(steal(2, 2)), "
 C("jellycrown", "Jellycrown", A, 7, 5, 6, "legendary", [], ability(draw(2), buff(1, 1, "others")), "src:jellycrown")
 C("voidwyrm", "Voidwyrm", A, 9, 8, 8, "legendary", [], ability(destroy()), "worldcoil:280:carbon")
 
+# ------------------------------------- Modelled prints (new designs, not recolours)
+# Modelled from primitives by tools/render_art4.gd; every one is a print gone
+# wonderfully wrong or a piece of printer come to life.
+C("clogglin", "Clog Goblin", F, 2, 2, 2, "common", [], ability(heat(1, "print")), "src:clog_goblin")
+C("trihydra", "Tri-Head Hydra", F, 8, 6, 7, "legendary", ["twin", "scorch"], None, "src:tri_head_hydra")
+C("benchyboss", "Benchy Boss", W, 5, 4, 6, "rare", [], ability(heal(3, "printer")), "src:benchy_boss")
+C("coilcobra", "Coil Cobra", L, 3, 3, 2, "rare", ["rush"], ability(dmg(1, "print")), "src:coil_cobra")
+C("spaghettimess", "Spaghetti Mess", N, 3, 2, 3, "uncommon", [], ability(jam()), "src:spaghetti_mess")
+C("cubecrab", "Cube Crab", I, 2, 2, 3, "common", ["guard"], None, "src:cube_crab")
+C("steppergolem", "Stepper Golem", S, 5, 4, 5, "uncommon", ["guard"], ability(sh_armor(2)), "src:stepper_golem")
+C("gantrymantis", "Gantry Mantis", D, 4, 4, 3, "uncommon", ["twin"], None, "src:gantry_mantis")
+C("layershifter", "Layer Shifter", A, 4, 3, 3, "rare", [], ability(draw(1)), "src:layer_shifter")
+
 assert len({c["id"] for c in CREATURES}) == len(CREATURES), "duplicate creature id"

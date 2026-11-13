@@ -30,4 +30,10 @@ const LIST := [
 	{"id": "print_farm", "name": "Print Farm", "type": "tool", "cost": 7, "rarity": "legendary", "text": "Print 3 Test Bots. Your Printer gains 4 Armor.", "effects": [{"op": "summon", "n": 3, "card": "test_bot"}, {"op": "armor", "n": 4}]},
 	{"id": "mega_spool", "name": "Mega Spool", "type": "tool", "cost": 4, "rarity": "legendary", "text": "Add 20 Filament to your Spool. +2 Print Speed this turn.", "effects": [{"op": "spool", "n": 20}, {"op": "filament", "n": 2}]},
 	{"id": "master_slicer", "name": "Master Slicer", "type": "tool", "cost": 6, "rarity": "legendary", "text": "Draw 2 cards. Add 8 Filament to your Spool. +3 Print Speed this turn.", "effects": [{"op": "draw", "n": 2}, {"op": "spool", "n": 8}, {"op": "filament", "n": 3}]},
+	{"id": "fine_tweezers", "name": "Fine Tweezers", "type": "tool", "cost": 1, "rarity": "common", "text": "Deal 2 damage to an enemy print.", "target": "enemy_print", "effects": [{"op": "damage", "n": 2, "to": "target"}]},
+	{"id": "cutting_mat", "name": "Cutting Mat", "type": "tool", "cost": 1, "rarity": "common", "text": "Your Printer gains 3 Armor.", "effects": [{"op": "armor", "n": 3}]},
+	{"id": "magnifier_lamp", "name": "Magnifier Lamp", "type": "tool", "cost": 2, "rarity": "uncommon", "text": "Draw a card. Repair your Printer by 2.", "effects": [{"op": "draw", "n": 1}, {"op": "heal", "n": 2, "to": "own_printer"}]},
+	{"id": "fire_extinguisher", "name": "Fire Extinguisher", "type": "tool", "cost": 3, "rarity": "rare", "text": "Jam all enemy prints.", "effects": [{"op": "jam", "to": "enemy_prints"}]},
+	{"id": "dry_box", "name": "Dry Box", "type": "tool", "cost": 3, "rarity": "epic", "text": "Add 10 Filament to your Spool. Draw a card.", "effects": [{"op": "spool", "n": 10}, {"op": "draw", "n": 1}]},
+	{"id": "resin_printer", "name": "Resin Printer", "type": "tool", "cost": 6, "rarity": "legendary", "text": "Deal 3 damage to all enemy prints. Repair your Printer by 4.", "effects": [{"op": "damage", "n": 3, "to": "enemy_prints"}, {"op": "heal", "n": 4, "to": "own_printer"}]},
 ]

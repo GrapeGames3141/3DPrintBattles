@@ -51,6 +51,14 @@ T("print_farm", "Print Farm", 7, "legendary", summon(3), armor(4))
 T("mega_spool", "Mega Spool", 4, "legendary", spool(20), speed(2))
 T("master_slicer", "Master Slicer", 6, "legendary", draw(2), spool(8), speed(3))
 
+# ------------------------------------------------------- newest tools
+T("fine_tweezers", "Fine Tweezers", 1, "common", dmg(2, "print"))
+T("cutting_mat", "Cutting Mat", 1, "common", armor(3))
+T("magnifier_lamp", "Magnifier Lamp", 2, "uncommon", draw(1), heal(2, "printer"))
+T("fire_extinguisher", "Fire Extinguisher", 3, "rare", jam("all"))
+T("dry_box", "Dry Box", 3, "epic", spool(10), draw(1))
+T("resin_printer", "Resin Printer", 6, "legendary", dmg(3, "all"), heal(4, "printer"))
+
 # -------------------------------------------------------------- equipment
 U("rubber_feet", "Rubber Feet", 1, "common", 0, 3)
 U("mini_fan", "Mini Fan", 1, "common", 2, 0)
@@ -76,5 +84,11 @@ U("quad_nozzle", "Quad Nozzle", 5, "epic", 3, 3, ["twin", "scorch"])
 
 U("titan_exosuit", "Titan Exosuit", 6, "legendary", 5, 6, ["guard", "brim"])
 U("omega_core", "Omega Core", 5, "legendary", 4, 4, ["twin", "thief", "scorch"])
+
+# -------------------------------------------------- newest equipment
+U("bowden_whip", "Bowden Whip", 2, "uncommon", 2, 1, ["thief"])
+U("glass_bed_shield", "Glass Bed Shield", 3, "uncommon", 1, 5, ["guard"])
+U("lead_screw_lance", "Lead Screw Lance", 4, "rare", 4, 2, ["rush"])
+U("hotend_crown", "Hotend Crown", 5, "epic", 3, 4, ["scorch", "brim"])
 
 assert len({c["id"] for c in TOOLS + UPGRADES}) == len(TOOLS) + len(UPGRADES)
