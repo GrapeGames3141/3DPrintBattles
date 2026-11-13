@@ -200,9 +200,8 @@ func _build_all() -> void:
 	# screens show more bench around the edges instead of bars.
 	var spec := Arena.spec(P)
 	var margin: Vector2 = spec["margin"]
-	var bench := UI.image(spec["image"], Rect2(-margin, Vector2(W, H) + margin * 2.0), true)
+	var bench := UI.image(Arena.image(session.arena, P), Rect2(-margin, Vector2(W, H) + margin * 2.0), true)
 	bench.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	bench.modulate = Arena.TINTS.get(session.arena, Color.WHITE)
 	add_child(bench)
 	_board = Control.new()
 	_board.mouse_filter = Control.MOUSE_FILTER_IGNORE

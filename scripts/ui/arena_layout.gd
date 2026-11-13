@@ -15,7 +15,6 @@ const SPECS := {
 	"L": {
 		"stage": Vector2(1280, 720),
 		"margin": Vector2(320, 120),
-		"image": "res://assets/ui/arena/workbench_landscape.jpg",
 		"zone_foe": Rect2(250, 112, 720, 172),
 		"zone_me": Rect2(320, 312, 760, 186),
 		"mat_me": Rect2(4, 548, 292, 122),
@@ -28,7 +27,6 @@ const SPECS := {
 	"P": {
 		"stage": Vector2(720, 1280),
 		"margin": Vector2(120, 240),
-		"image": "res://assets/ui/arena/workbench_portrait.jpg",
 		"zone_foe": Rect2(20, 236, 640, 178),
 		"zone_me": Rect2(60, 446, 650, 190),
 		"mat_me": Rect2(0, 766, 222, 96),
@@ -40,15 +38,24 @@ const SPECS := {
 	},
 }
 
-## A slight colour cast per arena so campaign stops do not all look alike.
-const TINTS := {
-	"daily_arena": Color(1, 1, 1),
-	"first_layers": Color(1, 1, 1),
-	"element_bench": Color(0.9, 1.0, 1.08),
-	"reinforced_run": Color(1.08, 0.98, 0.88),
-	"masterwork_circuit": Color(0.94, 0.92, 1.12),
-	"primordial_proof": Color(1.12, 0.9, 0.9),
+## Each arena is drawn on one of six themed benches.
+const THEME_OF := {
+	"daily_arena": "bench", "first_layers": "bench", "hobby_shelf": "hobby", "element_bench": "lab",
+	"reinforced_run": "farm", "masterwork_circuit": "neon", "primordial_proof": "forge",
 }
+const THEMES := ["bench", "lab", "farm", "hobby", "neon", "forge"]
+
+
+static func theme(arena: String) -> String:
+	return THEME_OF.get(arena, "bench")
+
+
+## The picture for a theme (or an arena id) in the given orientation.
+static func image(name: String, portrait: bool) -> String:
+	var t: String = THEME_OF.get(name, name)
+	if not THEMES.has(t):
+		t = "bench"
+	return "res://assets/ui/arena/%s_%s.jpg" % [t, "portrait" if portrait else "landscape"]
 
 
 static func spec(portrait: bool) -> Dictionary:

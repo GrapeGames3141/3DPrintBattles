@@ -29,12 +29,15 @@ window or phone turns.
 |---|---|
 | **Battles** | 20-Health Printers, 20-card decks. Play prints, tools and upgrades; attack with prints; destroy the enemy Printer. A hand below 3 cards is topped up each turn. |
 | **Filament** | A Spool of 40 for the whole battle. The Printer lays down 3 a turn. A card that costs more goes on the Printer as a long print: it takes what is left of this turn, the rest on your next turns, and is deployed for free when finished. Both players can see it. A shattered print puts 1 Filament back on its owner's Spool. |
-| **Prints** | 24 creatures across 8 elements, with Guard, Rush, Brim, Siphon and Twin Nozzle keywords plus On Print and Shatter effects. |
-| **Tools** | 16 one-shot cards, each a real 3D-printing tool: Heat Gun, Calipers, Bed Scraper, Hex Keys, Emergency Stop and so on. |
-| **Upgrades** | 7 pieces of printed armor that bolt onto a print for the rest of the battle. |
-| **Printers** | 6 heroes, each with its own Power (2 Filament, once a turn). Prints that share their Printer's element get +1 Health. |
-| **Card packs** | Blueprint Pack (100 coins) and Golden Spool Pack (250): foil pouches you rip open with a swipe, then flick through the cards one at a time. Spare copies are recycled into coins. Any card can also be printed directly for coins. |
-| **Workshop upgrades** | Reinforced Frame, Heated Bed, Bigger Spool and Coin Sorter: permanent bonuses bought with coins. |
+| **Prints** | 40 creatures across 8 elements, with Guard, Rush, Brim, Siphon and Twin Nozzle keywords plus On Print and Shatter effects. |
+| **Tools** | 26 one-shot cards, each a real 3D-printing tool: Heat Gun, Calipers, Bed Scraper, Hot Glue Gun, Filament Dryer, Spaghetti Failure and so on. |
+| **Armor** | 13 pieces of printed equipment (helms, wings, a jet pack, a crown) that bolt onto a print for the rest of the battle. |
+| **Printers** | 12 heroes, each with its own Power (Filament cost, once a turn) and 2-4 mod slots. Prints that share their Printer's element get +1 Health. Bought with coins once your Maker Rank is high enough. |
+| **Card packs** | Blueprint Pack (150 coins) and Golden Spool Pack (400): foil pouches you rip open with a swipe, then flick through the cards one at a time. Spare copies pay a little and are kept for Blueprints. Any card can also be printed directly for coins. |
+| **Maker Rank** | Battles give XP (rank 1 to 30). Rank gates the Printers, Printer mods, Blueprint tiers, card mods and paints you can buy, and winning pays little, so there is a lot to play for. |
+| **Printer mods** | 12 mods (Stepper Motors, Bigger Spool, Enclosure, Smart Slicer, All-metal Hot End and more), bought in levels and bolted into the limited slots on each Printer. |
+| **Blueprints** | Every card you own can go Mk I, II, III (coins, a spare copy and rank), carry one of 13 mods from Mk II (each gives something and takes something) and be painted. Every copy you print has it, in every mode including PvP. |
+| **Arenas** | Six themed benches (workshop, maker lab, print farm, hobby shop, neon night shift, forge), each with its own look and props, in landscape and portrait. |
 | **Tutorial** | A guided first battle with on-screen tips that follow what you do. Replay it from the Battle menu or How to Play. |
 | **Vs computer** | A 10-rival campaign with first-win pack rewards, and Quick Battle at Apprentice, Craftsman or Master. |
 | **Vs a friend** | Pass & Play on one screen, or Host / Join over the local network (port 24842; over the internet the host must forward that port). |
@@ -101,10 +104,14 @@ New art in this version was made with open-source tools only:
 - **Tool cards** (`assets/tools/`): modelled from primitives and rendered in
   Godot by `tools/render_art.gd`, using a printed-plastic shader that draws the
   layer lines (`assets/shaders/printed_plastic.gdshader`).
-- **The battle arena** (`assets/ui/arena/`): the workbench, its glowing lanes
-  and the tools lying on it are rendered the same way by `tools/render_arena.gd`.
+- **More cards**: ten more tools and six more pieces of equipment are modelled
+  and rendered by `tools/render_art2.gd`; sixteen more creatures are recoloured
+  from existing sprite sheets by `tools/make_creature_variants.py`.
+- **The battle arenas** (`assets/ui/arena/`): six themed benches, their glowing
+  lanes and the tools lying on them, rendered by `tools/render_arena.gd`.
 - **Printer colourways** (`assets/printers/`): recoloured from the base printer
-  by `tools/make_printer_variants.py` (Pillow + numpy).
+  by `tools/make_printer_variants.py` (Pillow + numpy). The six newest Printers
+  still share that machine's shape and are waiting for models of their own.
 - **The print-in animation**: a shader (`assets/shaders/print_reveal.gdshader`),
   not extra frames.
 - **Card packs**: the foil pouch, its creases, its gloss and the tear are all

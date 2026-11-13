@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cicv5bjd67krq"
-path="res://.godot/imported/workbench_portrait.jpg-0a1037d5791e94f42dda66a9a0aa854d.ctex"
+uid="uid://ckbdh4ir0coqr"
+path="res://.godot/imported/thornfox_raw_print.png-aadb26e90bcb04611efa86312d704f51.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/arena/workbench_portrait.jpg"
-dest_files=["res://.godot/imported/workbench_portrait.jpg-0a1037d5791e94f42dda66a9a0aa854d.ctex"]
+source_file="res://assets/creatures/2d/raw/thornfox_raw_print.png"
+dest_files=["res://.godot/imported/thornfox_raw_print.png-aadb26e90bcb04611efa86312d704f51.ctex"]
 
 [params]
 

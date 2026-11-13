@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://connn18uigdhe"
-path="res://.godot/imported/workbench_landscape.jpg-4c96700697093ace882686835475ad93.ctex"
+uid="uid://r7e7j2bxfk3g"
+path="res://.godot/imported/glue_gun.png-1793d218bc1ccb39d648160c8d4b3bb7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/arena/workbench_landscape.jpg"
-dest_files=["res://.godot/imported/workbench_landscape.jpg-4c96700697093ace882686835475ad93.ctex"]
+source_file="res://assets/tools/glue_gun.png"
+dest_files=["res://.godot/imported/glue_gun.png-1793d218bc1ccb39d648160c8d4b3bb7.ctex"]
 
 [params]
 

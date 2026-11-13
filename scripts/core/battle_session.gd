@@ -47,7 +47,7 @@ static func quick(deck: Dictionary, level: int) -> BattleSession:
 		if int(r["level"]) <= level and int(r["level"]) >= level - 1:
 			pool.append(r)
 	var r: Dictionary = pool[randi() % pool.size()]
-	s.arena = "daily_arena"
+	s.arena = GameData.ARENAS[randi() % GameData.ARENAS.size()]
 	s.names = ["You", "%s Sparring Rig" % GameData.AI_LEVELS[level]]
 	s._start(player_config(deck), {"printer": r["printer"], "deck": GameData.expand(r["deck"])})
 	return s

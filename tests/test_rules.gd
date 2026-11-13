@@ -87,7 +87,19 @@ func _catalog() -> void:
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 47, "47 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 79, "79 collectible cards (got %d)" % GameData.collectible().size())
+	for c in GameData.collectible():
+		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
+		if c["type"] == "creature":
+			ok(ResourceLoader.exists(GameData.RAW % c["id"]) or FileAccess.file_exists(GameData.RAW % c["id"]), "%s has a raw print" % c["id"])
+	var by_rarity: Dictionary = {}
+	var by_type: Dictionary = {}
+	for c in GameData.collectible():
+		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
+		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
+	ok(by_type == {"creature": 40, "tool": 26, "upgrade": 13}, "40 prints, 26 tools, 13 pieces of armor (%s)" % str(by_type))
+	for r in GameData.RARITY_ORDER:
+		ok(int(by_rarity.get(r, 0)) >= 6, "at least 6 %s cards (%d)" % [r, int(by_rarity.get(r, 0))])
 	ok(GameData.deck_error(GameData.expand(GameData.STARTER_DECK)) == "", "starter deck is legal")
 	for r in GameData.RIVALS:
 		var err := GameData.deck_error(GameData.expand(r["deck"]))
