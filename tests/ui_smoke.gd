@@ -81,10 +81,19 @@ func run() -> void:
 	for starter in GameData.STARTER_PRINTER:
 		profile.data = profile.fresh()
 		profile.choose_starter(starter)
+		for slot in profile.DECK_SLOTS:
+			ok(str(profile.deck(slot)["printer"]) == str(GameData.STARTER_PRINTER[starter]), "deck %d starts on the %s you picked" % [slot + 1, starter])
 		var tut = Session.tutorial()
 		var want_printer: String = GameData.STARTER_PRINTER[starter]
 		ok(str(tut.state["players"][0]["printer"]) == want_printer, "tutorial uses the %s you picked (%s)" % [want_printer, starter])
 		ok(str(tut.state["players"][1]["printer"]) != want_printer, "tutorial opponent has a different Printer than %s" % want_printer)
+	# A save stuck on an empty deck switches back to the one that can battle.
+	profile.data = profile.fresh()
+	profile.choose_starter("voltwig")
+	profile.set_active_deck(1)
+	profile.ensure_battle_deck()
+	ok(int(profile.data["active_deck"]) == 0, "an empty active deck falls back to the playable one")
+	ok(profile.deck_error(0) == "", "the starter deck is playable")
 	profile.data = profile.fresh()
 	profile.choose_starter("cinderpaw")
 	app = (load("res://scenes/main.tscn") as PackedScene).instantiate()

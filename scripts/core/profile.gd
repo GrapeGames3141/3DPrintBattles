@@ -347,6 +347,9 @@ func choose_starter(creature_id: String) -> void:
 	for id in GameData.STARTER_EXTRA:
 		data["cards"][id] = mini(owned_count(id) + int(GameData.STARTER_EXTRA[id]), GameData.max_copies(id))
 	data["decks"][0] = {"cards": GameData.expand(GameData.STARTER_DECK), "printer": printer_id}
+	# Every deck starts on the Printer you picked; the others are not yours yet.
+	for i in range(1, data["decks"].size()):
+		data["decks"][i]["printer"] = printer_id
 	data["active_deck"] = 0
 	save()
 
@@ -354,7 +357,12 @@ func choose_starter(creature_id: String) -> void:
 # ------------------------------------------------------------------- decks
 
 func deck(slot: int) -> Dictionary:
-	return data["decks"][clampi(slot, 0, DECK_SLOTS - 1)]
+	var d: Dictionary = data["decks"][clampi(slot, 0, DECK_SLOTS - 1)]
+	# A deck can only sit on a Printer you own.
+	var owned: Array = data["printers"]
+	if not owned.is_empty() and not owned.has(str(d.get("printer", ""))):
+		d["printer"] = owned[0]
+	return d
 
 
 func active_deck() -> Dictionary:
@@ -364,6 +372,18 @@ func active_deck() -> Dictionary:
 func set_active_deck(slot: int) -> void:
 	data["active_deck"] = clampi(slot, 0, DECK_SLOTS - 1)
 	save()
+
+
+## If the battle deck is not playable but another deck is, switch to that one.
+## (An older version let you pick an empty deck just by looking at it.)
+func ensure_battle_deck() -> void:
+	if deck_error(int(data["active_deck"])) == "":
+		return
+	for i in DECK_SLOTS:
+		if deck_error(i) == "":
+			data["active_deck"] = i
+			save()
+			return
 
 
 func deck_error(slot: int) -> String:

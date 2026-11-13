@@ -170,9 +170,22 @@ func _build_deck() -> void:
 	var err := Profile.deck_error(_slot)
 	var count := UI.label("%d / %d cards" % [list.size(), GameData.DECK_SIZE], 20, UI.GOOD if err == "" else UI.AMBER)
 	UI.place(_deck_panel, count, Vector2(x + 16, y + 144), Vector2(200, 26))
-	var hint := UI.label("Ready to battle" if err == "" else "Tap cards above to add them" if P else "Click cards on the left to add them", 13, UI.MUTED, false)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	UI.place(_deck_panel, hint, Vector2(x + w - 250, y + 148), Vector2(236, 22))
+	if err == "" and _slot != int(Profile.data["active_deck"]):
+		var use := UI.button("Use for battles", "go", Vector2(170, 30), 15)
+		use.tooltip_text = "Fight with this deck in every mode"
+		use.pressed.connect(func():
+			Profile.set_active_deck(_slot)
+			_refresh())
+		UI.place(_deck_panel, use, Vector2(x + w - 184, y + 142))
+	else:
+		var text := "Tap cards above to add them" if P else "Click cards on the left to add them"
+		var col := UI.MUTED
+		if err == "":
+			text = "Your battle deck"
+			col = UI.GOLD
+		var hint := UI.label(text, 14, col, false)
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		UI.place(_deck_panel, hint, Vector2(x + w - 250, y + 148), Vector2(236, 22))
 
 	var list_h := r.size.y - 176 - 62
 	var scroll := ScrollContainer.new()
@@ -237,8 +250,9 @@ func _build_deck() -> void:
 
 
 func _pick_slot(i: int) -> void:
+	# Looking at a deck is not choosing it: the battle deck changes only with
+	# the "Use for battles" button.
 	_slot = i
-	Profile.set_active_deck(i)
 	_refresh()
 
 

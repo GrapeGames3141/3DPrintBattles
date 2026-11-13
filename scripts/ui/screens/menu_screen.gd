@@ -6,6 +6,7 @@ var _popup_kind := ""
 
 
 func build() -> void:
+	Profile.ensure_battle_deck()
 	app.set_background("res://assets/ui/workshop/workshop_overview_%s_v4.png" % ("portrait" if P else "landscape"), 0.18)
 	_popup = null
 	var px := 60.0 if P else 40.0
