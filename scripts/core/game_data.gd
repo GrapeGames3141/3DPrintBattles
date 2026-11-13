@@ -446,6 +446,14 @@ static func xp_to_advance(rank: int) -> int:
 	return 100 + 30 * rank
 
 
+## Total XP at which `rank` begins (rank 1 starts at 0).
+static func xp_for_rank(rank: int) -> int:
+	var total := 0
+	for r in range(1, clampi(rank, 1, RANK_MAX)):
+		total += xp_to_advance(r)
+	return total
+
+
 ## {"rank", "into" (XP into this rank), "need" (XP for the next, 0 at the cap)} for a total XP.
 static func rank_from_xp(xp: int) -> Dictionary:
 	var rank := 1

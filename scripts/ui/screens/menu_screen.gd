@@ -84,6 +84,8 @@ func build() -> void:
 		_open_help()
 	elif _popup_kind == "settings":
 		_open_settings()
+	elif _popup_kind == "testing":
+		_open_testing()
 
 
 func _close_popup() -> void:
@@ -97,7 +99,7 @@ func _open_settings() -> void:
 		return
 	_popup_kind = "settings"
 	_popup = modal()
-	var box := dialog(_popup, Vector2(500, 460))
+	var box := dialog(_popup, Vector2(500, 530))
 	var title := UI.label("Settings", 34, UI.GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, title, Vector2(0, 20), Vector2(500, 44))
@@ -124,7 +126,13 @@ func _open_settings() -> void:
 			app.apply_fullscreen()
 			fs.text = "Fullscreen: %s" % ("On" if bool(Profile.setting("fullscreen")) else "Off"))
 		UI.place(box, fs, Vector2(50, y))
-	y += 70.0
+	y += 60.0
+	var testing := UI.button("Testing tools: set coins and XP", "plain", Vector2(400, 50), 18)
+	testing.pressed.connect(func():
+		_close_popup()
+		_open_testing())
+	UI.place(box, testing, Vector2(50, y))
+	y += 60.0
 	var reset := UI.button("Erase progress and start over", "danger", Vector2(400, 50))
 	var armed := [false]
 	reset.pressed.connect(func():
@@ -138,10 +146,117 @@ func _open_settings() -> void:
 	UI.place(box, reset, Vector2(50, y))
 	var ver := UI.label("Version %s" % GameData.VERSION, 15, UI.MUTED, false)
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.place(box, ver, Vector2(0, 350), Vector2(500, 22))
+	UI.place(box, ver, Vector2(0, 438), Vector2(500, 22))
 	var done := UI.button("Done", "go", Vector2(200, 52))
 	done.pressed.connect(_close_popup)
-	UI.place(box, done, Vector2(150, 384))
+	UI.place(box, done, Vector2(150, 468))
+
+
+## Numbers only, with the number keyboard on a phone.
+func _number_field(value: int) -> LineEdit:
+	var f := LineEdit.new()
+	f.text = str(value)
+	f.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	f.max_length = 7
+	f.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
+	f.add_theme_font_size_override("font_size", 22)
+	f.text_changed.connect(func(t: String):
+		var digits := ""
+		for ch in t:
+			if ch >= "0" and ch <= "9":
+				digits += ch
+		if digits != t:
+			f.text = digits
+			f.caret_column = digits.length())
+	return f
+
+
+## Settings > Testing tools: put any amount of coins and Maker XP in the save
+## so the late game can be tried without grinding to it.
+func _open_testing() -> void:
+	if is_instance_valid(_popup):
+		return
+	_popup_kind = "testing"
+	_popup = modal()
+	var box := dialog(_popup, Vector2(500, 500))
+	var title := UI.label("Testing tools", 34, UI.GOLD)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, title, Vector2(0, 18), Vector2(500, 44))
+
+	UI.place(box, UI.label("Coins", 20), Vector2(32, 86), Vector2(110, 30))
+	var coins := _number_field(Profile.coins())
+	UI.place(box, coins, Vector2(155, 78), Vector2(175, 44))
+	var set_coins := UI.button("Set", "go", Vector2(120, 44), 20)
+	UI.place(box, set_coins, Vector2(340, 78))
+	set_coins.pressed.connect(func():
+		Profile.set_coins(int(coins.text) if coins.text != "" else 0)
+		coins.text = str(Profile.coins())
+		Audio.sfx("coin"))
+	for i in 3:
+		var amount: int = [1000, 10000, 100000][i]
+		var add := UI.button("+%s" % _grouped(amount), "plain", Vector2(130, 40), 18)
+		UI.place(box, add, Vector2(47 + i * 138, 132))
+		add.pressed.connect(func():
+			Profile.set_coins(Profile.coins() + amount)
+			coins.text = str(Profile.coins())
+			Audio.sfx("coin"))
+
+	UI.place(box, UI.label("Maker XP", 20), Vector2(32, 210), Vector2(110, 30))
+	var xp := _number_field(int(Profile.data["xp"]))
+	UI.place(box, xp, Vector2(155, 202), Vector2(175, 44))
+	var info := UI.label("", 17, UI.CREAM, false)
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, info, Vector2(20, 254), Vector2(460, 26))
+	var show_rank := func():
+		var rk := Profile.rank()
+		info.text = "Maker Rank %d of %d  ·  %s" % [int(rk["rank"]), GameData.RANK_MAX, ("max rank" if int(rk["need"]) == 0 else "%d XP to the next rank" % (int(rk["need"]) - int(rk["into"])))]
+	show_rank.call()
+	var set_xp := UI.button("Set", "go", Vector2(120, 44), 20)
+	UI.place(box, set_xp, Vector2(340, 202))
+	set_xp.pressed.connect(func():
+		Profile.set_xp(int(xp.text) if xp.text != "" else 0)
+		xp.text = str(Profile.data["xp"])
+		show_rank.call()
+		Audio.sfx("coin"))
+	var quick: Array = [["+1,000 XP", -1], ["Rank 10", 10], ["Max rank", GameData.RANK_MAX]]
+	for i in 3:
+		var q: Array = quick[i]
+		var b := UI.button(q[0], "plain", Vector2(130, 40), 18)
+		UI.place(box, b, Vector2(47 + i * 138, 290))
+		b.pressed.connect(func():
+			if int(q[1]) < 0:
+				Profile.set_xp(int(Profile.data["xp"]) + 1000)
+			else:
+				Profile.set_xp(GameData.xp_for_rank(int(q[1])))
+			xp.text = str(Profile.data["xp"])
+			show_rank.call()
+			Audio.sfx("coin"))
+
+	var note := UI.label("Changes your real save. Maker Rank unlocks Printers, mods, Blueprint tiers and paints.", 15, UI.MUTED, false)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.place(box, note, Vector2(30, 346), Vector2(440, 44))
+	var back := UI.button("Back to settings", "plain", Vector2(210, 52), 19)
+	back.pressed.connect(func():
+		_close_popup()
+		relayout()
+		_open_settings())
+	UI.place(box, back, Vector2(30, 420))
+	var done := UI.button("Done", "go", Vector2(200, 52))
+	done.pressed.connect(func():
+		_close_popup()
+		relayout())
+	UI.place(box, done, Vector2(270, 420))
+
+
+func _grouped(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	for i in s.length():
+		if i > 0 and (s.length() - i) % 3 == 0:
+			out += ","
+		out += s[i]
+	return out
 
 
 func _open_help() -> void:

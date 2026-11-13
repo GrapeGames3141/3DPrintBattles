@@ -55,6 +55,12 @@ func run() -> void:
 		app.current._open_help()
 		await shot("help")
 		app.current._close_popup()
+		app.current._open_settings()
+		await shot("settings")
+		app.current._close_popup()
+		app.current._open_testing()
+		await shot("testing")
+		app.current._close_popup()
 	if want("collection"):
 		await go("collection")
 		await shot("collection")

@@ -232,6 +232,22 @@ func add_xp(amount: int) -> Dictionary:
 	return {"gained": amount, "from": before, "to": rank_level()}
 
 
+## Testing tools (Settings): set the purse and the Maker XP outright.
+const TEST_MAX_COINS := 9999999
+const TEST_MAX_XP := 999999
+
+
+func set_coins(amount: int) -> void:
+	data["coins"] = clampi(amount, 0, TEST_MAX_COINS)
+	save()
+
+
+## Sets total Maker XP. Ranks follow from it, so lowering it lowers the rank.
+func set_xp(amount: int) -> void:
+	data["xp"] = clampi(amount, 0, TEST_MAX_XP)
+	save()
+
+
 # -------------------------------------------------------------- printer mods
 
 func mod_level(id: String) -> int:

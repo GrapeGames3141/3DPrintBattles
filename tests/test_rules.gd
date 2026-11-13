@@ -588,6 +588,13 @@ func _progression() -> void:
 	var need: int = GameData.xp_to_advance(1)
 	ok(GameData.rank_from_xp(need - 1)["rank"] == 1 and GameData.rank_from_xp(need)["rank"] == 2, "rank 2 comes at exactly %d XP" % need)
 	ok(GameData.rank_from_xp(10000000)["rank"] == GameData.RANK_MAX and GameData.rank_from_xp(10000000)["need"] == 0, "the rank cap holds")
+	var inverse_ok := true
+	for r in range(1, GameData.RANK_MAX + 1):
+		var xp_at := GameData.xp_for_rank(r)
+		inverse_ok = inverse_ok and int(GameData.rank_from_xp(xp_at)["rank"]) == r and int(GameData.rank_from_xp(xp_at)["into"]) == 0
+		if r > 1:
+			inverse_ok = inverse_ok and int(GameData.rank_from_xp(xp_at - 1)["rank"]) == r - 1
+	ok(inverse_ok, "xp_for_rank is the exact start of every rank (testing tools set XP with it)")
 	var total := 0
 	for r in range(1, GameData.RANK_MAX):
 		total += GameData.xp_to_advance(r)
