@@ -269,7 +269,7 @@ func _build_deck() -> void:
 
 	var d := Profile.deck(_slot)
 	var p: Dictionary = GameData.printer(d["printer"])
-	_deck_panel.add_child(UI.image("res://assets/printers/%s.png" % p["id"], Rect2(x + 10, y + 60, 84, 76)))
+	_deck_panel.add_child(PrinterRig.make(p["id"], Profile.installed_mods(p["id"]), Rect2(x + 10, y + 60, 84, 76)))
 	UI.place(_deck_panel, UI.label(p["name"], 20, GameData.element_color(p["element"])), Vector2(x + 100, y + 62), Vector2(w - 200, 26))
 	var pw := UI.label("%s: %s" % [p["power"]["name"], p["power"]["text"]], 13, UI.MUTED, false)
 	pw.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

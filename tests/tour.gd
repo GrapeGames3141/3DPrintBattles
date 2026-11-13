@@ -148,7 +148,6 @@ func run() -> void:
 		profile.buy_mod("spool")
 		profile.buy_mod("frame")
 		profile.buy_mod("sorter")
-		profile.install_mod("ember_forge", 0, "spool")
 		await go("workshop")
 		await shot("workshop")
 		app.current._tab = "mods"
@@ -160,6 +159,21 @@ func run() -> void:
 		await wait(0.4)
 		await shot("workshop_install")
 		app.current._install_for = ""
+		# A fully modded machine: every mod owned and fitted.
+		profile.data["xp"] = 999999
+		profile.data["coins"] = 9999999
+		for pass_i in 4:
+			for m in GameData.PRINTER_MODS:
+				profile.buy_mod(m["id"])
+		app.current._open_install("ember_forge")
+		await wait(0.4)
+		await shot("workshop_install_all")
+		app.current._install_for = ""
+		# ...and on the battlefield (and in portrait if the tour runs at 720x1280).
+		profile.ensure_battle_deck()
+		await go("battle", {"session": load("res://scripts/core/battle_session.gd").quick(profile.active_deck(), 1)})
+		await wait(0.8)
+		await shot("battle_modded")
 	if want("play"):
 		await go("play")
 		await shot("play")

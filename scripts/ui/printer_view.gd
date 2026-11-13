@@ -1,6 +1,6 @@
 class_name PrinterView
 extends Control
-## A player's Printer on the battlefield, with its Health and Armor.
+## A player's Printer on the battlefield, with its mods bolted on, and its Health and Armor.
 
 const SIZE := Vector2(176, 178)
 const BED := Vector2(86, 100)        # where a print stands while being built
@@ -18,7 +18,7 @@ var _name: Label
 
 
 ## `flipped` mirrors the machine so the two Printers face each other.
-static func make(printer: String, owner_seat: int, title: String, is_flipped: bool = false) -> PrinterView:
+static func make(printer: String, owner_seat: int, title: String, is_flipped: bool = false, mod_ids: Array = []) -> PrinterView:
 	var v := PrinterView.new()
 	v.flipped = is_flipped
 	v.size = SIZE
@@ -27,8 +27,7 @@ static func make(printer: String, owner_seat: int, title: String, is_flipped: bo
 	v.seat = owner_seat
 	v.printer_id = printer
 	var col := GameData.element_color(GameData.printer(printer)["element"])
-	v._art = UI.image("res://assets/printers/%s.png" % printer, Rect2(8, 0, 160, 146))
-	v._art.flip_h = is_flipped
+	v._art = PrinterRig.make(printer, mod_ids, Rect2(8, 0, 160, 146), is_flipped)
 	v.add_child(v._art)
 	v._name = UI.label(title, 16, col, true, 5)
 	v._name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -328,7 +328,7 @@ func _rebuild() -> void:
 		# from the far corner.
 		var mine: bool = seat == me
 		var spec := Arena.spec(P)
-		var pv := PrinterView.make(st["players"][seat]["printer"], seat, session.names[seat], not mine)
+		var pv := PrinterView.make(st["players"][seat]["printer"], seat, session.names[seat], not mine, st["players"][seat].get("mods", []))
 		_board.add_child(pv)
 		pv.place(spec["printer_me"] if mine else spec["printer_foe"], float(spec["printer_me_scale"] if mine else spec["printer_foe_scale"]))
 		_printers[seat] = pv

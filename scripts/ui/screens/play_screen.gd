@@ -86,14 +86,14 @@ func _deck_section(r: Rect2, compact: bool) -> void:
 	var edit := UI.button("Edit decks", "plain", Vector2(170 if compact else 200, 46))
 	edit.pressed.connect(func(): app.go("collection"))
 	if compact:
-		_body.add_child(UI.image("res://assets/printers/%s.png" % ap["id"], Rect2(x + 14, y + 124, 140, 130)))
+		_body.add_child(PrinterRig.make(ap["id"], Profile.installed_mods(ap["id"]), Rect2(x + 14, y + 124, 140, 130)))
 		UI.place(_body, UI.label(ap["name"], 22, GameData.element_color(ap["element"]), true, 4), Vector2(x + 166, y + 132), Vector2(300, 28))
 		var pw := UI.label("%s: %s" % [ap["power"]["name"], ap["power"]["text"]], 15, UI.CREAM, false)
 		pw.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.place(_body, pw, Vector2(x + 166, y + 164), Vector2(320, 70))
 		UI.place(_body, edit, Vector2(x + r.size.x - 188, y + 196))
 	else:
-		_body.add_child(UI.image("res://assets/printers/%s.png" % ap["id"], Rect2(x + 86, y + 264, 200, 184)))
+		_body.add_child(PrinterRig.make(ap["id"], Profile.installed_mods(ap["id"]), Rect2(x + 86, y + 264, 200, 184)))
 		var pn := UI.label(ap["name"], 23, GameData.element_color(ap["element"]), true, 4)
 		pn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(_body, pn, Vector2(x, y + 450), Vector2(r.size.x, 28))

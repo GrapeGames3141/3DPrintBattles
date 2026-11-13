@@ -68,7 +68,7 @@ func build() -> void:
 	var p: Dictionary = GameData.printer(d["printer"])
 	var cpos := Vector2(205, 790) if P else Vector2(930, 440)
 	var card := UI.panel(self, Rect2(cpos, Vector2(310, 244)), UI.box(Color(0.03, 0.05, 0.1, 0.86), GameData.element_color(p["element"]), 3, 16, 8))
-	card.add_child(UI.image("res://assets/printers/%s.png" % p["id"], Rect2(70, 8, 170, 156)))
+	card.add_child(PrinterRig.make(p["id"], Profile.installed_mods(p["id"]), Rect2(70, 8, 170, 156)))
 	var pn := UI.label(p["name"], 24, GameData.element_color(p["element"]), true, 4)
 	pn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pn.position = Vector2(0, 164)

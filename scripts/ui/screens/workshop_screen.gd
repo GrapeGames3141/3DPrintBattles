@@ -55,10 +55,10 @@ func _next_unlock() -> String:
 			best_rank = Profile.printer_rank(p["id"])
 			best = "Rank %d: %s" % [best_rank, p["name"]]
 	for m in GameData.PRINTER_MODS:
-		var need := Profile.mod_rank(m["id"])
-		if need > rank and need < best_rank:
+		var need := int(m["rank"])
+		if not Profile.owns_mod(str(m["id"])) and need > rank and need < best_rank:
 			best_rank = need
-			best = "Rank %d: %s level %d" % [need, m["name"], Profile.mod_level(m["id"]) + 1]
+			best = "Rank %d: %s" % [need, m["name"]]
 	return "Next unlock  -  " + best if best != "" else ""
 
 
@@ -73,26 +73,20 @@ func _tabs() -> void:
 		UI.place(self, b, Vector2(x, 154))
 		x += 160.0
 	var crate := UI.button("Mod Crate   %d" % GameData.MOD_CRATE_PRICE, "primary", Vector2(250, 44), 19)
-	crate.tooltip_text = "A random mod, picked by rarity: a card mod or a level of a Printer mod"
+	crate.tooltip_text = "A random mod, picked by rarity: a card mod or a Printer mod"
 	crate.disabled = Profile.coins() < GameData.MOD_CRATE_PRICE
 	crate.pressed.connect(_open_crate)
 	UI.place(self, crate, Vector2(W - 16.0 - 250.0, 154))
-	var owned := UI.label("%d of %d Printers   %d of %d mod levels" % [(Profile.data["printers"] as Array).size(), GameData.PRINTERS.size(), _mod_levels_owned(), _mod_levels_total()], 16, UI.MUTED, false)
+	var owned := UI.label("%d of %d Printers   %d of %d mods" % [(Profile.data["printers"] as Array).size(), GameData.PRINTERS.size(), _mods_owned(), GameData.PRINTER_MODS.size()], 16, UI.MUTED, false)
 	UI.place(self, owned, Vector2(340, 164), Vector2(W - 360, 24))
 	owned.visible = not P
 
 
-func _mod_levels_owned() -> int:
+func _mods_owned() -> int:
 	var n := 0
 	for m in GameData.PRINTER_MODS:
-		n += Profile.mod_level(m["id"])
-	return n
-
-
-func _mod_levels_total() -> int:
-	var n := 0
-	for m in GameData.PRINTER_MODS:
-		n += GameData.mod_max(m["id"])
+		if Profile.owns_mod(str(m["id"])):
+			n += 1
 	return n
 
 
@@ -125,14 +119,14 @@ func _printer_cell(p: Dictionary, pos: Vector2) -> void:
 	var owned := Profile.owns_printer(id)
 	var rank_ok := Profile.rank_level() >= Profile.printer_rank(id)
 	var cell := UI.panel(_body, Rect2(pos, Vector2(250, 318)), UI.box(Color(UI.PANEL, 0.95), col if owned else UI.BRASS_DARK, 3 if owned else 2, 14, 6))
-	var img := UI.image("res://assets/printers/%s.png" % id, Rect2(55, 6, 140, 124))
+	var img := PrinterRig.make(id, Profile.installed_mods(id) if owned else [], Rect2(55, 6, 140, 124))
 	if not owned:
 		img.modulate = Color(0.55, 0.58, 0.66) if rank_ok else Color(0.3, 0.32, 0.38)
 	cell.add_child(img)
 	var nm := UI.label(p["name"], 21, col)
 	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(cell, nm, Vector2(0, 130), Vector2(250, 26))
-	var meta := UI.label("%s   -   %d mod slots" % [p["element"], GameData.printer_slots(id)], 14, UI.MUTED, false)
+	var meta := UI.label("%s   -   %d mods fitted" % [p["element"], Profile.installed_mods(id).size()] if owned else p["element"], 14, UI.MUTED, false)
 	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(cell, meta, Vector2(0, 156), Vector2(250, 20))
 	var pw := UI.label("%s (%d Filament)\n%s" % [p["power"]["name"], GameData.power_cost(id), p["power"]["text"]], 14, UI.CREAM, false)
@@ -140,11 +134,7 @@ func _printer_cell(p: Dictionary, pos: Vector2) -> void:
 	pw.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(cell, pw, Vector2(10, 180), Vector2(230, 62))
 	if owned:
-		var used := 0
-		for m in Profile.installed_mods(id):
-			if str(m) != "":
-				used += 1
-		var b := UI.button("Mods  %d / %d" % [used, GameData.printer_slots(id)], "go", Vector2(200, 46), 19)
+		var b := UI.button("Mods  %d / %d" % [Profile.installed_mods(id).size(), _mods_owned()], "go", Vector2(200, 46), 19)
 		b.pressed.connect(func(): _open_install(id))
 		UI.place(cell, b, Vector2(25, 256))
 	elif not rank_ok:
@@ -170,7 +160,7 @@ func _mods_tab() -> void:
 		var rb := GameData.RARITY_ORDER.find(b["rarity"])
 		if ra != rb:
 			return ra < rb
-		return int(a["costs"][0]) < int(b["costs"][0]))
+		return int(a["cost"]) < int(b["cost"]))
 	var rows := ceili(float(mods.size()) / cols)
 	_body = scroll_body(206, rows * 150.0 + 20.0)
 	var width := minf(W - 40.0, 580.0)
@@ -182,45 +172,65 @@ func _mods_tab() -> void:
 
 func _mod_cell(m: Dictionary, pos: Vector2, width: float) -> void:
 	var id: String = m["id"]
-	var lvl := Profile.mod_level(id)
-	var top := GameData.mod_max(id)
-	var cell := UI.panel(_body, Rect2(pos, Vector2(width, 138)), UI.box(Color(UI.PANEL, 0.95), UI.AMBER if lvl > 0 else UI.BRASS_DARK, 2, 14, 6))
+	var own := Profile.owns_mod(id)
+	var cell := UI.panel(_body, Rect2(pos, Vector2(width, 138)), UI.box(Color(UI.PANEL, 0.95), UI.AMBER if own else UI.BRASS_DARK, 2, 14, 6))
 	var ic := IconView.make(m["icon"], 46, UI.AMBER)
 	ic.position = Vector2(16, 14)
 	cell.add_child(ic)
+	var part := UI.tex("res://assets/printer_mods/%s.png" % id)
+	if part != null:
+		var pic := TextureRect.new()
+		pic.texture = part
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pic.position = Vector2(width - 150, 8)
+		pic.size = Vector2(86, 86)
+		pic.modulate = Color.WHITE if own else Color(0.7, 0.72, 0.8)
+		cell.add_child(pic)
 	var nm := UI.label(m["name"], 22, GameData.rarity_color(str(m["rarity"])))
 	UI.place(cell, nm, Vector2(76, 10), Vector2(width - 230, 28))
 	var rt := UI.label(str(GameData.RARITIES[m["rarity"]]["name"]), 13, UI.MUTED, false)
-	rt.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	UI.place(cell, rt, Vector2(width - 150, 14), Vector2(136, 20))
-	for k in top:
-		var pip := IconView.make("hex", 20, UI.GOLD if k < lvl else Color("3a4660"))
-		pip.position = Vector2(76 + k * 26, 42)
-		cell.add_child(pip)
-	var shown := lvl if lvl >= top else lvl + 1
-	var prefix := "" if lvl >= top else ("Level %d:  " % shown)
-	var tx := UI.label(prefix + GameData.mod_text(id, shown), 15, UI.MUTED, false)
+	UI.place(cell, rt, Vector2(76, 40), Vector2(200, 20))
+	var tx := UI.label(GameData.mod_text(id), 15, UI.CREAM, false)
 	tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.place(cell, tx, Vector2(16, 72), Vector2(width - 160, 60))
-	var cost := Profile.mod_cost(id)
-	if cost < 0:
-		var mx := UI.label("MAX", 24, UI.GOOD)
+	UI.place(cell, tx, Vector2(16, 66), Vector2(width - 160, 40))
+	var needs: Array = GameData.mod_requires(id)
+	if not needs.is_empty():
+		var names: Array = []
+		for r in needs:
+			names.append(str(GameData.mod(str(r))["name"]))
+		var missing := Profile.mod_locked_by(id)
+		var nl := UI.label("Needs: " + ", ".join(names), 14, UI.AMBER if not missing.is_empty() else UI.GOOD, false)
+		nl.clip_text = true
+		UI.place(cell, nl, Vector2(16, 110), Vector2(width - 160, 20))
+	var side := Vector2(width - 146, 94)
+	if own:
+		var mx := UI.label("OWNED", 22, UI.GOOD)
 		mx.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		UI.place(cell, mx, Vector2(width - 140, 50), Vector2(124, 32))
+		UI.place(cell, mx, Vector2(width - 150, 98), Vector2(136, 30))
 		return
-	var need := Profile.mod_rank(id)
+	var cost := int(m["cost"])
+	var need := int(m["rank"])
+	var locked_by := Profile.mod_locked_by(id)
+	if not locked_by.is_empty():
+		var lock := UI.label("Buy %s first" % GameData.mod(str(locked_by[0]))["name"], 15, UI.AMBER, false)
+		lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.place(cell, lock, Vector2(width - 150, 98), Vector2(136, 36))
+		return
 	if Profile.rank_level() < need:
 		var lock := UI.label("Rank %d" % need, 20, UI.AMBER)
 		lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		UI.place(cell, lock, Vector2(width - 146, 36), Vector2(130, 28))
+		UI.place(cell, lock, Vector2(width - 150, 92), Vector2(136, 26))
 		var c := UI.label("%d coins" % cost, 15, UI.MUTED, false)
 		c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		UI.place(cell, c, Vector2(width - 146, 66), Vector2(130, 22))
+		UI.place(cell, c, Vector2(width - 150, 116), Vector2(136, 20))
 		return
-	var buy := UI.button("Buy\n%d" % cost, "primary", Vector2(124, 70), 19)
+	var buy := UI.button("Buy  %d" % cost, "primary", Vector2(136, 38), 18)
 	buy.disabled = Profile.coins() < cost
 	buy.pressed.connect(_buy_mod.bind(id))
-	UI.place(cell, buy, Vector2(width - 140, 34))
+	UI.place(cell, buy, side - Vector2(4, 0) + Vector2(0, 0))
 
 
 # ------------------------------------------------------------------ actions
@@ -249,7 +259,7 @@ func _open_crate() -> void:
 	tx.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(box, tx, Vector2(30, 170), Vector2(460, 60))
-	var where := UI.label("A card mod: fit it from a card's Blueprint." if got["kind"] == "card" else "A Printer mod level: install it from the Mods tab.", 16, UI.MUTED, false)
+	var where := UI.label("A card mod: fit it from a card's Blueprint." if got["kind"] == "card" else "A Printer mod: it is fitted to your Printers already.", 16, UI.MUTED, false)
 	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, where, Vector2(0, 244), Vector2(520, 24))
 	var ok := UI.button("Nice!", "go", Vector2(220, 56), 24)
@@ -281,86 +291,134 @@ func _buy_mod(id: String) -> void:
 
 # ------------------------------------------------------------------ install
 
+var _install_rig: PrinterRig
+var _install_rows: Control
+var _install_count: Label
+
+
+## One Printer's mods: a big picture of the machine with what it carries, and
+## every mod you own to fit or take off. There is no limit on how many it takes.
 func _open_install(printer_id: String) -> void:
 	_install_for = printer_id
 	if is_instance_valid(_popup):
 		_popup.get_parent().queue_free()
 	_popup = modal(0.88)
-	var slots := GameData.printer_slots(printer_id)
-	var mods_owned: Array = []
-	for m in GameData.PRINTER_MODS:
-		if Profile.mod_level(m["id"]) > 0:
-			mods_owned.append(m)
-	var box := dialog(_popup, Vector2(640, 150 + slots * 62 + 70 + maxi(mods_owned.size(), 1) * 58 + 80))
+	var box := dialog(_popup, Vector2(1120, 660) if not P else Vector2(690, 1180))
 	var bw := box.size.x
-	var title := UI.label("%s mods" % GameData.printer(printer_id)["name"], 30, UI.GOLD, true, 5)
+	var bh := box.size.y
+	var pr := GameData.printer(printer_id)
+	var title := UI.label("%s mods" % pr["name"], 30, GameData.element_color(pr["element"]), true, 5)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.place(box, title, Vector2(0, 14), Vector2(bw, 40))
-	var sub := UI.label("Tap a mod below to bolt it into a free slot. Tap it again to take it out.", 15, UI.MUTED, false)
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.place(box, sub, Vector2(24, 58), Vector2(bw - 48, 40))
-	var installed: Array = Profile.installed_mods(printer_id)
-	var y := 104.0
-	for slot in slots:
-		var id: String = str(installed[slot]) if slot < installed.size() else ""
-		UI.panel(box, Rect2(24, y, bw - 48, 54), UI.box(Color(0.03, 0.06, 0.12, 0.9), UI.CYAN if id != "" else UI.BRASS_DARK, 2, 12))
-		var label := "Slot %d   empty" % (slot + 1)
-		var col := UI.MUTED
-		if id != "":
-			label = "Slot %d   %s  (level %d)" % [slot + 1, GameData.mod(id)["name"], Profile.mod_level(id)]
-			col = UI.CREAM
-		UI.place(box, UI.label(label, 19, col, id != ""), Vector2(40, y + 12), Vector2(bw - 160, 28))
-		if id != "":
-			var rm := UI.button("Remove", "plain", Vector2(100, 38), 16)
-			rm.pressed.connect(func():
-				Profile.install_mod(printer_id, slot, "")
-				Audio.sfx("back")
-				_open_install(printer_id))
-			UI.place(box, rm, Vector2(bw - 140, y + 8))
-		y += 62.0
-	y += 8.0
-	UI.place(box, UI.label("Your mods", 20, UI.GOLD), Vector2(28, y), Vector2(300, 26))
-	y += 34.0
-	if mods_owned.is_empty():
-		var none := UI.label("You have not bought any mods yet. Buy some on the Mods tab.", 16, UI.MUTED, false)
-		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		UI.place(box, none, Vector2(28, y), Vector2(bw - 56, 44))
-		y += 52.0
-	for m in mods_owned:
-		var id: String = m["id"]
-		var on := installed.has(id)
-		var b := UI.button("%s  -  %s" % [m["name"], GameData.mod_text(id, Profile.mod_level(id))], "go" if on else "plain", Vector2(bw - 48, 50), 14)
-		b.clip_text = true
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.pressed.connect(func(): _toggle_mod(printer_id, id))
-		UI.place(box, b, Vector2(24, y))
-		y += 58.0
+	UI.place(box, title, Vector2(0, 12), Vector2(bw, 40))
+	var pic_w := 380.0 if not P else 420.0
+	var pic := Vector2(pic_w, pic_w * 0.913)
+	var pic_pos := Vector2(24, 70) if not P else Vector2((bw - pic.x) * 0.5, 62)
+	UI.panel(box, Rect2(pic_pos - Vector2(8, 8), pic + Vector2(16, 16)), UI.box(Color(0.03, 0.05, 0.1, 0.9), GameData.element_color(pr["element"]), 2, 14))
+	_install_rig = PrinterRig.make(printer_id, Profile.installed_mods(printer_id), Rect2(pic_pos, pic))
+	box.add_child(_install_rig)
+	_install_count = UI.label("", 17, UI.CREAM, false)
+	_install_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, _install_count, pic_pos + Vector2(-8, pic.y + 14), Vector2(pic.x + 16, 24))
+	var hint := UI.label("Fit every mod you own: there is no limit. Some mods need another one fitted first. Each one changes how the machine looks.", 14, UI.MUTED, false)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.place(box, hint, pic_pos + Vector2(-8, pic.y + 46), Vector2(pic.x + 16, 60))
+	var list_pos := Vector2(pic_pos.x + pic.x + 36, 64) if not P else Vector2(24, pic_pos.y + pic.y + 130)
+	var list_size := Vector2(bw - list_pos.x - 24, bh - list_pos.y - 90)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.position = list_pos
+	scroll.size = list_size
+	box.add_child(scroll)
+	_install_rows = Control.new()
+	_install_rows.mouse_filter = Control.MOUSE_FILTER_PASS
+	scroll.add_child(_install_rows)
+	_fill_install_rows(list_size.x - 8.0)
 	var done := UI.button("Done", "primary", Vector2(220, 52), 22)
 	done.pressed.connect(func():
 		_install_for = ""
 		close_modal(_popup)
 		_popup = null
 		relayout())
-	UI.place(box, done, Vector2(bw * 0.5 - 110, box.size.y - 70))
+	UI.place(box, done, Vector2(bw * 0.5 - 110, bh - 68))
 
 
-func _toggle_mod(printer_id: String, mod_id: String) -> void:
-	var list: Array = Profile.installed_mods(printer_id)
-	var at := list.find(mod_id)
-	if at >= 0:
-		Profile.install_mod(printer_id, at, "")
+## The owned mods, strongest rarity first, each with a switch.
+func _fill_install_rows(width: float) -> void:
+	for c in _install_rows.get_children():
+		c.queue_free()
+	var printer_id := _install_for
+	var fitted: Array = Profile.installed_mods(printer_id)
+	var owned: Array = []
+	for m in GameData.PRINTER_MODS:
+		if Profile.owns_mod(str(m["id"])):
+			owned.append(m)
+	owned.sort_custom(func(a, b):
+		var ra := GameData.RARITY_ORDER.find(a["rarity"])
+		var rb := GameData.RARITY_ORDER.find(b["rarity"])
+		if ra != rb:
+			return ra > rb
+		return int(a["cost"]) < int(b["cost"]))
+	_install_count.text = "%d of %d mods fitted" % [fitted.size(), owned.size()]
+	if owned.is_empty():
+		var none := UI.label("You have not bought any mods yet. Buy some on the Mods tab.", 18, UI.MUTED, false)
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.place(_install_rows, none, Vector2(8, 8), Vector2(width - 16, 60))
+		_install_rows.custom_minimum_size = Vector2(width, 80)
+		return
+	var y := 0.0
+	for m in owned:
+		var id: String = m["id"]
+		var on := fitted.has(id)
+		var missing := GameData.missing_requirements(id, fitted)
+		var edge := GameData.rarity_color(str(m["rarity"])) if on else UI.BRASS_DARK
+		UI.panel(_install_rows, Rect2(0, y, width, 66), UI.box(Color(0.03, 0.06, 0.12, 0.9), edge, 2, 12))
+		var part := UI.tex("res://assets/printer_mods/%s.png" % id)
+		if part != null:
+			var pic := TextureRect.new()
+			pic.texture = part
+			pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			pic.position = Vector2(6, y + 3)
+			pic.size = Vector2(60, 60)
+			pic.modulate = Color.WHITE if on else Color(0.62, 0.64, 0.72)
+			_install_rows.add_child(pic)
+		var nm := UI.label(m["name"], 18, GameData.rarity_color(str(m["rarity"])), on)
+		nm.clip_text = true
+		UI.place(_install_rows, nm, Vector2(72, y + 5), Vector2(width - 72 - 124, 24))
+		var line := GameData.mod_text(id)
+		var col := UI.MUTED
+		if not on and not missing.is_empty():
+			line = "Fit %s first." % missing[0]
+			col = UI.AMBER
+		var tx := UI.label(line, 13, col, false)
+		tx.clip_text = true
+		tx.autowrap_mode = TextServer.AUTOWRAP_OFF
+		UI.place(_install_rows, tx, Vector2(72, y + 32), Vector2(width - 72 - 124, 22))
+		var b := UI.button("Fitted" if on else "Fit", "go" if on else "plain", Vector2(108, 42), 17)
+		b.disabled = not on and not missing.is_empty()
+		b.pressed.connect(func(): _toggle_mod(printer_id, id, width))
+		UI.place(_install_rows, b, Vector2(width - 116, y + 12))
+		y += 72.0
+	_install_rows.custom_minimum_size = Vector2(width, y)
+
+
+func _toggle_mod(printer_id: String, mod_id: String, width: float) -> void:
+	if Profile.installed_mods(printer_id).has(mod_id):
+		var gone := Profile.remove_mod(printer_id, mod_id)
 		Audio.sfx("back")
+		if not gone.is_empty():
+			var names: Array = []
+			for g in gone:
+				names.append(str(GameData.mod(str(g))["name"]))
+			app.toast("Also took off: %s" % ", ".join(names), UI.AMBER)
 	else:
-		var free := -1
-		for slot in GameData.printer_slots(printer_id):
-			if slot >= list.size() or str(list[slot]) == "":
-				free = slot
-				break
-		if free < 0:
+		var err := Profile.install_mod(printer_id, mod_id)
+		if err != "":
 			Audio.sfx("deny")
-			app.toast("No free slot. Remove a mod first.", UI.AMBER)
+			app.toast(err, UI.AMBER)
 			return
-		Profile.install_mod(printer_id, free, mod_id)
 		Audio.sfx("mod_install")
-	_open_install(printer_id)
+	_install_rig.set_mods(Profile.installed_mods(printer_id))
+	_fill_install_rows(width)
