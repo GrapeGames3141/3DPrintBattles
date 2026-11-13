@@ -70,7 +70,7 @@ func build() -> void:
 		h.activated.connect(app.go.bind("play" if key == "battle" else key))
 		_keep_plaque_on_screen(h)
 		if h.attention:
-			h.set_badge(str(packs))
+			h.set_badge("%d pack%s" % [packs, "" if packs == 1 else "s"])
 		add_child(h)
 
 	# Coins and rank, and the three small buttons.

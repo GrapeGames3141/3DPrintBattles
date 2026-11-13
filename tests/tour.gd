@@ -76,6 +76,9 @@ func run() -> void:
 		app.current._refresh()
 		app.current._show_preview("glassdrake")
 		await shot("collection_preview")
+		for id in ["benchyboss", "trihydra", "dry_box", "hotend_crown"]:
+			app.current._show_preview(id)
+			await shot("preview_" + id)
 	if want("shop"):
 		await go("shop")
 		await shot("shop")
