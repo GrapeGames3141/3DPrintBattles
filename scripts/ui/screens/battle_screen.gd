@@ -550,7 +550,7 @@ func _refresh_interactive() -> void:
 			(_jobs[seat] as JobView).set_glow(seat == me and mine and BattleEngine.deploy_error(st, me) == "")
 	for uid in _units:
 		var node: BoardUnit = _units[uid]
-		node.set_ready(mine and int(node.u["seat"]) == me and not BattleEngine.attack_targets(st, uid).is_empty())
+		node.set_status(_attack_status(uid, node, mine))
 	var idle := mine and BattleEngine.legal_actions(st, me).size() <= 1
 	_end_btn.visible = not idle
 	_end_go.visible = idle
@@ -559,6 +559,23 @@ func _refresh_interactive() -> void:
 	_power_btn.disabled = not (mine and BattleEngine.power_error(st, me) == "")
 	_power_cost.modulate = Color(1, 1, 1, 0.45) if _power_btn.disabled else Color.WHITE
 	_show_targets()
+
+
+## Whether one of my prints can attack: "ready", "fresh" (needs a turn), "spent"
+## (already attacked), "jam", or "" (not mine / nothing to say).
+func _attack_status(uid: int, node: BoardUnit, mine: bool) -> String:
+	if not mine or int(node.u["seat"]) != me:
+		return ""
+	var u := BattleEngine.find_unit(st, uid)
+	if u.is_empty() or int(u["atk"]) <= 0:
+		return ""
+	if int(u["jam"]) > 0:
+		return "jam"
+	if int(u["attacks"]) >= BattleEngine.max_attacks(u):
+		return "spent"
+	if bool(u["fresh"]) and not (u["kw"] as Array).has("rush"):
+		return "fresh"
+	return "ready" if not BattleEngine.attack_targets(st, uid).is_empty() else ""
 
 
 func _show_targets() -> void:

@@ -5,11 +5,15 @@ extends Control
 
 const SIZE := Vector2(140, 172)
 const PLATE := Vector2(70, 142)
+const HALO := 76.0
 
 var u: Dictionary = {}
 var def: Dictionary = {}
 var mirrored := false
 var can_act := false
+## What this print can do right now (only set for your own prints on your turn):
+## "ready" can attack, "fresh" was just printed, "spent" has attacked, "jam" is jammed.
+var status := ""
 var targeted := false
 var target_color := UI.BAD
 ## Picked up to attack with: a gold ring, so no arrow is needed on touch.
@@ -139,10 +143,14 @@ func set_targeted(on: bool, color := UI.BAD) -> void:
 	_base.queue_redraw()
 
 
-func set_ready(on: bool) -> void:
-	if can_act != on:
-		can_act = on
-		_base.queue_redraw()
+func set_status(s: String) -> void:
+	if status == s:
+		return
+	status = s
+	can_act = s == "ready"
+	_apply_heat_and_loot()
+	_base.queue_redraw()
+	_fx.queue_redraw()
 
 
 func set_selected(on: bool) -> void:
@@ -218,12 +226,13 @@ func _draw_base() -> void:
 	var kw: Array = u.get("kw", [])
 	var tint := GameData.element_color(def.get("element", "Neutral"))
 	_ellipse(_base, PLATE + Vector2(0, 6), 66, 22, Color(0, 0, 0, 0.45))
+	# One halo size for every highlight, so they all look alike.
 	if selected:
-		_ellipse(_base, PLATE, 78, 29, Color(UI.GOLD, 0.95))
+		_ellipse(_base, PLATE, HALO, HALO * 0.365, Color(UI.GOLD, 0.95))
 	elif targeted:
-		_ellipse(_base, PLATE, 74, 27, Color(target_color, 0.9))
-	elif can_act:
-		_ellipse(_base, PLATE, 72, 26, Color(UI.GOOD, 0.95))
+		_ellipse(_base, PLATE, HALO, HALO * 0.365, Color(target_color, 0.9))
+	elif status == "ready":
+		_ellipse(_base, PLATE, HALO, HALO * 0.365, Color(UI.GOOD, 0.95))
 	_ellipse(_base, PLATE, 62, 20, Color("101826"))
 	_ring(_base, PLATE, 58, 18.5, tint.darkened(0.15), 5.0)
 	if kw.has("guard"):
@@ -250,6 +259,7 @@ func _draw_fx() -> void:
 		var wide := font.get_string_size("GUARD", HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 		_fx.draw_string_outline(font, Vector2(70.0 - wide * 0.5, 113.0), "GUARD", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color("dfe6f0"))
 		_fx.draw_string(font, Vector2(70.0 - wide * 0.5, 113.0), "GUARD", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("0b1220"))
+	_draw_status_tag()
 	# Other keyword markers sit between the two stat badges.
 	var marks: Array = []
 	if kw.has("siphon"):
@@ -269,6 +279,21 @@ func _draw_fx() -> void:
 		x += 20.0
 
 
+## A small tag over the print saying whether it can attack: READY, COOLING
+## (printed this turn) or DONE (already attacked).
+func _draw_status_tag() -> void:
+	var tags := {"ready": ["READY", UI.GOOD, Color("06210f")], "fresh": ["COOLING", Color("8fb4e8"), Color("0a1a33")],
+		"spent": ["DONE", Color("8a93a3"), Color("141a24")], "jam": ["JAMMED", UI.CYAN, Color("06242b")]}
+	if not tags.has(status):
+		return
+	var t: Array = tags[status]
+	var font := UI.bold()
+	var w := font.get_string_size(t[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 16.0
+	var r := Rect2(70.0 - w * 0.5, 0.0, w, 20.0)
+	_fx.draw_style_box(UI.box(t[1], Color("0b1220"), 2, 10), r)
+	_fx.draw_string(font, Vector2(r.position.x + 8.0, 15.0), t[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, t[2])
+
+
 # --------------------------------------------------------------- ambience
 
 ## A heated print glows and smoulders. A thief wears its victims' colours: its
@@ -276,7 +301,12 @@ func _draw_fx() -> void:
 ## particles.
 func _apply_heat_and_loot() -> void:
 	var heated := int(u.get("heat", 0)) > 0
-	_sprite.modulate = Color(1.0, 0.8, 0.66) if heated else Color.WHITE
+	var tint := Color(1.0, 0.8, 0.66) if heated else Color.WHITE
+	if status == "spent":
+		tint *= Color(0.6, 0.62, 0.7)
+	elif status == "fresh":
+		tint *= Color(0.8, 0.86, 1.0)
+	_sprite.modulate = tint
 	if heated and _heat_fx == null:
 		_heat_fx = _make_ambient("Fire")
 		if _heat_fx != null:
