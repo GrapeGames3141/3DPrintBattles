@@ -23,6 +23,9 @@ var _atk: Badge
 var _hp: Badge
 var _gear: Control
 var _ambient: CPUParticles2D
+var _heat_fx: CPUParticles2D
+var _loot_fx: CPUParticles2D
+var _loot_el := ""
 var paint_id := "original"
 var _path := ""
 var _phase := 0.0
@@ -117,6 +120,7 @@ func refresh(unit: Dictionary, attack_ready: bool) -> void:
 		hp_col = UI.GOOD
 	_hp.set_value(maxi(hp, 0), hp_col)
 	_mat.set_shader_parameter("frost", 1.0 if int(u["jam"]) > 0 else 0.0)
+	_apply_heat_and_loot()
 	for ch in _gear.get_children():
 		ch.queue_free()
 	var gear: Array = u.get("gear", [])
@@ -224,6 +228,10 @@ func _draw_base() -> void:
 	_ring(_base, PLATE, 58, 18.5, tint.darkened(0.15), 5.0)
 	if kw.has("guard"):
 		_ring(_base, PLATE, 66, 22.5, Color("dfe6f0"), 6.0)
+	if int(u.get("heat", 0)) > 0:
+		_ring(_base, PLATE, 70, 24.5, Color(1.0, 0.45, 0.12, 0.85), 4.0)
+	if int(u.get("loot", 0)) > 0:
+		_ring(_base, PLATE, 54, 16.5, Color(GameData.element_color(str(u.get("loot_el", "Neutral"))), 0.9), 3.0)
 
 
 func _draw_fx() -> void:
@@ -250,6 +258,10 @@ func _draw_fx() -> void:
 		marks.append(["twin", UI.AMBER])
 	if int(u.get("jam", 0)) > 0:
 		marks.append(["snow", UI.CYAN])
+	if int(u.get("heat", 0)) > 0:
+		marks.append(["flame", Color("ff7a2e")])
+	if int(u.get("loot", 0)) > 0:
+		marks.append(["spool", GameData.element_color(str(u.get("loot_el", "Neutral")))])
 	var x := 70.0 - (marks.size() - 1) * 10.0
 	for m in marks:
 		_fx.draw_circle(Vector2(x, 156), 10.5, Color("0b1220"))
@@ -258,6 +270,45 @@ func _draw_fx() -> void:
 
 
 # --------------------------------------------------------------- ambience
+
+## A heated print glows and smoulders. A thief wears its victims' colours: its
+## paint shifts toward the filament it took and it sheds that element's
+## particles.
+func _apply_heat_and_loot() -> void:
+	var heated := int(u.get("heat", 0)) > 0
+	_sprite.modulate = Color(1.0, 0.8, 0.66) if heated else Color.WHITE
+	if heated and _heat_fx == null:
+		_heat_fx = _make_ambient("Fire")
+		if _heat_fx != null:
+			add_child(_heat_fx)
+			move_child(_heat_fx, _sprite.get_index() + 1)
+	if _heat_fx != null:
+		_heat_fx.visible = heated
+		_heat_fx.emitting = heated
+	var loot := int(u.get("loot", 0))
+	var el := str(u.get("loot_el", ""))
+	var paint := GameData.paint(paint_id)
+	var hue := float(paint["hue"]) / 360.0
+	var sat := float(paint["sat"])
+	var val := float(paint["val"])
+	if loot > 0 and el != "":
+		var theirs := GameData.element_color(el).h
+		var mine := GameData.element_color(str(def.get("element", "Neutral"))).h
+		var delta := fposmod(theirs - mine + 0.5, 1.0) - 0.5
+		hue += delta * 0.4 * minf(float(loot), 3.0) / 3.0
+		sat *= 1.0 + 0.06 * minf(float(loot), 3.0)
+		val *= 1.0 + 0.04 * minf(float(loot), 3.0)
+	_mat.set_shader_parameter("hue_shift", hue)
+	_mat.set_shader_parameter("sat_mul", sat)
+	_mat.set_shader_parameter("val_mul", val)
+	if loot > 0 and el != _loot_el:
+		_loot_el = el
+		if _loot_fx != null:
+			_loot_fx.queue_free()
+		_loot_fx = _make_ambient(el)
+		if _loot_fx != null:
+			add_child(_loot_fx)
+			move_child(_loot_fx, _sprite.get_index() + 1)
 
 static var _dot_tex: Texture2D
 

@@ -12,6 +12,7 @@ func _initialize() -> void:
 	_audio()
 	_basics()
 	_keywords()
+	_heat_and_theft()
 	_effects()
 	_limits()
 	_printing()
@@ -242,6 +243,74 @@ func _keywords() -> void:
 	act(st, 1, {"t": "end"})
 	ok(int(foe["jam"]) == 0, "Jam clears after the owner's turn")
 	ok(int(mine["jam"]) == 0, "own prints unaffected")
+
+
+func _heat_and_theft() -> void:
+	print("heat and theft")
+	# Scorch: hitting a print heats it; heat costs 1 Health at the start of the owner's turn.
+	var st := game([], [])
+	var a := put(st, 0, "cinderpaw")
+	a["kw"].append("scorch")
+	var v := put(st, 1, "stoneback")
+	var hp0: int = int(v["hp"])
+	act(st, 0, {"t": "attack", "unit": int(a["uid"]), "target": "u%d" % int(v["uid"])})
+	ok(int(v["heat"]) == 2, "Scorch heats the print it hits")
+	ok(int(v["hp"]) < hp0, "...and the hit still lands")
+	var hp1: int = int(v["hp"])
+	act(st, 0, {"t": "end"})
+	ok(int(v["hp"]) == hp1 - 1 and int(v["heat"]) == 1, "a heated print takes 1 damage at the start of its owner's turn")
+	act(st, 1, {"t": "end"})
+	act(st, 0, {"t": "end"})
+	ok(int(v["heat"]) == 0 and int(v["hp"]) == hp1 - 2, "heat runs out after its turns")
+	act(st, 1, {"t": "end"})
+	act(st, 0, {"t": "end"})
+	ok(int(v["hp"]) == hp1 - 2, "and then stops hurting")
+
+	# Thief: steals 1 Attack and gives +1 Health; a heated print gives double.
+	st = game([], [])
+	var t := put(st, 0, "mossmunk")
+	t["kw"].append("thief")
+	t["atk"] = 1
+	t["hp"] = 5
+	t["max_hp"] = 5
+	var big := put(st, 1, "stoneback")
+	big["atk"] = 4
+	big["hp"] = 9
+	big["max_hp"] = 9
+	big["kw"] = []
+	act(st, 0, {"t": "attack", "unit": int(t["uid"]), "target": "u%d" % int(big["uid"])})
+	ok(int(big["atk"]) == 3 and int(t["atk"]) == 2, "Thief takes 1 Attack from the print it hits")
+	ok(int(t["max_hp"]) == 6 and int(t["loot"]) == 1, "...gains +1 Health and remembers the theft")
+	ok(str(t["loot_el"]) == "Stone", "...and whose filament it took")
+	st = game([], [])
+	t = put(st, 0, "mossmunk")
+	t["kw"].append("thief")
+	t["atk"] = 1
+	t["hp"] = 9
+	t["max_hp"] = 9
+	big = put(st, 1, "stoneback")
+	big["atk"] = 4
+	big["hp"] = 12
+	big["max_hp"] = 12
+	big["kw"] = []
+	big["heat"] = 2
+	act(st, 0, {"t": "attack", "unit": int(t["uid"]), "target": "u%d" % int(big["uid"])})
+	ok(int(big["atk"]) == 2 and int(t["atk"]) == 3 and int(t["max_hp"]) == 11, "a heated print gives up twice as much")
+
+	# The steal op: damage the target and take that much, plus Attack.
+	st = game([], [])
+	var s := put(st, 0, "mossmunk")
+	var w := put(st, 1, "stoneback")
+	w["kw"] = []
+	var ev: Array = []
+	BattleEngine._run(st, 0, [{"op": "steal", "atk": 2, "hp": 2, "to": "target"}], {"target": "u%d" % int(w["uid"]), "self": int(s["uid"])}, ev)
+	ok(int(s["atk"]) == int(GameData.card("mossmunk")["atk"]) + 2 and int(w["hp"]) == int(GameData.card("stoneback")["hp"]) - 2, "steal moves Attack and Health")
+	ok(ev.any(func(e): return e["e"] == "steal"), "steal reports an event")
+	st = game([], [])
+	s = put(st, 0, "mossmunk")
+	w = put(st, 1, "brambleowl")
+	BattleEngine._run(st, 0, [{"op": "steal", "atk": 0, "hp": 3, "to": "target"}], {"target": "u%d" % int(w["uid"]), "self": int(s["uid"])}, ev)
+	ok(int(s["loot"]) == 0, "Brim stops a steal (no damage lands, nothing is taken)")
 
 
 func _effects() -> void:

@@ -1197,6 +1197,41 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 					Audio.sfx("jam")
 					UI.floater(_fx, "Jammed!", node.center() + Vector2(0, -50), UI.CYAN, 24)
 					await _wait(0.1 if next.get("e", "") == "jam" else 0.25)
+		"heat":
+			var node: BoardUnit = _units.get(int(e["uid"]))
+			if node != null:
+				var data: Dictionary = node.u
+				data["heat"] = int(e["n"])
+				node.refresh(data, false)
+				node.pulse(Color("ff8a3a"))
+				Audio.sfx("burn")
+				UI.floater(_fx, "Heated!", node.center() + Vector2(0, -50), Color("ff8a3a"), 24)
+			await _wait(0.25)
+		"melt":
+			var node: BoardUnit = _units.get(int(e["uid"]))
+			if node != null:
+				var data: Dictionary = node.u
+				data["heat"] = int(e["n"])
+				node.refresh(data, false)
+				UI.floater(_fx, "Melting", node.center() + Vector2(0, -50), Color("ff8a3a"), 20)
+		"steal":
+			var thief: BoardUnit = _units.get(int(e["to"]))
+			var victim: BoardUnit = _units.get(int(e["from"]))
+			if thief != null:
+				if victim != null:
+					victim.refresh(e["victim"], false)
+					# A thread of filament runs from the victim to the thief.
+					var col := GameData.element_color(str(GameData.card(e["victim"]["id"]).get("element", "Neutral")))
+					var thread := UI.panel(_fx, Rect2(victim.center() - Vector2(7, 7), Vector2(14, 14)), UI.box(col, Color.WHITE, 2, 7))
+					var tw := thread.create_tween()
+					tw.tween_property(thread, "position", thief.center() - Vector2(7, 7), 0.32).set_trans(Tween.TRANS_QUAD)
+					tw.tween_callback(thread.queue_free)
+					await tw.finished
+				thief.refresh(e["unit"], false)
+				thief.pulse(GameData.element_color(str(e["unit"].get("loot_el", "Neutral"))))
+				Audio.sfx("buff")
+				UI.floater(_fx, "Stole +%d/+%d" % [int(e["atk"]), int(e["hp"])], thief.center() + Vector2(0, -60), UI.GOOD, 22)
+			await _wait(0.3)
 		"death":
 			var uid: int = int(e["uid"])
 			var node: BoardUnit = _units.get(uid)

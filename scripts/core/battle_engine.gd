@@ -478,6 +478,12 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 		_damage(st, "u%d" % uid, counter, ev)
 	if dealt > 0 and (u["kw"] as Array).has("siphon"):
 		_heal(st, "p%d" % seat, dealt, ev)
+	# Scorch heats the print it hits; Thief takes some of its filament.
+	if dealt > 0 and not t.is_empty() and int(t["hp"]) > 0 and int(u["hp"]) > 0:
+		if (u["kw"] as Array).has("scorch"):
+			_heat(st, target, 2, ev)
+		if (u["kw"] as Array).has("thief"):
+			_steal(st, uid, target, 1, 0, 1, ev)
 	_resolve(st, ev)
 	return ""
 
@@ -523,6 +529,12 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 		u["fresh"] = false
 		u["attacks"] = 0
 	ev.append({"e": "turn", "seat": seat, "turn": int(st["turn"]), "flow": int(p["flow"]), "speed": int(p["speed"]), "spool": int(p["spool"])})
+	# Heated prints soften: 1 damage a turn while the heat lasts.
+	for u in (p["board"] as Array).duplicate():
+		if int(u.get("heat", 0)) > 0:
+			u["heat"] = int(u["heat"]) - 1
+			ev.append({"e": "melt", "uid": int(u["uid"]), "n": int(u["heat"])})
+			_damage(st, "u%d" % int(u["uid"]), 1, ev)
 	# The Printer carries on with its long print before anything else.
 	var job: Dictionary = p["job"]
 	if not job.is_empty() and not job_ready(job):
@@ -567,6 +579,10 @@ static func _run(st: Dictionary, seat: int, effects: Array, ctx: Dictionary, ev:
 				for i in int(e["n"]):
 					if (p["board"] as Array).size() < GameData.MAX_BOARD:
 						_summon(st, seat, e["card"], (p["board"] as Array).size(), ev, false)
+			"steal":
+				# The thief is the print running the effect.
+				for ref in _refs(st, seat, str(e.get("to", "")), ctx):
+					_steal(st, int(ctx.get("self", -1)), ref, int(e.get("atk", 0)), int(e.get("hp", 0)), int(e.get("bonus_hp", 0)), ev)
 			_:
 				for ref in _refs(st, seat, str(e.get("to", "")), ctx):
 					_run_on(st, seat, e, ref, ev)
@@ -588,6 +604,8 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 			if not u.is_empty():
 				u["jam"] = 1
 				ev.append({"e": "jam", "uid": int(u["uid"])})
+		"heat":
+			_heat(st, ref, int(e.get("n", 2)), ev)
 		"destroy":
 			var u := unit_of(st, ref)
 			if not u.is_empty():
@@ -611,8 +629,44 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 				twin["fresh"] = true
 				twin["attacks"] = 0
 				twin["jam"] = 0
+				twin["heat"] = 0
 				board.insert(mini(board.find(u) + 1, board.size()), twin)
 				ev.append({"e": "summon", "seat": seat, "unit": twin.duplicate(true), "slot": board.find(twin), "hand": false})
+
+
+## Heats a print: it takes 1 damage at the start of each of its owner's turns
+## for `turns` turns, and thieves take twice as much from it.
+static func _heat(st: Dictionary, ref: String, turns: int, ev: Array) -> void:
+	var u := unit_of(st, ref)
+	if u.is_empty() or turns <= 0:
+		return
+	u["heat"] = maxi(int(u.get("heat", 0)), turns)
+	ev.append({"e": "heat", "uid": int(u["uid"]), "n": int(u["heat"])})
+
+
+## `thief` pulls filament off the print at `ref`: the victim loses `take_atk`
+## Attack and takes `take_hp` damage, and the thief gains what was taken plus
+## `bonus_hp`. A Heated print gives up twice as much. The thief also remembers
+## whose filament it wears, which changes how it looks.
+static func _steal(st: Dictionary, thief_uid: int, ref: String, take_atk: int, take_hp: int, bonus_hp: int, ev: Array) -> void:
+	var victim := unit_of(st, ref)
+	var thief := find_unit(st, thief_uid)
+	if victim.is_empty() or thief.is_empty() or int(victim["uid"]) == thief_uid:
+		return
+	var mult: int = 2 if int(victim.get("heat", 0)) > 0 else 1
+	var got_atk: int = mini(take_atk * mult, maxi(int(victim["atk"]), 0))
+	victim["atk"] = int(victim["atk"]) - got_atk
+	var got_hp: int = 0
+	if take_hp > 0:
+		got_hp = _damage(st, ref, take_hp * mult, ev)
+	var gain_hp: int = got_hp + (bonus_hp * mult if (got_atk > 0 or got_hp > 0) else 0)
+	if got_atk <= 0 and gain_hp <= 0:
+		return
+	_buff(thief, got_atk, gain_hp, [])
+	thief["loot"] = int(thief.get("loot", 0)) + 1
+	thief["loot_el"] = str(GameData.card(victim["id"]).get("element", ""))
+	ev.append({"e": "steal", "from": int(victim["uid"]), "to": thief_uid, "atk": got_atk, "hp": gain_hp,
+		"unit": thief.duplicate(true), "victim": victim.duplicate(true)})
 
 
 static func _refs(st: Dictionary, seat: int, to: String, ctx: Dictionary) -> Array:
@@ -697,6 +751,7 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 		"atk": int(def["atk"]), "hp": int(def["hp"]), "max_hp": int(def["hp"]),
 		"kw": (def.get("kw", []) as Array).duplicate(),
 		"fresh": true, "attacks": 0, "jam": 0, "gear": [],
+		"heat": 0, "loot": 0, "loot_el": "",
 		"mk": int(def.get("mk", 1)),
 		"paint": str((st["players"][seat].get("builds", {}).get(card_id, {}) as Dictionary).get("paint", "original")),
 	}

@@ -49,6 +49,8 @@ const KEYWORDS := {
 	"brim": {"name": "Brim", "text": "Ignores the first damage it takes."},
 	"siphon": {"name": "Siphon", "text": "Damage it deals repairs your Printer."},
 	"twin": {"name": "Twin Nozzle", "text": "Can attack twice each turn."},
+	"scorch": {"name": "Scorch", "text": "Hits Heat the print they hit. Heated prints take 1 damage each turn."},
+	"thief": {"name": "Filament Thief", "text": "Hits steal 1 Attack and give +1 Health. Twice as much from Heated prints."},
 }
 
 const SPRITE := "res://assets/creatures/2d/%s_sprite_sheet.png"
@@ -56,6 +58,9 @@ const RAW := "res://assets/creatures/2d/raw/%s_raw_print.png"
 const TOOL_ART := "res://assets/tools/%s.png"
 const ARMOR_ART := "res://assets/armor/raw/%s_raw_print_alpha_v2.png"
 
+## Effect ops: damage, heal, buff, jam, destroy, bounce, copy, draw, filament,
+## spool, armor, summon, plus heat (`n` turns) and steal (`atk`, `hp`, `bonus_hp`:
+## the print running the effect takes filament off the target).
 ## Effect targets (`to`): target, self, enemy_prints, friendly_prints,
 ## other_friendly_prints, all_prints, enemy_printer, own_printer.
 const CARDS := [
