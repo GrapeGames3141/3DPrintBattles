@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_mods()
 	_blueprints()
 	_progression()
+	_random_mods()
 	_network_view()
 	_ai_games()
 	_fuzz_games()
@@ -748,6 +749,51 @@ func _progression() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
 	pr.free()
 	pm.free()
+
+
+func _random_mods() -> void:
+	print("random mods")
+	var pr := fresh_profile()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+	pr.data["coins"] = GameData.MOD_CRATE_PRICE + 5
+	var before: int = pr.coins()
+	var got: Dictionary = pr.buy_mod_crate(rng)
+	ok(not got.has("error") and pr.coins() == before - GameData.MOD_CRATE_PRICE, "a Mod Crate costs %d and gives a mod" % GameData.MOD_CRATE_PRICE)
+	ok(pr.buy_mod_crate(rng).has("error"), "no coins, no crate")
+	# Keep awarding: every mod and mod level turns up exactly once, nothing repeats, rarities all appear.
+	var total := GameData.CARD_MODS.size()
+	for m in GameData.PRINTER_MODS:
+		total += GameData.mod_max(m["id"])
+	var seen_rarity := {}
+	var n := 1
+	seen_rarity[got["rarity"]] = true
+	var fresh: Array = []
+	while true:
+		var g: Dictionary = pr.award_random_mod(rng)
+		if g.is_empty():
+			break
+		n += 1
+		seen_rarity[g["rarity"]] = true
+		if n > total + 5:
+			break
+	ok(n == total, "crates hand out every mod and level exactly once (%d of %d)" % [n, total])
+	for r in GameData.RARITY_ORDER:
+		ok(seen_rarity.has(r), "random mods include %s ones" % r)
+	ok(pr.award_random_mod(rng).is_empty(), "nothing left to find once you have them all")
+	# Rarer mods come up less often.
+	var common := 0
+	var legendary := 0
+	var pr2 := fresh_profile()
+	for i in 60:
+		var g2: Dictionary = pr2.award_random_mod(rng)
+		if g2.is_empty():
+			break
+		if g2["rarity"] == "common":
+			common += 1
+		if g2["rarity"] == "legendary":
+			legendary += 1
+	ok(common > legendary, "common mods are found more often than legendary ones (%d vs %d)" % [common, legendary])
 
 
 func _blueprints() -> void:

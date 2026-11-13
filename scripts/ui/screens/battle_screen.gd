@@ -1836,6 +1836,12 @@ func _show_result_panel() -> void:
 		xl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(box, xl, Vector2(0, y), Vector2(bw, 30))
 		y += 38.0
+	var found: Dictionary = _reward.get("found_mod", {})
+	if not found.is_empty():
+		var fl := UI.label("Found a mod: %s" % found["name"], 22, GameData.rarity_color(str(found["rarity"])), true, 4)
+		fl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.place(box, fl, Vector2(0, y), Vector2(bw, 30))
+		y += 36.0
 	if has_pack:
 		var pack := PackView.make(_reward["pack"], 0.29)
 		pack.position = Vector2(bw * 0.5 - 180, y - 2)

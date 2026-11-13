@@ -231,7 +231,19 @@ func _mod_section(content: Control, y: float, w: float, tier: int, build: Dictio
 		UI.place(content, lock, Vector2(0, y), Vector2(w, 44))
 		return y + 60.0
 	var fitted := str(build["mod"])
-	for m in GameData.CARD_MODS:
+	# Mods you own come first, then by rarity.
+	var list: Array = GameData.CARD_MODS.duplicate()
+	list.sort_custom(func(a, b):
+		var oa := 0 if Profile.owns_card_mod(a["id"]) else 1
+		var ob := 0 if Profile.owns_card_mod(b["id"]) else 1
+		if oa != ob:
+			return oa < ob
+		var ra := GameData.RARITY_ORDER.find(a["rarity"])
+		var rb := GameData.RARITY_ORDER.find(b["rarity"])
+		if ra != rb:
+			return ra < rb
+		return int(a["cost"]) < int(b["cost"]))
+	for m in list:
 		var id: String = m["id"]
 		if not GameData.mod_fits(id, _sel):
 			continue
@@ -241,7 +253,8 @@ func _mod_section(content: Control, y: float, w: float, tier: int, build: Dictio
 		var ic := IconView.make(m["icon"], 30, UI.AMBER if owned else Color("55607a"))
 		ic.position = Vector2(12, y + 16)
 		content.add_child(ic)
-		UI.place(content, UI.label(m["name"], 17, UI.CREAM if owned else UI.MUTED), Vector2(52, y + 6), Vector2(w - 190, 24))
+		var rc := GameData.rarity_color(str(m["rarity"]))
+		UI.place(content, UI.label(m["name"], 17, rc if owned else rc.darkened(0.35)), Vector2(52, y + 6), Vector2(w - 190, 24))
 		var tx := UI.label(m["text"], 13, UI.MUTED, false)
 		tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.place(content, tx, Vector2(52, y + 30), Vector2(w - 190, 30))

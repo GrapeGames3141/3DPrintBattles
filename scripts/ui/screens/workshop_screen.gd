@@ -72,6 +72,11 @@ func _tabs() -> void:
 			relayout())
 		UI.place(self, b, Vector2(x, 154))
 		x += 160.0
+	var crate := UI.button("Mod Crate   %d" % GameData.MOD_CRATE_PRICE, "primary", Vector2(250, 44), 19)
+	crate.tooltip_text = "A random mod, picked by rarity: a card mod or a level of a Printer mod"
+	crate.disabled = Profile.coins() < GameData.MOD_CRATE_PRICE
+	crate.pressed.connect(_open_crate)
+	UI.place(self, crate, Vector2(W - 16.0 - 250.0, 154))
 	var owned := UI.label("%d of %d Printers   %d of %d mod levels" % [(Profile.data["printers"] as Array).size(), GameData.PRINTERS.size(), _mod_levels_owned(), _mod_levels_total()], 16, UI.MUTED, false)
 	UI.place(self, owned, Vector2(340, 164), Vector2(W - 360, 24))
 	owned.visible = not P
@@ -159,12 +164,19 @@ func _printer_cell(p: Dictionary, pos: Vector2) -> void:
 func _mods_tab() -> void:
 	var cols := 1 if P else 2
 	var pitch_x := 600.0
-	var rows := ceili(float(GameData.PRINTER_MODS.size()) / cols)
+	var mods: Array = GameData.PRINTER_MODS.duplicate()
+	mods.sort_custom(func(a, b):
+		var ra := GameData.RARITY_ORDER.find(a["rarity"])
+		var rb := GameData.RARITY_ORDER.find(b["rarity"])
+		if ra != rb:
+			return ra < rb
+		return int(a["costs"][0]) < int(b["costs"][0]))
+	var rows := ceili(float(mods.size()) / cols)
 	_body = scroll_body(206, rows * 150.0 + 20.0)
 	var width := minf(W - 40.0, 580.0)
 	var x0 := (W - 12.0 - (cols * pitch_x - (pitch_x - width))) * 0.5
-	for i in GameData.PRINTER_MODS.size():
-		var m: Dictionary = GameData.PRINTER_MODS[i]
+	for i in mods.size():
+		var m: Dictionary = mods[i]
 		_mod_cell(m, Vector2(x0 + (i % cols) * pitch_x, 8.0 + (i / cols) * 150.0), width)
 
 
@@ -176,8 +188,11 @@ func _mod_cell(m: Dictionary, pos: Vector2, width: float) -> void:
 	var ic := IconView.make(m["icon"], 46, UI.AMBER)
 	ic.position = Vector2(16, 14)
 	cell.add_child(ic)
-	var nm := UI.label(m["name"], 22, UI.CREAM)
+	var nm := UI.label(m["name"], 22, GameData.rarity_color(str(m["rarity"])))
 	UI.place(cell, nm, Vector2(76, 10), Vector2(width - 230, 28))
+	var rt := UI.label(str(GameData.RARITIES[m["rarity"]]["name"]), 13, UI.MUTED, false)
+	rt.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	UI.place(cell, rt, Vector2(width - 150, 14), Vector2(136, 20))
 	for k in top:
 		var pip := IconView.make("hex", 20, UI.GOLD if k < lvl else Color("3a4660"))
 		pip.position = Vector2(76 + k * 26, 42)
@@ -209,6 +224,39 @@ func _mod_cell(m: Dictionary, pos: Vector2, width: float) -> void:
 
 
 # ------------------------------------------------------------------ actions
+
+## Buys a Mod Crate and shows what was in it.
+func _open_crate() -> void:
+	var got := Profile.buy_mod_crate()
+	if got.has("error"):
+		Audio.sfx("deny")
+		app.toast(str(got["error"]), UI.AMBER)
+		return
+	Audio.sfx("reveal_epic" if got["rarity"] in ["epic", "legendary"] else "reveal")
+	var m := modal()
+	var col := GameData.rarity_color(str(got["rarity"]))
+	var box := dialog(m, Vector2(520, 380), UI.box(Color(UI.PANEL, 0.97), col, 4, 18, 12))
+	var head := UI.label("Mod Crate", 30, UI.GOLD)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, head, Vector2(0, 18), Vector2(520, 40))
+	var rar := UI.label(str(GameData.RARITIES[got["rarity"]]["name"]).to_upper(), 20, col)
+	rar.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, rar, Vector2(0, 76), Vector2(520, 28))
+	var nm := UI.label(str(got["name"]), 38, col, true, 6)
+	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, nm, Vector2(0, 108), Vector2(520, 50))
+	var tx := UI.label(str(got["text"]), 19, UI.CREAM, false)
+	tx.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.place(box, tx, Vector2(30, 170), Vector2(460, 60))
+	var where := UI.label("A card mod: fit it from a card's Blueprint." if got["kind"] == "card" else "A Printer mod level: install it from the Mods tab.", 16, UI.MUTED, false)
+	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, where, Vector2(0, 244), Vector2(520, 24))
+	var ok := UI.button("Nice!", "go", Vector2(220, 56), 24)
+	ok.pressed.connect(func():
+		close_modal(m)
+		relayout())
+	UI.place(box, ok, Vector2(150, 296))
 
 func _buy_printer(id: String) -> void:
 	var err := Profile.buy_printer(id)

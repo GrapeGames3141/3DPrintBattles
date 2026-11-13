@@ -371,6 +371,10 @@ const PACK_GUARANTEE_WEIGHTS := {
 	"epic": {"epic": 850, "legendary": 150},
 }
 
+## Random mods: a Mod Crate in the Workshop, and a chance of finding one after a win.
+## What you get is random, weighted by rarity (PACK_WEIGHTS).
+const MOD_CRATE_PRICE := 350
+const MOD_FIND_CHANCE := 0.12
 const STARTER_COINS := 150
 const STARTER_PACKS := 3
 const STARTER_DECK := {
@@ -565,6 +569,10 @@ static func mod_text(id: String, level: int) -> String:
 		return ""
 	var amount: int = int(m["per"]) * maxi(level, 1)
 	var text: String = m["text"]
+	if text.count("%d") == 0:
+		return text
+	if id == "failsafe":
+		return text % (5 if level <= 1 else 8)
 	if text.count("%d") == 2:
 		return text % [amount, amount]
 	if id == "slicer":

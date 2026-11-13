@@ -268,6 +268,57 @@ func mod_rank(id: String) -> int:
 	return int(ranks[lvl]) if lvl < ranks.size() else 0
 
 
+## Everything a crate could still give you: card mods you do not have and
+## the next level of every Printer mod.
+func _mod_pool() -> Array:
+	var pool: Array = []
+	for m in GameData.CARD_MODS:
+		if not owns_card_mod(str(m["id"])):
+			pool.append({"kind": "card", "id": str(m["id"]), "name": str(m["name"]), "rarity": str(m["rarity"]), "text": str(m["text"])})
+	for m in GameData.PRINTER_MODS:
+		if mod_level(str(m["id"])) < GameData.mod_max(str(m["id"])):
+			pool.append({"kind": "printer", "id": str(m["id"]), "name": str(m["name"]), "rarity": str(m["rarity"]),
+				"text": GameData.mod_text(str(m["id"]), mod_level(str(m["id"])) + 1)})
+	return pool
+
+
+## Gives one random mod, picked by rarity like a pack card, and returns it
+## ({} when there is nothing left to find). Rank does not matter: a lucky find
+## can be something you could not buy yet.
+func award_random_mod(rng: RandomNumberGenerator = null) -> Dictionary:
+	var pool := _mod_pool()
+	if pool.is_empty():
+		return {}
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+		rng.randomize()
+	var total := 0
+	for e in pool:
+		total += int(GameData.PACK_WEIGHTS[e["rarity"]])
+	var roll := rng.randi_range(0, total - 1)
+	var pick: Dictionary = pool[0]
+	for e in pool:
+		roll -= int(GameData.PACK_WEIGHTS[e["rarity"]])
+		if roll < 0:
+			pick = e
+			break
+	if pick["kind"] == "card":
+		(data["card_mods"] as Array).append(pick["id"])
+	else:
+		data["mods"][pick["id"]] = mod_level(pick["id"]) + 1
+	save()
+	return pick
+
+
+func buy_mod_crate(rng: RandomNumberGenerator = null) -> Dictionary:
+	if coins() < GameData.MOD_CRATE_PRICE:
+		return {"error": "Not enough Forge Coins."}
+	if _mod_pool().is_empty():
+		return {"error": "You already have every mod."}
+	data["coins"] = coins() - GameData.MOD_CRATE_PRICE
+	return award_random_mod(rng)
+
+
 func buy_mod(id: String) -> String:
 	var cost := mod_cost(id)
 	if cost < 0:
@@ -799,5 +850,8 @@ func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "
 	data["coins"] = coins() + int(reward["coins"])
 	add_xp(int(reward["xp"]))
 	reward["rank_to"] = rank_level()
+	# A win sometimes turns up a random mod.
+	if won and randf() < GameData.MOD_FIND_CHANCE:
+		reward["found_mod"] = award_random_mod()
 	save()
 	return reward
