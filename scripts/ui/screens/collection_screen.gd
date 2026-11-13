@@ -4,6 +4,13 @@ extends GameScreen
 const FILTERS := [["All", ""], ["Prints", "creature"], ["Tools", "tool"], ["Upgrades", "upgrade"]]
 
 var _filter := ""
+## The Filter popup: element and rarity ("" = any), owned/missing, and sort order.
+var _element := ""
+var _rarity := ""
+var _owned := ""
+var _sort := "cost"
+var _popup: Control
+var _filter_btn: Button
 var _page := 0
 var _slot := -1
 var _grid: Control
@@ -22,13 +29,16 @@ func build() -> void:
 	_filter_buttons = []
 	_preview = null
 	_inspect = null
-	var fw := 100.0 if P else 118.0
+	var fw := 72.0 if P else 104.0
 	for i in FILTERS.size():
 		var b := UI.button(FILTERS[i][0], "plain", Vector2(fw, 40), 16 if P else 18)
 		b.pressed.connect(_set_filter.bind(FILTERS[i][1]))
 		UI.place(self, b, Vector2((16 if P else 30) + i * (fw + 8), 84))
 		_filter_buttons.append(b)
-	var px := 500.0 if P else 690.0
+	_filter_btn = UI.button("Filter", "plain", Vector2(86 if P else 110, 40), 16 if P else 18)
+	_filter_btn.pressed.connect(_open_filters)
+	UI.place(self, _filter_btn, Vector2((16 if P else 30) + FILTERS.size() * (fw + 8) + 6, 84))
+	var px := 530.0 if P else 750.0
 	var prev := UI.button("<", "plain", Vector2(46, 40))
 	prev.pressed.connect(_turn.bind(-1))
 	UI.place(self, prev, Vector2(px, 84))
@@ -56,9 +66,109 @@ func _cols() -> int:
 func _cards() -> Array:
 	var out: Array = []
 	for c in GameData.collectible():
-		if _filter == "" or c["type"] == _filter:
-			out.append(c)
+		if _filter != "" and c["type"] != _filter:
+			continue
+		if _element != "" and str(c.get("element", "")) != _element:
+			continue
+		if _rarity != "" and c["rarity"] != _rarity:
+			continue
+		var have := Profile.owned_count(c["id"])
+		if _owned == "owned" and have == 0:
+			continue
+		if _owned == "missing" and have > 0:
+			continue
+		out.append(c)
+	var rank := func(c: Dictionary) -> int: return GameData.RARITY_ORDER.find(c["rarity"])
+	match _sort:
+		"rarity":
+			out.sort_custom(func(a, b):
+				if rank.call(a) != rank.call(b):
+					return rank.call(a) > rank.call(b)
+				return a["name"] < b["name"])
+		"name":
+			out.sort_custom(func(a, b): return a["name"] < b["name"])
+		"element":
+			out.sort_custom(func(a, b):
+				var ea := str(a.get("element", "~"))
+				var eb := str(b.get("element", "~"))
+				if ea != eb:
+					return ea < eb
+				if a["cost"] != b["cost"]:
+					return a["cost"] < b["cost"]
+				return a["name"] < b["name"])
 	return out
+
+
+func _filters_active() -> int:
+	var n := 0
+	for v in [_element, _rarity, _owned]:
+		if v != "":
+			n += 1
+	if _sort != "cost":
+		n += 1
+	return n
+
+
+func _open_filters() -> void:
+	if is_instance_valid(_popup):
+		return
+	_popup = modal()
+	var box := dialog(_popup, Vector2(680, 560))
+	var title := UI.label("Filter and sort", 30, UI.GOLD)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI.place(box, title, Vector2(0, 14), Vector2(box.size.x, 40))
+	var y := 66.0
+	y = _chip_row(box, y, "Element", [["Any", ""], ["Fire", "Fire"], ["Water", "Water"], ["Lightning", "Lightning"], ["Nature", "Nature"], ["Ice", "Ice"], ["Stone", "Stone"], ["Wind", "Wind"], ["Arcane", "Arcane"]], _element, func(v): _element = v)
+	var rar: Array = [["Any", ""]]
+	for r in GameData.RARITY_ORDER:
+		rar.append([str(GameData.RARITIES[r]["name"]), r])
+	y = _chip_row(box, y, "Rarity", rar, _rarity, func(v): _rarity = v)
+	y = _chip_row(box, y, "Show", [["All", ""], ["Owned", "owned"], ["Missing", "missing"]], _owned, func(v): _owned = v)
+	y = _chip_row(box, y, "Sort by", [["Cost", "cost"], ["Rarity", "rarity"], ["Name", "name"], ["Element", "element"]], _sort, func(v): _sort = v)
+	var clear := UI.button("Clear", "plain", Vector2(150, 50), 20)
+	clear.pressed.connect(func():
+		_element = ""
+		_rarity = ""
+		_owned = ""
+		_sort = "cost"
+		_page = 0
+		_close_filters())
+	UI.place(box, clear, Vector2(box.size.x * 0.5 - 160, box.size.y - 66))
+	var done := UI.button("Show %d cards" % _cards().size(), "go", Vector2(190, 50), 20)
+	done.pressed.connect(func():
+		_page = 0
+		_close_filters())
+	UI.place(box, done, Vector2(box.size.x * 0.5 + 10, box.size.y - 66))
+
+
+## One labelled row of toggle chips; returns the next y.
+func _chip_row(box: Control, y: float, label: String, options: Array, current: String, setter: Callable) -> float:
+	UI.place(box, UI.label(label, 18, UI.CREAM), Vector2(24, y), Vector2(120, 26))
+	var chip_w := 108.0
+	var x := 24.0
+	var yy := y + 28.0
+	var buttons: Array = []
+	for o in options:
+		if x + chip_w > box.size.x - 20:
+			x = 24.0
+			yy += 40.0
+		var b := UI.button(o[0], "plain", Vector2(chip_w, 34), 14)
+		var val: String = o[1]
+		b.modulate = Color(1.0, 0.86, 0.45) if val == current else Color.WHITE
+		b.pressed.connect(func():
+			setter.call(val)
+			for k in buttons.size():
+				(buttons[k] as Button).modulate = Color(1.0, 0.86, 0.45) if options[k][1] == val else Color.WHITE)
+		UI.place(box, b, Vector2(x, yy))
+		buttons.append(b)
+		x += chip_w + 6.0
+	return yy + 52.0
+
+
+func _close_filters() -> void:
+	close_modal(_popup)
+	_popup = null
+	_refresh()
 
 
 func _set_filter(f: String) -> void:
@@ -77,6 +187,10 @@ func _refresh() -> void:
 	_hide_preview()
 	for i in _filter_buttons.size():
 		(_filter_buttons[i] as Button).modulate = Color(1.0, 0.86, 0.45) if FILTERS[i][1] == _filter else Color.WHITE
+	if _filter_btn != null:
+		var n := _filters_active()
+		_filter_btn.text = "Filter" if n == 0 else "Filter (%d)" % n
+		_filter_btn.modulate = Color(1.0, 0.86, 0.45) if n > 0 else Color.WHITE
 	_build_grid()
 	_build_deck()
 

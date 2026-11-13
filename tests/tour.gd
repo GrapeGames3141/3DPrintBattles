@@ -64,6 +64,16 @@ func run() -> void:
 	if want("collection"):
 		await go("collection")
 		await shot("collection")
+		app.current._open_filters()
+		await shot("filters")
+		app.current._close_filters()
+		app.current._element = "Fire"
+		app.current._sort = "rarity"
+		app.current._refresh()
+		await shot("collection_fire")
+		app.current._element = ""
+		app.current._sort = "cost"
+		app.current._refresh()
 		app.current._show_preview("glassdrake")
 		await shot("collection_preview")
 	if want("shop"):
