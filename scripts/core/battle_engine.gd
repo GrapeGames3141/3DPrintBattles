@@ -37,38 +37,38 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 		var pc: Dictionary = cfg["players"][seat]
 		var printer_id := str(pc["printer"])
 		var mods: Dictionary = GameData.clean_mods(printer_id, pc.get("mods", {}))
-		var hp: int = GameData.PRINTER_HP + int(GameData.mod("frame").get("per", 2)) * int(mods.get("frame", 0)) + int(pc.get("hp_bonus", 0))
+		var hp: int = GameData.PRINTER_HP + GameData.mv(mods, "frame") + GameData.mv(mods, "titanium_frame") + int(pc.get("hp_bonus", 0))
 		hp = maxi(hp, 10)
-		var spool: int = GameData.SPOOL_SIZE + int(GameData.mod("spool")["per"]) * int(mods.get("spool", 0))
+		var spool: int = GameData.SPOOL_SIZE + GameData.mv(mods, "spool") + GameData.mv(mods, "spool_rack")
 		var deck: Array = (pc["deck"] as Array).duplicate()
 		_shuffle(st, deck)
 		st["players"].append({
-			"printer": printer_id,
-			"hp": hp, "max_hp": hp, "armor": int(GameData.mod("enclosure")["per"]) * int(mods.get("enclosure", 0)),
-			"flow": 0, "speed": GameData.PRINT_SPEED + int(mods.get("stepper", 0)),
+			"printer": printer_id, "mods": mods.keys(),
+			"hp": hp, "max_hp": hp, "armor": GameData.mv(mods, "enclosure") + GameData.mv(mods, "armor_panels"),
+			"flow": 0, "speed": GameData.PRINT_SPEED + GameData.mv(mods, "stepper") + GameData.mv(mods, "dual_extruder") + GameData.mv(mods, "direct_drive"),
 			"spool": spool, "spool_max": spool,
 			"job": {},
 			"power_used": false,
-			"power_cost": maxi(1, GameData.power_cost(printer_id) - int(mods.get("hot_end", 0))),
+			"power_cost": maxi(1, GameData.power_cost(printer_id) - GameData.mv(mods, "hot_end") - GameData.mv(mods, "liquid_hot_end")),
 			"deck": deck, "hand": [], "board": [],
 			"fatigue": 0,
-			"bed_bonus": int(mods.get("bed", 0)),
-			"refund": GameData.SCRAP_REFUND + int(mods.get("sensor", 0)),
-			"head_start": 2 * int(mods.get("preheater", 0)),
-			"top_up": 4 if int(mods.get("slicer", 0)) > 0 else GameData.HAND_TOP_UP,
-			"first_draw": int(mods.get("quickstart", 0)),
-			"attune_atk": int(mods.get("mixer", 0)),
-			"print_hp": int(GameData.mod("cooling_duct")["per"]) * int(mods.get("cooling_duct", 0)),
-			"regen": int(GameData.mod("self_cleaning")["per"]) * int(mods.get("self_cleaning", 0)),
-			"spool_regen": int(GameData.mod("spool_feeder")["per"]) * int(mods.get("spool_feeder", 0)),
-			"first_flow": int(GameData.mod("capacitor_bank")["per"]) * int(mods.get("capacitor_bank", 0)),
-			"shatter_draw": int(mods.get("scrap_chute", 0)),
-			"rush_first": int(mods.get("quick_release", 0)),
-			"last_stand": (5 if int(mods.get("failsafe", 0)) == 1 else 8) if int(mods.get("failsafe", 0)) > 0 else 0,
-			"plate": int(GameData.mod("plating")["per"]) * int(mods.get("plating", 0)),
-			"heat_bonus": int(GameData.mod("thermal_mass")["per"]) * int(mods.get("thermal_mass", 0)),
-			"thief_bonus": int(GameData.mod("prehensile_gantry")["per"]) * int(mods.get("prehensile_gantry", 0)),
-			"extra_draw": int(GameData.mod("quantum_slicer")["per"]) * int(mods.get("quantum_slicer", 0)),
+			"bed_bonus": GameData.mv(mods, "bed") + GameData.mv(mods, "auto_leveler"),
+			"refund": GameData.SCRAP_REFUND + GameData.mv(mods, "sensor") + GameData.mv(mods, "runout_sensor"),
+			"head_start": GameData.mv(mods, "preheater") + GameData.mv(mods, "preheat_chamber"),
+			"top_up": maxi(GameData.HAND_TOP_UP, GameData.mv(mods, "slicer")),
+			"first_draw": GameData.mv(mods, "quickstart"),
+			"attune_atk": GameData.mv(mods, "mixer"),
+			"print_hp": GameData.mv(mods, "cooling_duct"),
+			"regen": GameData.mv(mods, "self_cleaning"),
+			"spool_regen": GameData.mv(mods, "spool_feeder") + GameData.mv(mods, "twin_feed"),
+			"first_flow": GameData.mv(mods, "capacitor_bank") + GameData.mv(mods, "overdrive_board"),
+			"shatter_draw": GameData.mv(mods, "scrap_chute"),
+			"rush_first": GameData.mv(mods, "quick_release"),
+			"last_stand": GameData.mv(mods, "failsafe"),
+			"plate": GameData.mv(mods, "plating"),
+			"heat_bonus": GameData.mv(mods, "thermal_mass"),
+			"thief_bonus": GameData.mv(mods, "prehensile_gantry"),
+			"extra_draw": GameData.mv(mods, "quantum_slicer"),
 			"ls_used": false, "rush_used": false, "sd_turn": -1,
 			"turns": 0,
 			"builds": GameData.clean_builds(deck, pc.get("builds", {})),

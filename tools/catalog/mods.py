@@ -63,18 +63,36 @@ M("bulk_discount", "Bulk Discount", "coin", TU, "epic", 2000, 15, "Costs 1 less.
 assert len(CARD_MODS) == 32, len(CARD_MODS)
 
 
-def P(pid, name, icon, rarity, text, per, costs, ranks):
-    PRINTER_MODS.append({"id": pid, "name": name, "icon": icon, "rarity": rarity, "text": text, "per": per, "costs": costs, "ranks": ranks})
+def P(pid, name, icon, rarity, text, per, cost, rank, requires=()):
+    row = {"id": pid, "name": name, "icon": icon, "rarity": rarity, "text": text, "per": per, "cost": cost, "rank": rank}
+    if requires:
+        row["requires"] = list(requires)
+    PRINTER_MODS.append(row)
 
 
-P("cooling_duct", "Cooling Duct", "snow", "common", "Every print you make has %d more Health.", 1, [500, 1500], [3, 11])
-P("self_cleaning", "Self-Cleaning Nozzle", "drop", "common", "Your Printer repairs %d at the start of your turn.", 1, [600, 1800], [4, 12])
-P("spool_feeder", "Spool Feeder", "spool", "uncommon", "Add %d Filament to your Spool at the start of your turn.", 1, [900, 2600], [6, 15])
-P("capacitor_bank", "Capacitor Bank", "burst", "uncommon", "%d extra Print Speed on your first turn.", 2, [700, 2000], [5, 13])
-P("scrap_chute", "Scrap Chute", "check", "uncommon", "The first time each turn one of your prints shatters, draw a card.", 1, [1800], [8])
-P("quick_release", "Quick-Release Bed", "twin", "rare", "The first print you make each battle has Rush.", 1, [1600], [10])
-P("failsafe", "Failsafe", "lock", "rare", "Once a battle, if your Printer would be destroyed it is repaired to %d Health instead.", 5, [2200, 4500], [12, 22])
-P("plating", "Plating", "shield", "rare", "Damage to your Printer is reduced by %d (never below 1).", 1, [1800, 4000], [10, 20])
-P("thermal_mass", "Thermal Mass", "flame", "epic", "Heat you inflict lasts %d turn longer.", 1, [2400, 5000], [14, 24])
-P("prehensile_gantry", "Prehensile Gantry", "spool", "epic", "Your Filament Thieves steal %d more Attack.", 1, [2600, 5200], [15, 25])
-P("quantum_slicer", "Quantum Slicer", "star", "legendary", "Draw %d extra card each turn.", 1, [9000], [26])
+P("cooling_duct", "Cooling Duct", "snow", "common", "Every print you make has %d more Health.", 1, 500, 3)
+P("self_cleaning", "Self-Cleaning Nozzle", "drop", "common", "Your Printer repairs %d at the start of your turn.", 1, 600, 4)
+P("spool_feeder", "Spool Feeder", "spool", "uncommon", "Add %d Filament to your Spool at the start of your turn.", 1, 900, 6)
+P("capacitor_bank", "Capacitor Bank", "burst", "uncommon", "%d extra Print Speed on your first turn.", 2, 700, 5)
+P("scrap_chute", "Scrap Chute", "check", "uncommon", "The first time each turn one of your prints shatters, draw a card.", 1, 1800, 8)
+P("quick_release", "Quick-Release Bed", "twin", "rare", "The first print you make each battle has Rush.", 1, 1600, 10)
+P("failsafe", "Failsafe", "lock", "rare", "Once a battle, if your Printer would be destroyed it is repaired to %d Health instead.", 5, 2200, 12)
+P("plating", "Plating", "shield", "rare", "Damage to your Printer is reduced by %d (never below 1).", 1, 1800, 10)
+P("thermal_mass", "Thermal Mass", "flame", "epic", "Heat you inflict lasts %d turn longer.", 1, 2400, 14)
+P("prehensile_gantry", "Prehensile Gantry", "spool", "epic", "Your Filament Thieves steal %d more Attack.", 1, 2600, 15)
+P("quantum_slicer", "Quantum Slicer", "star", "legendary", "Draw %d extra card each turn.", 1, 9000, 26)
+
+# Mods that need other mods. A Printer only runs one of these while every mod it
+# `requires` is installed on that Printer too, so they form small upgrade chains.
+P("dual_extruder", "Dual Extruder", "burst", "rare", "Prints %d more Filament each turn.", 1, 2800, 12, requires=["stepper"])
+P("direct_drive", "Direct Drive Gearbox", "burst", "epic", "Prints %d more Filament each turn.", 1, 5200, 20, requires=["dual_extruder", "hot_end"])
+P("spool_rack", "Spool Rack", "spool", "uncommon", "Your Spool holds %d more Filament.", 10, 900, 7, requires=["spool"])
+P("twin_feed", "Twin Feed Tower", "spool", "rare", "Add %d more Filament to your Spool at the start of your turn.", 1, 3200, 16, requires=["spool_feeder", "spool_rack"])
+P("titanium_frame", "Titanium Frame", "shield", "rare", "Your Printer has %d more Health.", 4, 1400, 11, requires=["frame"])
+P("armor_panels", "Armour Panels", "lock", "uncommon", "Your Printer starts with %d more Armor.", 3, 1100, 9, requires=["enclosure"])
+P("auto_leveler", "Auto Bed Leveling", "check", "uncommon", "Your first print each battle gets another +%d/+%d.", 1, 1200, 10, requires=["bed"])
+P("runout_sensor", "Runout Sensor", "check", "rare", "A shattered print returns %d more Filament to your Spool.", 1, 1500, 12, requires=["sensor"])
+P("preheat_chamber", "Preheat Chamber", "flame", "uncommon", "Your first long print each battle starts %d Filament further ahead.", 3, 1300, 10, requires=["preheater"])
+P("liquid_hot_end", "Liquid-cooled Hot End", "drop", "rare", "Your Printer Power costs %d less Filament.", 1, 2800, 16, requires=["hot_end"])
+P("overdrive_board", "Overdrive Board", "burst", "epic", "%d more Print Speed on your first turn.", 3, 3600, 18, requires=["capacitor_bank", "stepper"])
+P("auto_sorter", "Auto Sorter", "coin", "uncommon", "Earn %d more Forge Coins for each win.", 6, 700, 8, requires=["sorter"])
