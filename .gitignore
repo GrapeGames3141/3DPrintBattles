@@ -9,3 +9,5 @@ build/
 backend/node_modules/
 backend/dist/
 user-data/
+__pycache__/
+*.pyc
