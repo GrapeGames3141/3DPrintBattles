@@ -14,7 +14,7 @@ const TIPS := {
 	"upgrade": ["do", "Upgrades are printed armor. Drag one onto one of your prints to make it stronger for the rest of the battle."],
 	"long": ["do", "A blue glow means a long print: it costs more than you can print this turn. Drag it to your Printer and it will finish over the next turns."],
 	"deploy": ["do", "Your long print is finished! Tap it on your Printer to send it into battle."],
-	"power": ["do", "Your Printer has a Power: %d Filament, once per turn. Tap it, then tap a target." % GameData.POWER_COST],
+	"power": ["do", "Your Printer has a Power that costs Filament and can be used once per turn. Tap it, then tap a target."],
 	"end": ["do", "Nothing else to do this turn. Press End Turn."],
 }
 const LOW_SPOOL := 8
@@ -255,7 +255,7 @@ func _build_hud() -> void:
 	UI.place(self, _power_btn, power_rect.position)
 	_power_cost = Badge.make("spool", CardView.COST_BLUE, 38)
 	_power_cost.position = Vector2(power_rect.size.x - 46, (power_rect.size.y - 38) * 0.5)
-	_power_cost.set_value(GameData.POWER_COST)
+	_power_cost.set_value(int(st["players"][me]["power_cost"]))
 	_power_btn.add_child(_power_cost)
 
 
@@ -336,6 +336,7 @@ func _rebuild() -> void:
 	var power: Dictionary = GameData.printer(st["players"][me]["printer"])["power"]
 	_power_btn.text = power["name"]
 	_power_btn.tooltip_text = power["text"]
+	_power_cost.set_value(int(st["players"][me]["power_cost"]))
 	_sync(false)
 
 
@@ -1734,7 +1735,7 @@ func _show_result(winner: int) -> void:
 	_show_tip("")
 	_result_winner = winner
 	var won: bool = session.mode != "hotseat" and winner == session.my_seat
-	_reward = Profile.record_battle(session.mode, won, session.ai_level, session.rival_id)
+	_reward = Profile.record_battle(session.mode, won, session.ai_level, session.rival_id, str(st["players"][session.my_seat]["printer"]))
 	Audio.set_intensity(0.0)
 	Audio.stinger("win" if won or session.mode == "hotseat" else "lose", 0.2)
 	if int(_reward["coins"]) > 0:
@@ -1762,7 +1763,7 @@ func _show_result_panel() -> void:
 		color = UI.GOLD if won else UI.BAD
 	var has_pack: bool = str(_reward["pack"]) != ""
 
-	var box := dialog(m, Vector2(600, 500), UI.box(Color(UI.PANEL, 0.97), color, 3, 18, 12))
+	var box := dialog(m, Vector2(600, 546), UI.box(Color(UI.PANEL, 0.97), color, 3, 18, 12))
 	var bw := box.size.x
 	var t := UI.label(title, 52 if P else 64, color, true, 10)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1786,7 +1787,16 @@ func _show_result_panel() -> void:
 		var ic := IconView.make("coin", 40, UI.GOLD)
 		UI.place(box, ic, Vector2(bw * 0.5 - 150, y))
 		UI.place(box, UI.label("+%d Forge Coins" % int(_reward["coins"]), 28, UI.GOLD), Vector2(bw * 0.5 - 98, y + 2), Vector2(320, 36))
-		y += 56.0
+		y += 50.0
+	if int(_reward.get("xp", 0)) > 0:
+		var xp_line := "+%d Maker XP" % int(_reward["xp"])
+		var up: bool = int(_reward["rank_to"]) > int(_reward["rank_from"])
+		if up:
+			xp_line += "   Rank %d!" % int(_reward["rank_to"])
+		var xl := UI.label(xp_line, 22, UI.GOOD if up else UI.CYAN)
+		xl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.place(box, xl, Vector2(0, y), Vector2(bw, 30))
+		y += 38.0
 	if has_pack:
 		var pack := PackView.make(_reward["pack"], 0.29)
 		pack.position = Vector2(bw * 0.5 - 180, y - 2)
@@ -1796,15 +1806,15 @@ func _show_result_panel() -> void:
 	var home := "menu" if session.mode == "tutorial" else "play"
 	var cont := UI.button("Continue", "go", Vector2(240, 60), 26)
 	cont.pressed.connect(func(): app.go(home))
-	UI.place(box, cont, Vector2(bw * 0.5 - 250 if has_pack or (session.mode == "tutorial" and not won) else bw * 0.5 - 120, 414))
+	UI.place(box, cont, Vector2(bw * 0.5 - 250 if has_pack or (session.mode == "tutorial" and not won) else bw * 0.5 - 120, 460))
 	if has_pack:
 		var open := UI.button("Open the pack", "primary", Vector2(240, 60), 24)
 		open.pressed.connect(func(): app.go("shop"))
-		UI.place(box, open, Vector2(bw * 0.5 + 10, 414))
+		UI.place(box, open, Vector2(bw * 0.5 + 10, 460))
 	elif session.mode == "tutorial" and not won:
 		var again := UI.button("Try again", "primary", Vector2(240, 60), 24)
 		again.pressed.connect(func(): app.go("battle", {"session": BattleSession.tutorial()}))
-		UI.place(box, again, Vector2(bw * 0.5 + 10, 414))
+		UI.place(box, again, Vector2(bw * 0.5 + 10, 460))
 
 
 func _on_closed(reason: String) -> void:

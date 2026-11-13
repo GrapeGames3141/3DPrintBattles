@@ -109,8 +109,23 @@ func run() -> void:
 		await shot("pack_legendary")
 		app.current._close_opener()
 	if want("workshop"):
+		profile.data["xp"] = 3000
+		profile.data["coins"] = 5000
+		profile.buy_mod("spool")
+		profile.buy_mod("frame")
+		profile.buy_mod("sorter")
+		profile.install_mod("ember_forge", 0, "spool")
 		await go("workshop")
 		await shot("workshop")
+		app.current._tab = "mods"
+		app.current.relayout()
+		await wait(0.4)
+		await shot("workshop_mods")
+		app.current._tab = "printers"
+		app.current._open_install("ember_forge")
+		await wait(0.4)
+		await shot("workshop_install")
+		app.current._install_for = ""
 	if want("play"):
 		await go("play")
 		await shot("play")

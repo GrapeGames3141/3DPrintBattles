@@ -15,6 +15,8 @@ func _initialize() -> void:
 	_effects()
 	_limits()
 	_printing()
+	_mods()
+	_progression()
 	_network_view()
 	_ai_games()
 	print("\n%d checks, %d failed" % [_checks, _fails])
@@ -30,7 +32,7 @@ func ok(cond: bool, what: String) -> void:
 
 ## A game with fixed decks where seat 0 goes first and both sides can print 10
 ## Filament a turn from a huge spool, so costs never get in the way.
-func game(deck0: Array, deck1: Array, printer0 := "ember_forge", printer1 := "tide_press", up0 := {}) -> Dictionary:
+func game(deck0: Array, deck1: Array, printer0 := "ember_forge", printer1 := "tide_press", mods0 := {}) -> Dictionary:
 	var pad0: Array = deck0.duplicate()
 	var pad1: Array = deck1.duplicate()
 	while pad0.size() < 20:
@@ -38,7 +40,7 @@ func game(deck0: Array, deck1: Array, printer0 := "ember_forge", printer1 := "ti
 	while pad1.size() < 20:
 		pad1.append("mossmunk")
 	var st := BattleEngine.new_game({"seed": 7, "first": 0, "players": [
-		{"printer": printer0, "deck": pad0, "upgrades": up0},
+		{"printer": printer0, "deck": pad0, "mods": mods0},
 		{"printer": printer1, "deck": pad1}]})
 	for p in st["players"]:
 		p["flow"] = 10
@@ -322,9 +324,9 @@ func _effects() -> void:
 	ok(st["players"][0]["board"].size() == 1, "Test Cube prints a cube")
 
 	# workshop upgrades
-	st = game([], [], "ember_forge", "tide_press", {"frame": 3, "bed": 2, "spool": 2})
+	st = game([], [], "delta_rig", "tide_press", {"frame": 3, "bed": 2, "spool": 2})
 	ok(int(st["players"][0]["hp"]) == GameData.PRINTER_HP + 6, "Reinforced Frame adds Health")
-	ok(int(st["players"][0]["spool_max"]) == GameData.SPOOL_SIZE + 2 * GameData.SPOOL_PER_UPGRADE, "Bigger Spool holds more Filament")
+	ok(int(st["players"][0]["spool_max"]) == GameData.SPOOL_SIZE + 10, "Bigger Spool holds more Filament")
 	h = give(st, 0, "mossmunk")
 	act(st, 0, {"t": "play", "hand": h})
 	ok(int(st["players"][0]["board"][0]["atk"]) == 3 and int(st["players"][0]["board"][0]["hp"]) == 5, "Heated Bed buffs the first print")
@@ -466,6 +468,170 @@ func _printing() -> void:
 		act(st, 1, {"t": "end"})
 		turns += 1
 	ok(turns == 2, "a 9-cost print is ready on the third turn (%d turns later)" % turns)
+
+
+func _mods() -> void:
+	print("printer mods")
+	var m := {"stepper": 2, "enclosure": 3}
+	var st := BattleEngine.new_game({"seed": 4, "first": 0, "players": [
+		{"printer": "delta_rig", "deck": GameData.expand(GameData.STARTER_DECK), "mods": m},
+		{"printer": "tide_press", "deck": GameData.expand(GameData.STARTER_DECK)}]})
+	ok(int(st["players"][0]["speed"]) == GameData.PRINT_SPEED + 2 and int(st["players"][0]["flow"]) == GameData.PRINT_SPEED + 2, "Stepper Motors add print speed")
+	ok(int(st["players"][0]["armor"]) == 6, "Enclosure starts you with Armor")
+	ok(GameData.clean_mods("ember_forge", {"stepper": 2, "spool": 3, "frame": 3}).size() == 2, "a 2-slot Printer keeps only 2 mods")
+	ok(GameData.clean_mods("delta_rig", {"stepper": 9, "nope": 1, "bed": 0}) == {"stepper": 2}, "unknown mods, level 0 and too-high levels are dropped")
+	ok(GameData.clean_mods("delta_rig", {"stepper": 1, "bed": 1, "spool": 1, "frame": 1}).size() == 4, "a 4-slot Printer takes 4")
+
+	st = game([], [], "ember_forge", "tide_press", {"sensor": 2})
+	var mine := put(st, 0, "voltwig")
+	var wall := put(st, 1, "stoneback")
+	var before: int = int(st["players"][0]["spool"])
+	act(st, 0, {"t": "attack", "unit": int(mine["uid"]), "target": "u%d" % int(wall["uid"])})
+	ok(int(st["players"][0]["spool"]) == before + 3, "Filament Sensor returns more scrap")
+
+	st = game([], [], "delta_rig", "tide_press", {"preheater": 1})
+	st["players"][0]["flow"] = 3
+	var h := give(st, 0, "ironmaw")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(int(st["players"][0]["job"]["paid"]) == 4, "Pre-heater: the first long print starts 2 ahead (3 now + 2, held back one short)")
+	st["players"][0]["job"] = {}
+	st["players"][0]["flow"] = 3
+	h = give(st, 0, "ironmaw")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(int(st["players"][0]["job"]["paid"]) == 3, "...but only the first")
+
+	st = game([], [], "ember_forge", "tide_press", {"slicer": 1})
+	st["players"][1]["hand"].clear()
+	st["players"][0]["hand"].clear()
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(st["players"][0]["hand"].size() == 4 and st["players"][1]["hand"].size() == 3, "Smart Slicer tops a thin hand up to 4 (and only yours)")
+
+	var hand_plain := 0
+	var hand_quick := 0
+	for q in [0, 1]:
+		var g := BattleEngine.new_game({"seed": 5, "first": 0, "players": [
+			{"printer": "ember_forge", "deck": GameData.expand(GameData.STARTER_DECK), "mods": {"quickstart": q}},
+			{"printer": "tide_press", "deck": GameData.expand(GameData.STARTER_DECK)}]})
+		if q == 0:
+			hand_plain = g["players"][0]["hand"].size()
+		else:
+			hand_quick = g["players"][0]["hand"].size()
+	ok(hand_quick == hand_plain + 1, "Quick Start draws one more card on turn one")
+
+	st = game([], [], "delta_rig", "tide_press", {"hot_end": 1})
+	ok(int(st["players"][0]["power_cost"]) == 2, "All-metal Hot End: Rapid Pull costs 3, now 2")
+	st = game([], [], "ember_forge", "tide_press", {"hot_end": 1})
+	ok(int(st["players"][0]["power_cost"]) == 1, "Hot Nozzle costs 1 with the Hot End")
+	st["players"][0]["flow"] = 1
+	ok(BattleEngine.power_error(st, 0) == "", "and can be used with 1 Filament")
+
+	st = game([], [], "ember_forge", "tide_press", {"mixer": 1})
+	var cat := put(st, 0, "cinderpaw")
+	ok(int(cat["atk"]) == 4 and int(cat["hp"]) == 3, "Colour Mixer: a matching-element print gets +1 Attack (and the usual +1 Health)")
+	var off := put(st, 0, "aquafin")
+	ok(int(off["atk"]) == 2, "...other elements do not")
+	st = game([], [], "delta_rig", "tide_press", {"mixer": 1})
+	var bot := put(st, 0, "test_bot")
+	ok(int(bot["atk"]) == 1 and int(bot["hp"]) == 1, "Neutral Printers attune nothing")
+
+	# New Printer Powers do what they say.
+	st = game([], [], "frost_chamber", "tide_press")
+	var foe := put(st, 1, "stoneback")
+	ok(act(st, 0, {"t": "power", "target": "u%d" % int(foe["uid"])})["ok"] and int(foe["jam"]) == 1, "Flash Freeze jams a print")
+	st = game([], [], "cyclone_rig", "tide_press")
+	var plain := put(st, 0, "mossmunk")
+	act(st, 0, {"t": "power", "target": "u%d" % int(plain["uid"])})
+	ok((plain["kw"] as Array).has("rush"), "Tailwind gives Rush")
+	st = game([], [], "resin_vat", "tide_press")
+	plain = put(st, 0, "mossmunk")
+	act(st, 0, {"t": "power", "target": "u%d" % int(plain["uid"])})
+	ok(int(plain["hp"]) == 5, "Cure gives +2 Health")
+	st = game([], [], "pellet_press", "tide_press")
+	var sp: int = int(st["players"][0]["spool"])
+	act(st, 0, {"t": "power"})
+	ok(int(st["players"][0]["spool"]) == sp - 2 + 4, "Hopper Refill nets +2 Filament on the Spool")
+	st = game([], [], "titan_gantry", "tide_press")
+	act(st, 0, {"t": "power"})
+	ok(int(st["players"][0]["armor"]) == 3 and int(st["players"][0]["flow"]) == 7, "Brace gives 3 Armor for 3 Filament")
+	st = game([], [], "delta_rig", "tide_press")
+	var cards_before: int = st["players"][0]["hand"].size()
+	act(st, 0, {"t": "power"})
+	ok(st["players"][0]["hand"].size() == cards_before + 1, "Rapid Pull draws")
+
+
+## A throwaway Profile to test saves, ranks and the shop without touching the real one.
+func fresh_profile() -> Node:
+	var pr: Node = load("res://scripts/core/profile.gd").new()
+	pr.path = "user://test_profile_rules.json"
+	pr.data = pr.fresh()
+	pr.choose_starter("cinderpaw")
+	return pr
+
+
+func _progression() -> void:
+	print("progression")
+	ok(GameData.rank_from_xp(0)["rank"] == 1, "everyone starts at rank 1")
+	var need: int = GameData.xp_to_advance(1)
+	ok(GameData.rank_from_xp(need - 1)["rank"] == 1 and GameData.rank_from_xp(need)["rank"] == 2, "rank 2 comes at exactly %d XP" % need)
+	ok(GameData.rank_from_xp(10000000)["rank"] == GameData.RANK_MAX and GameData.rank_from_xp(10000000)["need"] == 0, "the rank cap holds")
+	var total := 0
+	for r in range(1, GameData.RANK_MAX):
+		total += GameData.xp_to_advance(r)
+	ok(total >= 12000, "the full climb is long (%d XP)" % total)
+
+	var pr := fresh_profile()
+	ok(pr.rank_level() == 1 and pr.owns_printer("ember_forge"), "a new player is rank 1 with a Printer")
+	pr.data["coins"] = 100000
+	ok(pr.buy_printer("stone_kiln") != "", "a Printer needs rank (rank %d)" % pr.printer_rank("stone_kiln"))
+	ok(pr.buy_mod("stepper") != "", "a mod needs rank too")
+	ok(pr.buy_mod("spool") == "" and pr.mod_level("spool") == 1, "a rank-1 mod can be bought")
+	ok(pr.buy_mod("spool") != "", "the next level of it needs more rank")
+	pr.data["xp"] = 100000
+	ok(pr.buy_printer("stone_kiln") == "" and pr.owns_printer("stone_kiln"), "with rank, the Printer can be bought")
+	ok(pr.buy_printer("tide_press") == "" and pr.owns_printer("tide_press"), "an unpicked starter Printer is buyable")
+	var c0: int = pr.coins()
+	ok(pr.buy_mod("spool") == "" and pr.coins() == c0 - 700 and pr.mod_level("spool") == 2, "mod prices come off your coins")
+	ok(pr.buy_mod("frame") == "" and pr.buy_mod("bed") == "" and pr.buy_mod("sorter") == "", "more mods")
+
+	ok(pr.install_mod("ember_forge", 0, "spool") == "" and pr.install_mod("ember_forge", 1, "frame") == "", "mods go into slots")
+	ok(pr.install_mod("ember_forge", 2, "bed") != "", "a 2-slot Printer has no third slot")
+	ok(pr.install_mod("ember_forge", 0, "stepper") != "", "an unbought mod cannot be installed")
+	ok(pr.battle_mods("ember_forge") == {"spool": 2, "frame": 1}, "battle mods are the installed ones at their owned level")
+	pr.install_mod("ember_forge", 1, "spool")
+	ok(pr.battle_mods("ember_forge") == {"spool": 2}, "the same mod cannot sit in two slots")
+	pr.install_mod("stone_kiln", 0, "spool")
+	ok(pr.battle_mods("stone_kiln") == {"spool": 2}, "but one mod can serve several Printers")
+
+	# Winning pays less than it used to, and gives Maker XP.
+	var before: int = pr.coins()
+	var xp_before: int = int(pr.data["xp"])
+	pr.install_mod("ember_forge", 1, "sorter")
+	var rw: Dictionary = pr.record_battle("quick", true, 1, "", "ember_forge")
+	ok(int(rw["coins"]) == GameData.WIN_COINS[1] + 4 and pr.coins() == before + int(rw["coins"]), "a win pays %d coins plus the Coin Sorter" % GameData.WIN_COINS[1])
+	ok(int(rw["xp"]) == GameData.XP_WIN[1] and int(pr.data["xp"]) == xp_before + int(rw["xp"]), "and Maker XP")
+	rw = pr.record_battle("quick", false, 1, "", "ember_forge")
+	ok(int(rw["coins"]) == GameData.LOSS_COINS and int(rw["xp"]) == GameData.XP_LOSS[1], "a loss still pays a little")
+	rw = pr.record_battle("rival", true, 0, "pip", "ember_forge")
+	ok(bool(rw["first_clear"]) and str(rw["pack"]) == "standard" and int(rw["xp"]) == GameData.XP_WIN[0] + GameData.XP_FIRST_CLEAR, "a first clear adds a pack and bonus XP")
+	ok(pr.record_battle("hotseat", true)["coins"] == 0, "pass-and-play pays nothing")
+
+	# An old (version 1) save keeps its workshop upgrades as mods.
+	var old := {"version": 1, "started": true, "coins": 500, "printers": ["ember_forge"], "upgrades": {"frame": 2, "bed": 1, "spool": 1, "sorter": 3},
+		"cards": {"mossmunk": 2}, "decks": [{"cards": [], "printer": "ember_forge"}, {"cards": [], "printer": "ember_forge"}, {"cards": [], "printer": "ember_forge"}]}
+	var f := FileAccess.open("user://test_profile_rules.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(old))
+	f.close()
+	var pm: Node = load("res://scripts/core/profile.gd").new()
+	pm.path = "user://test_profile_rules.json"
+	pm.data = pm.fresh()
+	pm.load_profile()
+	ok(pm.mod_level("frame") == 2 and pm.mod_level("sorter") == 3 and pm.mod_level("spool") == 1, "old upgrades become mods")
+	ok(pm.installed_mods("ember_forge").size() == 2, "and fill the Printer's slots (2 of 4 fit)")
+	ok(int(pm.data["version"]) == Profile.SAVE_VERSION and not pm.data.has("upgrades"), "the save is on the new version")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
+	pr.free()
+	pm.free()
 
 
 func _network_view() -> void:

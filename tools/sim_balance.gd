@@ -16,7 +16,7 @@ func _initialize() -> void:
 		{"name": "starter/Craftsman", "deck": GameData.STARTER_DECK, "level": 1, "up": {}},
 		{"name": "starter/Master", "deck": GameData.STARTER_DECK, "level": 2, "up": {}},
 		{"name": "mid/Master", "deck": MID_DECK, "level": 2, "up": {"frame": 1, "bed": 1}},
-		{"name": "late/Master", "deck": LATE_DECK, "level": 2, "up": {"frame": 2, "bed": 2, "spool": 1}},
+		{"name": "late/Master", "deck": LATE_DECK, "level": 2, "up": {"frame": 2, "bed": 2}},
 	]
 	for pl in pilots:
 		assert(GameData.deck_error(GameData.expand(pl["deck"])) == "")
@@ -30,7 +30,7 @@ func _initialize() -> void:
 			var wins := 0
 			for i in GAMES:
 				var st := BattleEngine.new_game({"seed": 900 + i * 53, "players": [
-					{"printer": "ember_forge", "deck": GameData.expand(pl["deck"]), "upgrades": pl["up"]},
+					{"printer": "ember_forge", "deck": GameData.expand(pl["deck"]), "mods": pl["up"]},
 					{"printer": r["printer"], "deck": GameData.expand(r["deck"]), "hp_bonus": r["hp_bonus"]}]})
 				var steps := 0
 				while not st["over"] and steps < 4000:

@@ -1,10 +1,12 @@
 extends Node
 ## Autoload `Profile`: the player's local save (coins, cards, decks, printers,
-## workshop upgrades, campaign progress, settings). Stored as JSON in user://.
+## Printer mods, Maker Rank, campaign progress, settings). Stored as JSON in user://.
 
 signal changed
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
+## Save keys whose contents are free-form dictionaries (ids come from the save).
+const FREE_KEYS := ["cards", "mods", "installed"]
 const DECK_SLOTS := 3
 
 var path := "user://printforge_profile.json"
@@ -35,7 +37,9 @@ static func fresh() -> Dictionary:
 		"decks": decks,
 		"active_deck": 0,
 		"printers": [],
-		"upgrades": {"frame": 0, "bed": 0, "spool": 0, "sorter": 0},
+		"xp": 0,
+		"mods": {},
+		"installed": {},
 		"packs": {"standard": 0, "premium": 0},
 		"rivals_beaten": [],
 		"stats": {"wins": 0, "losses": 0, "packs_opened": 0},
@@ -52,8 +56,12 @@ func load_profile() -> void:
 	if not parsed is Dictionary:
 		push_warning("Profile at %s could not be read; starting fresh." % path)
 		return
+	var migrated := _migrate(parsed)
 	_merge(data, parsed)
 	_sanitize()
+	if migrated:
+		_auto_install()
+		save()
 
 
 func save() -> void:
@@ -79,12 +87,39 @@ func _merge(into: Dictionary, from: Dictionary) -> void:
 	for k in into:
 		if not from.has(k):
 			continue
-		if into[k] is Dictionary and from[k] is Dictionary and k != "cards":
+		if FREE_KEYS.has(k):
+			if from[k] is Dictionary:
+				into[k] = from[k]
+		elif into[k] is Dictionary and from[k] is Dictionary:
 			_merge(into[k], from[k])
 		elif typeof(into[k]) == typeof(from[k]) or (into[k] is int and from[k] is float):
 			into[k] = from[k]
-	if from.get("cards") is Dictionary:
-		into["cards"] = from["cards"]
+
+
+## Brings an older save up to date. Version 1 had four workshop upgrades; they
+## become the matching Printer mods. Returns true if anything was converted.
+func _migrate(parsed: Dictionary) -> bool:
+	if int(parsed.get("version", 1)) >= SAVE_VERSION:
+		return false
+	var mods: Dictionary = {}
+	var old: Dictionary = parsed.get("upgrades", {}) if parsed.get("upgrades") is Dictionary else {}
+	for id in ["frame", "bed", "spool", "sorter"]:
+		var level := clampi(int(old.get(id, 0)), 0, GameData.mod_max(id))
+		if level > 0:
+			mods[id] = level
+	parsed["mods"] = mods
+	parsed["version"] = SAVE_VERSION
+	return true
+
+
+## Puts every owned mod on every Printer that has room, in catalog order.
+func _auto_install() -> void:
+	for printer_id in data["printers"]:
+		var list: Array = []
+		for m in GameData.PRINTER_MODS:
+			if list.size() < GameData.printer_slots(printer_id) and mod_level(m["id"]) > 0:
+				list.append(m["id"])
+		data["installed"][printer_id] = list
 
 
 ## JSON turns every number into a float and may carry stale ids; put it right.
@@ -97,9 +132,13 @@ func _sanitize() -> void:
 		if not def.is_empty() and not def.get("token", false) and int(data["cards"][id]) > 0:
 			cards[str(id)] = mini(int(data["cards"][id]), GameData.max_copies(str(id)))
 	data["cards"] = cards
-	for k in data["upgrades"]:
-		var u := GameData.upgrade(k)
-		data["upgrades"][k] = clampi(int(data["upgrades"][k]), 0, (u.get("costs", []) as Array).size())
+	data["xp"] = maxi(0, int(data["xp"]))
+	var mods: Dictionary = {}
+	for k in data["mods"]:
+		var level := clampi(int(data["mods"][k]), 0, GameData.mod_max(str(k)))
+		if level > 0:
+			mods[str(k)] = level
+	data["mods"] = mods
 	for k in data["packs"]:
 		data["packs"][k] = maxi(0, int(data["packs"][k]))
 	for k in data["stats"]:
@@ -109,6 +148,14 @@ func _sanitize() -> void:
 		if GameData.printer(str(id))["id"] == str(id) and not owned.has(str(id)):
 			owned.append(str(id))
 	data["printers"] = owned
+	var installed: Dictionary = {}
+	for printer_id in owned:
+		var list: Array = []
+		for id in (data["installed"].get(printer_id, []) as Array):
+			if mod_level(str(id)) > 0 and not list.has(str(id)) and list.size() < GameData.printer_slots(printer_id):
+				list.append(str(id))
+		installed[printer_id] = list
+	data["installed"] = installed
 	var decks: Array = data["decks"]
 	while decks.size() < DECK_SLOTS:
 		decks.append({"cards": [], "printer": "ember_forge"})
@@ -141,12 +188,94 @@ func owns_printer(id: String) -> bool:
 	return (data["printers"] as Array).has(id)
 
 
-func upgrade_level(id: String) -> int:
-	return int(data["upgrades"].get(id, 0))
+# -------------------------------------------------------------------- rank
+
+## {"rank", "into", "need"} for the Maker Rank.
+func rank() -> Dictionary:
+	return GameData.rank_from_xp(int(data["xp"]))
 
 
-func battle_upgrades() -> Dictionary:
-	return {"frame": upgrade_level("frame"), "bed": upgrade_level("bed"), "spool": upgrade_level("spool")}
+func rank_level() -> int:
+	return int(rank()["rank"])
+
+
+## Adds Maker XP. Returns {"gained", "from", "to"} ranks.
+func add_xp(amount: int) -> Dictionary:
+	var before := rank_level()
+	data["xp"] = int(data["xp"]) + maxi(amount, 0)
+	return {"gained": amount, "from": before, "to": rank_level()}
+
+
+# -------------------------------------------------------------- printer mods
+
+func mod_level(id: String) -> int:
+	return int(data["mods"].get(id, 0))
+
+
+## Coins the next level of a mod costs, or -1 when it is at the top.
+func mod_cost(id: String) -> int:
+	var costs: Array = GameData.mod(id).get("costs", [])
+	var lvl := mod_level(id)
+	return int(costs[lvl]) if lvl < costs.size() else -1
+
+
+## Maker Rank the next level of a mod needs, or 0 at the top.
+func mod_rank(id: String) -> int:
+	var ranks: Array = GameData.mod(id).get("ranks", [])
+	var lvl := mod_level(id)
+	return int(ranks[lvl]) if lvl < ranks.size() else 0
+
+
+func buy_mod(id: String) -> String:
+	var cost := mod_cost(id)
+	if cost < 0:
+		return "That mod is already at its top level."
+	if rank_level() < mod_rank(id):
+		return "Reach Maker Rank %d to buy that." % mod_rank(id)
+	if coins() < cost:
+		return "Not enough Forge Coins."
+	data["coins"] = coins() - cost
+	data["mods"][id] = mod_level(id) + 1
+	save()
+	return ""
+
+
+func installed_mods(printer_id: String) -> Array:
+	return data["installed"].get(printer_id, [])
+
+
+## Puts a mod you own into a Printer's slot, or empties the slot with "".
+func install_mod(printer_id: String, slot: int, mod_id: String) -> String:
+	if not owns_printer(printer_id):
+		return "You do not own that Printer."
+	var list: Array = (data["installed"].get(printer_id, []) as Array).duplicate()
+	if slot < 0 or slot >= GameData.printer_slots(printer_id):
+		return "That Printer has no such slot."
+	while list.size() <= slot:
+		list.append("")
+	if mod_id != "":
+		if mod_level(mod_id) <= 0:
+			return "You have not bought that mod yet."
+		var at := list.find(mod_id)
+		if at >= 0 and at != slot:
+			list[at] = ""
+		list[slot] = mod_id
+	else:
+		list[slot] = ""
+	while not list.is_empty() and list.back() == "":
+		list.pop_back()
+	data["installed"][printer_id] = list
+	save()
+	return ""
+
+
+## The mods a battle on this Printer gets: {mod id: level}, only what is installed.
+func battle_mods(printer_id: String) -> Dictionary:
+	var out: Dictionary = {}
+	for id in installed_mods(printer_id):
+		if str(id) != "" and mod_level(str(id)) > 0:
+			out[str(id)] = mod_level(str(id))
+	return GameData.clean_mods(printer_id, out)
 
 
 func packs(kind: String) -> int:
@@ -379,39 +508,27 @@ func open_pack(kind: String) -> Array:
 func buy_printer(id: String) -> String:
 	if owns_printer(id):
 		return "You already own that Printer."
-	var price: int = int(GameData.printer(id)["price"])
-	# Starter printers that were not picked cost a flat fee.
-	if price == 0:
-		price = 300
+	if rank_level() < printer_rank(id):
+		return "Reach Maker Rank %d to buy that Printer." % printer_rank(id)
+	var price := printer_price(id)
 	if coins() < price:
 		return "Not enough Forge Coins."
 	data["coins"] = coins() - price
 	(data["printers"] as Array).append(id)
+	data["installed"][id] = []
 	save()
 	return ""
 
 
 func printer_price(id: String) -> int:
 	var price: int = int(GameData.printer(id)["price"])
-	return 300 if price == 0 else price
+	# Starter Printers that were not picked cost a flat fee.
+	return GameData.STARTER_PRINTER_PRICE if price == 0 else price
 
 
-func upgrade_cost(id: String) -> int:
-	var costs: Array = GameData.upgrade(id).get("costs", [])
-	var lvl := upgrade_level(id)
-	return int(costs[lvl]) if lvl < costs.size() else -1
-
-
-func buy_upgrade(id: String) -> String:
-	var cost := upgrade_cost(id)
-	if cost < 0:
-		return "That upgrade is already at its top level."
-	if coins() < cost:
-		return "Not enough Forge Coins."
-	data["coins"] = coins() - cost
-	data["upgrades"][id] = upgrade_level(id) + 1
-	save()
-	return ""
+func printer_rank(id: String) -> int:
+	var rank: int = int(GameData.printer(id).get("rank", 1))
+	return GameData.STARTER_PRINTER_RANK if int(GameData.printer(id)["price"]) == 0 else rank
 
 
 # ----------------------------------------------------------------- results
@@ -429,33 +546,44 @@ func next_rival_index() -> int:
 
 
 ## Records a finished battle and pays out. mode: "rival" | "quick" | "tutorial" | "lan" | "hotseat".
-## Returns {"coins": int, "pack": String, "first_clear": bool}.
-func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "") -> Dictionary:
-	var reward := {"coins": 0, "pack": "", "first_clear": false}
+## `printer_id` is the Printer the player used (its Coin Sorter counts).
+## Returns {"coins", "xp", "pack", "first_clear", "rank_from", "rank_to"}.
+func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "", printer_id: String = "") -> Dictionary:
+	var reward := {"coins": 0, "xp": 0, "pack": "", "first_clear": false, "rank_from": rank_level(), "rank_to": rank_level()}
 	if mode == "hotseat":
 		return reward
+	var lv := clampi(level, 0, 2)
 	if mode == "tutorial":
 		# Practice: pays once, and never counts as a win or a loss.
 		if won and not bool(data["tutorial_done"]):
 			data["tutorial_done"] = true
 			reward["coins"] = int(GameData.TUTORIAL["coins"])
+			reward["xp"] = GameData.XP_TUTORIAL
 			reward["first_clear"] = true
 			data["coins"] = coins() + int(reward["coins"])
+			add_xp(int(reward["xp"]))
+			reward["rank_to"] = rank_level()
 			save()
 		return reward
+	var sorter: int = int(GameData.mod("sorter")["per"]) * int(battle_mods(printer_id).get("sorter", 0)) if printer_id != "" else 0
 	if won:
 		data["stats"]["wins"] = int(data["stats"]["wins"]) + 1
-		reward["coins"] = int(GameData.WIN_COINS[clampi(level, 0, 2)]) + 5 * upgrade_level("sorter")
+		reward["coins"] = int(GameData.WIN_COINS[lv]) + sorter
+		reward["xp"] = GameData.XP_PVP_WIN if mode == "lan" else int(GameData.XP_WIN[lv])
 		if mode == "rival" and rival_id != "" and not rival_beaten(rival_id):
 			var r := GameData.rival(rival_id)
 			(data["rivals_beaten"] as Array).append(rival_id)
-			reward["coins"] = int(r["coins"]) + 5 * upgrade_level("sorter")
+			reward["coins"] = int(r["coins"]) + sorter
+			reward["xp"] = int(reward["xp"]) + GameData.XP_FIRST_CLEAR
 			reward["pack"] = str(r["pack"])
 			reward["first_clear"] = true
 			data["packs"][reward["pack"]] = packs(reward["pack"]) + 1
 	else:
 		data["stats"]["losses"] = int(data["stats"]["losses"]) + 1
 		reward["coins"] = GameData.LOSS_COINS
+		reward["xp"] = GameData.XP_PVP_LOSS if mode == "lan" else int(GameData.XP_LOSS[lv])
 	data["coins"] = coins() + int(reward["coins"])
+	add_xp(int(reward["xp"]))
+	reward["rank_to"] = rank_level()
 	save()
 	return reward

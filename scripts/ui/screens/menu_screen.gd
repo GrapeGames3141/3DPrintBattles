@@ -50,6 +50,7 @@ func build() -> void:
 	var beaten: int = (Profile.data["rivals_beaten"] as Array).size()
 	var lines := [
 		["coin", UI.GOLD, "%d Forge Coins" % Profile.coins()],
+		["burst", UI.CYAN, "Maker Rank %d" % Profile.rank_level()],
 		["pack", UI.CYAN, "%d of %d cards collected" % [prog.x, prog.y]],
 		["star", UI.AMBER, "%d of %d rivals beaten" % [beaten, GameData.RIVALS.size()]],
 		["shield", UI.GOOD, "%d wins, %d losses" % [int(Profile.data["stats"]["wins"]), int(Profile.data["stats"]["losses"])]],
@@ -159,7 +160,7 @@ func _open_help() -> void:
 		["burst", UI.AMBER, "Attacking", "Drag your print onto an enemy print or Printer. Prints deal their Attack to each other."],
 		["flame", UI.BAD, "Tools", "One-shot effects. Drag a tool onto its target, or tap the card and then tap the target."],
 		["shield", Color("dfe6f0"), "Upgrades", "Printed armor that you bolt onto one of your prints. It stays on for the rest of the battle."],
-		["star", UI.GOLD, "Printer Power", "Each Printer has a Power that costs %d Filament and can be used once per turn." % GameData.POWER_COST],
+		["star", UI.GOLD, "Printer Power", "Each Printer has a Power. It costs Filament and can be used once per turn."],
 		["hex", UI.BAD, "Winning", "Bring the enemy Printer's Health to 0. Win coins, open card packs, and build a stronger deck."],
 	]
 	var y := 78.0

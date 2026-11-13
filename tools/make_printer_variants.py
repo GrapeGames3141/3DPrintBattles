@@ -23,6 +23,13 @@ VARIANTS = {
     "stone_kiln": (28, 0.38, 1.0),
     "verdant_loom": (128, 1.0, 1.0),
     "arcane_engine": (278, 1.05, 1.05),
+    # Later Printers: same machine until they get their own models.
+    "frost_chamber": (192, 0.85, 1.12),
+    "cyclone_rig": (160, 0.65, 1.12),
+    "resin_vat": (32, 0.6, 0.95),
+    "delta_rig": (322, 0.8, 1.0),
+    "pellet_press": (92, 0.5, 0.9),
+    "titan_gantry": (0, 0.08, 0.78),
 }
 
 

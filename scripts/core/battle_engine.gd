@@ -21,7 +21,7 @@ const SCRAP := "filament_scrap"
 # ------------------------------------------------------------------ setup
 
 ## cfg = {"seed": int, "first": -1|0|1,
-##        "players": [{"printer": id, "deck": [ids], "upgrades": {frame, bed, spool}, "hp_bonus": int}, x2]}
+##        "players": [{"printer": id, "deck": [ids], "mods": {mod id: level}, "hp_bonus": int}, x2]}
 static func new_game(cfg: Dictionary) -> Dictionary:
 	var st := {
 		"rng": int(cfg.get("seed", 1)) & 0x7fffffff,
@@ -30,27 +30,34 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 		"over": false,
 		"winner": -1,
 		"uid": 1,
-		"top_up": GameData.HAND_TOP_UP,
 		"players": [],
 	}
 	for seat in 2:
 		var pc: Dictionary = cfg["players"][seat]
-		var up: Dictionary = pc.get("upgrades", {})
-		var hp: int = GameData.PRINTER_HP + 2 * clampi(int(up.get("frame", 0)), 0, 3) + int(pc.get("hp_bonus", 0))
+		var printer_id := str(pc["printer"])
+		var mods: Dictionary = GameData.clean_mods(printer_id, pc.get("mods", {}))
+		var hp: int = GameData.PRINTER_HP + int(GameData.mod("frame").get("per", 2)) * int(mods.get("frame", 0)) + int(pc.get("hp_bonus", 0))
 		hp = maxi(hp, 10)
-		var spool: int = GameData.SPOOL_SIZE + GameData.SPOOL_PER_UPGRADE * clampi(int(up.get("spool", 0)), 0, 2)
+		var spool: int = GameData.SPOOL_SIZE + int(GameData.mod("spool")["per"]) * int(mods.get("spool", 0))
 		var deck: Array = (pc["deck"] as Array).duplicate()
 		_shuffle(st, deck)
 		st["players"].append({
-			"printer": str(pc["printer"]),
-			"hp": hp, "max_hp": hp, "armor": 0,
-			"flow": 0, "speed": GameData.PRINT_SPEED,
+			"printer": printer_id,
+			"hp": hp, "max_hp": hp, "armor": int(GameData.mod("enclosure")["per"]) * int(mods.get("enclosure", 0)),
+			"flow": 0, "speed": GameData.PRINT_SPEED + int(mods.get("stepper", 0)),
 			"spool": spool, "spool_max": spool,
 			"job": {},
 			"power_used": false,
+			"power_cost": maxi(1, GameData.power_cost(printer_id) - int(mods.get("hot_end", 0))),
 			"deck": deck, "hand": [], "board": [],
 			"fatigue": 0,
-			"bed_bonus": clampi(int(up.get("bed", 0)), 0, 3),
+			"bed_bonus": int(mods.get("bed", 0)),
+			"refund": GameData.SCRAP_REFUND + int(mods.get("sensor", 0)),
+			"head_start": 2 * int(mods.get("preheater", 0)),
+			"top_up": 4 if int(mods.get("slicer", 0)) > 0 else GameData.HAND_TOP_UP,
+			"first_draw": int(mods.get("quickstart", 0)),
+			"attune_atk": int(mods.get("mixer", 0)),
+			"turns": 0,
 		})
 	var first: int = int(cfg.get("first", -1))
 	if first != 0 and first != 1:
@@ -260,9 +267,9 @@ static func power_error(st: Dictionary, seat: int) -> String:
 	var p: Dictionary = st["players"][seat]
 	if bool(p["power_used"]):
 		return "Your Printer Power is already used this turn."
-	if int(p["spool"]) < GameData.POWER_COST:
+	if int(p["spool"]) < int(p["power_cost"]):
 		return "Not enough Filament left on your Spool."
-	if int(p["flow"]) < GameData.POWER_COST:
+	if int(p["flow"]) < int(p["power_cost"]):
 		return "Your Printer is done printing for this turn."
 	var power: Dictionary = GameData.printer(p["printer"])["power"]
 	if power.get("target", "") != "" and power_targets(st, seat).is_empty():
@@ -372,7 +379,8 @@ static func _play(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String
 	if cost > int(p["flow"]):
 		# A long print. The Filament is loaded now; the nozzle time is paid in
 		# instalments, starting with whatever is left of this turn.
-		var paid: int = int(p["flow"])
+		var paid: int = mini(int(p["flow"]) + int(p["head_start"]), cost - 1)
+		p["head_start"] = 0
 		p["spool"] = int(p["spool"]) - cost
 		p["flow"] = 0
 		(p["hand"] as Array).erase(c)
@@ -477,8 +485,8 @@ static func _power(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Strin
 		target = ""
 	elif not valid.has(target):
 		return "Choose a valid target."
-	p["spool"] = int(p["spool"]) - GameData.POWER_COST
-	p["flow"] = int(p["flow"]) - GameData.POWER_COST
+	p["spool"] = int(p["spool"]) - int(p["power_cost"])
+	p["flow"] = int(p["flow"]) - int(p["power_cost"])
 	p["power_used"] = true
 	ev.append({"e": "power", "seat": seat, "target": target, "flow": int(p["flow"]), "spool": int(p["spool"])})
 	_run(st, seat, GameData.printer(p["printer"])["power"]["effects"], {"target": target, "self": -1}, ev)
@@ -500,6 +508,7 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 	var seat: int = int(st["active"])
 	var p: Dictionary = st["players"][seat]
 	st["turn"] = int(st["turn"]) + 1
+	p["turns"] = int(p["turns"]) + 1
 	p["flow"] = int(p["speed"])
 	p["power_used"] = false
 	for u in p["board"]:
@@ -515,8 +524,11 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 		ev.append({"e": "job", "seat": seat, "card": {"uid": int(job["uid"]), "id": str(job["id"])}, "paid": int(job["paid"]),
 			"cost": int(job["cost"]), "start": false, "flow": int(p["flow"]), "spool": int(p["spool"])})
 	_draw(st, seat, ev)
+	if int(p["turns"]) == 1:
+		for i in int(p["first_draw"]):
+			_draw(st, seat, ev)
 	# A thin hand is topped up, so there is always something to print.
-	while (p["hand"] as Array).size() < int(st["top_up"]) and not (p["deck"] as Array).is_empty():
+	while (p["hand"] as Array).size() < int(p["top_up"]) and not (p["deck"] as Array).is_empty():
 		_draw(st, seat, ev)
 	_resolve(st, ev)
 
@@ -679,9 +691,11 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 		"fresh": true, "attacks": 0, "jam": 0, "gear": [],
 	}
 	# Prints that share their Printer's element come out a little sturdier.
-	if def.get("element", "") == GameData.printer(p["printer"])["element"]:
+	var element: String = str(def.get("element", ""))
+	if element != "Neutral" and element == GameData.printer(p["printer"])["element"]:
 		u["hp"] += 1
 		u["max_hp"] += 1
+		u["atk"] += int(p["attune_atk"])
 		u["attuned"] = true
 	if from_hand and int(p["bed_bonus"]) > 0:
 		u["atk"] += int(p["bed_bonus"])
@@ -730,9 +744,9 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 			(owner["board"] as Array).erase(u)
 			ev.append({"e": "death", "uid": int(u["uid"]), "seat": int(u["seat"])})
 			# The pieces of a real print (not a token) go back on the spool.
-			if GameData.SCRAP_REFUND > 0 and not GameData.card(u["id"]).get("token", false):
-				owner["spool"] = int(owner["spool"]) + GameData.SCRAP_REFUND
-				ev.append({"e": "scrap", "seat": int(u["seat"]), "uid": int(u["uid"]), "n": GameData.SCRAP_REFUND, "spool": int(owner["spool"])})
+			if int(owner["refund"]) > 0 and not GameData.card(u["id"]).get("token", false):
+				owner["spool"] = int(owner["spool"]) + int(owner["refund"])
+				ev.append({"e": "scrap", "seat": int(u["seat"]), "uid": int(u["uid"]), "n": int(owner["refund"]), "spool": int(owner["spool"])})
 		for u in dead:
 			_run(st, int(u["seat"]), GameData.card(u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
 	var down0: bool = int(st["players"][0]["hp"]) <= 0
