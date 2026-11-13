@@ -226,14 +226,96 @@ func _place(parent: Node3D, n: Node3D, pos: Vector3, rot: Vector3) -> void:
 	n.rotation_degrees = rot
 
 
-func box(parent: Node3D, size: Vector3, pos: Vector3, col: Color, rot := Vector3.ZERO, m: Material = null) -> MeshInstance3D:
+func box(parent: Node3D, size: Vector3, pos: Vector3, col: Color, rot := Vector3.ZERO, m: Material = null, bevel := -1.0) -> MeshInstance3D:
 	var n := MeshInstance3D.new()
-	var b := BoxMesh.new()
-	b.size = size
-	n.mesh = b
+	# Printed parts have softened edges, which is also what catches the light.
+	var r := bevel if bevel >= 0.0 else clampf(minf(size.x, minf(size.y, size.z)) * 0.3, 0.0, 0.05)
+	n.mesh = _rounded_box(size, r)
 	n.material_override = m if m else mat(col)
 	_place(parent, n, pos, rot)
 	return n
+
+
+static var _rbox_cache := {}
+
+
+## A box with rounded edges and corners: every vertex of a cube grid is pulled
+## onto the surface of a box of `size` minus `r`, plus `r` along the outward
+## direction. The grid is dense near the edges so the rounding is smooth.
+func _rounded_box(size: Vector3, r: float) -> Mesh:
+	if r <= 0.0005:
+		var b := BoxMesh.new()
+		b.size = size
+		return b
+	var key := "%s|%.4f" % [size, r]
+	if _rbox_cache.has(key):
+		return _rbox_cache[key]
+	var half := size * 0.5
+	var inner := half - Vector3(r, r, r)
+	var axes: Array = []
+	for a in 3:
+		var h: float = half[a]
+		var i: float = maxf(inner[a], 0.0)
+		var steps := [0.0, i]
+		for k in [0.2, 0.4, 0.6, 0.8]:
+			steps.append(i + (h - i) * k)
+		steps.append(h)
+		var full: Array = []
+		for v in steps:
+			if v > 0.0:
+				full.append(-v)
+		full.reverse()
+		axes.append(full + steps)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for a in 3:
+		var b := (a + 1) % 3
+		var c := (a + 2) % 3
+		for sgn in [-1.0, 1.0]:
+			var nb: int = axes[b].size()
+			var nc: int = axes[c].size()
+			var grid: Array = []
+			for ib in nb:
+				for ic in nc:
+					var q := Vector3.ZERO
+					q[a] = sgn * half[a]
+					q[b] = axes[b][ib]
+					q[c] = axes[c][ic]
+					var pin := Vector3(clampf(q.x, -inner.x, inner.x), clampf(q.y, -inner.y, inner.y), clampf(q.z, -inner.z, inner.z))
+					var d := q - pin
+					var nrm := d.normalized() if d.length() > 0.00001 else Vector3.ZERO
+					grid.append([pin + nrm * r, nrm])
+			for ib in nb - 1:
+				for ic in nc - 1:
+					var i00: Array = grid[ib * nc + ic]
+					var i10: Array = grid[(ib + 1) * nc + ic]
+					var i01: Array = grid[ib * nc + ic + 1]
+					var i11: Array = grid[(ib + 1) * nc + ic + 1]
+					var tris: Array = [[i00, i01, i11], [i00, i11, i10]]
+					if sgn < 0.0:
+						tris = [[i00, i11, i01], [i00, i10, i11]]
+					for t in tris:
+						for v in t:
+							st.set_normal(v[1])
+							st.add_vertex(v[0])
+	var mesh := st.commit()
+	_rbox_cache[key] = mesh
+	return mesh
+
+
+## Glossy, unlayered material for glass, gems and lamps. `glow` makes it emit.
+func gloss(col: Color, glow := 0.0, alpha := 1.0, rough := 0.1) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(col.r, col.g, col.b, alpha)
+	m.roughness = rough
+	m.metallic_specular = 0.9
+	if alpha < 1.0:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	if glow > 0.0:
+		m.emission_enabled = true
+		m.emission = col
+		m.emission_energy_multiplier = glow
+	return m
 
 
 func cyl(parent: Node3D, r_bottom: float, r_top: float, h: float, pos: Vector3, col: Color, rot := Vector3.ZERO, sides := 48, m: Material = null) -> MeshInstance3D:
