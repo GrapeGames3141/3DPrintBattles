@@ -21,7 +21,9 @@ gives you its Printer, a 20-card starter deck, 150 Forge Coins and three packs,
 and drops you into a guided tutorial battle.
 
 The game plays in landscape or portrait and re-lays itself out live when the
-window or phone turns.
+window or phone turns. The main menu is the painted workshop itself: tap the
+arena to battle, the printer for the Workshop, the monitor for your collection,
+the card stack for packs and the shelf of figures and armour for Blueprints.
 
 ## The game
 

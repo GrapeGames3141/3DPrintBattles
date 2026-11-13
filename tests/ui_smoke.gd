@@ -72,6 +72,38 @@ func card_center(scr, uid: int) -> Vector2:
 	return Vector2.ZERO
 
 
+## The menu is the painted workshop: tapping each object opens its screen.
+func hotspot_checks() -> void:
+	var want := {"battle": "play_screen.gd", "blueprints": "blueprint_screen.gd", "workshop": "workshop_screen.gd",
+		"collection": "collection_screen.gd", "shop": "shop_screen.gd"}
+	var spots: Array = []
+	for ch in app.current.get_children():
+		if ch.get_script() != null and str(ch.get_script().resource_path).ends_with("hotspot.gd"):
+			spots.append(ch)
+	ok(spots.size() == want.size(), "the menu has a hotspot for each place (%d)" % spots.size())
+	var opened: Array = []
+	for i in spots.size():
+		app.go("menu")
+		await wait(0.5)
+		var hs: Array = []
+		for ch in app.current.get_children():
+			if ch.get_script() != null and str(ch.get_script().resource_path).ends_with("hotspot.gd"):
+				hs.append(ch)
+		var h = hs[i]
+		var mid := Vector2.ZERO
+		for q in h.outline:
+			mid += q
+		mid /= h.outline.size()
+		ok(Geometry2D.is_point_in_polygon(mid, h.outline), "hotspot %d has a tappable middle" % i)
+		await click(mid + app.stage.global_position)
+		await wait(0.6)
+		opened.append(app.current.get_script().resource_path.get_file())
+	for f in want.values():
+		ok(opened.has(f), "tapping the painted workshop opens %s" % f)
+	app.go("menu")
+	await wait(0.5)
+
+
 func run() -> void:
 	await process_frame
 	Session = load("res://scripts/core/battle_session.gd")
@@ -112,6 +144,7 @@ func run() -> void:
 	await wait(0.5)
 	ok(app.current != null and app.current.get_script().resource_path.ends_with("menu_screen.gd"), "boots to the menu")
 
+	await hotspot_checks()
 	await pack_checks(profile)
 	await blueprint_checks(profile)
 	await input_checks(profile)
