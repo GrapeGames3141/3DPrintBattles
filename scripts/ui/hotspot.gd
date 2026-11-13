@@ -19,6 +19,9 @@ var _t := 0.0
 var _plaque: PanelContainer
 var _desc: Label
 var _anchor := Vector2.ZERO
+var _badge: PanelContainer
+var _phase := 0.0
+var _shimmer_was := false
 
 
 ## `points` outline the object; `label_at` is where the plaque's middle sits.
@@ -43,7 +46,35 @@ static func make(points: PackedVector2Array, label_at: Vector2, title: String, s
 	h.material = add
 	h._anchor = label_at - lo
 	h._build_plaque(title, subs, desc)
+	# Hidden until the pointer is on the object, so the picture stays clear.
+	h._plaque.visible = false
+	h._phase = float(hash(title) % 1000) / 1000.0 * 8.0
 	return h
+
+
+## A small count on the object (packs waiting), the only thing that stays on show.
+func set_badge(text: String) -> void:
+	if _badge != null:
+		_badge.queue_free()
+		_badge = null
+	if text == "":
+		return
+	_badge = PanelContainer.new()
+	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge.material = CanvasItemMaterial.new()
+	var st := UI.box(Color(0.05, 0.07, 0.12, 0.92), UI.GOLD, 3, 16, 5)
+	st.content_margin_left = 11
+	st.content_margin_right = 11
+	st.content_margin_top = 1
+	st.content_margin_bottom = 3
+	_badge.add_theme_stylebox_override("panel", st)
+	var l := UI.label(text, 22, UI.GOLD, true, 4)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge.add_child(l)
+	_badge.z_index = 2
+	add_child(_badge)
+	_badge.resized.connect(func(): _badge.position = _anchor - _badge.size * 0.5)
+	_badge.position = _anchor - _badge.size * 0.5
 
 
 func _build_plaque(title: String, subs: Array, desc: String) -> void:
@@ -105,6 +136,7 @@ func _notification(what: int) -> void:
 func _set_hover(on: bool) -> void:
 	_hover = on
 	_desc.visible = on
+	_plaque.visible = on or _down
 	_plaque.add_theme_stylebox_override("panel", _plaque_style(on))
 	_plaque.reset_size()
 	_place_plaque()
@@ -116,10 +148,12 @@ func _gui_input(event: InputEvent) -> void:
 		if event.pressed:
 			_down = true
 			_hover = true
+			_plaque.visible = true
 			queue_redraw()
 			accept_event()
 		elif _down:
 			_down = false
+			_plaque.visible = _hover
 			queue_redraw()
 			accept_event()
 			if _has_point(event.position):
@@ -128,10 +162,17 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if not (_hover or _down or attention):
-		return
 	_t += delta
-	queue_redraw()
+	# Every few seconds a faint glint runs over each object, so a finger knows
+	# what can be tapped without a label in the way.
+	if _hover or _down or attention or _shimmer() > 0.0 or _shimmer_was:
+		_shimmer_was = _shimmer() > 0.0
+		queue_redraw()
+
+
+func _shimmer() -> float:
+	var ph := fmod(_t + _phase, 8.0)
+	return sin(PI * ph / 1.6) * 0.28 if ph < 1.6 else 0.0
 
 
 func _draw() -> void:
@@ -142,6 +183,8 @@ func _draw() -> void:
 		glow = 0.7 + 0.15 * sin(_t * 5.0)
 	elif attention:
 		glow = 0.25 + 0.2 * sin(_t * 2.6)
+	else:
+		glow = _shimmer()
 	if glow <= 0.0:
 		return
 	draw_colored_polygon(_local, Color(accent.r, accent.g, accent.b, 0.13 * glow))

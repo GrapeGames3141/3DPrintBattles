@@ -69,6 +69,8 @@ func build() -> void:
 		h.attention = key == "shop" and packs > 0
 		h.activated.connect(app.go.bind("play" if key == "battle" else key))
 		_keep_plaque_on_screen(h)
+		if h.attention:
+			h.set_badge(str(packs))
 		add_child(h)
 
 	# Coins and rank, and the three small buttons.
