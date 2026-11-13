@@ -87,7 +87,8 @@ func set_targeted(on: bool, color := UI.BAD) -> void:
 
 func _draw() -> void:
 	if targeted:
-		draw_style_box(UI.box(Color(target_color, 0.16), target_color, 4, 18), Rect2(-4, -6, SIZE.x + 8, 160))
+		# The same box as the area that counts as a tap on the Printer.
+		draw_style_box(UI.box(Color(target_color, 0.16), target_color, 4, 18), Rect2(Vector2(-4, -4), SIZE + Vector2(8, 8)))
 
 
 func flash() -> void:

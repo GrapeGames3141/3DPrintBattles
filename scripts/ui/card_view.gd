@@ -17,6 +17,8 @@ var build: Dictionary = {}
 ## Show a creature as its raw, unpainted print (used for cards not yet owned).
 var raw := false
 var _glow: Panel
+var _glow_color: Variant = null
+var _glow_k := 1.0
 var _count: Label
 
 
@@ -59,6 +61,7 @@ static func lines_material() -> ShaderMaterial:
 func set_card(id: String) -> void:
 	card_id = id
 	_glow = null
+	_glow_color = null
 	_count = null
 	for ch in get_children():
 		remove_child(ch)
@@ -93,12 +96,32 @@ func set_glow(color: Variant) -> void:
 		_glow.size = Vector2(W + 14, H + 14)
 		add_child(_glow)
 		move_child(_glow, 0)
+		set_notify_transform(true)
 	_glow.visible = color != null
-	if color != null:
-		var s := UI.box(Color.TRANSPARENT, color, 7, 26)
-		s.shadow_color = Color(color, 0.55)
-		s.shadow_size = 14
-		_glow.add_theme_stylebox_override("panel", s)
+	_glow_color = color
+	_style_glow()
+
+
+## The outline keeps the same thickness on screen whatever size the card is
+## drawn at (a small hand card and a big preview used to look different).
+func _style_glow() -> void:
+	if _glow == null or _glow_color == null:
+		return
+	var k := 1.0 / maxf(absf(scale.x), 0.05)
+	_glow_k = scale.x
+	var pad := 5.0 * k
+	_glow.position = Vector2(-pad, -pad)
+	_glow.size = Vector2(W + pad * 2.0, H + pad * 2.0)
+	var col: Color = _glow_color
+	var s := UI.box(Color.TRANSPARENT, col, roundi(4.0 * k), roundi(22.0 * k))
+	s.shadow_color = Color(col, 0.5)
+	s.shadow_size = roundi(10.0 * k)
+	_glow.add_theme_stylebox_override("panel", s)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSFORM_CHANGED and _glow != null and not is_equal_approx(_glow_k, scale.x):
+		_style_glow()
 
 
 func set_dimmed(on: bool) -> void:
