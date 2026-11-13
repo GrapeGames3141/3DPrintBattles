@@ -12,6 +12,8 @@ var mirrored := false
 var can_act := false
 var targeted := false
 var target_color := UI.BAD
+## Picked up to attack with: a gold ring, so no arrow is needed on touch.
+var selected := false
 
 var _sprite: TextureRect
 var _mat: ShaderMaterial
@@ -128,6 +130,17 @@ func set_ready(on: bool) -> void:
 		_base.queue_redraw()
 
 
+func set_selected(on: bool) -> void:
+	if selected != on:
+		selected = on
+		_base.queue_redraw()
+
+
+## Greyed out: it cannot be attacked while a Guard print stands in the way.
+func set_blocked(on: bool) -> void:
+	modulate = Color(0.5, 0.52, 0.58, 0.9) if on else Color.WHITE
+
+
 ## Middle of the figure in the parent's coordinates (the node scales around
 ## its plate, so the offset shrinks with it).
 func center() -> Vector2:
@@ -187,14 +200,16 @@ func _draw_base() -> void:
 	var kw: Array = u.get("kw", [])
 	var tint := GameData.element_color(def.get("element", "Neutral"))
 	_ellipse(_base, PLATE + Vector2(0, 6), 66, 22, Color(0, 0, 0, 0.45))
-	if targeted:
+	if selected:
+		_ellipse(_base, PLATE, 78, 29, Color(UI.GOLD, 0.95))
+	elif targeted:
 		_ellipse(_base, PLATE, 74, 27, Color(target_color, 0.9))
 	elif can_act:
 		_ellipse(_base, PLATE, 72, 26, Color(UI.GOOD, 0.95))
 	_ellipse(_base, PLATE, 62, 20, Color("101826"))
 	_ring(_base, PLATE, 58, 18.5, tint.darkened(0.15), 5.0)
 	if kw.has("guard"):
-		_ring(_base, PLATE, 66, 22.5, Color("dfe6f0"), 5.0)
+		_ring(_base, PLATE, 66, 22.5, Color("dfe6f0"), 6.0)
 
 
 func _draw_fx() -> void:
@@ -202,10 +217,19 @@ func _draw_fx() -> void:
 	if kw.has("brim"):
 		_ellipse(_fx, Vector2(70, 76), 66, 80, Color(1.0, 0.86, 0.35, 0.13))
 		_ring(_fx, Vector2(70, 76), 66, 80, Color(1.0, 0.9, 0.5, 0.75), 2.5)
-	# Keyword markers sit between the two stat badges.
-	var marks: Array = []
+	# Guard is the one keyword that changes what the other player may do, so
+	# it gets a big shield standing in front of the print and a name tag.
 	if kw.has("guard"):
-		marks.append(["shield", Color("dfe6f0")])
+		var at := Vector2(70, 110)
+		var outline := PackedVector2Array([at + Vector2(-25, -25), at + Vector2(25, -25), at + Vector2(25, 4), at + Vector2(0, 30), at + Vector2(-25, 4)])
+		_fx.draw_colored_polygon(outline, Color("0b1220"))
+		UI.draw_icon(_fx, "shield", at, 21.0, Color("dfe6f0"))
+		var font := UI.bold()
+		var wide := font.get_string_size("GUARD", HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+		_fx.draw_string_outline(font, Vector2(70.0 - wide * 0.5, 113.0), "GUARD", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color("dfe6f0"))
+		_fx.draw_string(font, Vector2(70.0 - wide * 0.5, 113.0), "GUARD", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("0b1220"))
+	# Other keyword markers sit between the two stat badges.
+	var marks: Array = []
 	if kw.has("siphon"):
 		marks.append(["drop", UI.GOOD])
 	if kw.has("twin"):

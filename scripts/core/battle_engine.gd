@@ -7,6 +7,13 @@ extends RefCounted
 ## `apply`, which returns the list of events the screen animates.
 ##
 ## Character references are strings: "u<uid>" for a print, "p<seat>" for a printer.
+##
+## Filament works like a real printer. Each player has a `spool` for the whole
+## battle; a card's cost comes off it. `flow` is how much the nozzle can still
+## lay down this turn (it refills to `speed` every turn). A card that costs
+## more than the flow left becomes the `job` on the Printer: it takes what
+## flow there is now, the rest at the start of the owner's next turns, and is
+## deployed for free once it is fully paid.
 
 const SCRAP := "filament_scrap"
 
@@ -23,6 +30,7 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 		"over": false,
 		"winner": -1,
 		"uid": 1,
+		"top_up": GameData.HAND_TOP_UP,
 		"players": [],
 	}
 	for seat in 2:
@@ -30,17 +38,19 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 		var up: Dictionary = pc.get("upgrades", {})
 		var hp: int = GameData.PRINTER_HP + 2 * clampi(int(up.get("frame", 0)), 0, 3) + int(pc.get("hp_bonus", 0))
 		hp = maxi(hp, 10)
+		var spool: int = GameData.SPOOL_SIZE + GameData.SPOOL_PER_UPGRADE * clampi(int(up.get("spool", 0)), 0, 2)
 		var deck: Array = (pc["deck"] as Array).duplicate()
 		_shuffle(st, deck)
 		st["players"].append({
 			"printer": str(pc["printer"]),
 			"hp": hp, "max_hp": hp, "armor": 0,
-			"fil": 0, "max_fil": 0,
+			"flow": 0, "speed": GameData.PRINT_SPEED,
+			"spool": spool, "spool_max": spool,
+			"job": {},
 			"power_used": false,
 			"deck": deck, "hand": [], "board": [],
 			"fatigue": 0,
-			"bed": clampi(int(up.get("bed", 0)), 0, 3),
-			"spool": clampi(int(up.get("spool", 0)), 0, 2),
+			"bed_bonus": clampi(int(up.get("bed", 0)), 0, 3),
 		})
 	var first: int = int(cfg.get("first", -1))
 	if first != 0 and first != 1:
@@ -51,8 +61,8 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 		var n: int = 3 if seat == first else 4
 		for i in n:
 			_draw(st, seat, ev)
-		var scraps: int = int(st["players"][seat]["spool"]) + (0 if seat == first else 1)
-		for i in scraps:
+		# Going second is made up for with a scrap of extra print speed.
+		if seat != first:
 			_give(st, seat, SCRAP, ev)
 	_start_turn(st, ev)
 	return st
@@ -187,14 +197,59 @@ static func play_error(st: Dictionary, seat: int, hand_uid: int) -> String:
 		return "That card is not in your hand."
 	var def := GameData.card(c["id"])
 	var p: Dictionary = st["players"][seat]
-	if int(def["cost"]) > int(p["fil"]):
-		return "Not enough Filament."
+	var cost: int = int(def["cost"])
+	if cost > int(p["spool"]):
+		return "Not enough Filament left on your Spool."
+	if cost > int(p["flow"]):
+		# Too big to finish this turn: it would go on the Printer as a long print.
+		if int(p["flow"]) <= 0:
+			return "Your Printer is done printing for this turn."
+		if not (p["job"] as Dictionary).is_empty():
+			return "Your Printer is busy with another print."
+		return ""
+	return _use_error(st, seat, c["id"])
+
+
+## Why a card that is paid for cannot take effect right now ("" if it can).
+static func _use_error(st: Dictionary, seat: int, card_id: String) -> String:
+	var def := GameData.card(card_id)
 	if def["type"] == "creature":
-		if (p["board"] as Array).size() >= GameData.MAX_BOARD:
-			return "Your print bed is full."
-	elif def.get("target", "") != "" and play_targets(st, seat, c["id"]).is_empty():
+		if (st["players"][seat]["board"] as Array).size() >= GameData.MAX_BOARD:
+			return "Your bench is full."
+	elif def.get("target", "") != "" and play_targets(st, seat, card_id).is_empty():
 		return "There is nothing to use that on."
 	return ""
+
+
+## Would playing this hand card now start a long print instead of landing at once?
+static func is_long(st: Dictionary, seat: int, hand_uid: int) -> bool:
+	var c := hand_card(st, seat, hand_uid)
+	if c.is_empty():
+		return false
+	return int(GameData.card(c["id"])["cost"]) > int(st["players"][seat]["flow"])
+
+
+## The finished-or-not print on a seat's Printer, or {} when the bed is clear.
+static func job_of(st: Dictionary, seat: int) -> Dictionary:
+	return st["players"][seat]["job"]
+
+
+static func job_ready(job: Dictionary) -> bool:
+	return not job.is_empty() and int(job["paid"]) >= int(job["cost"])
+
+
+## "" when the finished print on the Printer can be deployed right now.
+static func deploy_error(st: Dictionary, seat: int) -> String:
+	if st["over"]:
+		return "The battle is over."
+	if seat != int(st["active"]):
+		return "It is not your turn."
+	var job := job_of(st, seat)
+	if job.is_empty():
+		return "Nothing is on your Printer."
+	if not job_ready(job):
+		return "That print is not finished yet."
+	return _use_error(st, seat, job["id"])
 
 
 static func power_error(st: Dictionary, seat: int) -> String:
@@ -205,14 +260,16 @@ static func power_error(st: Dictionary, seat: int) -> String:
 	var p: Dictionary = st["players"][seat]
 	if bool(p["power_used"]):
 		return "Your Printer Power is already used this turn."
-	if int(p["fil"]) < GameData.POWER_COST:
-		return "Not enough Filament."
+	if int(p["spool"]) < GameData.POWER_COST:
+		return "Not enough Filament left on your Spool."
+	if int(p["flow"]) < GameData.POWER_COST:
+		return "Your Printer is done printing for this turn."
 	var power: Dictionary = GameData.printer(p["printer"])["power"]
 	if power.get("target", "") != "" and power_targets(st, seat).is_empty():
 		return "There is nothing to use that on."
 	for e in power["effects"]:
 		if e["op"] == "summon" and (p["board"] as Array).size() >= GameData.MAX_BOARD:
-			return "Your print bed is full."
+			return "Your bench is full."
 	return ""
 
 
@@ -237,12 +294,19 @@ static func legal_actions(st: Dictionary, seat: int) -> Array:
 		seen[c["id"]] = true
 		if play_error(st, seat, int(c["uid"])) != "":
 			continue
-		var tg := play_targets(st, seat, c["id"])
+		var tg := [] if is_long(st, seat, int(c["uid"])) else play_targets(st, seat, c["id"])
 		if tg.is_empty():
 			out.append({"t": "play", "hand": int(c["uid"])})
 		else:
 			for t in tg:
 				out.append({"t": "play", "hand": int(c["uid"]), "target": t})
+	if deploy_error(st, seat) == "":
+		var dt := play_targets(st, seat, p["job"]["id"])
+		if dt.is_empty():
+			out.append({"t": "deploy"})
+		else:
+			for t in dt:
+				out.append({"t": "deploy", "target": t})
 	for u in p["board"]:
 		for t in attack_targets(st, int(u["uid"])):
 			out.append({"t": "attack", "unit": int(u["uid"]), "target": t})
@@ -279,6 +343,8 @@ static func apply(st: Dictionary, seat: int, action: Dictionary) -> Dictionary:
 			_end_turn(st, ev)
 		"play":
 			err = _play(st, seat, action, ev)
+		"deploy":
+			err = _deploy(st, seat, action, ev)
 		"attack":
 			err = _attack(st, seat, action, ev)
 		"power":
@@ -301,22 +367,64 @@ static func _play(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String
 		return err
 	var p: Dictionary = st["players"][seat]
 	var c := hand_card(st, seat, hand_uid)
-	var def := GameData.card(c["id"])
+	var cost: int = int(GameData.card(c["id"])["cost"])
+
+	if cost > int(p["flow"]):
+		# A long print. The Filament is loaded now; the nozzle time is paid in
+		# instalments, starting with whatever is left of this turn.
+		var paid: int = int(p["flow"])
+		p["spool"] = int(p["spool"]) - cost
+		p["flow"] = 0
+		(p["hand"] as Array).erase(c)
+		p["job"] = {"uid": int(c["uid"]), "id": c["id"], "cost": cost, "paid": paid}
+		ev.append({"e": "job", "seat": seat, "card": c.duplicate(), "paid": paid, "cost": cost, "start": true,
+			"flow": 0, "spool": int(p["spool"])})
+		return ""
+
 	var target: String = str(a.get("target", ""))
 	var valid := play_targets(st, seat, c["id"])
 	if valid.is_empty():
 		target = ""
 	elif not valid.has(target):
 		return "Choose a valid target."
-
-	p["fil"] = int(p["fil"]) - int(def["cost"])
+	p["spool"] = int(p["spool"]) - cost
+	p["flow"] = int(p["flow"]) - cost
 	(p["hand"] as Array).erase(c)
-	ev.append({"e": "play", "seat": seat, "card": c.duplicate(), "target": target, "fil": int(p["fil"])})
+	ev.append({"e": "play", "seat": seat, "card": c.duplicate(), "target": target, "flow": int(p["flow"]), "spool": int(p["spool"])})
+	_use(st, seat, c, target, int(a.get("slot", 99)), false, ev)
+	return ""
 
+
+## Sends the finished print on the Printer into play. It was paid for while
+## it printed, so this is free.
+static func _deploy(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String:
+	var err := deploy_error(st, seat)
+	if err != "":
+		return err
+	var p: Dictionary = st["players"][seat]
+	var job: Dictionary = p["job"]
+	var c := {"uid": int(job["uid"]), "id": str(job["id"])}
+	var target: String = str(a.get("target", ""))
+	var valid := play_targets(st, seat, c["id"])
+	if valid.is_empty():
+		target = ""
+	elif not valid.has(target):
+		return "Choose a valid target."
+	p["job"] = {}
+	ev.append({"e": "deploy", "seat": seat, "card": c.duplicate(), "target": target})
+	_use(st, seat, c, target, int(a.get("slot", 99)), true, ev)
+	return ""
+
+
+## A paid-for card takes effect. `built` is true when it comes off the
+## Printer already finished instead of straight from the hand.
+static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_slot: int, built: bool, ev: Array) -> void:
+	var p: Dictionary = st["players"][seat]
+	var def := GameData.card(c["id"])
 	match def["type"]:
 		"creature":
-			var slot: int = clampi(int(a.get("slot", 99)), 0, (p["board"] as Array).size())
-			var u := _summon(st, seat, c["id"], slot, ev, true)
+			var slot: int = clampi(want_slot, 0, (p["board"] as Array).size())
+			var u := _summon(st, seat, c["id"], slot, ev, true, built)
 			_run(st, seat, def.get("on_print", []), {"target": target, "self": int(u["uid"])}, ev)
 		"tool":
 			_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
@@ -328,7 +436,6 @@ static func _play(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String
 				(u["gear"] as Array).append(c["id"])
 				ev.append({"e": "gear", "uid": int(u["uid"]), "id": c["id"], "unit": u.duplicate(true)})
 	_resolve(st, ev)
-	return ""
 
 
 static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String:
@@ -370,9 +477,10 @@ static func _power(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Strin
 		target = ""
 	elif not valid.has(target):
 		return "Choose a valid target."
-	p["fil"] = int(p["fil"]) - GameData.POWER_COST
+	p["spool"] = int(p["spool"]) - GameData.POWER_COST
+	p["flow"] = int(p["flow"]) - GameData.POWER_COST
 	p["power_used"] = true
-	ev.append({"e": "power", "seat": seat, "target": target, "fil": int(p["fil"])})
+	ev.append({"e": "power", "seat": seat, "target": target, "flow": int(p["flow"]), "spool": int(p["spool"])})
 	_run(st, seat, GameData.printer(p["printer"])["power"]["effects"], {"target": target, "self": -1}, ev)
 	_resolve(st, ev)
 	return ""
@@ -392,14 +500,24 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 	var seat: int = int(st["active"])
 	var p: Dictionary = st["players"][seat]
 	st["turn"] = int(st["turn"]) + 1
-	p["max_fil"] = mini(GameData.MAX_FILAMENT, int(p["max_fil"]) + 1)
-	p["fil"] = int(p["max_fil"])
+	p["flow"] = int(p["speed"])
 	p["power_used"] = false
 	for u in p["board"]:
 		u["fresh"] = false
 		u["attacks"] = 0
-	ev.append({"e": "turn", "seat": seat, "turn": int(st["turn"]), "fil": int(p["fil"]), "max_fil": int(p["max_fil"])})
+	ev.append({"e": "turn", "seat": seat, "turn": int(st["turn"]), "flow": int(p["flow"]), "speed": int(p["speed"]), "spool": int(p["spool"])})
+	# The Printer carries on with its long print before anything else.
+	var job: Dictionary = p["job"]
+	if not job.is_empty() and not job_ready(job):
+		var pay: int = mini(int(p["flow"]), int(job["cost"]) - int(job["paid"]))
+		job["paid"] = int(job["paid"]) + pay
+		p["flow"] = int(p["flow"]) - pay
+		ev.append({"e": "job", "seat": seat, "card": {"uid": int(job["uid"]), "id": str(job["id"])}, "paid": int(job["paid"]),
+			"cost": int(job["cost"]), "start": false, "flow": int(p["flow"]), "spool": int(p["spool"])})
 	_draw(st, seat, ev)
+	# A thin hand is topped up, so there is always something to print.
+	while (p["hand"] as Array).size() < int(st["top_up"]) and not (p["deck"] as Array).is_empty():
+		_draw(st, seat, ev)
 	_resolve(st, ev)
 
 
@@ -416,8 +534,12 @@ static func _run(st: Dictionary, seat: int, effects: Array, ctx: Dictionary, ev:
 				for i in int(e["n"]):
 					_draw(st, seat, ev)
 			"filament":
-				p["fil"] = mini(GameData.MAX_FILAMENT, int(p["fil"]) + int(e["n"]))
-				ev.append({"e": "fil", "seat": seat, "fil": int(p["fil"]), "max_fil": int(p["max_fil"])})
+				# Extra nozzle time, this turn only.
+				p["flow"] = int(p["flow"]) + int(e["n"])
+				ev.append({"e": "fil", "seat": seat, "flow": int(p["flow"]), "spool": int(p["spool"])})
+			"spool":
+				p["spool"] = int(p["spool"]) + int(e["n"])
+				ev.append({"e": "fil", "seat": seat, "flow": int(p["flow"]), "spool": int(p["spool"]), "gain": int(e["n"])})
 			"armor":
 				p["armor"] = int(p["armor"]) + int(e["n"])
 				ev.append({"e": "armor", "seat": seat, "armor": int(p["armor"])})
@@ -545,7 +667,9 @@ static func _heal(st: Dictionary, ref: String, n: int, ev: Array) -> void:
 	ev.append({"e": "heal", "target": ref, "n": gain, "hp": int(who["hp"])})
 
 
-static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: Array, from_hand: bool) -> Dictionary:
+## `from_hand`: it was a card the player printed (not a token or a copy).
+## `built`: it comes off the Printer already finished, after a long print.
+static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: Array, from_hand: bool, built: bool = false) -> Dictionary:
 	var def := GameData.card(card_id)
 	var p: Dictionary = st["players"][seat]
 	var u := {
@@ -559,13 +683,13 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 		u["hp"] += 1
 		u["max_hp"] += 1
 		u["attuned"] = true
-	if from_hand and int(p["bed"]) > 0:
-		u["atk"] += int(p["bed"])
-		u["hp"] += int(p["bed"])
-		u["max_hp"] += int(p["bed"])
-		p["bed"] = 0
+	if from_hand and int(p["bed_bonus"]) > 0:
+		u["atk"] += int(p["bed_bonus"])
+		u["hp"] += int(p["bed_bonus"])
+		u["max_hp"] += int(p["bed_bonus"])
+		p["bed_bonus"] = 0
 	(p["board"] as Array).insert(clampi(slot, 0, (p["board"] as Array).size()), u)
-	ev.append({"e": "summon", "seat": seat, "unit": u.duplicate(true), "slot": (p["board"] as Array).find(u), "hand": from_hand})
+	ev.append({"e": "summon", "seat": seat, "unit": u.duplicate(true), "slot": (p["board"] as Array).find(u), "hand": from_hand, "built": built})
 	return u
 
 
@@ -602,8 +726,13 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 		if dead.is_empty():
 			break
 		for u in dead:
-			(st["players"][int(u["seat"])]["board"] as Array).erase(u)
+			var owner: Dictionary = st["players"][int(u["seat"])]
+			(owner["board"] as Array).erase(u)
 			ev.append({"e": "death", "uid": int(u["uid"]), "seat": int(u["seat"])})
+			# The pieces of a real print (not a token) go back on the spool.
+			if GameData.SCRAP_REFUND > 0 and not GameData.card(u["id"]).get("token", false):
+				owner["spool"] = int(owner["spool"]) + GameData.SCRAP_REFUND
+				ev.append({"e": "scrap", "seat": int(u["seat"]), "uid": int(u["uid"]), "n": GameData.SCRAP_REFUND, "spool": int(owner["spool"])})
 		for u in dead:
 			_run(st, int(u["seat"]), GameData.card(u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
 	var down0: bool = int(st["players"][0]["hp"]) <= 0

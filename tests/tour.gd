@@ -124,9 +124,59 @@ func run() -> void:
 		app.current._coach_update()
 		await wait(0.3)
 		await shot("tutorial_action")
+		await long_print_shots()
 	if want("battle"):
 		await battle_shots()
 	quit()
+
+
+func hand_uid(session, id: String) -> int:
+	for c in session.state["players"][0]["hand"]:
+		if c["id"] == id:
+			return int(c["uid"])
+	return -1
+
+
+## Waits for the computer's turn to finish and the screen to catch up.
+func my_turn_again(session) -> void:
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 30000:
+		await process_frame
+		if session.state["over"]:
+			return
+		if int(session.state["active"]) == 0 and not app.current._busy and app.current._queue.is_empty():
+			return
+
+
+## Continues the tutorial battle: start a long print, then send it out.
+func long_print_shots() -> void:
+	var scr = app.current
+	var session = scr.session
+	for id in ["goal", "filament", "guard", "print", "fresh", "attack", "tool", "upgrade"]:
+		scr._tips_done[id] = true
+	session.submit(0, {"t": "play", "hand": hand_uid(session, "mossmunk")})
+	await wait(2.2)
+	session.submit(0, {"t": "end"})
+	await my_turn_again(session)
+	scr._show_tip("")
+	scr._coach_update()
+	await wait(0.4)
+	await shot("long_tip")
+	session.submit(0, {"t": "play", "hand": hand_uid(session, "runestag")})
+	await wait(0.55)
+	await shot("long_start")
+	await wait(1.6)
+	await shot("long_waiting")
+	session.submit(0, {"t": "end"})
+	await my_turn_again(session)
+	scr._show_tip("")
+	scr._coach_update()
+	await wait(0.4)
+	await shot("long_ready")
+	session.submit(0, {"t": "deploy"})
+	await wait(0.3)
+	await shot("long_deploy")
+	await wait(1.5)
 
 
 ## Plays a few scripted turns so the board has things on it.
@@ -135,9 +185,10 @@ func battle_shots() -> void:
 	var st: Dictionary = session.state
 	# Stage a mid-game position.
 	for seat in 2:
-		st["players"][seat]["max_fil"] = 6
-		st["players"][seat]["fil"] = 6
+		st["players"][seat]["spool"] = 23 - seat * 9
 	st["active"] = 0
+	st["players"][0]["flow"] = 3
+	st["players"][1]["flow"] = 0
 	for id in ["stoneback", "cinderpaw", "voltwig"]:
 		var u := BattleEngine._summon(st, 0, id, 99, [], false)
 		u["fresh"] = false
@@ -146,9 +197,12 @@ func battle_shots() -> void:
 		u["fresh"] = false
 	st["players"][1]["board"][3]["jam"] = 1
 	st["players"][0]["board"][0]["gear"].append("chest_plate")
-	st["players"][0]["hp"] = 24
-	st["players"][1]["hp"] = 19
+	st["players"][0]["hp"] = 17
+	st["players"][1]["hp"] = 12
 	st["players"][1]["armor"] = 2
+	# A long print part-way done on my Printer, and a finished one on theirs.
+	st["players"][0]["job"] = {"uid": 900, "id": "coalgriffin", "cost": 6, "paid": 3}
+	st["players"][1]["job"] = {"uid": 901, "id": "emergency_stop", "cost": 6, "paid": 6}
 	await go("battle", {"session": session})
 	await wait(1.2)
 	await shot("battle")
@@ -163,6 +217,16 @@ func battle_shots() -> void:
 	await wait(0.75)
 	await shot("battle_printing")
 	await wait(1.9)
+	# Tap one of my prints: the Guard stands out and what it shields goes grey.
+	for u in session.state["players"][0]["board"]:
+		if not BattleEngine.attack_targets(session.state, int(u["uid"])).is_empty():
+			scr._mouse = scr._units[int(u["uid"])].center()
+			scr._on_press()
+			scr._on_release()
+			break
+	await wait(0.25)
+	await shot("battle_guard")
+	scr._cancel()
 	# Attack with the first ready print.
 	for u in session.state["players"][0]["board"]:
 		var tg := BattleEngine.attack_targets(session.state, int(u["uid"]))

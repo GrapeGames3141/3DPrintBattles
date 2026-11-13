@@ -174,8 +174,8 @@ func input_checks(profile) -> void:
 	var st: Dictionary = session.state
 	st["active"] = 0
 	for seat in 2:
-		st["players"][seat]["max_fil"] = 8
-		st["players"][seat]["fil"] = 8
+		st["players"][seat]["speed"] = 8
+		st["players"][seat]["flow"] = 8
 	st["players"][0]["hand"].clear()
 	var ids := ["stoneback", "heat_gun", "cinderpaw", "glue_stick"]
 	var uids := {}
@@ -196,7 +196,7 @@ func input_checks(profile) -> void:
 	await drag(card_center(scr, uids["stoneback"]), Vector2(700, 380))
 	await settle(scr)
 	ok(session.state["players"][0]["board"].size() == 2, "dragging a print onto the bed plays it")
-	ok(int(session.state["players"][0]["fil"]) == 5, "its Filament cost was paid")
+	ok(int(session.state["players"][0]["flow"]) == 5 and int(session.state["players"][0]["spool"]) == GameData.SPOOL_SIZE - 3, "its Filament came off this turn's speed and the Spool")
 
 	# 2. Drag from a ready print to an enemy print to attack.
 	var a_node = scr._units[int(mine["uid"])]
@@ -237,7 +237,7 @@ func input_checks(profile) -> void:
 
 	# 6b. Tap a card (no drag), then tap the bench: the touch way to play.
 	st = session.state
-	st["players"][0]["fil"] = 8
+	st["players"][0]["flow"] = 8
 	var tap_uid: int = int(st["uid"])
 	st["uid"] = tap_uid + 1
 	st["players"][0]["hand"].append({"uid": tap_uid, "id": "mossmunk"})
@@ -250,6 +250,34 @@ func input_checks(profile) -> void:
 	await click(scr.bed_me.get_center())
 	await settle(scr)
 	ok(session.state["players"][0]["board"].size() == before_board + 1, "tap card then tap bench plays it")
+
+	# 6d. A card that costs more than this turn's speed goes on the Printer,
+	# and is tapped off it once it is finished.
+	st = session.state
+	st["players"][0]["flow"] = 3
+	var long_uid: int = int(st["uid"])
+	st["uid"] = long_uid + 1
+	st["players"][0]["hand"].append({"uid": long_uid, "id": "ironmaw"})
+	scr.st = session.view()
+	scr._sync()
+	await wait(0.3)
+	before_board = session.state["players"][0]["board"].size()
+	await drag(card_center(scr, long_uid), scr._printers[0].center())
+	await settle(scr)
+	ok(session.state["players"][0]["job"].get("id", "") == "ironmaw" and scr._jobs[0] != null and session.state["players"][0]["board"].size() == before_board,
+		"dragging a big card to the Printer starts a long print")
+	ok(int(session.state["players"][0]["flow"]) == 0 and scr._gauge.flow == 0, "it uses up the rest of this turn's speed")
+	await click(scr._jobs[0].center())
+	await settle(scr)
+	ok(not session.state["players"][0]["job"].is_empty(), "an unfinished print stays on the Printer when tapped")
+	session.state["players"][0]["job"]["paid"] = 5
+	scr.st = session.view()
+	scr._sync()
+	await wait(0.3)
+	await click(scr._jobs[0].center())
+	await settle(scr)
+	ok(session.state["players"][0]["job"].is_empty() and session.state["players"][0]["board"].size() == before_board + 1 and scr._jobs[0] == null,
+		"tapping the finished print sends it to the bench")
 
 	# 6c. Turn the screen: the battle re-lays itself out and keeps going.
 	var units_before: int = scr._units.size()

@@ -49,7 +49,7 @@ static func choose(st: Dictionary, seat: int, level: int) -> Dictionary:
 	return best
 
 
-## Master: beam search over the rest of this turn, so it lines up Filament
+## Master: beam search over the rest of this turn, so it lines up print speed
 ## and attack order instead of grabbing the best single step.
 static func _plan_turn(st: Dictionary, seat: int, level: int) -> Dictionary:
 	var beam: Array = [{"st": st, "first": {}, "score": _score(st, seat, level)}]
@@ -88,7 +88,7 @@ static func _sim(st: Dictionary, seat: int, action: Dictionary) -> Dictionary:
 static func _noise(st: Dictionary, n: int) -> int:
 	var h: int = int(st["rng"]) * 31 + int(st["turn"]) * 977 + int(st["uid"]) * 131
 	for p in st["players"]:
-		h = h * 17 + int(p["hp"]) * 7 + (p["hand"] as Array).size() * 3 + int(p["fil"])
+		h = h * 17 + int(p["hp"]) * 7 + (p["hand"] as Array).size() * 3 + int(p["flow"])
 	return absi(h) % maxi(n, 1)
 
 
@@ -108,6 +108,37 @@ static func _unit_value(u: Dictionary) -> float:
 	if int(u["jam"]) > 0:
 		v -= atk
 	return v
+
+
+## What a card is worth once it is in play, before it has done anything.
+static func _card_value(id: String) -> float:
+	var def := GameData.card(id)
+	if def.get("type", "") != "creature":
+		return 2.5 + 2.4 * float(def.get("cost", 0))
+	var atk := float(def["atk"])
+	var hp := float(def["hp"])
+	var kw: Array = def.get("kw", [])
+	var v := 2.0 + atk * 2.0 + hp * 1.6
+	if kw.has("guard"):
+		v += hp * 0.5
+	if kw.has("brim"):
+		v += 1.5 + atk
+	if kw.has("siphon"):
+		v += 2.0
+	if kw.has("twin"):
+		v += atk
+	if def.has("on_print"):
+		v += 1.0 + 0.6 * float(def["cost"])
+	return v
+
+
+## A print on the Printer is worth more the closer it is to done. Starting one
+## has to beat spending the same turn on something small, but not by much.
+static func _job_value(job: Dictionary) -> float:
+	if job.is_empty():
+		return 0.0
+	var done := float(job["paid"]) / maxf(float(job["cost"]), 1.0)
+	return _card_value(job["id"]) * (0.45 + 0.5 * minf(done, 1.0))
 
 
 static func _score(st: Dictionary, seat: int, level: int) -> float:
@@ -141,6 +172,9 @@ static func _score(st: Dictionary, seat: int, level: int) -> float:
 	for c in me["hand"]:
 		s += 1.5 + 0.5 * float(GameData.card(c["id"]).get("cost", 0))
 	s -= float((foe["hand"] as Array).size()) * 2.0
+	s += _job_value(me["job"]) - _job_value(foe["job"]) * 1.05
+	# Filament only starts to feel scarce when the spool is nearly empty.
+	s += minf(float(me["spool"]), 12.0) * 0.35
 	if level >= 1 and not my_guard and foe_threat >= my_hp:
 		s -= 40.0
 	return s
@@ -154,7 +188,7 @@ static func _find_lethal(st: Dictionary, seat: int) -> Dictionary:
 	for u in st["players"][seat]["board"]:
 		reach += int(u["atk"]) * BattleEngine.max_attacks(u)
 	# Quick reject: nowhere near enough damage on board plus burn in hand.
-	if reach + int(st["players"][seat]["fil"]) * 3 < int(foe["hp"]) + int(foe["armor"]):
+	if reach + int(st["players"][seat]["flow"]) * 3 + 6 < int(foe["hp"]) + int(foe["armor"]):
 		return {}
 	var budget := [500]
 	return _lethal_dfs(st, seat, 0, budget)

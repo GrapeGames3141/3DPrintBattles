@@ -1,8 +1,9 @@
 # PrintForge Legends
 
-A card battler where you fight with 3D-printed creatures. Think Hearthstone in a
-print shop: your Printer is your hero, Filament is your mana, and every creature
-card is printed onto the bed layer by layer before it joins the fight.
+A card battler where you fight with 3D-printed creatures. Your Printer is your
+hero and Filament is what everything costs, but it works like a real printer:
+one Spool for the whole battle, a few Filament a turn off it, and big prints
+that sit on the bed for several turns while your opponent watches them grow.
 
 Built with Godot 4.7.1 (GDScript, Forward+). No accounts, no chat, no network
 services: everything runs locally, and two-player games connect directly.
@@ -26,7 +27,8 @@ window or phone turns.
 
 | | |
 |---|---|
-| **Battles** | 30-Health Printers, 20-card decks. Gain 1 Filament per turn up to 10. Play prints, tools and upgrades; attack with prints; destroy the enemy Printer. |
+| **Battles** | 20-Health Printers, 20-card decks. Play prints, tools and upgrades; attack with prints; destroy the enemy Printer. A hand below 3 cards is topped up each turn. |
+| **Filament** | A Spool of 40 for the whole battle. The Printer lays down 3 a turn. A card that costs more goes on the Printer as a long print: it takes what is left of this turn, the rest on your next turns, and is deployed for free when finished. Both players can see it. A shattered print puts 1 Filament back on its owner's Spool. |
 | **Prints** | 24 creatures across 8 elements, with Guard, Rush, Brim, Siphon and Twin Nozzle keywords plus On Print and Shatter effects. |
 | **Tools** | 16 one-shot cards, each a real 3D-printing tool: Heat Gun, Calipers, Bed Scraper, Hex Keys, Emergency Stop and so on. |
 | **Upgrades** | 7 pieces of printed armor that bolt onto a print for the rest of the battle. |
@@ -41,8 +43,9 @@ The arena is a workbench: your Printer stands in the near corner and builds
 each print layer by layer before it hops onto your lane; the enemy's Printer
 faces it from the far corner.
 
-Controls: drag a card onto your lane to play it, or tap the card and then tap
-the lane. Drag a print onto a target to attack, or tap it and then tap the
+Controls: drag a card onto your lane (or your Printer) to play it, or tap the
+card and then tap the lane. Tap a finished long print on your Printer to send
+it out. Drag a print onto a target to attack, or tap it and then tap the
 target. Tap any print on the bench to read its card. Right-click or Esc
 cancels. Space ends your turn. F11 toggles fullscreen.
 

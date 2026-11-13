@@ -15,7 +15,8 @@ const PACK_PIVOT := Vector2(PackView.W, PackView.H) * 0.5
 const FLICK := 70.0
 ## A press that moves less than this is a tap.
 const TAP := 14.0
-const LEAN := [0.0, 0.03, -0.025, 0.02, -0.035]
+## How far each card further down the stack shows below the one above it.
+const STACK_STEP := 6.0
 
 var kind := ""
 ## The pack's contents, as returned by Profile.open_pack.
@@ -96,7 +97,7 @@ func _stack_center() -> Vector2:
 ## Where card `k` rests in the stack while card `index` is on top.
 func _stack_spot(k: int) -> Vector2:
 	var depth := k - index
-	return _stack_center() + Vector2(2.5, 3.0) * depth
+	return _stack_center() + Vector2(0.0, STACK_STEP) * depth
 
 
 func _tray_scale() -> float:
@@ -179,7 +180,7 @@ func show_stage(to_stage: String, at: int = 0) -> void:
 			if k < index:
 				_put(_nodes[k], _tray_spot(k), _tray_scale())
 			else:
-				_put(_nodes[k], _stack_spot(k), _stack_scale(), LEAN[k % LEAN.size()] if k > index else 0.0)
+				_put(_nodes[k], _stack_spot(k), _stack_scale())
 		_begin_flip()
 	else:
 		_build_summary(false)
@@ -388,7 +389,6 @@ func _ripped() -> void:
 		var card: CardView = _nodes[k]
 		tw.parallel().tween_property(card, "position", _stack_spot(k) - CARD_PIVOT, 0.36).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tw.parallel().tween_property(card, "scale", Vector2.ONE * _stack_scale(), 0.36)
-		tw.parallel().tween_property(card, "rotation", LEAN[k % LEAN.size()] if k > 0 else 0.0, 0.36)
 	tw.tween_callback(func():
 		_pack.queue_free()
 		_pack = null
@@ -427,7 +427,10 @@ func _begin_flip() -> void:
 	stage = "flip"
 	_tag = UI.label("", 30 if _p else 24, UI.GOLD, true, 6)
 	_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.place(self, _tag, Vector2(0, _stack_center().y + CARD_PIVOT.y * _stack_scale() + (14.0 if _p else 8.0)), Vector2(_w, 40))
+	# Under the whole stack, and behind the cards so a dragged card covers it.
+	var below := _stack_center().y + CARD_PIVOT.y * _stack_scale() + STACK_STEP * (cards.size() - 1)
+	UI.place(self, _tag, Vector2(0, below + (10.0 if _p else 4.0)), Vector2(_w, 40))
+	move_child(_tag, _rays.get_index() + 1)
 	if _skip == null:
 		_add_skip()
 	_skip.visible = true
@@ -450,6 +453,7 @@ func _announce() -> void:
 	var rank := _rank(index)
 	var card: CardView = _nodes[index]
 	var tag := _tag_text(index)
+	_tag.modulate.a = 1.0
 	_tag.text = tag[0]
 	_tag.add_theme_color_override("font_color", tag[1])
 	_hint.text = "Card %d of %d" % [index + 1, cards.size()]
@@ -488,6 +492,7 @@ func _drag_card(pos: Vector2) -> void:
 	var off := pos - _press
 	card.position = _stack_center() + off - CARD_PIVOT
 	card.rotation = clampf(off.x / 600.0, -0.35, 0.35)
+	_tag.modulate.a = 0.0
 
 
 ## Throws the top card onto the row of cards already seen.
@@ -621,3 +626,4 @@ func _release(pos: Vector2) -> void:
 			var back := _card_tween(card)
 			back.tween_property(card, "position", _stack_spot(index) - CARD_PIVOT, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 			back.tween_property(card, "rotation", 0.0, 0.16)
+			_tag.modulate.a = 1.0

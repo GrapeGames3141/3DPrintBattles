@@ -5,17 +5,19 @@ extends GameScreen
 
 const TIPS := {
 	"goal": ["info", "Welcome to the bench! Break the enemy Printer before it breaks yours. The red number is its Health."],
-	"filament": ["info", "This is your Filament. You get 1 more each turn, up to 10. The blue number on a card is what it costs."],
-	"guard": ["info", "A silver ring means Guard. You must attack Guard prints before anything else."],
+	"filament": ["info", "Your Printer can print %d Filament each turn. The blue number on a card is what it costs. The Spool bar is all the Filament you have for the whole battle." % GameData.PRINT_SPEED],
+	"guard": ["info", "A print holding a shield has Guard. You must attack Guard prints before anything else on that side."],
 	"print": ["do", "Drag a glowing card onto your side of the bench (the blue lane), or tap the card and then tap the lane. Your Printer builds it layer by layer."],
 	"fresh": ["info", "Fresh prints need a turn to cool down. They can attack on your next turn."],
 	"attack": ["do", "A green ring means ready. Drag your print onto an enemy print or the enemy Printer. Each deals its Attack (orange) to the other's Health (red)."],
 	"tool": ["do", "Tools are one-shot effects. Drag a tool from your hand onto its target."],
 	"upgrade": ["do", "Upgrades are printed armor. Drag one onto one of your prints to make it stronger for the rest of the battle."],
-	"power": ["do", "Your Printer has a Power: 2 Filament, once per turn. Tap it, then tap a target."],
+	"long": ["do", "A blue glow means a long print: it costs more than you can print this turn. Drag it to your Printer and it will finish over the next turns."],
+	"deploy": ["do", "Your long print is finished! Tap it on your Printer to send it into battle."],
+	"power": ["do", "Your Printer has a Power: %d Filament, once per turn. Tap it, then tap a target." % GameData.POWER_COST],
 	"end": ["do", "Nothing else to do this turn. Press End Turn."],
 }
-const TIP_ORDER := ["goal", "filament", "guard", "print", "fresh", "attack", "tool", "upgrade", "power", "end"]
+const TIP_ORDER := ["goal", "filament", "guard", "deploy", "print", "fresh", "attack", "tool", "upgrade", "long", "power", "end"]
 
 var session: BattleSession
 var st: Dictionary = {}
@@ -43,6 +45,7 @@ var _printing: Dictionary = {}       # uid -> true while it is still on the Prin
 var _hand: Array = []                # [{uid, id, node}]
 var _foe_backs: Array = []
 var _printers: Array = [null, null]
+var _jobs: Array = [null, null]      # seat -> JobView, the long print on that Printer
 
 var _board: Control
 var _hand_layer: Control
@@ -54,7 +57,6 @@ var _power_btn: Button
 var _power_cost: Badge
 var _gauge: FilamentGauge
 var _foe_gauge: FilamentGauge
-var _fil: Array = [[0, 0], [0, 0]]
 var _deck_label: Label
 var _foe_label: Label
 var _preview: Control
@@ -120,6 +122,7 @@ func relayout() -> void:
 	_hand.clear()
 	_foe_backs.clear()
 	_printers = [null, null]
+	_jobs = [null, null]
 	_preview = null
 	_menu = null
 	_tip_node = null
@@ -222,7 +225,7 @@ func _build_hud() -> void:
 	UI.place(self, menu, Vector2(12, 10) if P else Vector2(16, 14))
 
 	var foe_rect := Rect2(12, 60, 250, 84) if P else Rect2(124, 12, 236, 84)
-	_foe_gauge = FilamentGauge.make(foe_rect.size, "ENEMY FILAMENT", true)
+	_foe_gauge = FilamentGauge.make(foe_rect.size, "ENEMY THIS TURN", true)
 	UI.place(self, _foe_gauge, foe_rect.position)
 	_foe_label = UI.label("", 15, UI.CREAM, false, 5)
 	UI.place(self, _foe_label, foe_rect.position + Vector2(8, foe_rect.size.y + 3), Vector2(foe_rect.size.x, 22))
@@ -236,7 +239,7 @@ func _build_hud() -> void:
 	UI.place(self, _end_go, end_rect.position)
 
 	var gauge_rect := Rect2(222, 716, 490, 118) if P else Rect2(1064, 408, 204, 156)
-	_gauge = FilamentGauge.make(gauge_rect.size, "YOUR FILAMENT" if P else "FILAMENT")
+	_gauge = FilamentGauge.make(gauge_rect.size, "FILAMENT THIS TURN" if P else "THIS TURN")
 	UI.place(self, _gauge, gauge_rect.position)
 	_deck_label = UI.label("", 15, UI.CREAM, false, 5)
 	UI.place(self, _deck_label, Vector2(228, 838) if P else Vector2(1070, 568), Vector2(200, 22))
@@ -252,9 +255,11 @@ func _build_hud() -> void:
 	_power_btn.add_child(_power_cost)
 
 
-func _set_fil(seat: int, fil: int, cap: int) -> void:
-	_fil[seat] = [fil, cap]
-	(_gauge if seat == me else _foe_gauge).set_value(fil, cap)
+## Shows a seat's Filament: what the nozzle can still print this turn, and
+## what is left on the Spool.
+func _set_res(seat: int, flow: int, spool: int) -> void:
+	var p: Dictionary = st["players"][seat]
+	(_gauge if seat == me else _foe_gauge).set_value(flow, int(p["speed"]), spool, int(p["spool_max"]))
 
 
 func _refresh_info() -> void:
@@ -278,6 +283,7 @@ func _rebuild() -> void:
 		(b as Node).queue_free()
 	_foe_backs.clear()
 	for seat in 2:
+		_clear_job(seat)
 		if _printers[seat] != null:
 			(_printers[seat] as Node).queue_free()
 		# Yours stands near you in the bottom-left corner; the enemy's faces it
@@ -296,6 +302,27 @@ func _rebuild() -> void:
 
 func _bed(seat: int) -> Rect2:
 	return bed_me if seat == me else bed_foe
+
+
+func _clear_job(seat: int) -> void:
+	if is_instance_valid(_jobs[seat]):
+		(_jobs[seat] as Node).queue_free()
+	_jobs[seat] = null
+
+
+## The long print on a seat's Printer, created on its bed if it is not there.
+func _job_view(seat: int, id: String) -> JobView:
+	var jv: JobView = _jobs[seat] if is_instance_valid(_jobs[seat]) else null
+	if jv != null and jv.card_id == id:
+		return jv
+	_clear_job(seat)
+	var pv: PrinterView = _printers[seat]
+	jv = JobView.make(id, seat != me, pv.base_scale)
+	jv.position = pv.bed_point()
+	jv.z_index = 12
+	_board.add_child(jv)
+	_jobs[seat] = jv
+	return jv
 
 
 ## Top-left position for the unit in slot `index` of `count`.
@@ -396,7 +423,14 @@ func _sync(animate := true) -> void:
 			(_units[uid] as BoardUnit).refresh(u, false)
 		_rows[seat] = row
 		(_printers[seat] as PrinterView).set_state(p)
-		_set_fil(seat, int(p["fil"]), int(p["max_fil"]))
+		_set_res(seat, int(p["flow"]), int(p["spool"]))
+		var job: Dictionary = p["job"]
+		if job.is_empty():
+			_clear_job(seat)
+		else:
+			var jv := _job_view(seat, job["id"])
+			jv.set_paid(int(job["paid"]), int(job["cost"]))
+			jv.snap()
 	var alive: Dictionary = {}
 	for seat in 2:
 		for uid in _rows[seat]:
@@ -461,8 +495,14 @@ func _refresh_interactive() -> void:
 		var playable := mine and BattleEngine.play_error(st, me, int(h["uid"])) == ""
 		if _mode == "armed" and _src.get("node") == node:
 			node.set_glow(UI.GOLD)
+		elif playable:
+			# Green lands this turn; blue is a long print that goes on the Printer.
+			node.set_glow(UI.CYAN if BattleEngine.is_long(st, me, int(h["uid"])) else UI.GOOD)
 		else:
-			node.set_glow(UI.GOOD if playable else null)
+			node.set_glow(null)
+	for seat in 2:
+		if is_instance_valid(_jobs[seat]):
+			(_jobs[seat] as JobView).set_glow(seat == me and mine and BattleEngine.deploy_error(st, me) == "")
 	for uid in _units:
 		var node: BoardUnit = _units[uid]
 		node.set_ready(mine and int(node.u["seat"]) == me and not BattleEngine.attack_targets(st, uid).is_empty())
@@ -480,17 +520,48 @@ func _show_targets() -> void:
 	var col := UI.BAD
 	if _mode == "target" and not _src.is_empty():
 		col = UI.BAD if _harmful() else UI.GOOD
+	# While you are choosing what to attack, everything a Guard print is
+	# shielding goes grey, so it is plain what has to be hit first.
+	var attacking: bool = _mode == "target" and _src.get("kind") == "unit"
+	var walled: bool = attacking and BattleEngine.has_guard(st, 1 - me)
 	for uid in _units:
-		(_units[uid] as BoardUnit).set_targeted(_mode == "target" and _valid.has("u%d" % uid), col)
+		var unit: BoardUnit = _units[uid]
+		var ref := "u%d" % uid
+		unit.set_targeted(_mode == "target" and _valid.has(ref), col)
+		unit.set_selected(attacking and int(_src["uid"]) == uid)
+		unit.set_blocked(walled and int(unit.u["seat"]) != me and not _valid.has(ref))
 	for seat in 2:
-		(_printers[seat] as PrinterView).set_targeted(_mode == "target" and _valid.has("p%d" % seat), col)
+		var pv: PrinterView = _printers[seat]
+		pv.set_targeted(_mode == "target" and _valid.has("p%d" % seat), col)
+		pv.modulate = Color(0.5, 0.52, 0.58) if walled and seat != me else Color.WHITE
+
+
+## Tapping something a Guard print is shielding: say so, and point at the Guard.
+func _guard_hint(ref: String) -> void:
+	if _src.get("kind") != "unit" or ref == "":
+		return
+	var foe := 1 - me
+	if not BattleEngine.has_guard(st, foe):
+		return
+	if ref != "p%d" % foe and int(BattleEngine.unit_of(st, ref).get("seat", -1)) != foe:
+		return
+	_deny("Attack the Guard print first.")
+	_point_at_guards()
+
+
+func _point_at_guards() -> void:
+	for u in st["players"][1 - me]["board"]:
+		if (u["kw"] as Array).has("guard") and _units.has(int(u["uid"])):
+			var node: BoardUnit = _units[int(u["uid"])]
+			node.pulse(Color("dfe6f0"))
+			UI.floater(_fx, "Guard", node.center() + Vector2(0, -74.0 * unit_scale), Color("dfe6f0"), 24, 14.0, 1.1)
 
 
 func _harmful() -> bool:
 	if _src.get("kind") == "unit":
 		return true
 	var kind := ""
-	if _src.get("kind") == "card":
+	if _src.get("kind") in ["card", "job"]:
 		kind = GameData.card(_src["id"]).get("target", "")
 	else:
 		kind = GameData.printer(st["players"][me]["printer"])["power"].get("target", "")
@@ -568,6 +639,24 @@ func _over_board(p: Vector2) -> bool:
 	return p.y < board_bottom and p.y > 56.0
 
 
+## Where a card may be dropped to play it: the bench, or your own Printer.
+func _drop_ok(p: Vector2) -> bool:
+	return _over_board(p) or (_printers[me] as PrinterView).hit_rect().has_point(p)
+
+
+## The seat whose long print is under the point, or -1.
+func _job_at(p: Vector2) -> int:
+	for seat in 2:
+		if is_instance_valid(_jobs[seat]) and (_jobs[seat] as JobView).hit_rect().has_point(p):
+			return seat
+	return -1
+
+
+func _turns_left(job: Dictionary, seat: int) -> int:
+	var left: int = int(job["cost"]) - int(job["paid"])
+	return ceili(float(left) / maxf(float(st["players"][seat]["speed"]), 1.0))
+
+
 func _update_hover() -> void:
 	if _mode != "idle":
 		return
@@ -578,10 +667,16 @@ func _update_hover() -> void:
 	if uid != _hover_uid:
 		_hover_uid = uid
 		_layout_hand()
-	_set_preview(_unit_at(_mouse) if uid < 0 else -1)
+	var key := -1
+	if uid < 0:
+		key = _unit_at(_mouse)
+		if key < 0 and _job_at(_mouse) >= 0:
+			key = -2 - _job_at(_mouse)
+	_set_preview(key)
 
 
-## Shows the full card for a print on the bed (-1 hides it).
+## Shows the full card for a print on the bench (its uid), or for the long
+## print on a Printer (-2 for seat 0, -3 for seat 1). -1 hides it.
 func _set_preview(uid: int) -> void:
 	var shown: int = _preview.get_meta("uid") if is_instance_valid(_preview) else -1
 	if uid == shown:
@@ -589,14 +684,28 @@ func _set_preview(uid: int) -> void:
 	if is_instance_valid(_preview):
 		_preview.queue_free()
 	_preview = null
+	var s := 0.7 if P else 0.62
+	var size_px := Vector2(CardView.W, CardView.H) * s
+	if uid <= -2:
+		var seat := -2 - uid
+		if not is_instance_valid(_jobs[seat]):
+			return
+		var jv: JobView = _jobs[seat]
+		var job_card := CardView.make(jv.card_id, s)
+		job_card.set_meta("uid", uid)
+		job_card.z_index = 40
+		var box := jv.hit_rect()
+		var jx := box.end.x + 10.0 if box.get_center().x < W * 0.5 else box.position.x - size_px.x - 10.0
+		job_card.position = Vector2(clampf(jx, 8.0, W - 8.0 - size_px.x), clampf(box.get_center().y - size_px.y * 0.5, 8.0, H - 8.0 - size_px.y))
+		add_child(job_card)
+		_preview = job_card
+		return
 	if uid < 0 or not _units.has(uid):
 		return
 	var node: BoardUnit = _units[uid]
-	var s := 0.7 if P else 0.62
 	var card := CardView.make(node.u["id"], s)
 	card.set_meta("uid", uid)
 	card.z_index = 40
-	var size_px := Vector2(CardView.W, CardView.H) * s
 	var at := Vector2.ZERO
 	if P:
 		var above: bool = int(node.u["seat"]) == me
@@ -618,6 +727,7 @@ func _on_press() -> void:
 			_commit(ref)
 			get_viewport().set_input_as_handled()
 		else:
+			_guard_hint(ref)
 			_cancel()
 		return
 	var h := _hand_at(_mouse)
@@ -627,7 +737,7 @@ func _on_press() -> void:
 			_cancel()                      # tapping the raised card again puts it back
 			get_viewport().set_input_as_handled()
 			return
-		if h.is_empty() and _over_board(_mouse):
+		if h.is_empty() and _drop_ok(_mouse):
 			_cancel(false)
 			_send({"t": "play", "hand": armed["uid"], "slot": _slot_for(_mouse.x)})
 			get_viewport().set_input_as_handled()
@@ -652,6 +762,11 @@ func _on_press() -> void:
 	if _hover_uid >= 0:
 		_hover_uid = -1
 		_layout_hand()
+	var job_seat := _job_at(_mouse)
+	if job_seat >= 0:
+		get_viewport().set_input_as_handled()
+		_press_job(job_seat)
+		return
 	var uid := _unit_at(_mouse)
 	if uid >= 0:
 		get_viewport().set_input_as_handled()
@@ -679,9 +794,45 @@ func _on_press() -> void:
 			UI.floater(_fx, "%s: %s" % [def["power"]["name"], def["power"]["text"]], Vector2(clampf(pv.center().x + 150.0, 220.0, W - 220.0), pv.center().y - 20.0), UI.CREAM, 20, 16.0, 2.2)
 
 
+## A tap on a long print: send a finished one of yours into play, otherwise
+## show what it is and how far along.
+func _press_job(seat: int) -> void:
+	var jv: JobView = _jobs[seat]
+	var job: Dictionary = st["players"][seat]["job"]
+	_set_preview(-2 - seat)
+	if job.is_empty():
+		return
+	var title: String = GameData.card(job["id"])["name"]
+	if not BattleEngine.job_ready(job):
+		var turns := _turns_left(job, seat)
+		UI.floater(_fx, "%s: %d of %d printed. Ready %s." % [title, int(job["paid"]), int(job["cost"]),
+			"next turn" if turns <= 1 else "in %d turns" % turns], Vector2(clampf(jv.center().x, 230.0, W - 230.0), jv.hit_rect().position.y - 16.0), UI.CYAN, 20, 16.0, 2.0)
+		return
+	if seat != me or not _my_turn():
+		UI.floater(_fx, "%s is finished." % title, Vector2(clampf(jv.center().x, 230.0, W - 230.0), jv.hit_rect().position.y - 16.0), UI.GOOD, 20, 16.0, 1.6)
+		return
+	var err := BattleEngine.deploy_error(st, me)
+	if err != "":
+		_deny(err)
+		return
+	var targets := BattleEngine.play_targets(st, me, job["id"])
+	if targets.is_empty():
+		_set_preview(-1)
+		_send({"t": "deploy"})
+		return
+	_press = _mouse
+	_src = {"kind": "job", "id": job["id"], "node": jv}
+	_begin_target(targets)
+
+
+## Is the card being handled one that would start a long print?
+func _src_long() -> bool:
+	return _src.get("kind") == "card" and BattleEngine.is_long(st, me, int(_src["uid"]))
+
+
 ## A press on a hand card has moved far enough to count as a drag.
 func _start_drag() -> void:
-	if BattleEngine.needs_target(st, me, _src["id"]):
+	if not _src_long() and BattleEngine.needs_target(st, me, _src["id"]):
 		_begin_target(BattleEngine.play_targets(st, me, _src["id"]))
 	else:
 		_mode = "drag"
@@ -704,18 +855,21 @@ func _on_release() -> void:
 	match _mode:
 		"pending":
 			# A tap, not a drag: the card stays raised and waits for a second tap.
-			if BattleEngine.needs_target(st, me, _src["id"]):
+			if not _src_long() and BattleEngine.needs_target(st, me, _src["id"]):
 				_begin_target(BattleEngine.play_targets(st, me, _src["id"]))
 				_sticky = true
 			else:
 				_mode = "armed"
 				_refresh_interactive()
 				_layout_hand()
-				UI.floater(_fx, "Now tap your side of the bench", bed_me.get_center(), UI.GOLD, 24, 20.0, 1.4)
+				if _src_long():
+					UI.floater(_fx, "Long print: now tap your Printer", bed_me.get_center(), UI.CYAN, 24, 20.0, 1.6)
+				else:
+					UI.floater(_fx, "Now tap your side of the bench", bed_me.get_center(), UI.GOLD, 24, 20.0, 1.4)
 		"drag":
 			var uid: int = _src["uid"]
 			_mode = "idle"
-			if _over_board(_mouse):
+			if _drop_ok(_mouse):
 				_send({"t": "play", "hand": uid, "slot": _slot_for(_mouse.x)})
 			else:
 				_src = {}
@@ -728,7 +882,11 @@ func _on_release() -> void:
 				_commit(ref)
 			elif _mouse.distance_to(_press) < 18.0:
 				_sticky = true    # a plain tap: wait for a second tap on the target
+				_arrow.queue_redraw()
+				if _src.get("kind") == "unit" and BattleEngine.has_guard(st, 1 - me):
+					_point_at_guards()
 			else:
+				_guard_hint(ref)
 				_cancel()
 
 
@@ -750,6 +908,8 @@ func _commit(ref: String) -> void:
 			_send({"t": "play", "hand": src["uid"], "target": ref})
 		"unit":
 			_send({"t": "attack", "unit": src["uid"], "target": ref})
+		"job":
+			_send({"t": "deploy", "target": ref})
 		"power":
 			_send({"t": "power", "target": ref})
 
@@ -778,7 +938,7 @@ func _send(action: Dictionary) -> void:
 
 func _deny(text: String) -> void:
 	Audio.sfx("error")
-	if text.contains("Filament"):
+	if text.contains("Spool") or text.contains("printing for this turn"):
 		_gauge.deny()
 	UI.floater(_fx, text, banner_pos, UI.AMBER, 22 if P else 24, 26.0, 1.3)
 
@@ -802,6 +962,7 @@ func _on_power() -> void:
 		_send({"t": "power"})
 		return
 	_src = {"kind": "power", "node": _power_btn}
+	_press = _mouse
 	_begin_target(targets)
 	_sticky = true
 
@@ -809,11 +970,17 @@ func _on_power() -> void:
 func _draw_arrow() -> void:
 	if _mode != "target" or _src.is_empty():
 		return
+	# After a tap (no drag) the pointer is still where it was tapped, so an
+	# arrow would point at nothing. It appears once the pointer moves away.
+	if _sticky and _mouse.distance_to(_press) < 28.0:
+		return
 	var from: Vector2
 	var node: Control = _src["node"]
 	match _src["kind"]:
 		"unit":
 			from = (node as BoardUnit).center()
+		"job":
+			from = (node as JobView).center()
 		"card":
 			from = node.position + Vector2(CardView.W, CardView.H) * 0.5 + Vector2(0, -CardView.H * 0.5 * node.scale.y + 30.0)
 		_:
@@ -914,7 +1081,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 	match e["e"]:
 		"turn":
 			var seat: int = int(e["seat"])
-			_set_fil(seat, int(e["fil"]), int(e["max_fil"]))
+			_set_res(seat, int(e["flow"]), int(e["spool"]))
 			if _tip == "end":
 				_end_tips += 1
 			if session.mode == "hotseat":
@@ -937,7 +1104,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			UI.floater(_fx, "Hand full! %s was lost." % GameData.card(e["id"])["name"], banner_pos, UI.AMBER, 24, 30.0, 1.4)
 			await _wait(0.5)
 		"fatigue":
-			UI.floater(_fx, "Spool empty!", _center_of("p%d" % int(e["seat"])) + Vector2(60, -70), UI.AMBER, 26, 30.0, 1.2)
+			UI.floater(_fx, "Out of cards!", _center_of("p%d" % int(e["seat"])) + Vector2(60, -70), UI.AMBER, 26, 30.0, 1.2)
 			await _wait(0.25)
 		"play":
 			await _ev_play(e)
@@ -1006,14 +1173,24 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			var seat: int = int(e["seat"])
 			if seat == me:
 				_tips_done["power"] = true
-			_set_fil(seat, int(e["fil"]), _fil[seat][1])
+			_set_res(seat, int(e["flow"]), int(e["spool"]))
 			var pv: PrinterView = _printers[seat]
 			pv.pulse()
 			Audio.sfx("tool")
 			UI.floater(_fx, GameData.printer(pv.printer_id)["power"]["name"], pv.center() + Vector2(40, -90), UI.GOLD, 24)
 			await _wait(0.35)
 		"fil":
-			_set_fil(int(e["seat"]), int(e["fil"]), int(e["max_fil"]))
+			_set_res(int(e["seat"]), int(e["flow"]), int(e["spool"]))
+			if int(e.get("gain", 0)) > 0:
+				UI.floater(_fx, "+%d Filament" % int(e["gain"]), (_printers[int(e["seat"])] as PrinterView).center() + Vector2(0, -90), UI.CYAN, 22)
+		"scrap":
+			# The pieces of a shattered print go back on its owner's Spool.
+			var seat: int = int(e["seat"])
+			_set_res(seat, (_gauge if seat == me else _foe_gauge).flow, int(e["spool"]))
+		"job":
+			await _ev_job(e)
+		"deploy":
+			await _ev_deploy(e)
 		"armor":
 			var pv: PrinterView = _printers[int(e["seat"])]
 			var p: Dictionary = st["players"][int(e["seat"])]
@@ -1029,7 +1206,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 
 func _ev_play(e: Dictionary) -> void:
 	var seat: int = int(e["seat"])
-	_set_fil(seat, int(e["fil"]), _fil[seat][1])
+	_set_res(seat, int(e["flow"]), int(e["spool"]))
 	var id: String = e["card"]["id"]
 	var def := GameData.card(id)
 	Audio.sfx("card")
@@ -1038,16 +1215,7 @@ func _ev_play(e: Dictionary) -> void:
 			_tips_done["tool"] = true
 		elif def["type"] == "upgrade":
 			_tips_done["upgrade"] = true
-		for h in _hand:
-			if int(h["uid"]) == int(e["card"]["uid"]):
-				_hand.erase(h)
-				var node: CardView = h["node"]
-				var tw := node.create_tween().set_parallel(true)
-				tw.tween_property(node, "modulate:a", 0.0, 0.18)
-				tw.tween_property(node, "position:y", node.position.y - 60.0, 0.18)
-				tw.chain().tween_callback(node.queue_free)
-				break
-		_layout_hand()
+		_drop_hand_card(int(e["card"]["uid"]))
 		if def["type"] != "creature":
 			Audio.sfx("tool")
 			await _wait(0.2)
@@ -1056,20 +1224,119 @@ func _ev_play(e: Dictionary) -> void:
 	if not _foe_backs.is_empty():
 		(_foe_backs.pop_back() as Node).queue_free()
 	_layout_hand()
+	await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.55 if def["type"] == "creature" else 0.95, def["type"] != "creature")
+
+
+## A card of mine leaves the hand: it lifts and fades.
+func _drop_hand_card(uid: int) -> void:
+	for h in _hand:
+		if int(h["uid"]) == uid:
+			_hand.erase(h)
+			var node: CardView = h["node"]
+			var tw := node.create_tween().set_parallel(true)
+			tw.tween_property(node, "modulate:a", 0.0, 0.18)
+			tw.tween_property(node, "position:y", node.position.y - 60.0, 0.18)
+			tw.chain().tween_callback(node.queue_free)
+			break
+	_layout_hand()
+
+
+## Holds one of the opponent's cards up, face-up, long enough to read.
+func _show_foe_card(id: String, from: Vector2, hold: float, chime: bool) -> void:
 	var card := CardView.make(id, 0.3)
 	card.z_index = 42
-	card.position = Vector2(backs_x - 45, -30)
+	card.position = from
 	_fx.add_child(card)
 	var tw := card.create_tween().set_parallel(true)
 	tw.tween_property(card, "position", show_pos, 0.2).set_ease(Tween.EASE_OUT)
 	tw.tween_property(card, "scale", Vector2(0.7, 0.7), 0.2)
 	await tw.finished
-	if def["type"] != "creature":
+	if chime:
 		Audio.sfx("tool")
-	await _wait(0.55 if def["type"] == "creature" else 0.95)
+	await _wait(hold)
 	var out := card.create_tween()
 	out.tween_property(card, "modulate:a", 0.0, 0.2)
 	out.tween_callback(card.queue_free)
+
+
+## A long print starts, or the Printer lays down this turn's share of one.
+func _ev_job(e: Dictionary) -> void:
+	var seat: int = int(e["seat"])
+	var id: String = e["card"]["id"]
+	var paid: int = int(e["paid"])
+	var cost: int = int(e["cost"])
+	_set_res(seat, int(e["flow"]), int(e["spool"]))
+	if bool(e["start"]):
+		Audio.sfx("card")
+		if seat == me:
+			_tips_done["long"] = true
+			_drop_hand_card(int(e["card"]["uid"]))
+		else:
+			if not _foe_backs.is_empty():
+				(_foe_backs.pop_back() as Node).queue_free()
+			_layout_hand()
+			await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.7, false)
+			if not is_inside_tree():
+				return
+	var jv := _job_view(seat, id)
+	var pv: PrinterView = _printers[seat]
+	var to := float(paid) / float(maxi(cost, 1))
+	if to > jv.shown + 0.001:
+		pv.set_working(true)
+		var head := _make_toolhead(GameData.element_color(GameData.printer(pv.printer_id)["element"]))
+		head.scale = Vector2(pv.base_scale, pv.base_scale) * 0.8
+		Audio.sfx("print", 1.2)
+		var sway := 30.0 * 0.56 * pv.base_scale
+		var from := jv.shown
+		var build := create_tween()
+		build.tween_method(func(v: float):
+			jv.set_shown(v)
+			head.set_meta("dx", sin(v * TAU * 7.0) * sway / head.scale.x)
+			head.position = jv.layer_point(v)
+			head.queue_redraw(), from, to, 0.45 + 0.6 * (to - from))
+		await build.finished
+		if not is_inside_tree():
+			return
+		head.queue_free()
+		pv.set_working(false)
+	jv.set_paid(paid, cost)
+	var above := Vector2(clampf(jv.center().x, 200.0, W - 200.0), jv.hit_rect().position.y - 14.0)
+	if jv.is_done():
+		var paint := create_tween()
+		paint.tween_method(jv.set_color, 0.0, 1.0, 0.2)
+		Audio.sfx("reveal", 1.3)
+		UI.floater(_fx, "Print finished!", above, UI.GOOD, 24, 20.0, 1.3)
+		await _wait(0.4)
+	elif bool(e["start"]):
+		var turns := _turns_left({"cost": cost, "paid": paid}, seat)
+		UI.floater(_fx, "Long print: ready %s" % ("next turn" if turns <= 1 else "in %d turns" % turns), above, UI.CYAN, 22, 20.0, 1.5)
+		await _wait(0.35)
+	else:
+		await _wait(0.15)
+
+
+## A finished long print leaves the Printer. Creatures hop to the bench in the
+## summon that follows; tools and armor are used up here.
+func _ev_deploy(e: Dictionary) -> void:
+	var seat: int = int(e["seat"])
+	var id: String = e["card"]["id"]
+	var def := GameData.card(id)
+	if seat == me:
+		_tips_done["deploy"] = true
+	if def["type"] == "creature":
+		return
+	var jv: JobView = _jobs[seat] if is_instance_valid(_jobs[seat]) else null
+	var from := jv.center() - Vector2(45, 63) if jv != null else Vector2(backs_x - 45, -30)
+	_clear_job(seat)
+	if seat == me:
+		if def["type"] == "tool":
+			_tips_done["tool"] = true
+		else:
+			_tips_done["upgrade"] = true
+		Audio.sfx("tool")
+		await _wait(0.2)
+	else:
+		await _show_foe_card(id, from, 0.95, true)
 
 
 ## The print head that rides up the figure while it is being built.
@@ -1115,28 +1382,38 @@ func _ev_summon(e: Dictionary, next: Dictionary) -> void:
 	node.z_index = 12
 	node.scale = Vector2(small, small)
 	node.position = start
-	node.begin_print()
-	pv.set_working(true)
-	var head := _make_toolhead(GameData.element_color(GameData.printer(pv.printer_id)["element"]))
-	head.scale = Vector2(pv.base_scale, pv.base_scale) * 0.8
-	Audio.sfx("print", 1.2)
-	var quick: bool = next.get("e", "") == "summon"
-	var sway := 30.0 * small
-	var build := create_tween()
-	build.tween_method(func(v: float):
-		node.set_print_progress(v)
-		head.set_meta("dx", sin(v * TAU * 7.0) * sway / head.scale.x)
-		head.position = node.layer_point(v)
-		head.queue_redraw(), 0.0, 1.0, 0.6 if quick else 1.15)
-	await build.finished
-	if not is_inside_tree():
-		return
-	head.queue_free()
-	pv.set_working(false)
-	var paint := create_tween()
-	paint.tween_method(node.set_print_color, 0.0, 1.0, 0.2)
-	await paint.finished
-	node.end_print()
+	if bool(e.get("built", false)):
+		# It was built over the last few turns and is standing there finished.
+		_clear_job(seat)
+		Audio.sfx("print", 1.5)
+	else:
+		# A long print already on the bed steps back while this one is built.
+		var waiting: JobView = _jobs[seat] if is_instance_valid(_jobs[seat]) else null
+		if waiting != null:
+			waiting.modulate.a = 0.0
+			waiting.create_tween().tween_property(waiting, "modulate:a", 1.0, 0.25).set_delay(1.3)
+		node.begin_print()
+		pv.set_working(true)
+		var head := _make_toolhead(GameData.element_color(GameData.printer(pv.printer_id)["element"]))
+		head.scale = Vector2(pv.base_scale, pv.base_scale) * 0.8
+		Audio.sfx("print", 1.2)
+		var quick: bool = next.get("e", "") == "summon"
+		var sway := 30.0 * small
+		var build := create_tween()
+		build.tween_method(func(v: float):
+			node.set_print_progress(v)
+			head.set_meta("dx", sin(v * TAU * 7.0) * sway / head.scale.x)
+			head.position = node.layer_point(v)
+			head.queue_redraw(), 0.0, 1.0, 0.6 if quick else 1.15)
+		await build.finished
+		if not is_inside_tree():
+			return
+		head.queue_free()
+		pv.set_working(false)
+		var paint := create_tween()
+		paint.tween_method(node.set_print_color, 0.0, 1.0, 0.2)
+		await paint.finished
+		node.end_print()
 
 	# Off the Printer and onto the bed in one hop.
 	var dest := _slot_pos(seat, row.find(uid), row.size())
@@ -1224,6 +1501,15 @@ func _tip_ready(id: String) -> bool:
 			return mine and BattleEngine.has_guard(st, 1 - me) and _tips_done.get("print", false)
 		"print":
 			return mine and _has_playable("creature")
+		"long":
+			if not mine or not _tips_done.get("print", false):
+				return false
+			for c in st["players"][me]["hand"]:
+				if BattleEngine.play_error(st, me, int(c["uid"])) == "" and BattleEngine.is_long(st, me, int(c["uid"])):
+					return true
+			return false
+		"deploy":
+			return mine and BattleEngine.deploy_error(st, me) == ""
 		"fresh":
 			if not _tips_done.get("print", false):
 				return false
@@ -1251,7 +1537,8 @@ func _tip_ready(id: String) -> bool:
 
 func _has_playable(type: String) -> bool:
 	for c in st["players"][me]["hand"]:
-		if GameData.card(c["id"]).get("type", "") == type and BattleEngine.play_error(st, me, int(c["uid"])) == "":
+		if GameData.card(c["id"]).get("type", "") == type and BattleEngine.play_error(st, me, int(c["uid"])) == "" \
+				and not BattleEngine.is_long(st, me, int(c["uid"])):
 			return true
 	return false
 
@@ -1269,6 +1556,8 @@ func _tip_focus(id: String) -> Rect2:
 			return bed_me
 		"power":
 			return Rect2(_power_btn.position, _power_btn.size)
+		"deploy":
+			return (_printers[me] as PrinterView).hit_rect()
 		"end":
 			return Rect2(_end_btn.position, _end_btn.size)
 	var top := hand_y - 8.0

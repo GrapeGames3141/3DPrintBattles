@@ -59,13 +59,13 @@ func run() -> void:
 		if scr._busy or not scr._queue.is_empty() or scr._closed:
 			continue
 		if int(session.state["active"]) == my:
-			var before: int = int(session.state["uid"]) + int(session.state["turn"]) * 1000 + int(session.state["players"][my]["fil"])
+			var before: int = int(session.state["uid"]) + int(session.state["turn"]) * 1000 + int(session.state["players"][my]["flow"])
 			session.submit(my, BattleAI.choose(session.view(), my, 1))
 			# Guests wait for the host's answer before choosing again.
 			var w0 := Time.get_ticks_msec()
 			while Time.get_ticks_msec() - w0 < 3000:
 				await process_frame
-				var now: int = int(session.state["uid"]) + int(session.state["turn"]) * 1000 + int(session.state["players"][my]["fil"])
+				var now: int = int(session.state["uid"]) + int(session.state["turn"]) * 1000 + int(session.state["players"][my]["flow"])
 				if now != before or session.state["over"] or scr._busy:
 					break
 	await wait(3.0)

@@ -8,9 +8,18 @@ const VERSION := "1.0.0"
 const DECK_SIZE := 20
 const MAX_HAND := 9
 const MAX_BOARD := 6
-const MAX_FILAMENT := 10
-const PRINTER_HP := 30
+const PRINTER_HP := 20
 const POWER_COST := 2
+## Filament on a Printer's spool for the whole battle.
+const SPOOL_SIZE := 40
+## Extra Filament per level of the Bigger Spool workshop upgrade.
+const SPOOL_PER_UPGRADE := 5
+## Filament a Printer can lay down each turn.
+const PRINT_SPEED := 3
+## At the start of a turn you draw one card, then more until you hold this many.
+const HAND_TOP_UP := 3
+## Filament that goes back on the spool when one of your prints shatters.
+const SCRAP_REFUND := 1
 
 const RARITY_ORDER := ["common", "uncommon", "rare", "epic", "legendary"]
 const RARITIES := {
@@ -62,7 +71,7 @@ const CARDS := [
 		"kw": [], "text": "On Print: Repair your Printer by 2.",
 		"on_print": [{"op": "heal", "n": 2, "to": "own_printer"}]},
 	{"id": "sparkotter", "name": "Sparkotter", "type": "creature", "cost": 2, "atk": 2, "hp": 2, "element": "Lightning", "rarity": "common",
-		"kw": [], "text": "On Print: Gain 1 Filament this turn.",
+		"kw": [], "text": "On Print: +1 Print Speed this turn.",
 		"on_print": [{"op": "filament", "n": 1}]},
 	{"id": "frostling", "name": "Frostling", "type": "creature", "cost": 3, "atk": 3, "hp": 3, "element": "Ice", "rarity": "uncommon",
 		"kw": [], "text": "On Print: Jam an enemy print.", "target": "enemy_print",
@@ -115,8 +124,8 @@ const CARDS := [
 		"on_print": [{"op": "buff", "atk": 2, "hp": 2, "kw": ["brim"], "to": "other_friendly_prints"}]},
 	# ----------------------------------------------------------------- tools
 	{"id": "spare_spool", "name": "Spare Spool", "type": "tool", "cost": 0, "rarity": "uncommon",
-		"text": "Gain 1 Filament this turn.",
-		"effects": [{"op": "filament", "n": 1}]},
+		"text": "Add 3 Filament to your Spool. +1 Print Speed this turn.",
+		"effects": [{"op": "spool", "n": 3}, {"op": "filament", "n": 1}]},
 	{"id": "heat_gun", "name": "Heat Gun", "type": "tool", "cost": 1, "rarity": "common",
 		"text": "Deal 2 damage.", "target": "enemy",
 		"effects": [{"op": "damage", "n": 2, "to": "target"}]},
@@ -181,7 +190,7 @@ const CARDS := [
 	{"id": "test_bot", "name": "Test Bot", "type": "creature", "cost": 1, "atk": 1, "hp": 1, "element": "Neutral", "rarity": "common",
 		"kw": [], "text": "", "token": true},
 	{"id": "filament_scrap", "name": "Filament Scrap", "type": "tool", "cost": 0, "rarity": "common",
-		"text": "Gain 1 Filament this turn.", "token": true,
+		"text": "+1 Print Speed this turn.", "token": true,
 		"effects": [{"op": "filament", "n": 1}]},
 ]
 
@@ -212,7 +221,7 @@ const STARTER_PRINTER := {"cinderpaw": "ember_forge", "aquafin": "tide_press", "
 const UPGRADES := [
 	{"id": "frame", "name": "Reinforced Frame", "icon": "shield", "text": "Your Printer starts each battle with +2 Health per level.", "costs": [150, 300, 600]},
 	{"id": "bed", "name": "Heated Bed", "icon": "flame", "text": "The first print you make each battle gets +1/+1 per level.", "costs": [150, 300, 600]},
-	{"id": "spool", "name": "Bigger Spool", "icon": "spool", "text": "Start each battle with one Filament Scrap per level.", "costs": [250, 600]},
+	{"id": "spool", "name": "Bigger Spool", "icon": "spool", "text": "Your Spool holds +%d Filament per level." % SPOOL_PER_UPGRADE, "costs": [250, 600]},
 	{"id": "sorter", "name": "Coin Sorter", "icon": "coin", "text": "Earn +5 Forge Coins per win for each level.", "costs": [100, 250, 500]},
 ]
 
@@ -245,9 +254,11 @@ const TUTORIAL := {
 	"coins": 50,
 	"player": {"printer": "ember_forge",
 		"hand": ["voltwig", "cinderpaw", "heat_gun", "mossmunk"],
-		"deck": ["stoneback", "galehopper", "helm", "cinderpaw", "aquafin", "frostling", "heat_gun", "sparkotter",
-			"glue_stick", "mossmunk", "voltwig", "stoneback", "galehopper", "aquafin", "calipers", "frostling"]},
-	"foe": {"printer": "volt_rig", "hp_bonus": -16,
+		# Runestag comes second: it costs more than one turn's printing, so it
+		# teaches the long print.
+		"deck": ["runestag", "helm", "stoneback", "galehopper", "cinderpaw", "aquafin", "frostling", "heat_gun", "sparkotter",
+			"glue_stick", "mossmunk", "voltwig", "stoneback", "galehopper", "aquafin", "calipers"]},
+	"foe": {"printer": "volt_rig", "hp_bonus": -10,
 		"hand": ["mossmunk", "sparkotter", "voltwig", "aquafin", "filament_scrap"],
 		"deck": ["mossmunk", "aquafin", "voltwig", "sparkotter", "cinderpaw", "stoneback", "mossmunk", "aquafin",
 			"voltwig", "sparkotter", "cinderpaw", "stoneback", "galehopper", "frostling", "galehopper", "frostling"]},
@@ -268,25 +279,25 @@ const RIVALS := [
 	{"id": "flint", "name": "Foreman Flint", "title": "Hot End", "printer": "ember_forge", "level": 0, "hp_bonus": -4, "coins": 80, "pack": "standard",
 		"arena": "element_bench",
 		"deck": {"voltwig": 2, "cinderpaw": 2, "sparkotter": 2, "galehopper": 2, "glassdrake": 2, "frostling": 2, "heat_gun": 2, "hobby_knife": 2, "leg_guards": 2, "printed_wrench": 1, "coalgriffin": 1}},
-	{"id": "zed", "name": "Sparkwright Zed", "title": "Overclocked", "printer": "volt_rig", "level": 1, "hp_bonus": -2, "coins": 90, "pack": "standard",
+	{"id": "zed", "name": "Sparkwright Zed", "title": "Overclocked", "printer": "volt_rig", "level": 1, "hp_bonus": 2, "coins": 90, "pack": "standard",
 		"arena": "element_bench",
 		"deck": {"voltwig": 2, "sparkotter": 2, "cinderpaw": 2, "galehopper": 2, "thunderelk": 2, "runestag": 2, "heat_gun": 2, "hobby_knife": 1, "gear_up": 1, "leg_guards": 2, "spare_spool": 2}},
-	{"id": "fern", "name": "Gardener Fern", "title": "Overgrowth", "printer": "verdant_loom", "level": 1, "hp_bonus": -4, "coins": 100, "pack": "standard",
+	{"id": "fern", "name": "Gardener Fern", "title": "Overgrowth", "printer": "verdant_loom", "level": 1, "hp_bonus": -2, "coins": 100, "pack": "standard",
 		"arena": "reinforced_run",
 		"deck": {"mossmunk": 2, "voltwig": 2, "cinderpaw": 2, "sparkotter": 2, "brambleowl": 2, "coralisk": 2, "test_print": 2, "hex_keys": 2, "glue_stick": 2, "full_suit": 1, "verdantitan": 1}},
 	{"id": "brick", "name": "Mason Brick", "title": "Solid Infill", "printer": "stone_kiln", "level": 1, "hp_bonus": -8, "coins": 110, "pack": "standard",
 		"arena": "reinforced_run",
 		"deck": {"mossmunk": 2, "aquafin": 2, "stoneback": 2, "frostling": 2, "ironmaw": 2, "brambleowl": 2, "chest_plate": 2, "tree_supports": 2, "bed_scraper": 2, "calipers": 1, "tidewhale": 1}},
-	{"id": "lyra", "name": "Runekeeper Lyra", "title": "Arcane Circuit", "printer": "arcane_engine", "level": 2, "hp_bonus": 0, "coins": 130, "pack": "standard",
+	{"id": "lyra", "name": "Runekeeper Lyra", "title": "Arcane Circuit", "printer": "arcane_engine", "level": 2, "hp_bonus": 4, "coins": 130, "pack": "standard",
 		"arena": "masterwork_circuit",
 		"deck": {"mossmunk": 2, "cinderpaw": 2, "sparkotter": 2, "stoneback": 2, "runestag": 2, "brambleowl": 2, "printed_wrench": 2, "bed_leveling": 1, "arcane_core": 1, "pyraxis": 1, "voidmanta": 1, "coalgriffin": 2}},
-	{"id": "gale", "name": "Stormsmith Gale", "title": "Cold Front", "printer": "tide_press", "level": 1, "hp_bonus": -4, "coins": 150, "pack": "premium",
+	{"id": "gale", "name": "Stormsmith Gale", "title": "Cold Front", "printer": "tide_press", "level": 1, "hp_bonus": 0, "coins": 150, "pack": "premium",
 		"arena": "masterwork_circuit",
 		"deck": {"mossmunk": 2, "aquafin": 2, "frostling": 2, "galehopper": 2, "coralisk": 2, "aurorawing": 2, "skyforge": 2, "cooling_fan": 2, "bed_leveling": 1, "clean_nozzle": 1, "miragefox": 1, "tidewhale": 1}},
-	{"id": "atlas", "name": "Warden Atlas", "title": "Masterwork", "printer": "stone_kiln", "level": 2, "hp_bonus": -5, "coins": 180, "pack": "premium",
+	{"id": "atlas", "name": "Warden Atlas", "title": "Masterwork", "printer": "stone_kiln", "level": 2, "hp_bonus": -7, "coins": 180, "pack": "premium",
 		"arena": "primordial_proof",
 		"deck": {"mossmunk": 2, "aquafin": 2, "stoneback": 2, "frostling": 2, "ironmaw": 2, "tidewhale": 2, "chest_plate": 2, "bed_scraper": 1, "emergency_stop": 1, "titan_plate": 1, "worldcoil": 1, "verdantitan": 1, "clean_nozzle": 1}},
-	{"id": "forge", "name": "Grandmaster Forge", "title": "Primordial Proof", "printer": "arcane_engine", "level": 2, "hp_bonus": 6, "coins": 300, "pack": "premium",
+	{"id": "forge", "name": "Grandmaster Forge", "title": "Primordial Proof", "printer": "arcane_engine", "level": 2, "hp_bonus": 14, "coins": 300, "pack": "premium",
 		"arena": "primordial_proof",
 		"deck": {"voltwig": 2, "cinderpaw": 2, "sparkotter": 2, "galehopper": 2, "runestag": 2, "glassdrake": 2, "thunderelk": 1, "coalgriffin": 1, "heat_gun": 2, "printed_wrench": 1, "pyraxis": 1, "voidmanta": 1, "starloom": 1}},
 ]

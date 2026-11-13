@@ -13,6 +13,7 @@ func _initialize() -> void:
 	_keywords()
 	_effects()
 	_limits()
+	_printing()
 	_network_view()
 	_ai_games()
 	print("\n%d checks, %d failed" % [_checks, _fails])
@@ -26,7 +27,8 @@ func ok(cond: bool, what: String) -> void:
 		print("  FAIL: " + what)
 
 
-## A game with fixed decks where seat 0 goes first and both sides have 10 Filament.
+## A game with fixed decks where seat 0 goes first and both sides can print 10
+## Filament a turn from a huge spool, so costs never get in the way.
 func game(deck0: Array, deck1: Array, printer0 := "ember_forge", printer1 := "tide_press", up0 := {}) -> Dictionary:
 	var pad0: Array = deck0.duplicate()
 	var pad1: Array = deck1.duplicate()
@@ -38,8 +40,9 @@ func game(deck0: Array, deck1: Array, printer0 := "ember_forge", printer1 := "ti
 		{"printer": printer0, "deck": pad0, "upgrades": up0},
 		{"printer": printer1, "deck": pad1}]})
 	for p in st["players"]:
-		p["fil"] = 10
-		p["max_fil"] = 10
+		p["flow"] = 10
+		p["speed"] = 10
+		p["spool"] = 99
 	return st
 
 
@@ -73,7 +76,7 @@ func _catalog() -> void:
 		ok(c["type"] in ["creature", "tool", "upgrade"], c["id"] + " type")
 		for list in [c.get("on_print", []), c.get("shatter", []), c.get("effects", [])]:
 			for e in list:
-				ok(e["op"] in ["damage", "heal", "draw", "filament", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy"], c["id"] + " op " + e["op"])
+				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy"], c["id"] + " op " + e["op"])
 				if e["op"] == "summon":
 					ok(GameData.has_card(e["card"]), c["id"] + " summons a real card")
 		for k in c.get("kw", []):
@@ -101,21 +104,21 @@ func _basics() -> void:
 	ok(p0["hand"].size() == 4 and p0["deck"].size() == 16, "first player: 3 cards + turn draw")
 	ok(p1["hand"].size() == 5, "second player: 4 cards + Filament Scrap")
 	ok(p1["hand"][4]["id"] == "filament_scrap", "second player holds a scrap")
-	ok(int(p0["fil"]) == 1 and int(p0["max_fil"]) == 1, "turn 1 has 1 Filament")
+	ok(int(p0["flow"]) == GameData.PRINT_SPEED and int(p0["spool"]) == GameData.SPOOL_SIZE, "turn 1: full print speed and a full spool")
 	ok(not act(st, 1, {"t": "end"})["ok"], "cannot act out of turn")
 	ok(act(st, 0, {"t": "end"})["ok"], "end turn")
-	ok(int(st["active"]) == 1 and int(p1["fil"]) == 1, "turn passes")
+	ok(int(st["active"]) == 1 and int(p1["flow"]) == GameData.PRINT_SPEED, "turn passes")
 
 	st = game(["voltwig"], [])
 	var h := give(st, 0, "stoneback")
 	var before: Dictionary = st.duplicate(true)
-	st["players"][0]["fil"] = 2
-	ok(not act(st, 0, {"t": "play", "hand": h})["ok"], "too expensive is rejected")
-	st["players"][0]["fil"] = 10
+	st["players"][0]["spool"] = 2
+	ok(not act(st, 0, {"t": "play", "hand": h})["ok"], "more Filament than the spool holds is rejected")
+	st["players"][0]["spool"] = 99
 	ok(before["players"][0]["hand"].size() == st["players"][0]["hand"].size(), "rejected play changes nothing")
 	var res := act(st, 0, {"t": "play", "hand": h})
-	ok(res["ok"] and st["players"][0]["board"].size() == 1, "print lands on the bed")
-	ok(int(st["players"][0]["fil"]) == 7, "cost is paid")
+	ok(res["ok"] and st["players"][0]["board"].size() == 1, "print lands on the bench")
+	ok(int(st["players"][0]["flow"]) == 7 and int(st["players"][0]["spool"]) == 96, "cost comes off this turn's speed and off the spool")
 	var u: Dictionary = st["players"][0]["board"][0]
 	ok(BattleEngine.attack_targets(st, int(u["uid"])).is_empty(), "fresh print cannot attack")
 	act(st, 0, {"t": "end"})
@@ -169,10 +172,10 @@ func _keywords() -> void:
 	ok(int(br["hp"]) == 3 and not br["kw"].has("brim"), "Brim soaks the first hit and pops")
 
 	st = game([], [])
-	st["players"][0]["hp"] = 20
+	st["players"][0]["hp"] = 10
 	var c := put(st, 0, "coralisk")
 	act(st, 0, {"t": "attack", "unit": int(c["uid"]), "target": "p1"})
-	ok(int(st["players"][0]["hp"]) == 23, "Siphon repairs by damage dealt")
+	ok(int(st["players"][0]["hp"]) == 13, "Siphon repairs by damage dealt")
 
 	st = game([], [])
 	var t := put(st, 0, "thunderelk")
@@ -247,7 +250,7 @@ func _effects() -> void:
 	act(st, 0, {"t": "play", "hand": h, "target": "u%d" % int(m["uid"])})
 	ok(st["players"][0]["board"].size() == 2 and int(st["players"][0]["board"][1]["atk"]) == 5, "Rainbow Spool copies with buffs")
 	h = give(st, 0, "emergency_stop")
-	st["players"][0]["fil"] = 10
+	st["players"][0]["flow"] = 10
 	put(st, 1, "worldcoil")
 	act(st, 0, {"t": "play", "hand": h})
 	ok(st["players"][0]["board"].is_empty() and st["players"][1]["board"].is_empty(), "Emergency Stop clears both beds, through Brim")
@@ -259,39 +262,36 @@ func _effects() -> void:
 	h = give(st, 0, "hex_keys")
 	act(st, 0, {"t": "play", "hand": h})
 	ok(int(st["players"][0]["board"][0]["atk"]) == 2 and int(st["players"][0]["board"][1]["hp"]) == 2, "Hex Keys buffs all")
-	st["players"][0]["fil"] = 0
+	st["players"][0]["flow"] = 0
+	var spool_before: int = int(st["players"][0]["spool"])
 	h = give(st, 0, "spare_spool")
 	act(st, 0, {"t": "play", "hand": h})
-	ok(int(st["players"][0]["fil"]) == 1, "Spare Spool gives Filament")
+	ok(int(st["players"][0]["flow"]) == 1 and int(st["players"][0]["spool"]) == spool_before + 3, "Spare Spool tops up the spool and gives a burst of speed")
 
 	# printer powers
 	st = game([], [])
 	foe = put(st, 1, "mossmunk")
 	ok(not act(st, 0, {"t": "power"})["ok"], "Hot Nozzle needs a target")
 	ok(act(st, 0, {"t": "power", "target": "p1"})["ok"], "Hot Nozzle")
-	ok(int(st["players"][1]["hp"]) == 29 and int(st["players"][0]["fil"]) == 8, "power costs 2 and deals 1")
+	ok(int(st["players"][1]["hp"]) == GameData.PRINTER_HP - 1 and int(st["players"][0]["flow"]) == 10 - GameData.POWER_COST, "power costs Filament and deals 1")
 	ok(not act(st, 0, {"t": "power", "target": "p1"})["ok"], "power once per turn")
 	st = game([], [], "stone_kiln")
 	act(st, 0, {"t": "power"})
 	ok(int(st["players"][0]["armor"]) == 2, "Reinforce gives Armor")
 	BattleEngine._damage(st, "p0", 3, [])
-	ok(int(st["players"][0]["armor"]) == 0 and int(st["players"][0]["hp"]) == 29, "Armor soaks damage first")
+	ok(int(st["players"][0]["armor"]) == 0 and int(st["players"][0]["hp"]) == GameData.PRINTER_HP - 1, "Armor soaks damage first")
 	st = game([], [], "arcane_engine")
 	var hs: int = st["players"][0]["hand"].size()
 	act(st, 0, {"t": "power"})
-	ok(st["players"][0]["hand"].size() == hs + 1 and int(st["players"][0]["hp"]) == 28, "Blueprint Scan draws and costs 2 Health")
+	ok(st["players"][0]["hand"].size() == hs + 1 and int(st["players"][0]["hp"]) == GameData.PRINTER_HP - 2, "Blueprint Scan draws and costs 2 Health")
 	st = game([], [], "volt_rig")
 	act(st, 0, {"t": "power"})
 	ok(st["players"][0]["board"].size() == 1, "Test Cube prints a cube")
 
 	# workshop upgrades
 	st = game([], [], "ember_forge", "tide_press", {"frame": 3, "bed": 2, "spool": 2})
-	ok(int(st["players"][0]["hp"]) == 36, "Reinforced Frame adds Health")
-	var scraps := 0
-	for c in st["players"][0]["hand"]:
-		if c["id"] == "filament_scrap":
-			scraps += 1
-	ok(scraps == 2, "Bigger Spool gives scraps")
+	ok(int(st["players"][0]["hp"]) == GameData.PRINTER_HP + 6, "Reinforced Frame adds Health")
+	ok(int(st["players"][0]["spool_max"]) == GameData.SPOOL_SIZE + 2 * GameData.SPOOL_PER_UPGRADE, "Bigger Spool holds more Filament")
 	h = give(st, 0, "mossmunk")
 	act(st, 0, {"t": "play", "hand": h})
 	ok(int(st["players"][0]["board"][0]["atk"]) == 3 and int(st["players"][0]["board"][0]["hp"]) == 5, "Heated Bed buffs the first print")
@@ -306,7 +306,7 @@ func _limits() -> void:
 	for i in GameData.MAX_BOARD:
 		put(st, 0, "mossmunk")
 	var h := give(st, 0, "mossmunk")
-	ok(BattleEngine.play_error(st, 0, h) == "Your print bed is full.", "bed limit")
+	ok(BattleEngine.play_error(st, 0, h) == "Your bench is full.", "bench limit")
 	h = give(st, 0, "test_print")
 	ok(act(st, 0, {"t": "play", "hand": h})["ok"] and st["players"][0]["board"].size() == GameData.MAX_BOARD, "summons stop at a full bed")
 
@@ -322,7 +322,117 @@ func _limits() -> void:
 	st["players"][0]["deck"].clear()
 	BattleEngine._draw(st, 0, [])
 	BattleEngine._draw(st, 0, [])
-	ok(int(st["players"][0]["hp"]) == 27, "empty spool damage grows: 1 then 2")
+	ok(int(st["players"][0]["hp"]) == GameData.PRINTER_HP - 3, "drawing from an empty deck hurts more each time: 1 then 2")
+
+
+## A game at the real print speed, with seat 0 to act and a known spool.
+func slow_game() -> Dictionary:
+	var st := game([], [])
+	for p in st["players"]:
+		p["speed"] = 3
+		p["flow"] = 3
+		p["spool"] = 40
+		p["spool_max"] = 40
+	return st
+
+
+func _printing() -> void:
+	print("spool, print speed and long prints")
+	var st := slow_game()
+	var p0: Dictionary = st["players"][0]
+	var h := give(st, 0, "ironmaw")
+	ok(BattleEngine.is_long(st, 0, h) and BattleEngine.play_error(st, 0, h) == "", "a 5-cost card at speed 3 is a long print")
+	var res := act(st, 0, {"t": "play", "hand": h})
+	ok(res["ok"] and p0["board"].is_empty() and BattleEngine.hand_card(st, 0, h).is_empty(), "it leaves the hand but does not land yet")
+	ok(p0["job"]["id"] == "ironmaw" and int(p0["job"]["paid"]) == 3 and int(p0["job"]["cost"]) == 5, "it takes the rest of this turn's speed")
+	ok(int(p0["flow"]) == 0 and int(p0["spool"]) == 35, "the whole cost comes off the spool at once")
+	ok(res["events"][0]["e"] == "job" and bool(res["events"][0]["start"]), "a job event announces it")
+	ok(BattleEngine.deploy_error(st, 0) == "That print is not finished yet.", "an unfinished print cannot be deployed")
+	var h2 := give(st, 0, "mossmunk")
+	ok(BattleEngine.play_error(st, 0, h2) == "Your Printer is done printing for this turn.", "nothing more can be printed with no speed left")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(p0["job"]["paid"]) == 5 and int(p0["flow"]) == 1, "next turn the Printer finishes it first and keeps the change")
+	ok(BattleEngine.job_ready(p0["job"]) and BattleEngine.legal_actions(st, 0).has({"t": "deploy"}), "a finished print can be deployed")
+	var h3 := give(st, 0, "coalgriffin")
+	ok(BattleEngine.play_error(st, 0, h3) == "Your Printer is busy with another print.", "only one long print at a time")
+	ok(BattleEngine.play_error(st, 0, h2) == "", "small cards still print around a finished one")
+	res = act(st, 0, {"t": "deploy"})
+	ok(res["ok"] and p0["board"].size() == 1 and p0["board"][0]["id"] == "ironmaw" and p0["job"].is_empty(), "deploying puts it on the bench")
+	ok(int(p0["flow"]) == 1 and int(p0["spool"]) == 35, "deploying is free")
+	var summon: Dictionary = {}
+	for e in res["events"]:
+		if e["e"] == "summon":
+			summon = e
+	ok(bool(summon.get("built", false)), "the summon is marked as already built")
+
+	# A long print that needs a target picks it when it is deployed.
+	st = slow_game()
+	p0 = st["players"][0]
+	var foe := put(st, 1, "stoneback")
+	h = give(st, 0, "coalgriffin")
+	ok(act(st, 0, {"t": "play", "hand": h})["ok"] and int(foe["hp"]) == 6, "starting a long print needs no target and does nothing yet")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(p0["job"]["paid"]) == 6 and int(p0["flow"]) == 0, "6 Filament takes two full turns")
+	ok(not act(st, 0, {"t": "deploy"})["ok"], "its On Print still needs a target")
+	ok(act(st, 0, {"t": "deploy", "target": "u%d" % int(foe["uid"])})["ok"] and int(foe["hp"]) == 3, "the target is chosen at deploy time")
+
+	# Tools and upgrades can be long prints too.
+	st = slow_game()
+	p0 = st["players"][0]
+	put(st, 1, "voltwig")
+	put(st, 1, "cinderpaw")
+	h = give(st, 0, "bed_leveling")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(st["players"][1]["board"].size() == 2, "a long tool has no effect while it prints")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(act(st, 0, {"t": "deploy"})["ok"] and st["players"][1]["board"].is_empty(), "the tool goes off when deployed")
+
+	# The spool is all there is.
+	st = slow_game()
+	p0 = st["players"][0]
+	p0["spool"] = 2
+	h = give(st, 0, "stoneback")
+	ok(BattleEngine.play_error(st, 0, h) == "Not enough Filament left on your Spool.", "an empty spool stops printing")
+	ok(BattleEngine.power_error(st, 0) == "", "but what is left can still be used")
+	p0["spool"] = 1
+	ok(BattleEngine.power_error(st, 0) != "", "the Printer Power needs Filament on the spool too")
+
+	# Shattered prints go back on the spool as scrap; tokens do not.
+	st = slow_game()
+	var mine := put(st, 0, "voltwig")
+	var wall := put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(mine["uid"]), "target": "u%d" % int(wall["uid"])})
+	ok(int(st["players"][0]["spool"]) == 40 + GameData.SCRAP_REFUND, "a shattered print returns scrap to its owner's spool")
+	var bot := put(st, 0, "test_bot")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "attack", "unit": int(wall["uid"]), "target": "u%d" % int(bot["uid"])})
+	ok(int(st["players"][0]["spool"]) == 40 + GameData.SCRAP_REFUND, "a token returns nothing")
+
+	# A thin hand is topped up at the start of the turn.
+	st = slow_game()
+	st["players"][1]["hand"].clear()
+	act(st, 0, {"t": "end"})
+	ok(st["players"][1]["hand"].size() == GameData.HAND_TOP_UP, "an empty hand is drawn back up to %d" % GameData.HAND_TOP_UP)
+	st["players"][0]["hand"].clear()
+	st["players"][0]["deck"].clear()
+	var hp: int = int(st["players"][0]["hp"])
+	act(st, 1, {"t": "end"})
+	ok(int(st["players"][0]["hp"]) == hp - 1 and int(st["players"][0]["fatigue"]) == 1, "topping up never draws twice from an empty deck")
+
+	# The other player can see what is on the Printer.
+	st = slow_game()
+	h = give(st, 0, "worldcoil")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(BattleEngine.view_for(st, 1)["players"][0]["job"]["id"] == "worldcoil", "a long print is visible to the opponent")
+	var turns := 0
+	while not BattleEngine.job_ready(st["players"][0]["job"]) and turns < 10:
+		act(st, 0, {"t": "end"})
+		act(st, 1, {"t": "end"})
+		turns += 1
+	ok(turns == 2, "a 9-cost print is ready on the third turn (%d turns later)" % turns)
 
 
 func _network_view() -> void:

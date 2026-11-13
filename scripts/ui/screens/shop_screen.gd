@@ -115,7 +115,8 @@ func _open(kind: String) -> void:
 
 
 func _start_opener(at_stage: String, at_index: int) -> void:
-	_modal = modal(0.94)
+	# Fully dark behind the pack: nothing from the shop shows through the cards.
+	_modal = modal(1.0)
 	_opener = PackOpener.make(_open_kind, _open_cards, Profile.packs(_open_kind), Vector2(W, H), P, at_stage, at_index)
 	_opener.done.connect(_close_opener)
 	_opener.another.connect(func():
