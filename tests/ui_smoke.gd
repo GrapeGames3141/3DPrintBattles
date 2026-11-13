@@ -118,6 +118,11 @@ func run() -> void:
 	Engine.time_scale = 12.0
 	await full_match("tutorial", Session.tutorial(), profile)
 	await full_match("rival", Session.vs_rival(profile.active_deck(), GameData.RIVALS[0]), profile)
+	# A deck of Scorch, Thief and Heat cards, so those animations run through the real battle screen.
+	var heat_deck := {"printer": "ember_forge", "cards": ["emberling", "emberling", "kilnpup", "kilnpup", "cindermoth", "cindermoth",
+		"vinehare", "vinehare", "siphonshark", "siphonshark", "thermochameleon", "thermochameleon", "voltviper", "blazehound",
+		"crystalscorp", "hot_plate", "heat_block", "kiln", "spiked_gauntlets", "thermal_core"]}
+	await full_match("heat", Session.quick(heat_deck, 1), profile)
 	await full_match("quick", Session.quick(profile.active_deck(), 2), profile)
 	await full_match("hotseat", Session.hotseat(profile.active_deck(), profile.active_deck()), profile)
 	Engine.time_scale = 1.0
