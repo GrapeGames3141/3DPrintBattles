@@ -32,10 +32,10 @@ window or phone turns.
 | **Prints** | 152 creatures across 8 elements, every element in every rarity, with Guard, Rush, Brim, Siphon, Twin Nozzle, Scorch and Filament Thief keywords plus On Print and Shatter effects. **Heat** (a Heated print takes 1 damage each turn) and **theft** (a thief takes Attack and Health from a print, doubled against a Heated one, and wears its victim's colours) are the newest mechanics. |
 | **Tools** | 53 one-shot cards, each a real 3D-printing tool: Heat Gun, Calipers, Soldering Station, Kiln, Plasma Cutter, Print Farm, Master Slicer and so on. |
 | **Equipment** | 33 pieces of printed equipment (helms, wings, a jet pack, a crown, Spiked Gauntlets, Omega Core) that bolt onto a print for the rest of the battle; some grant Scorch or Filament Thief. |
-| **Printers** | 12 heroes, each with its own Power (Filament cost, once a turn) and 2-4 mod slots. Prints that share their Printer's element get +1 Health. Bought with coins once your Maker Rank is high enough. |
+| **Printers** | 12 heroes, each with its own Power (Filament cost, once a turn). Prints that share their Printer's element get +1 Health. Bought with coins once your Maker Rank is high enough. |
 | **Card packs** | Blueprint Pack (150 coins) and Golden Spool Pack (400): foil pouches you rip open with a swipe, then flick through the cards one at a time. Spare copies pay a little and are kept for Blueprints. Any card can also be printed directly for coins. |
 | **Maker Rank** | Battles give XP (rank 1 to 30). Rank gates the Printers, Printer mods, Blueprint tiers, card mods and paints you can buy, and winning pays little, so there is a lot to play for. |
-| **Printer mods** | 23 mods (Stepper Motors, Bigger Spool, Failsafe, Plating, Quantum Slicer and more), bought in levels and bolted into the limited slots on each Printer. Every mod has a rarity. A Mod Crate (Workshop) and a 12% chance after a win hand out a random mod, picked by rarity. |
+| **Printer mods** | 35 mods, each bought once and fitted to every Printer you own, with no limit on how many a Printer carries (Stepper Motors for more Filament a turn, Bigger Spool, Failsafe, Plating, Quantum Slicer and more). Some mods need others: Dual Extruder needs Stepper Motors, Direct Drive needs Dual Extruder and a Hot End; a mod only works while its parents are fitted, and taking a parent off takes its dependants too. Every mod has a rarity and a modelled part that shows on the machine, in the Workshop and on the battlefield; epic and legendary mods make it glow. A Mod Crate (Workshop) and a 12% chance after a win hand out a random mod, picked by rarity. |
 | **Blueprints** | Every card you own can go Mk I, II, III (coins, a spare copy and rank), carry one of 45 mods from Mk II (each gives something and takes something) and be painted. Every copy you print has it, in every mode including PvP. |
 | **Arenas** | Six themed benches (workshop, maker lab, print farm, hobby shop, neon night shift, forge), each with its own look and props, in landscape and portrait. |
 | **Tutorial** | A guided first battle with on-screen tips that follow what you do. Replay it from the Battle menu or How to Play. |
@@ -121,6 +121,9 @@ New art in this version was made with open-source tools only:
   `python3 tools/catalog/build.py`, then the art script.
 - **More tools and equipment**: 27 tools and 20 pieces of equipment are modelled and
   rendered by `tools/render_art3.gd`.
+- **Mod parts** (`assets/printer_mods/`): one small modelled gadget per Printer
+  mod, rendered by `tools/render_mod_parts.gd` and bolted onto the machine picture
+  by `scripts/ui/printer_rig.gd` (where each one sits is its `LOOKS` entry).
 - **Printer colourways** (`assets/printers/`): recoloured from the base printer
   by `tools/make_printer_variants.py` (`uv run --with numpy --with pillow python
   tools/make_printer_variants.py`). The six newest Printers add their own parts
