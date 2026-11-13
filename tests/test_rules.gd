@@ -21,6 +21,7 @@ func _initialize() -> void:
 	_progression()
 	_network_view()
 	_ai_games()
+	_fuzz_games()
 	print("\n%d checks, %d failed" % [_checks, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -908,7 +909,70 @@ func play_out(seed_: int, cfg0: Dictionary, cfg1: Dictionary, lvl0: int, lvl1: i
 		if not res["ok"]:
 			ok(false, "AI chose an illegal action %s: %s" % [a, res["error"]])
 			BattleEngine.apply(st, seat, {"t": "end"})
+		else:
+			for e in res["events"]:
+				_seen[e["e"]] = int(_seen.get(e["e"], 0)) + 1
 	return {"winner": int(st["winner"]) if st["over"] else -3, "turns": int(st["turn"]), "first": first}
+
+
+var _seen := {}
+
+
+## Random decks from the whole catalog, random Printers with random mods and
+## Blueprints, played by the AI: nothing may break, stall or be illegal.
+func _fuzz_games() -> void:
+	print("fuzz games")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261113
+	var pool: Array = GameData.collectible()
+	var stalls := 0
+	var games := 0
+	_seen = {}
+	var rarity_cards := {}
+	for g in 150:
+		var cfgs: Array = []
+		for side in 2:
+			var cards: Array = pool.duplicate()
+			for i in range(cards.size() - 1, 0, -1):
+				var j := rng.randi_range(0, i)
+				var t = cards[i]
+				cards[i] = cards[j]
+				cards[j] = t
+			var deck: Array = []
+			var counts := {}
+			for c in cards:
+				if deck.size() >= GameData.DECK_SIZE:
+					break
+				var n: int = int(counts.get(c["id"], 0))
+				if n < GameData.max_copies(c["id"]):
+					counts[c["id"]] = n + 1
+					deck.append(c["id"])
+					rarity_cards[c["rarity"]] = true
+			ok(GameData.deck_error(deck) == "", "fuzz deck %d/%d is legal: %s" % [g, side, GameData.deck_error(deck)])
+			var printer: Dictionary = GameData.PRINTERS[rng.randi_range(0, GameData.PRINTERS.size() - 1)]
+			var mods := {}
+			for m in GameData.PRINTER_MODS:
+				if rng.randf() < 0.45:
+					mods[m["id"]] = rng.randi_range(1, GameData.mod_max(m["id"]))
+			var builds := {}
+			for id in deck:
+				var tier := rng.randi_range(1, 3)
+				var mod_id := ""
+				if tier >= 2 and rng.randf() < 0.7:
+					var m: Dictionary = GameData.CARD_MODS[rng.randi_range(0, GameData.CARD_MODS.size() - 1)]
+					if GameData.mod_fits(m["id"], id):
+						mod_id = m["id"]
+				builds[id] = {"tier": tier, "mod": mod_id, "paint": "original"}
+			cfgs.append({"printer": printer["id"], "deck": deck, "mods": mods, "builds": builds})
+		var res := play_out(rng.randi(), cfgs[0], cfgs[1], rng.randi_range(0, 2), rng.randi_range(0, 2))
+		games += 1
+		if int(res["winner"]) == -3:
+			stalls += 1
+	print("  %d games, %d stalls, events seen: %s" % [games, stalls, str(_seen)])
+	ok(stalls == 0, "random-deck games never stall (%d did)" % stalls)
+	ok(int(_seen.get("heat", 0)) > 0 and int(_seen.get("steal", 0)) > 0, "heat and steal actually happen in play")
+	ok(int(_seen.get("melt", 0)) > 0, "heated prints melt")
+	_seen = {}
 
 
 func _ai_games() -> void:
