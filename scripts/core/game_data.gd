@@ -63,7 +63,7 @@ const ARMOR_ART := "res://assets/armor/raw/%s_raw_print_alpha_v2.png"
 ## the print running the effect takes filament off the target).
 ## Effect targets (`to`): target, self, enemy_prints, friendly_prints,
 ## other_friendly_prints, all_prints, enemy_printer, own_printer.
-const CARDS := [
+const CARDS_BASE := [
 	# ---------------------------------------------------------------- prints
 	{"id": "mossmunk", "name": "Mossmunk", "type": "creature", "cost": 1, "atk": 1, "hp": 3, "element": "Nature", "rarity": "common",
 		"kw": ["guard"], "text": ""},
@@ -288,6 +288,13 @@ const CARDS := [
 		"effects": [{"op": "filament", "n": 1}]},
 ]
 
+
+## Everything that can be printed: the original cards plus the generated
+## catalog (tools/catalog/ writes scripts/core/catalog/).
+const CARDS := CARDS_BASE + preload("res://scripts/core/catalog/catalog_creatures.gd").LIST \
+	+ preload("res://scripts/core/catalog/catalog_tools.gd").LIST \
+	+ preload("res://scripts/core/catalog/catalog_upgrades.gd").LIST
+
 ## Printers are the heroes. Each has one Power (costs `cost` Filament, default
 ## POWER_COST, once per turn) and some mod `slots`. Starter Printers have price 0.
 const PRINTERS := [
@@ -333,20 +340,21 @@ const STARTER_PRINTER := {"cinderpaw": "ember_forge", "aquafin": "tide_press", "
 ## Printer mods. Buy a level once and it is yours; install it into a slot on
 ## any Printer you own. `costs[level - 1]` and `ranks[level - 1]` are what level
 ## `level` costs and the Maker Rank it needs. `per` says what each level adds.
-const PRINTER_MODS := [
-	{"id": "stepper", "name": "Stepper Motors", "icon": "burst", "text": "Prints %d more Filament each turn.", "per": 1, "costs": [1200, 3200], "ranks": [5, 15]},
-	{"id": "spool", "name": "Bigger Spool", "icon": "spool", "text": "Your Spool holds %d more Filament.", "per": 5, "costs": [250, 700, 1500], "ranks": [1, 6, 14]},
-	{"id": "frame", "name": "Reinforced Frame", "icon": "shield", "text": "Your Printer has %d more Health.", "per": 2, "costs": [300, 800, 1800], "ranks": [2, 8, 16]},
-	{"id": "bed", "name": "Heated Bed", "icon": "flame", "text": "Your first print each battle gets +%d/+%d.", "per": 1, "costs": [350, 900, 2000], "ranks": [2, 9, 18]},
-	{"id": "enclosure", "name": "Enclosure", "icon": "lock", "text": "Your Printer starts with %d Armor.", "per": 2, "costs": [500, 1300, 2800], "ranks": [4, 12, 22]},
-	{"id": "sensor", "name": "Filament Sensor", "icon": "check", "text": "A shattered print returns %d more Filament to your Spool.", "per": 1, "costs": [700, 2200], "ranks": [6, 16]},
-	{"id": "preheater", "name": "Pre-heater", "icon": "flame", "text": "Your first long print each battle starts %d Filament ahead.", "per": 2, "costs": [600, 1600], "ranks": [5, 13]},
-	{"id": "quickstart", "name": "Quick Start", "icon": "star", "text": "Draw %d extra card on your first turn.", "per": 1, "costs": [900], "ranks": [7]},
-	{"id": "slicer", "name": "Smart Slicer", "icon": "cube", "text": "A thin hand is topped up to %d cards instead of 3.", "per": 4, "costs": [1000], "ranks": [9]},
-	{"id": "hot_end", "name": "All-metal Hot End", "icon": "drop", "text": "Your Printer Power costs %d less Filament.", "per": 1, "costs": [1500], "ranks": [10]},
-	{"id": "mixer", "name": "Colour Mixer", "icon": "twin", "text": "Prints that match your Printer's element get +%d Attack.", "per": 1, "costs": [2600], "ranks": [20]},
-	{"id": "sorter", "name": "Coin Sorter", "icon": "coin", "text": "Earn %d more Forge Coins for each win.", "per": 4, "costs": [200, 500, 1100], "ranks": [1, 5, 12]},
+const PRINTER_MODS_BASE := [
+	{"id": "stepper", "rarity": "rare", "name": "Stepper Motors", "icon": "burst", "text": "Prints %d more Filament each turn.", "per": 1, "costs": [1200, 3200], "ranks": [5, 15]},
+	{"id": "spool", "rarity": "common", "name": "Bigger Spool", "icon": "spool", "text": "Your Spool holds %d more Filament.", "per": 5, "costs": [250, 700, 1500], "ranks": [1, 6, 14]},
+	{"id": "frame", "rarity": "common", "name": "Reinforced Frame", "icon": "shield", "text": "Your Printer has %d more Health.", "per": 2, "costs": [300, 800, 1800], "ranks": [2, 8, 16]},
+	{"id": "bed", "rarity": "uncommon", "name": "Heated Bed", "icon": "flame", "text": "Your first print each battle gets +%d/+%d.", "per": 1, "costs": [350, 900, 2000], "ranks": [2, 9, 18]},
+	{"id": "enclosure", "rarity": "uncommon", "name": "Enclosure", "icon": "lock", "text": "Your Printer starts with %d Armor.", "per": 2, "costs": [500, 1300, 2800], "ranks": [4, 12, 22]},
+	{"id": "sensor", "rarity": "rare", "name": "Filament Sensor", "icon": "check", "text": "A shattered print returns %d more Filament to your Spool.", "per": 1, "costs": [700, 2200], "ranks": [6, 16]},
+	{"id": "preheater", "rarity": "uncommon", "name": "Pre-heater", "icon": "flame", "text": "Your first long print each battle starts %d Filament ahead.", "per": 2, "costs": [600, 1600], "ranks": [5, 13]},
+	{"id": "quickstart", "rarity": "rare", "name": "Quick Start", "icon": "star", "text": "Draw %d extra card on your first turn.", "per": 1, "costs": [900], "ranks": [7]},
+	{"id": "slicer", "rarity": "rare", "name": "Smart Slicer", "icon": "cube", "text": "A thin hand is topped up to %d cards instead of 3.", "per": 4, "costs": [1000], "ranks": [9]},
+	{"id": "hot_end", "rarity": "uncommon", "name": "All-metal Hot End", "icon": "drop", "text": "Your Printer Power costs %d less Filament.", "per": 1, "costs": [1500], "ranks": [10]},
+	{"id": "mixer", "rarity": "rare", "name": "Colour Mixer", "icon": "twin", "text": "Prints that match your Printer's element get +%d Attack.", "per": 1, "costs": [2600], "ranks": [20]},
+	{"id": "sorter", "rarity": "common", "name": "Coin Sorter", "icon": "coin", "text": "Earn %d more Forge Coins for each win.", "per": 4, "costs": [200, 500, 1100], "ranks": [1, 5, 12]},
 ]
+const PRINTER_MODS := PRINTER_MODS_BASE + preload("res://scripts/core/catalog/catalog_printer_mods.gd").LIST
 ## `foil` and `foil_deep` colour the pouch, `holo` is its rainbow sheen (0-1),
 ## and `art` is the creature printed on the front (`art_raw`: as a bare print).
 const PACKS := {
@@ -399,21 +407,22 @@ const TIER_SPARES := [0, 0, 1, 3]
 const MAX_SPARES := 9
 
 ## `kinds` are the card types a mod fits. A mod trades something for something.
-const CARD_MODS := [
-	{"id": "sharp_nozzle", "name": "Sharp Nozzle", "icon": "burst", "kinds": ["creature"], "text": "+2 Attack, -1 Health.", "cost": 400, "rank": 4},
-	{"id": "infill", "name": "Extra Infill", "icon": "hex", "kinds": ["creature"], "text": "+3 Health, costs 1 more.", "cost": 400, "rank": 4},
-	{"id": "draft_mode", "name": "Draft Mode", "icon": "cube", "kinds": ["creature"], "text": "Costs 1 less, -1 Attack.", "cost": 700, "rank": 6},
-	{"id": "supports", "name": "Support Material", "icon": "shield", "kinds": ["creature"], "text": "Gains Guard, -1 Attack.", "cost": 500, "rank": 5},
-	{"id": "rapid_layers", "name": "Rapid Layers", "icon": "twin", "kinds": ["creature"], "text": "Gains Rush, -1 Health.", "cost": 600, "rank": 6},
-	{"id": "brim_coat", "name": "Brim Coat", "icon": "burst", "kinds": ["creature"], "text": "Gains Brim, costs 1 more.", "cost": 900, "rank": 9},
-	{"id": "siphon_core", "name": "Siphon Core", "icon": "drop", "kinds": ["creature"], "text": "Gains Siphon, costs 1 more.", "cost": 900, "rank": 9},
-	{"id": "overclock", "name": "Overclock", "icon": "flame", "kinds": ["creature"], "text": "+2 Attack, costs 1 more.", "cost": 700, "rank": 7},
-	{"id": "recycler", "name": "Recycler", "icon": "spool", "kinds": ["creature"], "text": "Shatter: +2 Filament on your Spool.", "cost": 800, "rank": 8},
-	{"id": "overcharge", "name": "Overcharge", "icon": "flame", "kinds": ["tool", "upgrade"], "text": "Its effect is 1 stronger, costs 1 more.", "cost": 600, "rank": 5},
-	{"id": "lean_print", "name": "Lean Print", "icon": "cube", "kinds": ["tool", "upgrade"], "text": "Costs 1 less, its effect is 1 weaker.", "cost": 600, "rank": 5},
-	{"id": "quick_draw", "name": "Quick Draw", "icon": "star", "kinds": ["creature", "tool", "upgrade"], "text": "Draw a card when used, costs 1 more.", "cost": 1000, "rank": 10},
-	{"id": "reclaim", "name": "Reclaim", "icon": "check", "kinds": ["creature", "tool", "upgrade"], "text": "Add 2 Filament to your Spool when used, costs 1 more.", "cost": 800, "rank": 8},
+const CARD_MODS_BASE := [
+	{"id": "sharp_nozzle", "rarity": "uncommon", "name": "Sharp Nozzle", "icon": "burst", "kinds": ["creature"], "text": "+2 Attack, -1 Health.", "cost": 400, "rank": 4},
+	{"id": "infill", "rarity": "uncommon", "name": "Extra Infill", "icon": "hex", "kinds": ["creature"], "text": "+3 Health, costs 1 more.", "cost": 400, "rank": 4},
+	{"id": "draft_mode", "rarity": "uncommon", "name": "Draft Mode", "icon": "cube", "kinds": ["creature"], "text": "Costs 1 less, -1 Attack.", "cost": 700, "rank": 6},
+	{"id": "supports", "rarity": "uncommon", "name": "Support Material", "icon": "shield", "kinds": ["creature"], "text": "Gains Guard, -1 Attack.", "cost": 500, "rank": 5},
+	{"id": "rapid_layers", "rarity": "uncommon", "name": "Rapid Layers", "icon": "twin", "kinds": ["creature"], "text": "Gains Rush, -1 Health.", "cost": 600, "rank": 6},
+	{"id": "brim_coat", "rarity": "rare", "name": "Brim Coat", "icon": "burst", "kinds": ["creature"], "text": "Gains Brim, costs 1 more.", "cost": 900, "rank": 9},
+	{"id": "siphon_core", "rarity": "rare", "name": "Siphon Core", "icon": "drop", "kinds": ["creature"], "text": "Gains Siphon, costs 1 more.", "cost": 900, "rank": 9},
+	{"id": "overclock", "rarity": "uncommon", "name": "Overclock", "icon": "flame", "kinds": ["creature"], "text": "+2 Attack, costs 1 more.", "cost": 700, "rank": 7},
+	{"id": "recycler", "rarity": "rare", "name": "Recycler", "icon": "spool", "kinds": ["creature"], "text": "Shatter: +2 Filament on your Spool.", "cost": 800, "rank": 8},
+	{"id": "overcharge", "rarity": "uncommon", "name": "Overcharge", "icon": "flame", "kinds": ["tool", "upgrade"], "text": "Its effect is 1 stronger, costs 1 more.", "cost": 600, "rank": 5},
+	{"id": "lean_print", "rarity": "uncommon", "name": "Lean Print", "icon": "cube", "kinds": ["tool", "upgrade"], "text": "Costs 1 less, its effect is 1 weaker.", "cost": 600, "rank": 5},
+	{"id": "quick_draw", "rarity": "epic", "name": "Quick Draw", "icon": "star", "kinds": ["creature", "tool", "upgrade"], "text": "Draw a card when used, costs 1 more.", "cost": 1000, "rank": 10},
+	{"id": "reclaim", "rarity": "rare", "name": "Reclaim", "icon": "check", "kinds": ["creature", "tool", "upgrade"], "text": "Add 2 Filament to your Spool when used, costs 1 more.", "cost": 800, "rank": 8},
 ]
+const CARD_MODS := CARD_MODS_BASE + preload("res://scripts/core/catalog/catalog_card_mods.gd").LIST
 
 ## Paints recolour a card's art, and the print on the bench. hue is a turn in degrees.
 const PAINTS := [
@@ -773,6 +782,25 @@ static func mod_fits(mod_id: String, id: String) -> bool:
 			return not kw.has("brim")
 		"siphon_core":
 			return not kw.has("siphon")
+		"potent_mix":
+			return not _strength(d).is_empty()
+		"bulk_discount":
+			return int(d["cost"]) >= 2
+	# Data-driven mods: keywords it would add must not all be there already,
+	# a cheaper card needs room to get cheaper, and stats stay above zero.
+	var adds: Array = m.get("kw", [])
+	if not adds.is_empty():
+		var all_there := true
+		for k in adds:
+			if not kw.has(k):
+				all_there = false
+		if all_there:
+			return false
+	if int(m.get("dcost", 0)) < 0 and int(d["cost"]) < 2:
+		return false
+	if d["type"] == "creature":
+		if int(d["hp"]) + int(m.get("hp", 0)) < 1 or int(d["atk"]) + int(m.get("atk", 0)) < 0:
+			return false
 	return true
 
 
@@ -819,6 +847,39 @@ static func _apply_mod(d: Dictionary, mod_id: String) -> void:
 		"reclaim":
 			_add_effect(d, {"op": "spool", "n": 2}, "Also add 2 Filament to your Spool." if d["type"] != "creature" else "On Print: +2 Filament on your Spool.")
 			_cost_by(d, 1)
+		"potent_mix":
+			_bump(d, _strength(d), 2)
+			_cost_by(d, 2)
+		_:
+			_apply_data_mod(d, card_mod(mod_id))
+
+
+## A mod described by its data: atk/hp/dcost changes, keywords, effects that run
+## when the card is used (fx_on) and Shatter effects (fx_sh, creatures only).
+static func _apply_data_mod(d: Dictionary, m: Dictionary) -> void:
+	if d["type"] == "creature":
+		d["atk"] = maxi(int(d["atk"]) + int(m.get("atk", 0)), 0)
+		d["hp"] = maxi(int(d["hp"]) + int(m.get("hp", 0)), 1)
+		var kw: Array = (d.get("kw", []) as Array).duplicate()
+		for k in m.get("kw", []):
+			if not kw.has(k):
+				kw.append(k)
+		d["kw"] = kw
+	var fx: Array = m.get("fx_on", [])
+	if not fx.is_empty():
+		var key := "on_print" if d["type"] == "creature" else "effects"
+		var list: Array = d.get(key, [])
+		list.append_array(fx)
+		d[key] = list
+		_add_text(d, str(m.get("line_on", "")) if d["type"] != "creature" else "On Print: " + str(m.get("line_on", "")))
+	var sh: Array = m.get("fx_sh", [])
+	if not sh.is_empty() and d["type"] == "creature":
+		var slist: Array = d.get("shatter", [])
+		slist.append_array(sh)
+		d["shatter"] = slist
+		_add_text(d, "Shatter: " + str(m.get("line_sh", "")))
+	if int(m.get("dcost", 0)) != 0:
+		_cost_by(d, int(m["dcost"]))
 
 
 ## The card as it is actually printed: the base card with its Blueprint applied.

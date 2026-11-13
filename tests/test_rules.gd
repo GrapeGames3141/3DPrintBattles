@@ -81,14 +81,14 @@ func _catalog() -> void:
 		ok(c["type"] in ["creature", "tool", "upgrade"], c["id"] + " type")
 		for list in [c.get("on_print", []), c.get("shatter", []), c.get("effects", [])]:
 			for e in list:
-				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy"], c["id"] + " op " + e["op"])
+				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal"], c["id"] + " op " + e["op"])
 				if e["op"] == "summon":
 					ok(GameData.has_card(e["card"]), c["id"] + " summons a real card")
 		for k in c.get("kw", []):
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 79, "79 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 238, "238 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
 		if c["type"] == "creature":
@@ -98,7 +98,33 @@ func _catalog() -> void:
 	for c in GameData.collectible():
 		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
 		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
-	ok(by_type == {"creature": 40, "tool": 26, "upgrade": 13}, "40 prints, 26 tools, 13 pieces of armor (%s)" % str(by_type))
+	ok(by_type == {"creature": 152, "tool": 53, "upgrade": 33}, "152 prints, 53 tools, 33 pieces of equipment (%s)" % str(by_type))
+	# Every kind of card, and every element of print, comes in every rarity.
+	for kind in ["creature", "tool", "upgrade"]:
+		for r in GameData.RARITY_ORDER:
+			var n := 0
+			for c in GameData.collectible():
+				if c["type"] == kind and c["rarity"] == r:
+					n += 1
+			ok(n >= 2, "%s cards come in %s (%d)" % [kind, r, n])
+	for el in ["Fire", "Water", "Lightning", "Nature", "Ice", "Stone", "Wind", "Arcane"]:
+		for r in GameData.RARITY_ORDER:
+			var n := 0
+			for c in GameData.collectible():
+				if c["type"] == "creature" and c["element"] == el and c["rarity"] == r:
+					n += 1
+			ok(n >= 1, "%s prints come in %s" % [el, r])
+	for c in GameData.collectible():
+		ok(str(c["name"]) != "" and (c["type"] == "creature" or str(c.get("text", "")) != ""), "%s has a name and rules text" % c["id"])
+		ok(int(c["cost"]) >= 0 and int(c["cost"]) <= 9, "%s cost in range" % c["id"])
+	# Mods come in every rarity too, with a price and a rank.
+	var mod_rarities := {}
+	for m in GameData.CARD_MODS + GameData.PRINTER_MODS:
+		ok(GameData.RARITIES.has(m.get("rarity", "")), "mod %s has a rarity" % m["id"])
+		mod_rarities[m["rarity"]] = true
+	for r in GameData.RARITY_ORDER:
+		ok(mod_rarities.has(r), "there are %s mods" % r)
+	ok(GameData.CARD_MODS.size() >= 45 and GameData.PRINTER_MODS.size() >= 23, "plenty of mods (%d card, %d Printer)" % [GameData.CARD_MODS.size(), GameData.PRINTER_MODS.size()])
 	for r in GameData.RARITY_ORDER:
 		ok(int(by_rarity.get(r, 0)) >= 6, "at least 6 %s cards (%d)" % [r, int(by_rarity.get(r, 0))])
 	ok(GameData.deck_error(GameData.expand(GameData.STARTER_DECK)) == "", "starter deck is legal")

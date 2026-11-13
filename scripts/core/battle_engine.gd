@@ -58,6 +58,18 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 			"top_up": 4 if int(mods.get("slicer", 0)) > 0 else GameData.HAND_TOP_UP,
 			"first_draw": int(mods.get("quickstart", 0)),
 			"attune_atk": int(mods.get("mixer", 0)),
+			"print_hp": int(GameData.mod("cooling_duct")["per"]) * int(mods.get("cooling_duct", 0)),
+			"regen": int(GameData.mod("self_cleaning")["per"]) * int(mods.get("self_cleaning", 0)),
+			"spool_regen": int(GameData.mod("spool_feeder")["per"]) * int(mods.get("spool_feeder", 0)),
+			"first_flow": int(GameData.mod("capacitor_bank")["per"]) * int(mods.get("capacitor_bank", 0)),
+			"shatter_draw": int(mods.get("scrap_chute", 0)),
+			"rush_first": int(mods.get("quick_release", 0)),
+			"last_stand": (5 if int(mods.get("failsafe", 0)) == 1 else 8) if int(mods.get("failsafe", 0)) > 0 else 0,
+			"plate": int(GameData.mod("plating")["per"]) * int(mods.get("plating", 0)),
+			"heat_bonus": int(GameData.mod("thermal_mass")["per"]) * int(mods.get("thermal_mass", 0)),
+			"thief_bonus": int(GameData.mod("prehensile_gantry")["per"]) * int(mods.get("prehensile_gantry", 0)),
+			"extra_draw": int(GameData.mod("quantum_slicer")["per"]) * int(mods.get("quantum_slicer", 0)),
+			"ls_used": false, "rush_used": false, "sd_turn": -1,
 			"turns": 0,
 			"builds": GameData.clean_builds(deck, pc.get("builds", {})),
 		})
@@ -451,6 +463,8 @@ static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_
 				_buff(u, int(b["atk"]), int(b["hp"]), b.get("kw", []))
 				(u["gear"] as Array).append(c["id"])
 				ev.append({"e": "gear", "uid": int(u["uid"]), "id": c["id"], "unit": u.duplicate(true)})
+				# Mods can give equipment extra effects (draw, Filament, Armor...).
+				_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
 	_resolve(st, ev)
 
 
@@ -481,9 +495,9 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 	# Scorch heats the print it hits; Thief takes some of its filament.
 	if dealt > 0 and not t.is_empty() and int(t["hp"]) > 0 and int(u["hp"]) > 0:
 		if (u["kw"] as Array).has("scorch"):
-			_heat(st, target, 2, ev)
+			_heat(st, target, 2, ev, seat)
 		if (u["kw"] as Array).has("thief"):
-			_steal(st, uid, target, 1, 0, 1, ev)
+			_steal(st, uid, target, 1 + int(st["players"][seat].get("thief_bonus", 0)), 0, 1, ev)
 	_resolve(st, ev)
 	return ""
 
@@ -523,12 +537,17 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 	var p: Dictionary = st["players"][seat]
 	st["turn"] = int(st["turn"]) + 1
 	p["turns"] = int(p["turns"]) + 1
-	p["flow"] = int(p["speed"])
+	p["flow"] = int(p["speed"]) + (int(p["first_flow"]) if int(p["turns"]) == 1 else 0)
 	p["power_used"] = false
 	for u in p["board"]:
 		u["fresh"] = false
 		u["attacks"] = 0
 	ev.append({"e": "turn", "seat": seat, "turn": int(st["turn"]), "flow": int(p["flow"]), "speed": int(p["speed"]), "spool": int(p["spool"])})
+	if int(p["regen"]) > 0:
+		_heal(st, "p%d" % seat, int(p["regen"]), ev)
+	if int(p["spool_regen"]) > 0:
+		p["spool"] = int(p["spool"]) + int(p["spool_regen"])
+		ev.append({"e": "fil", "seat": seat, "flow": int(p["flow"]), "spool": int(p["spool"]), "gain": int(p["spool_regen"])})
 	# Heated prints soften: 1 damage a turn while the heat lasts.
 	for u in (p["board"] as Array).duplicate():
 		if int(u.get("heat", 0)) > 0:
@@ -544,6 +563,8 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 		ev.append({"e": "job", "seat": seat, "card": {"uid": int(job["uid"]), "id": str(job["id"])}, "paid": int(job["paid"]),
 			"cost": int(job["cost"]), "start": false, "flow": int(p["flow"]), "spool": int(p["spool"])})
 	_draw(st, seat, ev)
+	for i in int(p["extra_draw"]):
+		_draw(st, seat, ev)
 	if int(p["turns"]) == 1:
 		for i in int(p["first_draw"]):
 			_draw(st, seat, ev)
@@ -605,7 +626,7 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 				u["jam"] = 1
 				ev.append({"e": "jam", "uid": int(u["uid"])})
 		"heat":
-			_heat(st, ref, int(e.get("n", 2)), ev)
+			_heat(st, ref, int(e.get("n", 2)), ev, seat)
 		"destroy":
 			var u := unit_of(st, ref)
 			if not u.is_empty():
@@ -636,10 +657,12 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 
 ## Heats a print: it takes 1 damage at the start of each of its owner's turns
 ## for `turns` turns, and thieves take twice as much from it.
-static func _heat(st: Dictionary, ref: String, turns: int, ev: Array) -> void:
+static func _heat(st: Dictionary, ref: String, turns: int, ev: Array, src_seat: int = -1) -> void:
 	var u := unit_of(st, ref)
 	if u.is_empty() or turns <= 0:
 		return
+	if src_seat >= 0:
+		turns += int(st["players"][src_seat].get("heat_bonus", 0))
 	u["heat"] = maxi(int(u.get("heat", 0)), turns)
 	ev.append({"e": "heat", "uid": int(u["uid"]), "n": int(u["heat"])})
 
@@ -713,10 +736,17 @@ static func _damage(st: Dictionary, ref: String, n: int, ev: Array) -> int:
 	if ref.begins_with("p"):
 		var seat := seat_of(ref)
 		var p: Dictionary = st["players"][seat]
+		if int(p["plate"]) > 0 and n > 1:
+			n = maxi(n - int(p["plate"]), 1)
 		var soak: int = mini(int(p["armor"]), n)
 		p["armor"] = int(p["armor"]) - soak
 		p["hp"] = int(p["hp"]) - (n - soak)
 		ev.append({"e": "damage", "target": ref, "n": n, "hp": int(p["hp"]), "armor": int(p["armor"])})
+		# Failsafe: once a battle the Printer is brought back from the brink.
+		if int(p["hp"]) <= 0 and int(p["last_stand"]) > 0 and not bool(p["ls_used"]):
+			p["ls_used"] = true
+			p["hp"] = mini(int(p["last_stand"]), int(p["max_hp"]))
+			ev.append({"e": "heal", "target": ref, "n": int(p["hp"]), "hp": int(p["hp"])})
 		return n
 	var u := unit_of(st, ref)
 	if u.is_empty():
@@ -767,6 +797,14 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 		u["hp"] += int(p["bed_bonus"])
 		u["max_hp"] += int(p["bed_bonus"])
 		p["bed_bonus"] = 0
+	if from_hand:
+		if int(p["print_hp"]) > 0:
+			u["hp"] += int(p["print_hp"])
+			u["max_hp"] += int(p["print_hp"])
+		if int(p["rush_first"]) > 0 and not bool(p["rush_used"]):
+			p["rush_used"] = true
+			if not (u["kw"] as Array).has("rush"):
+				(u["kw"] as Array).append("rush")
 	(p["board"] as Array).insert(clampi(slot, 0, (p["board"] as Array).size()), u)
 	ev.append({"e": "summon", "seat": seat, "unit": u.duplicate(true), "slot": (p["board"] as Array).find(u), "hand": from_hand, "built": built})
 	return u
@@ -808,6 +846,9 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 			var owner: Dictionary = st["players"][int(u["seat"])]
 			(owner["board"] as Array).erase(u)
 			ev.append({"e": "death", "uid": int(u["uid"]), "seat": int(u["seat"])})
+			if int(owner["shatter_draw"]) > 0 and int(owner["sd_turn"]) != int(st["turn"]):
+				owner["sd_turn"] = int(st["turn"])
+				_draw(st, int(u["seat"]), ev)
 			# The pieces of a real print (not a token) go back on the spool.
 			if int(owner["refund"]) > 0 and not GameData.card(u["id"]).get("token", false):
 				owner["spool"] = int(owner["spool"]) + int(owner["refund"])
