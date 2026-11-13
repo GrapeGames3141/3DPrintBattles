@@ -22,6 +22,7 @@ var _fx: Control
 var _atk: Badge
 var _hp: Badge
 var _gear: Control
+var _ambient: CPUParticles2D
 var paint_id := "original"
 var _path := ""
 var _phase := 0.0
@@ -68,6 +69,10 @@ func _build() -> void:
 	_sprite.material = _mat
 	add_child(_sprite)
 	set_frame(0)
+
+	_ambient = _make_ambient(str(def.get("element", "Neutral")))
+	if _ambient != null:
+		add_child(_ambient)
 
 	_fx = Control.new()
 	_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -167,6 +172,9 @@ func layer_point(v: float) -> Vector2:
 func set_bare(on: bool) -> void:
 	for n in [_base, _fx, _atk, _hp, _gear]:
 		(n as Control).visible = not on
+	if _ambient != null:
+		_ambient.visible = not on
+		_ambient.emitting = not on
 
 
 func begin_print() -> void:
@@ -249,6 +257,71 @@ func _draw_fx() -> void:
 		x += 20.0
 
 
+# --------------------------------------------------------------- ambience
+
+static var _dot_tex: Texture2D
+
+
+## A soft round dot, shared by every ambient particle.
+static func _dot() -> Texture2D:
+	if _dot_tex == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		var t := GradientTexture2D.new()
+		t.gradient = g
+		t.fill = GradientTexture2D.FILL_RADIAL
+		t.fill_from = Vector2(0.5, 0.5)
+		t.fill_to = Vector2(1.0, 0.5)
+		t.width = 32
+		t.height = 32
+		_dot_tex = t
+	return _dot_tex
+
+
+## A few slow particles that say what the print is made of: embers rise off
+## Fire, snow settles on Ice, sparks jitter on Lightning. Quiet on purpose.
+func _make_ambient(element: String) -> CPUParticles2D:
+	# amount, lifetime, area (half-size of the spawn box), centre, direction, spread, speed, gravity, size, colors
+	var cfg := {
+		"Fire": [9, 1.7, Vector2(34, 6), Vector2(70, 122), Vector2(0, -1), 22.0, Vector2(16, 36), Vector2(0, -14), Vector2(2.5, 5.0), Color("ffc23a"), Color("ff4a12")],
+		"Water": [6, 2.3, Vector2(36, 8), Vector2(70, 126), Vector2(0, -1), 14.0, Vector2(10, 22), Vector2(0, -6), Vector2(3.0, 6.5), Color("a8dcff"), Color("2f8fff")],
+		"Lightning": [5, 0.55, Vector2(34, 44), Vector2(70, 84), Vector2(0, -1), 180.0, Vector2(16, 46), Vector2.ZERO, Vector2(1.8, 3.4), Color("fff27a"), Color("ffc400")],
+		"Nature": [6, 2.8, Vector2(36, 30), Vector2(70, 70), Vector2(0.4, 1), 40.0, Vector2(6, 16), Vector2(0, 8), Vector2(3.0, 5.0), Color("a6e84a"), Color("2fae3f")],
+		"Ice": [10, 2.6, Vector2(44, 4), Vector2(70, 20), Vector2(0, 1), 18.0, Vector2(8, 18), Vector2(0, 10), Vector2(1.8, 3.4), Color("d4f6ff"), Color("5fcfff")],
+		"Stone": [5, 1.9, Vector2(40, 4), Vector2(70, 134), Vector2(0, -1), 40.0, Vector2(8, 20), Vector2(0, -2), Vector2(2.4, 4.4), Color("d9bf94"), Color("8f7248")],
+		"Wind": [5, 1.9, Vector2(20, 40), Vector2(36, 84), Vector2(1, -0.15), 14.0, Vector2(34, 58), Vector2.ZERO, Vector2(3.0, 6.0), Color("d8fff0"), Color("6fdcb0")],
+		"Arcane": [6, 1.9, Vector2(36, 40), Vector2(70, 90), Vector2(0, -1), 180.0, Vector2(6, 16), Vector2.ZERO, Vector2(2.2, 4.6), Color("f0b4ff"), Color("9a50ff")],
+	}
+	if not cfg.has(element):
+		return null
+	var c: Array = cfg[element]
+	var p := CPUParticles2D.new()
+	p.texture = _dot()
+	p.amount = int(c[0])
+	p.lifetime = float(c[1])
+	p.preprocess = float(c[1])
+	p.local_coords = true
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	p.emission_rect_extents = c[2]
+	p.position = c[3]
+	p.direction = c[4]
+	p.spread = float(c[5])
+	p.initial_velocity_min = float((c[6] as Vector2).x)
+	p.initial_velocity_max = float((c[6] as Vector2).y)
+	p.gravity = c[7]
+	# Sizes are in pixels across; the dot texture is 32 px.
+	p.scale_amount_min = float((c[8] as Vector2).x) / 9.0
+	p.scale_amount_max = float((c[8] as Vector2).y) / 9.0
+	var ramp := Gradient.new()
+	ramp.set_color(0, c[9])
+	ramp.add_point(0.35, c[10])
+	ramp.set_color(2, Color(c[10].r, c[10].g, c[10].b, 0.0))
+	p.color_ramp = ramp
+	p.emitting = true
+	return p
+
+
 # ------------------------------------------------------------- animations
 
 func flash() -> void:
@@ -299,6 +372,8 @@ func shatter() -> void:
 	_hp.visible = false
 	_gear.visible = false
 	_fx.visible = false
+	if _ambient != null:
+		_ambient.emitting = false
 	var tw := create_tween()
 	tw.tween_method(func(v: float): _mat.set_shader_parameter("flash", v), 0.0, 1.0, 0.08)
 	tw.tween_property(_sprite, "modulate:a", 0.0, 0.12)
