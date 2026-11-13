@@ -101,17 +101,22 @@ come from earlier work on this project (see `docs/ART_GENERATION_LEDGER.md`).
 The Test Bot token is modelled and rendered in Godot like the tools.
 New art in this version was made with open-source tools only:
 
-- **Tool cards** (`assets/tools/`): modelled from primitives and rendered in
-  Godot by `tools/render_art.gd`, using a printed-plastic shader that draws the
-  layer lines (`assets/shaders/printed_plastic.gdshader`).
+- **Tool cards** (`assets/tools/`): modelled from primitives with bevelled edges
+  and rendered in Godot by `tools/render_art.gd`, using a printed-plastic shader
+  that draws the layer lines (`assets/shaders/printed_plastic.gdshader`).
+- **Elemental ambience**: each print on the battlefield sheds a few soft
+  particles for its element (`BoardUnit._make_ambient`).
 - **More cards**: ten more tools and six more pieces of equipment are modelled
   and rendered by `tools/render_art2.gd`; sixteen more creatures are recoloured
   from existing sprite sheets by `tools/make_creature_variants.py`.
 - **The battle arenas** (`assets/ui/arena/`): six themed benches, their glowing
   lanes and the tools lying on them, rendered by `tools/render_arena.gd`.
 - **Printer colourways** (`assets/printers/`): recoloured from the base printer
-  by `tools/make_printer_variants.py` (Pillow + numpy). The six newest Printers
-  still share that machine's shape and are waiting for models of their own.
+  by `tools/make_printer_variants.py` (`uv run --with numpy --with pillow python
+  tools/make_printer_variants.py`). The six newest Printers add their own parts
+  on top: a resin bottle, a pellet hopper and a cyclone turbine rendered by
+  `tools/render_printer_parts.gd` (into `tools/printer_parts/`), plus glass and
+  icicles, delta arms and hazard-striped braces drawn by the script.
 - **The print-in animation**: a shader (`assets/shaders/print_reveal.gdshader`),
   not extra frames.
 - **Card packs**: the foil pouch, its creases, its gloss and the tear are all
