@@ -408,11 +408,28 @@ RECIPES = {
 }
 
 
+# The look of each element for creatures that have no recipe of their own.
+ELEMENT_RECIPES = {
+    "Fire": dict(surf=[], deco=[_flames((255, 230, 120), (255, 110, 30), 0.6, 0.9)]),
+    "Water": dict(surf=[_droplets(1800.0)], deco=[_bubbles(60)]),
+    "Lightning": dict(surf=[], deco=[_bolts((255, 255, 235), (255, 214, 60), 110)]),
+    "Nature": dict(surf=[], deco=[_leaves((88, 170, 62), (190, 240, 140), 44)]),
+    "Ice": dict(surf=[], deco=[_crystals((140, 205, 245), (235, 250, 255), (50, 120, 185), 40, 1.3)]),
+    "Stone": dict(surf=[], deco=[_crystals((150, 132, 108), (205, 190, 165), (55, 45, 34), 40, 1.3, True)]),
+    "Wind": dict(surf=[], deco=[_wisps((150, 238, 205), 60, 1.1)]),
+    "Arcane": dict(surf=[], deco=[_stars((225, 175, 255), 48, 6.0)]),
+}
+
+
 def apply(img, creature_id, kind):
     """`kind` is "sheet" (1536x1024, a 4x2 grid) or "raw" (one big picture)."""
-    recipe = RECIPES.get(creature_id)
+    return apply_recipe(img, RECIPES.get(creature_id), creature_id, kind)
+
+
+def apply_recipe(img, recipe, key, kind):
     if recipe is None:
         return img
+    creature_id = key
     rng = np.random.default_rng(zlib.crc32(("%s/%s" % (creature_id, kind)).encode()))
     k = 0.8 if kind == "sheet" else 2.6
     rgba = img.convert("RGBA")
