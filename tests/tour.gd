@@ -136,6 +136,10 @@ func run() -> void:
 		profile.buy_paint("amber")
 		profile.set_paint("cinderpaw", "amber")
 		profile.set_card_mod("cinderpaw", "sharp_nozzle")
+		profile.data["spares"]["cinderpaw"] = 3
+		profile.upgrade_card("cinderpaw")
+		profile.buy_card_mod("infill")
+		profile.set_card_mod("cinderpaw", "infill")
 		await go("blueprints", {"card": "cinderpaw"})
 		await shot("blueprints")
 		app.current._sel = "heat_gun"

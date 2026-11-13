@@ -219,18 +219,24 @@ func _gain_text(tier: int) -> String:
 		bits.append("Costs %d less" % (int(before["cost"]) - int(after["cost"])))
 	if tier == 2:
 		bits.append("Mod slot")
+	elif tier == 3:
+		bits.append("2nd mod slot")
 	return ",  ".join(bits)
 
 
 func _mod_section(content: Control, y: float, w: float, tier: int, build: Dictionary) -> float:
-	UI.place(content, UI.label("Mod", 20, UI.CREAM), Vector2(0, y), Vector2(w, 26))
+	var slots := GameData.mod_slots(tier)
+	var fitted: Array = Profile.card_mods_on(_sel)
+	var head := "Mods" if slots > 1 else "Mod"
+	if slots > 0:
+		head += "  %d of %d fitted" % [fitted.size(), slots]
+	UI.place(content, UI.label(head, 20, UI.CREAM), Vector2(0, y), Vector2(w, 26))
 	y += 30.0
 	if tier < 2:
-		var lock := UI.label("One mod fits a card from Mk II. Each mod gives something and takes something.", 15, UI.MUTED, false)
+		var lock := UI.label("A mod fits a card from Mk II, and a second one at Mk III. Each mod gives something and takes something.", 15, UI.MUTED, false)
 		lock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.place(content, lock, Vector2(0, y), Vector2(w, 44))
 		return y + 60.0
-	var fitted := str(build["mod"])
 	# Mods you own come first, then by rarity.
 	var list: Array = GameData.CARD_MODS.duplicate()
 	list.sort_custom(func(a, b):
@@ -248,7 +254,7 @@ func _mod_section(content: Control, y: float, w: float, tier: int, build: Dictio
 		if not GameData.mod_fits(id, _sel):
 			continue
 		var owned := Profile.owns_card_mod(id)
-		var on := fitted == id
+		var on := fitted.has(id)
 		UI.panel(content, Rect2(0, y, w, 62), UI.box(Color(0.04, 0.07, 0.14, 0.9), UI.GOOD if on else (UI.BRASS_DARK if owned else Color("2a3346")), 2, 12))
 		var ic := IconView.make(m["icon"], 30, UI.AMBER if owned else Color("55607a"))
 		ic.position = Vector2(12, y + 16)
@@ -260,8 +266,10 @@ func _mod_section(content: Control, y: float, w: float, tier: int, build: Dictio
 		UI.place(content, tx, Vector2(52, y + 30), Vector2(w - 190, 30))
 		var bw := 118.0
 		if owned:
-			var b := UI.button("Remove" if on else "Fit", "plain" if on else "go", Vector2(bw, 40), 17)
-			b.pressed.connect(func(): _fit_mod("" if on else id))
+			var full := not on and fitted.size() >= slots
+			var b := UI.button("Remove" if on else ("Full" if full else "Fit"), "plain" if on or full else "go", Vector2(bw, 40), 17)
+			b.disabled = full
+			b.pressed.connect(func(): _fit_mod(id))
 			UI.place(content, b, Vector2(w - bw - 8, y + 11))
 		elif Profile.rank_level() < int(m["rank"]):
 			var l := UI.label("Rank %d" % int(m["rank"]), 16, UI.AMBER)
@@ -348,7 +356,7 @@ func _fit_mod(id: String) -> void:
 	if err != "":
 		_fail(err)
 		return
-	Audio.sfx("mod_install" if id != "" else "back")
+	Audio.sfx("mod_install" if Profile.card_mods_on(_sel).has(id) else "back")
 	relayout()
 
 

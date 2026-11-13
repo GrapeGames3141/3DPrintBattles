@@ -269,8 +269,14 @@ func _build_front(def: Dictionary) -> void:
 	rules.text = "[center]%s[/center]" % rules_plain
 	add_child(rules)
 
-	if str(def.get("mod", "")) != "":
-		kind_text += "  -  " + str(GameData.card_mod(def["mod"])["name"])
+	var mod_names: Array = []
+	for key in ["mod", "mod2"]:
+		if str(def.get(key, "")) != "":
+			mod_names.append(str(GameData.card_mod(def[key])["name"]))
+	if mod_names.size() == 1:
+		kind_text += "  -  " + mod_names[0]
+	elif mod_names.size() > 1:
+		kind_text = " + ".join(mod_names)  # no room for the kind as well
 	var kind := UI.label(kind_text, 14, accent.lerp(Color.WHITE, 0.35), false)
 	kind.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	kind.position = Vector2(0, 388)

@@ -638,7 +638,7 @@ func build_of(id: String) -> Dictionary:
 
 
 func _set_build(id: String, b: Dictionary) -> void:
-	if int(b["tier"]) <= 1 and str(b["mod"]) == "" and str(b["paint"]) == "original":
+	if int(b["tier"]) <= 1 and str(b["mod"]) == "" and str(b["mod2"]) == "" and str(b["paint"]) == "original":
 		data["builds"].erase(id)
 	else:
 		data["builds"][id] = b
@@ -714,19 +714,39 @@ func buy_card_mod(id: String) -> String:
 	return ""
 
 
-## Fits an unlocked mod onto a card (Mk II or higher), or "" to take it off.
+## The mods fitted on a card (up to two, fewer if the tier is low).
+func card_mods_on(id: String) -> Array:
+	var b := build_of(id)
+	return GameData.fitted_mods(id, int(b["tier"]), [str(b["mod"]), str(b["mod2"])])
+
+
+## Fits an unlocked mod into the card's next free slot (one slot at Mk II, two at
+## Mk III), or takes it off if it is already fitted.
 func set_card_mod(id: String, mod_id: String) -> String:
 	if owned_count(id) <= 0:
 		return "You do not own that card."
 	var b := build_of(id)
-	if mod_id != "":
-		if int(b["tier"]) < 2:
+	var tier := int(b["tier"])
+	var now := card_mods_on(id)
+	if mod_id == "":
+		now.clear()
+	elif now.has(mod_id):
+		now.erase(mod_id)
+	else:
+		if tier < 2:
 			return "Mods fit from Mk II."
 		if not owns_card_mod(mod_id):
 			return "Unlock that mod first."
-		if not GameData.mod_fits(mod_id, id):
+		if now.size() >= GameData.mod_slots(tier):
+			return "Both mod slots are full." if GameData.mod_slots(tier) > 1 else "Mk III adds a second mod slot."
+		var asm: Array = GameData.fitted_mods(id, tier, now + [mod_id])
+		if not asm.has(mod_id):
 			return "That mod does not fit this card."
-	b["mod"] = mod_id
+		now = asm
+	# Removing one can leave the other not fitting; keep only what still does.
+	now = GameData.fitted_mods(id, tier, now)
+	b["mod"] = now[0] if now.size() > 0 else ""
+	b["mod2"] = now[1] if now.size() > 1 else ""
 	_set_build(id, b)
 	save()
 	return ""

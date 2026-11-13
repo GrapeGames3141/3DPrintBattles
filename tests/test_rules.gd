@@ -928,7 +928,7 @@ func _blueprints() -> void:
 	# Network: a guest's builds are cleaned by the host.
 	var cleaned := GameData.clean_builds(GameData.expand(GameData.STARTER_DECK),
 		{"mossmunk": {"tier": 9, "mod": "sharp_nozzle", "paint": "none"}, "dragon": {"tier": 3}, "voltwig": "junk"})
-	ok(cleaned == {"mossmunk": {"tier": 3, "mod": "sharp_nozzle", "paint": "original"}}, "a guest's builds are clamped; unknown cards, bad paint and junk are dropped")
+	ok(cleaned == {"mossmunk": {"tier": 3, "mod": "sharp_nozzle", "mod2": "", "paint": "original"}}, "a guest's builds are clamped; unknown cards, bad paint and junk are dropped")
 
 	# Profile: the Blueprint shop.
 	var pr := fresh_profile()
@@ -950,14 +950,26 @@ func _blueprints() -> void:
 	ok(pr.set_paint("mossmunk", "gold") != "", "an unbought paint cannot be applied")
 	pr.data["xp"] = 100000
 	ok(pr.buy_paint("gold") == "" and pr.set_paint("mossmunk", "gold") == "", "a bought paint can be applied")
-	ok(pr.builds_for(["mossmunk", "mossmunk", "voltwig"]) == {"mossmunk": {"tier": 2, "mod": "sharp_nozzle", "paint": "gold"}}, "a battle takes the Blueprints of the cards in the deck")
+	ok(pr.builds_for(["mossmunk", "mossmunk", "voltwig"]) == {"mossmunk": {"tier": 2, "mod": "sharp_nozzle", "mod2": "", "paint": "gold"}}, "a battle takes the Blueprints of the cards in the deck")
 	ok(pr.upgrade_card("mossmunk") != "", "Mk III needs three spares")
 	for i in 3:
 		pr.add_card("mossmunk")
 	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 3 and pr.upgrade_card("mossmunk") != "", "Mk III, and that is the top")
 	ok(pr.craft_spare("mossmunk") == "" and pr.spares("mossmunk") == 1, "a spare can be printed for coins")
+	# Mk III carries two mods; Mk II only one.
+	ok(pr.card_mods_on("mossmunk") == ["sharp_nozzle"], "Mk III keeps the mod fitted at Mk II")
+	ok(pr.buy_card_mod("infill") == "" and pr.set_card_mod("mossmunk", "infill") == "", "a second mod fits at Mk III")
+	ok(pr.card_mods_on("mossmunk") == ["sharp_nozzle", "infill"], "both mods are fitted")
+	var two := GameData.built("mossmunk", pr.build_of("mossmunk"))
+	var one := GameData.built("mossmunk", {"tier": 3, "mod": "sharp_nozzle"})
+	ok(int(two["hp"]) == int(one["hp"]) + 3 and int(two["atk"]) == int(one["atk"]) and int(two["cost"]) == int(one["cost"]) + 1, "the second mod stacks on the first")
+	ok(str(two["mod2"]) == "infill" and str(two["mod"]) == "sharp_nozzle", "the built card names both mods")
+	ok(pr.buy_card_mod("overclock") == "" and pr.set_card_mod("mossmunk", "overclock") == "Both mod slots are full.", "there are only two slots")
+	ok(pr.set_card_mod("mossmunk", "sharp_nozzle") == "" and pr.card_mods_on("mossmunk") == ["infill"], "tapping a fitted mod takes only that one off")
+	ok(GameData.fitted_mods("mossmunk", 2, ["sharp_nozzle", "infill"]) == ["sharp_nozzle"], "Mk II has one slot")
+	ok(GameData.fitted_mods("mossmunk", 3, ["infill", "infill"]) == ["infill"], "the same mod cannot be fitted twice")
 	pr.set_card_mod("mossmunk", "")
-	ok(pr.build_of("mossmunk")["mod"] == "", "a mod comes off freely")
+	ok(pr.build_of("mossmunk")["mod"] == "" and pr.build_of("mossmunk")["mod2"] == "", "mods come off freely")
 	pr.free()
 
 	# Whole matches with every kind of Blueprint go through the AI without an illegal move.
@@ -967,7 +979,7 @@ func _blueprints() -> void:
 		for m in GameData.CARD_MODS:
 			if GameData.mod_fits(m["id"], c):
 				fitting.append(m["id"])
-		wild[c] = {"tier": 3, "mod": fitting[0] if not fitting.is_empty() else "", "paint": "gold"}
+		wild[c] = {"tier": 3, "mod": fitting[0] if not fitting.is_empty() else "", "mod2": fitting[1] if fitting.size() > 1 else "", "paint": "gold"}
 	var cfg: Dictionary = {"printer": "ember_forge", "deck": GameData.expand(GameData.STARTER_DECK), "builds": wild}
 	var bad := 0
 	for i in 6:

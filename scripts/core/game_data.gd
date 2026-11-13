@@ -721,12 +721,12 @@ static func uniform_builds(deck: Array, tier: int) -> Dictionary:
 	var out: Dictionary = {}
 	if tier > 1:
 		for id in deck:
-			out[str(id)] = {"tier": tier, "mod": "", "paint": "original"}
+			out[str(id)] = {"tier": tier, "mod": "", "mod2": "", "paint": "original"}
 	return out
 
 
 static func default_build() -> Dictionary:
-	return {"tier": 1, "mod": "", "paint": "original"}
+	return {"tier": 1, "mod": "", "mod2": "", "paint": "original"}
 
 
 static func tier_coins(id: String, tier: int) -> int:
@@ -795,9 +795,11 @@ static func _add_effect(d: Dictionary, effect: Dictionary, line: String) -> void
 
 
 ## True when `mod_id` can go on this card (right kind, and it would actually do something).
-static func mod_fits(mod_id: String, id: String) -> bool:
+## `current` is the card as it stands with other mods already on it (a second
+## mod has to fit what the first one made of the card); empty means the base card.
+static func mod_fits(mod_id: String, id: String, current := {}) -> bool:
 	var m := card_mod(mod_id)
-	var d := card(id)
+	var d := card(id) if current.is_empty() else current
 	if m.is_empty() or d.is_empty() or d.get("token", false) or not (m["kinds"] as Array).has(d["type"]):
 		return false
 	var kw: Array = d.get("kw", [])
@@ -914,47 +916,74 @@ static func _apply_data_mod(d: Dictionary, m: Dictionary) -> void:
 		_cost_by(d, int(m["dcost"]))
 
 
-## The card as it is actually printed: the base card with its Blueprint applied.
-## Results are shared, so treat them as read-only.
-static func built(id: String, build: Dictionary) -> Dictionary:
-	var base := card(id)
-	var tier := clampi(int(build.get("tier", 1)), 1, MAX_TIER)
-	var mod_id := str(build.get("mod", "")) if tier >= 2 else ""
-	if base.is_empty() or (tier == 1 and mod_id == ""):
-		return base
-	var key := "%s|%d|%s" % [id, tier, mod_id]
-	if _built.has(key):
-		return _built[key]
-	var d: Dictionary = base.duplicate(true)
+## How many mods a card at this tier carries: one from Mk II, two at Mk III.
+static func mod_slots(tier: int) -> int:
+	return clampi(tier - 1, 0, 2)
+
+
+## The card with its tier bonus and then each mod applied in turn. Returns the
+## card and the mods that actually went on: each must fit the card as the mods
+## before it left it, and a mod can only be fitted once.
+static func _assemble(id: String, tier: int, mods: Array) -> Array:
+	var d: Dictionary = card(id).duplicate(true)
 	if d["type"] == "creature":
 		if tier >= 2:
 			d["atk"] = int(d["atk"]) + 1
 		if tier >= 3:
 			d["hp"] = int(d["hp"]) + 1
-	else:
+	elif tier >= 2:
 		var slot := _strength(d)
-		if tier >= 2:
-			if slot.is_empty():
-				_cost_by(d, -1)
-			else:
-				_bump(d, slot, 1)
+		if slot.is_empty():
+			_cost_by(d, -1)
+		else:
+			_bump(d, slot, 1)
 		if tier >= 3:
 			if int(d["cost"]) > 1 or slot.is_empty():
 				_cost_by(d, -1)
 			else:
 				_bump(d, slot, 1)
-	if mod_id != "" and mod_fits(mod_id, id):
-		_apply_mod(d, mod_id)
-	else:
-		mod_id = ""
+	var applied: Array = []
+	for m in mods:
+		var mod_id := str(m)
+		if applied.size() >= mod_slots(tier) or mod_id == "" or applied.has(mod_id):
+			continue
+		if mod_fits(mod_id, id, d):
+			_apply_mod(d, mod_id)
+			applied.append(mod_id)
+	return [d, applied]
+
+
+## The mods of a Blueprint that really apply, in order.
+static func fitted_mods(id: String, tier: int, mods: Array) -> Array:
+	if card(id).is_empty():
+		return []
+	return _assemble(id, clampi(tier, 1, MAX_TIER), mods)[1]
+
+
+## The card as it is actually printed: the base card with its Blueprint applied.
+## Results are shared, so treat them as read-only.
+static func built(id: String, build: Dictionary) -> Dictionary:
+	var base := card(id)
+	var tier := clampi(int(build.get("tier", 1)), 1, MAX_TIER)
+	var wanted: Array = [str(build.get("mod", "")), str(build.get("mod2", ""))] if tier >= 2 else []
+	if base.is_empty() or (tier == 1 and wanted.is_empty()):
+		return base
+	var key := "%s|%d|%s" % [id, tier, "|".join(wanted)]
+	if _built.has(key):
+		return _built[key]
+	var made := _assemble(id, tier, wanted)
+	var d: Dictionary = made[0]
+	var applied: Array = made[1]
 	d["mk"] = tier
-	d["mod"] = mod_id
+	d["mod"] = applied[0] if applied.size() > 0 else ""
+	d["mod2"] = applied[1] if applied.size() > 1 else ""
 	_built[key] = d
 	return d
 
 
 ## Builds cut down to what the deck can carry and the rules allow: only cards
-## in the deck, tier 1-3, a mod only from Mk II and only one that fits, a real paint.
+## in the deck, tier 1-3, mods only from Mk II (a second from Mk III) and only
+## ones that fit, a real paint.
 static func clean_builds(deck: Array, builds: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
 	for id in deck:
@@ -962,14 +991,12 @@ static func clean_builds(deck: Array, builds: Dictionary) -> Dictionary:
 			continue
 		var b: Dictionary = builds[id]
 		var tier := clampi(int(b.get("tier", 1)), 1, MAX_TIER)
-		var mod_id := str(b.get("mod", ""))
-		if tier < 2 or not mod_fits(mod_id, str(id)):
-			mod_id = ""
+		var mods := fitted_mods(str(id), tier, [str(b.get("mod", "")), str(b.get("mod2", ""))])
 		var paint_id := str(b.get("paint", "original"))
 		if paint(paint_id)["id"] != paint_id:
 			paint_id = "original"
-		if tier > 1 or mod_id != "" or paint_id != "original":
-			out[str(id)] = {"tier": tier, "mod": mod_id, "paint": paint_id}
+		if tier > 1 or not mods.is_empty() or paint_id != "original":
+			out[str(id)] = {"tier": tier, "mod": mods[0] if mods.size() > 0 else "", "mod2": mods[1] if mods.size() > 1 else "", "paint": paint_id}
 	return out
 
 
