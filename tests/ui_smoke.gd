@@ -77,6 +77,15 @@ func run() -> void:
 	Session = load("res://scripts/core/battle_session.gd")
 	var profile := root.get_node("Profile")
 	profile.data = profile.fresh()
+	# The tutorial must be played on the Printer the player picked.
+	for starter in GameData.STARTER_PRINTER:
+		profile.data = profile.fresh()
+		profile.choose_starter(starter)
+		var tut = Session.tutorial()
+		var want_printer: String = GameData.STARTER_PRINTER[starter]
+		ok(str(tut.state["players"][0]["printer"]) == want_printer, "tutorial uses the %s you picked (%s)" % [want_printer, starter])
+		ok(str(tut.state["players"][1]["printer"]) != want_printer, "tutorial opponent has a different Printer than %s" % want_printer)
+	profile.data = profile.fresh()
 	profile.choose_starter("cinderpaw")
 	app = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(app)

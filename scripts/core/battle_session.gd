@@ -62,9 +62,17 @@ static func tutorial() -> BattleSession:
 	s.names = ["You", "Training Rig"]
 	var me: Dictionary = GameData.TUTORIAL["player"]
 	var foe: Dictionary = GameData.TUTORIAL["foe"]
+	# You train on the Printer you picked, not a fixed one; the Training Rig
+	# keeps its own machine unless that would be the same one.
+	var my_printer := str(Profile.active_deck().get("printer", me["printer"]))
+	if str(GameData.printer(my_printer)["id"]) != my_printer:
+		my_printer = str(me["printer"])
+	var foe_printer := str(foe["printer"])
+	if foe_printer == my_printer:
+		foe_printer = str(me["printer"]) if str(me["printer"]) != my_printer else "tide_press"
 	s.state = BattleEngine.new_game({"seed": 11, "first": 0, "players": [
-		{"printer": me["printer"], "deck": (me["hand"] as Array) + (me["deck"] as Array)},
-		{"printer": foe["printer"], "deck": (foe["hand"] as Array).slice(0, 4) + (foe["deck"] as Array), "hp_bonus": int(foe["hp_bonus"])}]})
+		{"printer": my_printer, "deck": (me["hand"] as Array) + (me["deck"] as Array)},
+		{"printer": foe_printer, "deck": (foe["hand"] as Array).slice(0, 4) + (foe["deck"] as Array), "hp_bonus": int(foe["hp_bonus"])}]})
 	BattleEngine.rig(s.state, 0, me["hand"], me["deck"])
 	BattleEngine.rig(s.state, 1, foe["hand"], foe["deck"])
 	return s
