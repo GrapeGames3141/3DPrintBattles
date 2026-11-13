@@ -6,12 +6,21 @@ recolours it into another element: the dominant colour is turned to the target
 hue, and grey bodies (stone, metal) are tinted so they take the colour too.
 Eyes, outlines and highlights are left alone.
 
-    uv run --with numpy --with pillow python tools/make_creature_variants.py
+    uv run --with numpy --with pillow --with scipy python tools/make_creature_variants.py
+
+After the recolour, tools/creature_fx.py gives each element its own surface
+(glowing cracks, frost, moss, droplets, stars) and silhouette (flames,
+crystals, bolts, leaves, fins, wisps), so the new creatures do not just look
+like their originals in another colour.
 """
 import os
+import sys
 
 import numpy as np
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(__file__))
+import creature_fx
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "assets", "creatures", "2d")
 
@@ -65,9 +74,9 @@ def recolor(img, target, grey_sat, sat_mul, val_mul):
 def main():
     for new, (base, hue, grey, s, v) in VARIANTS.items():
         sheet = Image.open(os.path.join(ROOT, f"{base}_sprite_sheet.png"))
-        recolor(sheet, hue, grey, s, v).save(os.path.join(ROOT, f"{new}_sprite_sheet.png"))
+        creature_fx.apply(recolor(sheet, hue, grey, s, v), new, "sheet").save(os.path.join(ROOT, f"{new}_sprite_sheet.png"))
         raw = Image.open(os.path.join(ROOT, "raw", f"{base}_raw_print.png"))
-        recolor(raw, hue, grey, s, v).save(os.path.join(ROOT, "raw", f"{new}_raw_print.png"))
+        creature_fx.apply(recolor(raw, hue, grey, s, v), new, "raw").save(os.path.join(ROOT, "raw", f"{new}_raw_print.png"))
         print("wrote", new)
 
 
