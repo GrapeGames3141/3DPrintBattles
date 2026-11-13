@@ -9,6 +9,7 @@ var _checks := 0
 
 func _initialize() -> void:
 	_catalog()
+	_audio()
 	_basics()
 	_keywords()
 	_effects()
@@ -92,6 +93,38 @@ func _catalog() -> void:
 		ok(GameData.PACKS.has(r["pack"]), "rival %s pack" % r["id"])
 	for s in GameData.STARTER_PRINTER:
 		ok(GameData.has_card(s), "starter " + s)
+
+
+## Every sound and track the game asks for must exist as a file.
+func _audio() -> void:
+	print("audio")
+	var audio: GDScript = load("res://scripts/core/audio.gd")
+	var names: Dictionary = {}
+	for n in audio.TUNE:
+		names[n] = "tuned"
+	for n in audio.ALIAS.values():
+		names[n] = "alias"
+	var rx := RegEx.new()
+	rx.compile("(?:sfx|stinger)\\(\"([a-z_]+)\"")
+	var dirs: Array = ["res://scripts/ui", "res://scripts/ui/screens", "res://scripts/core"]
+	for d in dirs:
+		for f in DirAccess.get_files_at(d):
+			if f.ends_with(".gd"):
+				var text := FileAccess.get_file_as_string("%s/%s" % [d, f])
+				for m in rx.search_all(text):
+					names[m.get_string(1)] = "%s/%s" % [d, f]
+	for el in GameData.ELEMENTS:
+		if el != "Neutral":
+			names["atk_" + el.to_lower()] = "element " + el
+	for n in names:
+		if n.ends_with("_"):
+			continue          # a prefix built at run time (atk_ + element), checked above
+		ok(FileAccess.file_exists("res://assets/audio/sfx_%s.wav" % n) or audio.ALIAS.has(n), "sound effect '%s' has a file (%s)" % [n, names[n]])
+	for track in audio.TRACKS:
+		var layers: Array = audio.TRACKS[track]
+		ok(not layers.is_empty(), "track %s has layers" % track)
+		for path in layers:
+			ok(FileAccess.file_exists(path) or ResourceLoader.exists(path), "music file %s" % path)
 
 
 func _basics() -> void:

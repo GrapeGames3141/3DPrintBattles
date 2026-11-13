@@ -153,7 +153,7 @@ static func button(text: String, kind := "plain", size := Vector2(0, 0), font_si
 			s.content_margin_bottom = 8
 			b.add_theme_stylebox_override(state, s)
 		b.add_theme_color_override("font_color", Color.WHITE)
-	b.pressed.connect(func(): Audio.sfx("card"))
+	b.pressed.connect(func(): Audio.sfx("click"))
 	return b
 
 

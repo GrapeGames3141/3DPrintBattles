@@ -17,6 +17,8 @@ const TIPS := {
 	"power": ["do", "Your Printer has a Power: %d Filament, once per turn. Tap it, then tap a target." % GameData.POWER_COST],
 	"end": ["do", "Nothing else to do this turn. Press End Turn."],
 }
+const LOW_SPOOL := 8
+
 const TIP_ORDER := ["goal", "filament", "guard", "deploy", "print", "fresh", "attack", "tool", "upgrade", "long", "power", "end"]
 
 var session: BattleSession
@@ -78,6 +80,7 @@ var _result_winner := -9
 var _reward: Dictionary = {}
 var _closed_reason := ""
 var _relayout_pending := false
+var _spool_warned := false
 
 # ---- tutorial coach
 var _coach := false
@@ -95,7 +98,8 @@ func build() -> void:
 	_coach = session.mode == "tutorial"
 	if session.mode == "hotseat":
 		me = int(st["active"])
-	Audio.music("battle")
+	Audio.music(_battle_track())
+	Audio.set_intensity(0.0)
 	session.updated.connect(_on_update)
 	session.closed.connect(_on_closed)
 	_build_all()
@@ -255,10 +259,45 @@ func _build_hud() -> void:
 	_power_btn.add_child(_power_cost)
 
 
+## Battle music: the heavier theme for the late rivals and Master-level sparring.
+func _battle_track() -> String:
+	if session.mode == "rival":
+		for i in GameData.RIVALS.size():
+			if GameData.RIVALS[i]["id"] == session.rival_id:
+				return "battle2" if i >= 7 else "battle1"
+	elif session.mode == "quick" and session.ai_level >= 2:
+		return "battle2"
+	return "battle1"
+
+
+## The music follows the battle: calm while the bench is empty, driving once
+## prints are out, tense when a Printer is nearly down.
+func _update_music() -> void:
+	if st.is_empty() or st["over"]:
+		return
+	var weakest := 99
+	var prints := 0
+	for seat in 2:
+		weakest = mini(weakest, int(st["players"][seat]["hp"]) + int(st["players"][seat]["armor"]))
+		prints += (st["players"][seat]["board"] as Array).size()
+	var mood := 0.0
+	if int(st["turn"]) >= 3 or prints >= 2:
+		mood = 1.0
+	if weakest <= 8:
+		mood = 2.0
+	Audio.set_intensity(mood)
+
+
 ## Shows a seat's Filament: what the nozzle can still print this turn, and
 ## what is left on the Spool.
 func _set_res(seat: int, flow: int, spool: int) -> void:
 	var p: Dictionary = st["players"][seat]
+	# One warning as the Spool runs low, and again if it is topped up and runs low again.
+	if seat == me:
+		var low: bool = spool <= LOW_SPOOL
+		if low and not _spool_warned and session.is_human(me):
+			Audio.sfx("spool_low")
+		_spool_warned = low
 	(_gauge if seat == me else _foe_gauge).set_value(flow, int(p["speed"]), spool, int(p["spool_max"]))
 
 
@@ -466,6 +505,7 @@ func _sync(animate := true) -> void:
 	_layout_hand(animate)
 	_refresh_info()
 	_refresh_interactive()
+	_update_music()
 
 
 func _new_hand_card(id: String) -> CardView:
@@ -1082,6 +1122,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 		"turn":
 			var seat: int = int(e["seat"])
 			_set_res(seat, int(e["flow"]), int(e["spool"]))
+			Audio.sfx("turn_foe" if seat != me and session.mode != "hotseat" else "turn_mine")
 			if _tip == "end":
 				_end_tips += 1
 			if session.mode == "hotseat":
@@ -1093,7 +1134,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			await _wait(0.75)
 		"draw":
 			var seat: int = int(e["seat"])
-			Audio.sfx("card", 1.15)
+			Audio.sfx("draw")
 			if seat == me:
 				_hand.append({"uid": int(e["card"]["uid"]), "id": e["card"]["id"], "node": _new_hand_card(e["card"]["id"])})
 			else:
@@ -1101,9 +1142,11 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			_layout_hand()
 			await _wait(0.2)
 		"burn":
+			Audio.sfx("burn")
 			UI.floater(_fx, "Hand full! %s was lost." % GameData.card(e["id"])["name"], banner_pos, UI.AMBER, 24, 30.0, 1.4)
 			await _wait(0.5)
 		"fatigue":
+			Audio.sfx("fatigue")
 			UI.floater(_fx, "Out of cards!", _center_of("p%d" % int(e["seat"])) + Vector2(60, -70), UI.AMBER, 26, 30.0, 1.2)
 			await _wait(0.25)
 		"play":
@@ -1118,6 +1161,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			_ev_damage(e)
 			await _wait(0.07 if next.get("e", "") == "damage" else 0.26)
 		"heal":
+			Audio.sfx("heal")
 			var n := _node_for(e["target"])
 			UI.floater(_fx, "+%d" % int(e["n"]), _center_of(e["target"]), UI.GOOD, 34)
 			if n is PrinterView:
@@ -1134,7 +1178,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			if node != null:
 				node.refresh(e["unit"], false)
 				node.pulse(UI.GOOD)
-				Audio.sfx("tool", 1.2)
+				Audio.sfx("attach" if e["e"] == "gear" else "buff")
 				if e["e"] == "gear":
 					UI.floater(_fx, GameData.card(e["id"])["name"], node.center() + Vector2(0, -70), UI.GOLD, 22)
 			await _wait(0.12 if next.get("e", "") == "buff" else 0.3)
@@ -1145,13 +1189,14 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 				data["jam"] = 1 if e["e"] == "jam" else 0
 				node.refresh(data, false)
 				if e["e"] == "jam":
+					Audio.sfx("jam")
 					UI.floater(_fx, "Jammed!", node.center() + Vector2(0, -50), UI.CYAN, 24)
 					await _wait(0.1 if next.get("e", "") == "jam" else 0.25)
 		"death":
 			var uid: int = int(e["uid"])
 			var node: BoardUnit = _units.get(uid)
 			if node != null:
-				Audio.sfx("hit", 0.7)
+				Audio.sfx("shatter")
 				_units.erase(uid)
 				(_rows[int(e["seat"])] as Array).erase(uid)
 				await node.shatter()
@@ -1176,17 +1221,19 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			_set_res(seat, int(e["flow"]), int(e["spool"]))
 			var pv: PrinterView = _printers[seat]
 			pv.pulse()
-			Audio.sfx("tool")
+			Audio.sfx("power")
 			UI.floater(_fx, GameData.printer(pv.printer_id)["power"]["name"], pv.center() + Vector2(40, -90), UI.GOLD, 24)
 			await _wait(0.35)
 		"fil":
 			_set_res(int(e["seat"]), int(e["flow"]), int(e["spool"]))
 			if int(e.get("gain", 0)) > 0:
+				Audio.sfx("spool_add")
 				UI.floater(_fx, "+%d Filament" % int(e["gain"]), (_printers[int(e["seat"])] as PrinterView).center() + Vector2(0, -90), UI.CYAN, 22)
 		"scrap":
 			# The pieces of a shattered print go back on its owner's Spool.
 			var seat: int = int(e["seat"])
 			_set_res(seat, (_gauge if seat == me else _foe_gauge).flow, int(e["spool"]))
+			Audio.sfx("scrap", 1.0 + randf_range(0.0, 0.2), 0.8)
 		"job":
 			await _ev_job(e)
 		"deploy":
@@ -1197,6 +1244,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			p["armor"] = int(e["armor"])
 			pv.set_health(int(p["hp"]), int(p["max_hp"]), int(e["armor"]))
 			pv.pulse()
+			Audio.sfx("armor")
 			UI.floater(_fx, "Armor up", pv.center() + Vector2(0, -80), Color("dfe6f0"), 24)
 			await _wait(0.25)
 		"over":
@@ -1209,7 +1257,7 @@ func _ev_play(e: Dictionary) -> void:
 	_set_res(seat, int(e["flow"]), int(e["spool"]))
 	var id: String = e["card"]["id"]
 	var def := GameData.card(id)
-	Audio.sfx("card")
+	Audio.sfx("drop")
 	if seat == me:
 		if def["type"] == "tool":
 			_tips_done["tool"] = true
@@ -1217,7 +1265,7 @@ func _ev_play(e: Dictionary) -> void:
 			_tips_done["upgrade"] = true
 		_drop_hand_card(int(e["card"]["uid"]))
 		if def["type"] != "creature":
-			Audio.sfx("tool")
+			Audio.sfx("attach" if def["type"] == "upgrade" else "tool")
 			await _wait(0.2)
 		return
 	# The opponent's card is shown face-up long enough to read.
@@ -1252,7 +1300,7 @@ func _show_foe_card(id: String, from: Vector2, hold: float, chime: bool) -> void
 	tw.tween_property(card, "scale", Vector2(0.7, 0.7), 0.2)
 	await tw.finished
 	if chime:
-		Audio.sfx("tool")
+		Audio.sfx("attach" if GameData.card(id)["type"] == "upgrade" else "tool")
 	await _wait(hold)
 	var out := card.create_tween()
 	out.tween_property(card, "modulate:a", 0.0, 0.2)
@@ -1267,7 +1315,7 @@ func _ev_job(e: Dictionary) -> void:
 	var cost: int = int(e["cost"])
 	_set_res(seat, int(e["flow"]), int(e["spool"]))
 	if bool(e["start"]):
-		Audio.sfx("card")
+		Audio.sfx("job_start")
 		if seat == me:
 			_tips_done["long"] = true
 			_drop_hand_card(int(e["card"]["uid"]))
@@ -1304,7 +1352,7 @@ func _ev_job(e: Dictionary) -> void:
 	if jv.is_done():
 		var paint := create_tween()
 		paint.tween_method(jv.set_color, 0.0, 1.0, 0.2)
-		Audio.sfx("reveal", 1.3)
+		Audio.sfx("print_done")
 		UI.floater(_fx, "Print finished!", above, UI.GOOD, 24, 20.0, 1.3)
 		await _wait(0.4)
 	elif bool(e["start"]):
@@ -1333,7 +1381,7 @@ func _ev_deploy(e: Dictionary) -> void:
 			_tips_done["tool"] = true
 		else:
 			_tips_done["upgrade"] = true
-		Audio.sfx("tool")
+		Audio.sfx("attach" if def["type"] == "upgrade" else "tool")
 		await _wait(0.2)
 	else:
 		await _show_foe_card(id, from, 0.95, true)
@@ -1385,7 +1433,7 @@ func _ev_summon(e: Dictionary, next: Dictionary) -> void:
 	if bool(e.get("built", false)):
 		# It was built over the last few turns and is standing there finished.
 		_clear_job(seat)
-		Audio.sfx("print", 1.5)
+		Audio.sfx("deploy")
 	else:
 		# A long print already on the bed steps back while this one is built.
 		var waiting: JobView = _jobs[seat] if is_instance_valid(_jobs[seat]) else null
@@ -1429,7 +1477,7 @@ func _ev_summon(e: Dictionary, next: Dictionary) -> void:
 	node.scale = Vector2(unit_scale, unit_scale)
 	node.z_index = 0
 	node.set_bare(false)
-	Audio.sfx("card", 0.75)
+	Audio.sfx("drop", 0.8)
 	var land := node.create_tween()
 	land.tween_property(node, "scale", Vector2(unit_scale * 1.12, unit_scale * 0.88), 0.07)
 	land.tween_property(node, "scale", Vector2(unit_scale, unit_scale), 0.12)
@@ -1440,6 +1488,10 @@ func _ev_attack(e: Dictionary) -> void:
 	var node: BoardUnit = _units.get(int(e["uid"]))
 	if node == null:
 		return
+	Audio.sfx("swing")
+	var element: String = str(node.def.get("element", "Neutral")).to_lower()
+	if element != "neutral":
+		Audio.sfx("atk_" + element, 1.0, 0.85)
 	var home := node.position
 	var dest := home + (_center_of(e["target"]) - node.center())
 	var reach := home.lerp(dest, 0.72)
@@ -1471,9 +1523,12 @@ func _ev_damage(e: Dictionary) -> void:
 		(data["kw"] as Array).erase("brim")
 		bu.refresh(data, false)
 		UI.floater(_fx, "Brim!", at, UI.GOLD, 28)
-		Audio.sfx("tool", 1.5)
+		Audio.sfx("armor", 1.6)
 		return
-	Audio.sfx("hit")
+	if n is PrinterView:
+		Audio.sfx("hit_printer")
+	else:
+		Audio.sfx("hit_heavy" if int(e["n"]) >= 4 else "hit")
 	UI.floater(_fx, "-%d" % int(e["n"]), at + Vector2(randf_range(-10, 10), -10), UI.BAD, 40)
 	if n is PrinterView:
 		var pv: PrinterView = n
@@ -1680,7 +1735,8 @@ func _show_result(winner: int) -> void:
 	_result_winner = winner
 	var won: bool = session.mode != "hotseat" and winner == session.my_seat
 	_reward = Profile.record_battle(session.mode, won, session.ai_level, session.rival_id)
-	Audio.sfx("win" if won or session.mode == "hotseat" else "lose")
+	Audio.set_intensity(0.0)
+	Audio.stinger("win" if won or session.mode == "hotseat" else "lose", 0.2)
 	if int(_reward["coins"]) > 0:
 		Audio.sfx("coin")
 	_show_result_panel()

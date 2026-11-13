@@ -111,8 +111,14 @@ New art in this version was made with open-source tools only:
   one shader (`assets/shaders/foil_pack.gdshader`); the figure on the front is
   existing creature art.
 
-Audio is the script-generated placeholder set from the `phase1-build` branch,
-plus pack-opening sounds synthesised by `tools/make_sfx.py` (numpy).
+Audio is all synthesised from oscillators and filtered noise (no samples):
+`tools/make_music.py` composes five looping tracks (menu, shop, workbench and two
+battle themes), each battle theme in three layers that fade in as the fight
+heats up, and `tools/make_sfx.py` renders about 50 effects and jingles. Both use
+`tools/audiolib.py` (numpy + soundfile) and are deterministic, so
+`uv run --with numpy --with soundfile python tools/make_music.py` regenerates
+them. `scripts/core/audio.gd` crossfades tracks, mixes the battle layers by how
+the fight is going, and ducks the music under the win and lose jingles.
 The Arvo font is under the SIL Open Font License (`assets/fonts/Arvo-OFL.txt`).
 
 ## Builds

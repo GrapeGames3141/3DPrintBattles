@@ -7,7 +7,6 @@ var _popup_kind := ""
 
 func build() -> void:
 	app.set_background("res://assets/ui/workshop/workshop_overview_%s_v4.png" % ("portrait" if P else "landscape"), 0.18)
-	Audio.music("workshop")
 	_popup = null
 	var px := 60.0 if P else 40.0
 	var py := 50.0 if P else 36.0

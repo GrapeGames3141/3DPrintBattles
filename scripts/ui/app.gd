@@ -18,6 +18,9 @@ const SCREENS := {
 	"battle": "res://scripts/ui/screens/battle_screen.gd",
 }
 
+## Which music plays on each screen (the battle picks its own).
+const MUSIC := {"starter": "menu", "menu": "menu", "play": "menu", "collection": "bench", "workshop": "bench", "shop": "shop"}
+
 var bg: TextureRect
 var shade: ColorRect
 var stage: Control
@@ -113,6 +116,8 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	s.modulate.a = 0.0
 	stage.add_child(s)
 	current = s
+	if MUSIC.has(screen):
+		Audio.music(MUSIC[screen])
 	s.build()
 	s.create_tween().tween_property(s, "modulate:a", 1.0, 0.16)
 	_switching = false

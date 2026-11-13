@@ -464,7 +464,7 @@ func _announce() -> void:
 		card.set_glow(_rarity_color(index))
 	if index + 1 < cards.size() and _rank(index + 1) >= 3:
 		(_nodes[index + 1] as CardView).set_glow(_rarity_color(index + 1))
-	Audio.sfx("reveal" if rank >= 3 else "card", 1.0 + rank * 0.06)
+	Audio.sfx("reveal_epic" if rank >= 4 else ("reveal" if rank >= 3 else "draw"), 1.0 + rank * 0.02)
 	for k in range(index, cards.size()):
 		var under: CardView = _nodes[k]
 		var settle := _card_tween(under)
