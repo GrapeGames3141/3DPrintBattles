@@ -1,4 +1,4 @@
-# PrintForge Legends
+# 3D Print Arena
 
 A card battler where you fight with 3D-printed creatures. Your Printer is your
 hero and Filament is what everything costs, but it works like a real printer:

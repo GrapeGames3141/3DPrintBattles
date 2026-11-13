@@ -1,4 +1,4 @@
-"""A tiny synthesizer for PrintForge Legends' music and sound effects.
+"""A tiny synthesizer for 3D Print Arena' music and sound effects.
 
 Pure numpy (plus soundfile to write OGG). Everything here is deterministic:
 the same script always renders the same audio, so assets can be regenerated.

@@ -1,6 +1,6 @@
 class_name GameData
 extends RefCounted
-## Immutable catalog for PrintForge Legends.
+## Immutable catalog for 3D Print Arena.
 ## Everything at runtime (profiles, battle state, network messages) stores IDs only.
 
 const VERSION := "1.0.0"

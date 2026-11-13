@@ -51,8 +51,28 @@ static func fresh() -> Dictionary:
 	}
 
 
+## The game used to be called PrintForge Legends, and Godot keeps saves in a
+## folder named after the game. Copy the old save across the first time.
+func _import_old_save() -> void:
+	if OS.get_environment("PRINTFORGE_PROFILE") != "" or OS.has_feature("mobile"):
+		return
+	var root := OS.get_data_dir().path_join("Godot" if OS.get_name() in ["Windows", "macOS"] else "godot").path_join("app_userdata")
+	var old := root.path_join("PrintForge Legends").path_join("printforge_profile.json")
+	if not FileAccess.file_exists(old):
+		return
+	var text := FileAccess.get_file_as_string(old)
+	if not JSON.parse_string(text) is Dictionary:
+		return
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f != null:
+		f.store_string(text)
+		f.close()
+
+
 func load_profile() -> void:
 	data = fresh()
+	if not FileAccess.file_exists(path):
+		_import_old_save()
 	if not FileAccess.file_exists(path):
 		return
 	var text := FileAccess.get_file_as_string(path)

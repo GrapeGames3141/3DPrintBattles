@@ -1,6 +1,6 @@
-# PrintForge Legends project rules
+# 3D Print Arena project rules
 
-- This repository is the durable Windows Steam project for PrintForge Legends.
+- This repository is the durable Windows Steam project for 3D Print Arena.
 - Use Godot 4.7.1, GDScript, Forward+, deterministic integer combat, and catalog-driven data.
 - Never place credentials, Steam app IDs, Nakama keys, builds, imports, or save journals in Git.
 - `backend/` is authoritative-server scaffolding only; deployment configuration stays outside Git.

@@ -1,4 +1,4 @@
-"""Composes PrintForge Legends' music.
+"""Composes 3D Print Arena' music.
 
     uv run --with numpy --with soundfile python tools/make_music.py [track ...]
 

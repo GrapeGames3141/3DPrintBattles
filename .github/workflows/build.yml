@@ -25,12 +25,15 @@ jobs:
     name: Free artifact space
     runs-on: ubuntu-latest
     steps:
-      - name: Delete old PrintForge artifacts before upload
+      - name: Delete old build artifacts before upload
         uses: actions/github-script@v7
         with:
           script: |
             const KEEP_BUILDS = Number(process.env.KEEP_BUILDS);
             const PREFIXES = [
+              '3DPrintArena-Windows-',
+              '3DPrintArena-Linux-',
+              '3DPrintArena-Android-',
               'PrintForgeLegends-Windows-',
               'PrintForgeLegends-Linux-',
               'PrintForgeLegends-Android-',
@@ -104,14 +107,14 @@ jobs:
         include:
           - target: Windows
             preset: Windows Steam
-            output: build/windows/PrintForgeLegends.exe
+            output: build/windows/3DPrintArena.exe
             artifact_path: build/windows/
-            artifact: PrintForgeLegends-Windows
+            artifact: 3DPrintArena-Windows
           - target: Linux
             preset: Linux
-            output: build/linux/PrintForgeLegends.x86_64
+            output: build/linux/3DPrintArena.x86_64
             artifact_path: build/linux/
-            artifact: PrintForgeLegends-Linux
+            artifact: 3DPrintArena-Linux
 
     steps:
       - name: Check out repository
@@ -157,8 +160,8 @@ jobs:
           - target: Android
             runner: ubuntu-latest
             preset: Android
-            output: build/android/PrintForgeLegends.apk
-            artifact: PrintForgeLegends-Android
+            output: build/android/3DPrintArena.apk
+            artifact: 3DPrintArena-Android
 
     steps:
       - name: Check out repository
@@ -279,6 +282,9 @@ jobs:
           script: |
             const KEEP_BUILDS = Number(process.env.KEEP_BUILDS);
             const PREFIXES = [
+              '3DPrintArena-Windows-',
+              '3DPrintArena-Linux-',
+              '3DPrintArena-Android-',
               'PrintForgeLegends-Windows-',
               'PrintForgeLegends-Linux-',
               'PrintForgeLegends-Android-',
