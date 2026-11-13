@@ -1763,7 +1763,7 @@ func _open_menu() -> void:
 		return
 	_cancel()
 	_menu = modal()
-	var box := dialog(_menu, Vector2(400, 300))
+	var box := dialog(_menu, Vector2(400, 370))
 	var t := UI.label("Paused", 32, UI.GOLD)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, t, Vector2(0, 22), Vector2(400, 40))
@@ -1778,10 +1778,13 @@ func _open_menu() -> void:
 			app.go("menu" if leaving else "play")
 		else:
 			session.submit(me, {"t": "concede"}))
-	UI.place(box, concede, Vector2(50, 160))
+	UI.place(box, concede, Vector2(50, 230))
+	var book := UI.button("Handbook", "primary", Vector2(300, 56), 22)
+	book.pressed.connect(func(): Handbook.open(self))
+	UI.place(box, book, Vector2(50, 160))
 	var hint := UI.label("Esc closes this menu. Space ends your turn.", 14, UI.MUTED, false)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UI.place(box, hint, Vector2(0, 240), Vector2(400, 22))
+	UI.place(box, hint, Vector2(0, 312), Vector2(400, 22))
 
 
 func _show_result(winner: int) -> void:

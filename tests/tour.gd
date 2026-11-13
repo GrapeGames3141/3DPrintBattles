@@ -54,6 +54,10 @@ func run() -> void:
 		await shot("menu")
 		app.current._open_help()
 		await shot("help")
+		for ch in 3:
+			var book = load("res://scripts/ui/handbook.gd").open(app.current, ch)
+			await shot("handbook%d" % ch)
+			app.current.close_modal(book)
 		app.current._close_popup()
 		app.current._open_settings()
 		await shot("settings")

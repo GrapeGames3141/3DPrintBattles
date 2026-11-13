@@ -380,19 +380,19 @@ func _open_help() -> void:
 		tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.place(box, tx, Vector2(84, y + 24), Vector2(bw - 120, pitch - 26))
 		y += pitch
-	var kw: Array = []
-	for k in GameData.KEYWORDS:
-		kw.append("%s: %s" % [GameData.KEYWORDS[k]["name"], GameData.KEYWORDS[k]["text"]])
-	var kl := UI.label("\n".join(kw) if P else "   ".join(kw.slice(0, 3)) + "\n" + "   ".join(kw.slice(3)), 14 if P else 13, UI.CREAM, false)
+	var kl := UI.label("Guard, Rush, Scorch, Heat and every other rule are in the Handbook.", 15, UI.AMBER, false)
 	kl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	kl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.place(box, kl, Vector2(20, y + 4), Vector2(bw - 40, 130 if P else 44))
+	UI.place(box, kl, Vector2(20, y + 4), Vector2(bw - 40, 44))
 	var by := box.size.y - 70.0
-	var tut := UI.button("Play the tutorial", "primary", Vector2(250, 50))
+	var tut := UI.button("Tutorial", "primary", Vector2(200, 50))
 	tut.pressed.connect(func():
 		_popup_kind = ""
 		app.go("battle", {"session": BattleSession.tutorial()}))
-	UI.place(box, tut, Vector2(bw * 0.5 - 260, by))
-	var done := UI.button("Got it", "go", Vector2(250, 50))
+	UI.place(box, tut, Vector2(bw * 0.5 - 318, by))
+	var book := UI.button("Handbook", "primary", Vector2(200, 50))
+	book.pressed.connect(func(): Handbook.open(self))
+	UI.place(box, book, Vector2(bw * 0.5 - 100, by))
+	var done := UI.button("Got it", "go", Vector2(200, 50))
 	done.pressed.connect(_close_popup)
-	UI.place(box, done, Vector2(bw * 0.5 + 10, by))
+	UI.place(box, done, Vector2(bw * 0.5 + 118, by))
