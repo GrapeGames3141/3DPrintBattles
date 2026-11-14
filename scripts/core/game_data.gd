@@ -718,7 +718,7 @@ static func rival(id: String) -> Dictionary:
 
 
 ## Coins a spare copy (one a deck cannot use) is worth when it is recycled.
-const RECYCLE_COINS := {"common": 5, "uncommon": 12, "rare": 30, "epic": 80, "legendary": 200}
+const RECYCLE_COINS := {"common": 5, "uncommon": 10, "rare": 18, "epic": 30, "legendary": 50}
 
 
 static func recycle_value(id: String) -> int:
