@@ -27,11 +27,11 @@ const SCRAP_REFUND := 1
 
 const RARITY_ORDER := ["common", "uncommon", "rare", "epic", "legendary"]
 const RARITIES := {
-	"common": {"name": "Common", "color": "#c3ccd9", "craft": 40, "recycle": 3, "copies": 2},
-	"uncommon": {"name": "Uncommon", "color": "#5fd47c", "craft": 80, "recycle": 6, "copies": 2},
-	"rare": {"name": "Rare", "color": "#58a6ff", "craft": 160, "recycle": 15, "copies": 2},
-	"epic": {"name": "Epic", "color": "#c47dff", "craft": 400, "recycle": 36, "copies": 2},
-	"legendary": {"name": "Legendary", "color": "#ffc93c", "craft": 1000, "recycle": 90, "copies": 1},
+	"common": {"name": "Common", "color": "#c3ccd9", "copies": 2},
+	"uncommon": {"name": "Uncommon", "color": "#5fd47c", "copies": 2},
+	"rare": {"name": "Rare", "color": "#58a6ff", "copies": 2},
+	"epic": {"name": "Epic", "color": "#c47dff", "copies": 2},
+	"legendary": {"name": "Legendary", "color": "#ffc93c", "copies": 1},
 }
 
 ## Filament colours per element: `color` is the plastic, `dark` is the card body.
@@ -160,16 +160,18 @@ const CARDS_BASE := [
 		"on_print": [{"op": "damage", "n": 1, "to": "enemy_prints"}]},
 	{"id": "thornfox", "name": "Thornfox", "type": "creature", "cost": 4, "atk": 3, "hp": 3, "element": "Nature", "rarity": "rare",
 		"kw": ["rush", "brim"], "text": ""},
-	{"id": "tidemaw", "name": "Tidemaw", "type": "creature", "cost": 5, "atk": 5, "hp": 6, "element": "Water", "rarity": "epic",
-		"kw": ["siphon"], "text": ""},
+	{"id": "tidemaw", "name": "Tidemaw", "type": "creature", "cost": 5, "atk": 4, "hp": 6, "element": "Water", "rarity": "epic",
+		"kw": ["siphon"], "text": "Turn End: Repair your Printer by 2.",
+		"trig": [{"when": "turn_end", "fx": [{"op": "heal", "n": 2, "to": "own_printer"}]}]},
 	{"id": "frostelk", "name": "Frostelk", "type": "creature", "cost": 5, "atk": 4, "hp": 6, "element": "Ice", "rarity": "epic",
 		"kw": ["guard"], "text": "On Print: Jam an enemy print.", "target": "enemy_print",
 		"on_print": [{"op": "jam", "to": "target"}]},
 	{"id": "quartzdrake", "name": "Quartzdrake", "type": "creature", "cost": 5, "atk": 4, "hp": 4, "element": "Stone", "rarity": "epic",
 		"kw": [], "text": "Shatter: Deal 3 damage to all enemy prints.",
 		"shatter": [{"op": "damage", "n": 3, "to": "enemy_prints"}]},
-	{"id": "gustgriffin", "name": "Gustgriffin", "type": "creature", "cost": 6, "atk": 5, "hp": 5, "element": "Wind", "rarity": "epic",
-		"kw": ["twin"], "text": ""},
+	{"id": "gustgriffin", "name": "Gustgriffin", "type": "creature", "cost": 6, "atk": 4, "hp": 5, "element": "Wind", "rarity": "epic",
+		"kw": ["twin"], "text": "On Attack: Deal 1 damage to a random enemy print.",
+		"trig": [{"when": "attack", "fx": [{"op": "damage", "n": 1, "to": "random_enemy"}]}]},
 	{"id": "arcanitan", "name": "Arcanitan", "type": "creature", "cost": 6, "atk": 6, "hp": 6, "element": "Arcane", "rarity": "epic",
 		"kw": [], "text": "On Print: Draw a card. Give your other prints +1/+1.",
 		"on_print": [{"op": "draw", "n": 1}, {"op": "buff", "atk": 1, "hp": 1, "to": "other_friendly_prints"}]},
@@ -361,28 +363,41 @@ const PRINTER_MODS_BASE := [
 	{"id": "sorter", "rarity": "common", "name": "Coin Sorter", "icon": "coin", "text": "Earn %d more Forge Coins for each win.", "per": 4, "cost": 200, "rank": 1},
 ]
 const PRINTER_MODS := PRINTER_MODS_BASE + preload("res://scripts/core/catalog/catalog_printer_mods.gd").LIST
+## Three packs. `weights` is the chance of each rarity for every card in the pack
+## (parts out of their total); a pack with a `guarantee` swaps its last card for
+## one from `guarantee_weights` when nothing at that rarity or better came up.
+## Every pack can give a good card; the better packs just do it far more often.
 ## `foil` and `foil_deep` colour the pouch, `holo` is its rainbow sheen (0-1),
 ## and `art` is the creature printed on the front (`art_raw`: as a bare print).
 const PACKS := {
-	"standard": {"name": "Blueprint Pack", "price": 150, "size": 5, "guarantee": "rare", "tint": "#3fa7ff",
+	"basic": {"name": "Basic Pack", "price": 100, "size": 5, "guarantee": "", "tint": "#8fbf9f",
+		"foil": "#7fb894", "foil_deep": "#1d3a2b", "holo": 0.0, "art": "mossmunk", "art_raw": true,
+		"weights": {"common": 8200, "uncommon": 1500, "rare": 270, "epic": 28, "legendary": 2},
+		"guarantee_weights": {},
+		"text": "5 cards, nearly all Common. A small chance of better."},
+	"standard": {"name": "Blueprint Pack", "price": 250, "size": 5, "guarantee": "uncommon", "tint": "#3fa7ff",
 		"foil": "#4aa8ff", "foil_deep": "#10307a", "holo": 0.12, "art": "cinderpaw", "art_raw": true,
-		"text": "5 cards. At least one Rare or better."},
-	"premium": {"name": "Golden Spool Pack", "price": 400, "size": 5, "guarantee": "epic", "tint": "#ffc93c",
+		"weights": {"common": 5500, "uncommon": 3000, "rare": 1200, "epic": 260, "legendary": 40},
+		"guarantee_weights": {"uncommon": 7000, "rare": 2500, "epic": 450, "legendary": 50},
+		"text": "5 cards. At least one Uncommon or better."},
+	"premium": {"name": "Golden Spool Pack", "price": 800, "size": 5, "guarantee": "epic", "tint": "#ffc93c",
 		"foil": "#ffcf4d", "foil_deep": "#8a4a08", "holo": 0.7, "art": "starloom", "art_raw": false,
-		"text": "5 cards. At least one Epic or better."},
+		"weights": {"common": 2500, "uncommon": 3500, "rare": 3000, "epic": 850, "legendary": 150},
+		"guarantee_weights": {"epic": 850, "legendary": 150},
+		"text": "5 cards. At least one Epic or better, and Rares are common."},
 }
+const PACK_ORDER := ["basic", "standard", "premium"]
+## Rarity weights for Mod Crates and other random draws.
 const PACK_WEIGHTS := {"common": 580, "uncommon": 250, "rare": 120, "epic": 40, "legendary": 10}
-const PACK_GUARANTEE_WEIGHTS := {
-	"rare": {"rare": 780, "epic": 180, "legendary": 40},
-	"epic": {"epic": 850, "legendary": 150},
-}
 
 ## Random mods: a Mod Crate in the Workshop, and a chance of finding one after a win.
 ## What you get is random, weighted by rarity (PACK_WEIGHTS).
 const MOD_CRATE_PRICE := 350
 const MOD_FIND_CHANCE := 0.12
 const STARTER_COINS := 150
-const STARTER_PACKS := 3
+## A new player starts with no cards, only these Basic Packs (about 100 cards).
+const STARTER_PACKS := 20
+const STARTER_PACK_KIND := "basic"
 const STARTER_DECK := {
 	"mossmunk": 2, "voltwig": 2, "cinderpaw": 2, "aquafin": 2, "sparkotter": 2,
 	"frostling": 2, "stoneback": 2, "galehopper": 2, "heat_gun": 2, "glue_stick": 1, "calipers": 1,
@@ -405,16 +420,13 @@ const TUTORIAL := {
 }
 
 ## ------------------------------------------------------------- Blueprints
-## Every card you own has a Blueprint: a tier (Mk I to Mk III), one mod once it
-## reaches Mk II, and a paint. Every copy of the card you print has them.
+## Every card you own has a Blueprint: a level (1 to 3), one mod from level 2 (a
+## second from level 3), and a paint. Every copy of the card in a battle has them.
 const MAX_TIER := 3
-## Coins to reach Mk II by rarity (Mk III costs 2.5x). A spare copy is spent too.
+## Coins to reach level 2 by rarity (level 3 costs 2.5x). Nothing else is spent.
 const TIER_COINS := {"common": 60, "uncommon": 100, "rare": 180, "epic": 320, "legendary": 600}
 ## Maker Rank needed to reach tier 1, 2, 3 (index = tier).
 const TIER_RANK := [0, 1, 3, 10]
-## Spare copies spent to reach each tier.
-const TIER_SPARES := [0, 0, 1, 3]
-const MAX_SPARES := 9
 
 ## `kinds` are the card types a mod fits. A mod trades something for something.
 const CARD_MODS_BASE := [
@@ -980,7 +992,7 @@ static func _apply_data_mod(d: Dictionary, m: Dictionary) -> void:
 		_cost_by(d, int(m["dcost"]))
 
 
-## How many mods a card at this tier carries: one from Mk II, two at Mk III.
+## How many mods a card at this tier carries: one from level 2, two at level 3.
 static func mod_slots(tier: int) -> int:
 	return clampi(tier - 1, 0, 2)
 
@@ -1046,7 +1058,7 @@ static func built(id: String, build: Dictionary) -> Dictionary:
 
 
 ## Builds cut down to what the deck can carry and the rules allow: only cards
-## in the deck, tier 1-3, mods only from Mk II (a second from Mk III) and only
+## in the deck, tier 1-3, mods only from level 2 (a second from level 3) and only
 ## ones that fit, a real paint.
 static func clean_builds(deck: Array, builds: Dictionary) -> Dictionary:
 	var out: Dictionary = {}

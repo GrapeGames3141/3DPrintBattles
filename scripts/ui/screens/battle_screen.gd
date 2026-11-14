@@ -1224,6 +1224,14 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 				Audio.sfx("burn")
 				UI.floater(_fx, "Heated!", node.center() + Vector2(0, -50), Color("ff8a3a"), 24)
 			await _wait(0.25)
+		"trig":
+			var tnode: BoardUnit = _units.get(int(e["uid"]))
+			if tnode != null:
+				tnode.pulse(UI.GOLD)
+				var label: String = str({"attack": "On Attack", "hurt": "On Hurt", "kill": "On Kill", "turn_start": "Turn Start", "turn_end": "Turn End",
+					"ally_print": "Ally Print", "foe_print": "Foe Print", "tool": "Tool", "ally_shatter": "Ally Shatter", "foe_shatter": "Foe Shatter"}.get(str(e["when"]), ""))
+				UI.floater(_fx, label, tnode.center() + Vector2(0, -70), UI.GOLD, 18)
+			await _wait(0.2)
 		"melt":
 			var node: BoardUnit = _units.get(int(e["uid"]))
 			if node != null:

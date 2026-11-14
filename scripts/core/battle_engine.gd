@@ -31,6 +31,7 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 		"over": false,
 		"winner": -1,
 		"uid": 1,
+		"depth": 0,
 		"players": [],
 	}
 	for seat in 2:
@@ -460,10 +461,14 @@ static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_
 			var slot: int = clampi(want_slot, 0, (p["board"] as Array).size())
 			var u := _summon(st, seat, c["id"], slot, ev, true, built)
 			_run(st, seat, def.get("on_print", []), {"target": target, "self": int(u["uid"])}, ev)
+			var arrived := {"trigger": "u%d" % int(u["uid"])}
+			_fire_board(st, seat, "ally_print", arrived, ev, int(u["uid"]))
+			_fire_board(st, 1 - seat, "foe_print", arrived, ev)
 		"tool":
 			_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
 			if int(p["tool_heal"]) > 0:
 				_heal(st, "p%d" % seat, int(p["tool_heal"]), ev)
+			_fire_board(st, seat, "tool", {}, ev)
 		"upgrade":
 			var u := unit_of(st, target)
 			if not u.is_empty():
@@ -506,6 +511,9 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 			_heat(st, target, 2, ev, seat)
 		if (u["kw"] as Array).has("thief"):
 			_steal(st, uid, target, 1 + int(st["players"][seat].get("thief_bonus", 0)), 0, 1, ev)
+	_fire_unit(st, u, "attack", {"target": target}, ev)
+	if not t.is_empty() and int(t["hp"]) <= 0:
+		_fire_unit(st, u, "kill", {"target": target}, ev)
 	_resolve(st, ev)
 	return ""
 
@@ -536,6 +544,10 @@ static func _end_turn(st: Dictionary, ev: Array) -> void:
 		if int(u["jam"]) > 0:
 			u["jam"] = 0
 			ev.append({"e": "unjam", "uid": int(u["uid"])})
+	_fire_board(st, seat, "turn_end", {}, ev)
+	_resolve(st, ev)
+	if st["over"]:
+		return
 	st["active"] = 1 - seat
 	_start_turn(st, ev)
 
@@ -562,6 +574,7 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 			u["heat"] = int(u["heat"]) - 1
 			ev.append({"e": "melt", "uid": int(u["uid"]), "n": int(u["heat"])})
 			_damage(st, "u%d" % int(u["uid"]), 1, ev)
+	_fire_board(st, seat, "turn_start", {}, ev)
 	# The Printer carries on with its long print before anything else.
 	var job: Dictionary = p["job"]
 	if not job.is_empty() and not job_ready(job):
@@ -595,8 +608,17 @@ static func _run(st: Dictionary, seat: int, effects: Array, ctx: Dictionary, ev:
 				for i in int(e["n"]):
 					_draw(st, seat, ev)
 			"filament":
-				# Extra nozzle time, this turn only.
-				p["flow"] = int(p["flow"]) + int(e["n"])
+				# Extra nozzle time, this turn only. The Printer is the one that got
+				# faster, so a long print still in progress takes it first.
+				var extra: int = int(e["n"])
+				var job: Dictionary = p["job"]
+				if not job.is_empty() and not job_ready(job):
+					var pay: int = mini(extra, int(job["cost"]) - int(job["paid"]))
+					job["paid"] = int(job["paid"]) + pay
+					extra -= pay
+					ev.append({"e": "job", "seat": seat, "card": {"uid": int(job["uid"]), "id": str(job["id"])}, "paid": int(job["paid"]),
+						"cost": int(job["cost"]), "start": false, "flow": int(p["flow"]), "spool": int(p["spool"])})
+				p["flow"] = int(p["flow"]) + extra
 				ev.append({"e": "fil", "seat": seat, "flow": int(p["flow"]), "spool": int(p["spool"])})
 			"spool":
 				p["spool"] = int(p["spool"]) + int(e["n"])
@@ -604,6 +626,14 @@ static func _run(st: Dictionary, seat: int, effects: Array, ctx: Dictionary, ev:
 			"armor":
 				p["armor"] = int(p["armor"]) + int(e["n"])
 				ev.append({"e": "armor", "seat": seat, "armor": int(p["armor"])})
+			"give":
+				_give(st, seat, str(e["card"]), ev)
+			"mill":
+				var deck: Array = st["players"][1 - seat]["deck"]
+				var lost := mini(int(e["n"]), deck.size())
+				for i in lost:
+					deck.pop_back()
+				ev.append({"e": "mill", "seat": 1 - seat, "n": lost, "left": deck.size()})
 			"summon":
 				for i in int(e["n"]):
 					if (p["board"] as Array).size() < GameData.MAX_BOARD:
@@ -627,6 +657,11 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 			var u := unit_of(st, ref)
 			if not u.is_empty():
 				_buff(u, int(e.get("atk", 0)), int(e.get("hp", 0)), e.get("kw", []))
+				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"refresh":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				u["attacks"] = 0
 				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
 		"jam":
 			var u := unit_of(st, ref)
@@ -661,6 +696,37 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 				twin["heat"] = 0
 				board.insert(mini(board.find(u) + 1, board.size()), twin)
 				ev.append({"e": "summon", "seat": seat, "unit": twin.duplicate(true), "slot": board.find(twin), "hand": false})
+
+
+## Triggered abilities (a creature's `trig` list): "attack", "hurt", "kill",
+## "turn_start", "turn_end", "ally_print", "foe_print", "tool", "ally_shatter",
+## "foe_shatter". Effects they cause can set off more triggers, so chains are cut
+## off at TRIGGER_DEPTH to keep every battle finite.
+const TRIGGER_DEPTH := 6
+
+
+static func _fire_unit(st: Dictionary, u: Dictionary, when: String, ctx: Dictionary, ev: Array) -> void:
+	if st["over"] or int(u["hp"]) <= 0 or int(st["depth"]) >= TRIGGER_DEPTH:
+		return
+	var fx: Array = []
+	for t in def_of(st, int(u["seat"]), u["id"]).get("trig", []):
+		if t["when"] == when:
+			fx.append_array(t["fx"])
+	if fx.is_empty():
+		return
+	var c: Dictionary = ctx.duplicate()
+	c["self"] = int(u["uid"])
+	st["depth"] = int(st["depth"]) + 1
+	ev.append({"e": "trig", "uid": int(u["uid"]), "when": when})
+	_run(st, int(u["seat"]), fx, c, ev)
+	st["depth"] = int(st["depth"]) - 1
+
+
+## Fires `when` on every print on a seat's bench except `skip_uid`.
+static func _fire_board(st: Dictionary, seat: int, when: String, ctx: Dictionary, ev: Array, skip_uid: int = -1) -> void:
+	for u in (st["players"][seat]["board"] as Array).duplicate():
+		if int(u["uid"]) != skip_uid:
+			_fire_unit(st, u, when, ctx, ev)
 
 
 ## Heats a print: it takes 1 damage at the start of each of its owner's turns
@@ -714,6 +780,13 @@ static func _refs(st: Dictionary, seat: int, to: String, ctx: Dictionary) -> Arr
 			out.append("p%d" % foe)
 		"own_printer":
 			out.append("p%d" % seat)
+		"random_enemy", "random_friendly":
+			var side: Array = st["players"][foe if to == "random_enemy" else seat]["board"]
+			if not side.is_empty():
+				out.append("u%d" % int((side[_rand(st, side.size())])["uid"]))
+		"trigger":
+			if str(ctx.get("trigger", "")) != "":
+				out.append(ctx["trigger"])
 		"enemy_prints":
 			for u in st["players"][foe]["board"]:
 				out.append("u%d" % int(u["uid"]))
@@ -765,6 +838,7 @@ static func _damage(st: Dictionary, ref: String, n: int, ev: Array) -> int:
 		return 0
 	u["hp"] = int(u["hp"]) - n
 	ev.append({"e": "damage", "target": ref, "n": n, "hp": int(u["hp"])})
+	_fire_unit(st, u, "hurt", {}, ev)
 	return n
 
 
@@ -877,6 +951,8 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 				ev.append({"e": "scrap", "seat": int(u["seat"]), "uid": int(u["uid"]), "n": int(owner["refund"]), "spool": int(owner["spool"])})
 		for u in dead:
 			_run(st, int(u["seat"]), def_of(st, int(u["seat"]), u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
+			_fire_board(st, int(u["seat"]), "ally_shatter", {}, ev)
+			_fire_board(st, 1 - int(u["seat"]), "foe_shatter", {}, ev)
 	var down0: bool = int(st["players"][0]["hp"]) <= 0
 	var down1: bool = int(st["players"][1]["hp"]) <= 0
 	if down0 and down1:

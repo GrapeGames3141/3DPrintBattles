@@ -289,12 +289,6 @@ func _build_grid() -> void:
 		look.tooltip_text = "Look at this card up close"
 		look.pressed.connect(_open_inspect.bind(id))
 		UI.place(_grid, look, pos + Vector2(cw - 30, ch_px + 2))
-		if owned < cap:
-			var craft := UI.button("Print %d" % Profile.craft_cost(id), "plain", Vector2(cw - 126, 26), 13)
-			craft.tooltip_text = "Print one copy of this card for Forge Coins"
-			craft.disabled = Profile.coins() < Profile.craft_cost(id)
-			craft.pressed.connect(_craft.bind(id))
-			UI.place(_grid, craft, pos + Vector2(90, ch_px + 2))
 
 
 func _build_deck() -> void:
@@ -316,15 +310,15 @@ func _build_deck() -> void:
 	y += 38.0
 	var p: Dictionary = GameData.printer(d["printer"])
 	_deck_panel.add_child(PrinterRig.make(p["id"], Profile.installed_mods(p["id"]), Rect2(x + 10, y + 60, 84, 76)))
-	UI.place(_deck_panel, UI.label(p["name"], 20, GameData.element_color(p["element"])), Vector2(x + 100, y + 62), Vector2(w - 200, 26))
+	UI.place(_deck_panel, UI.label("%s (active)" % p["name"], 20, GameData.element_color(p["element"])), Vector2(x + 100, y + 62), Vector2(w - 210, 26))
 	var pw := UI.label("%s: %s" % [p["power"]["name"], p["power"]["text"]], 13, UI.MUTED, false)
 	pw.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(_deck_panel, pw, Vector2(x + 100, y + 88), Vector2(w - 196, 50))
-	var swap := UI.button("Swap", "plain", Vector2(76, 40), 16)
+	var swap := UI.button("Change", "plain", Vector2(84, 40), 16)
 	swap.disabled = (Profile.data["printers"] as Array).size() < 2
-	swap.tooltip_text = "Use a different Printer you own for this deck"
+	swap.tooltip_text = "Pick the one Printer you battle with. Every deck uses it, and only its mods count."
 	swap.pressed.connect(_swap_printer)
-	UI.place(_deck_panel, swap, Vector2(x + w - 88, y + 76))
+	UI.place(_deck_panel, swap, Vector2(x + w - 96, y + 76))
 
 	var list: Array = d["cards"]
 	var err := Profile.deck_error(_slot)
@@ -448,8 +442,8 @@ func _pick_slot(i: int) -> void:
 
 func _swap_printer() -> void:
 	var owned: Array = Profile.data["printers"]
-	var i := owned.find(Profile.deck(_slot)["printer"])
-	Profile.deck_set_printer(_slot, owned[(i + 1) % owned.size()])
+	var i := owned.find(Profile.active_printer())
+	Profile.set_active_printer(owned[(i + 1) % owned.size()])
 	_refresh()
 
 
@@ -469,17 +463,6 @@ func _add(id: String) -> void:
 
 func _remove(id: String) -> void:
 	Profile.deck_remove(_slot, id)
-	_refresh()
-
-
-func _craft(id: String) -> void:
-	var err := Profile.craft(id)
-	if err != "":
-		Audio.sfx("error")
-		app.toast(err, UI.AMBER)
-		return
-	Audio.sfx("print")
-	app.toast("Printed %s!" % GameData.card(id)["name"], UI.GOOD)
 	_refresh()
 
 

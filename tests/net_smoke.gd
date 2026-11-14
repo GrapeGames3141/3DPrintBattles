@@ -28,6 +28,7 @@ func run() -> void:
 	var profile := root.get_node("Profile")
 	profile.data = profile.fresh()
 	profile.choose_starter("cinderpaw" if role == "host" else "aquafin")
+	profile.give_starter_deck()
 	app = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(app)
 	await wait(0.5)

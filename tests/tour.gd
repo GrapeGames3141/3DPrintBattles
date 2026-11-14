@@ -48,6 +48,7 @@ func run() -> void:
 		app.current._pick("cinderpaw")
 		await shot("starter")
 	profile.choose_starter("cinderpaw")
+	profile.give_starter_deck()
 	profile.data["coins"] = 900
 	await go("menu")
 	if want("menu"):
@@ -117,9 +118,9 @@ func run() -> void:
 		# A premium pack with a great card waiting under the top one.
 		app.current._open_kind = "premium"
 		app.current._open_cards = [
-			{"id": "heat_gun", "new": false, "recycled": 5}, {"id": "starloom", "new": true, "recycled": 0},
-			{"id": "glassdrake", "new": true, "recycled": 0}, {"id": "helm", "new": false, "recycled": 0},
-			{"id": "voltwig", "new": false, "recycled": 5}]
+			{"id": "heat_gun", "new": false, "lost": true}, {"id": "starloom", "new": true, "lost": false},
+			{"id": "glassdrake", "new": true, "lost": false}, {"id": "helm", "new": false, "lost": false},
+			{"id": "voltwig", "new": false, "lost": true}]
 		app.current._start_opener("sealed", 0)
 		await wait(0.9)
 		await shot("pack_premium")
@@ -143,7 +144,6 @@ func run() -> void:
 		profile.buy_paint("amber")
 		profile.set_paint("cinderpaw", "amber")
 		profile.set_card_mod("cinderpaw", "sharp_nozzle")
-		profile.data["spares"]["cinderpaw"] = 3
 		profile.upgrade_card("cinderpaw")
 		profile.buy_card_mod("infill")
 		profile.set_card_mod("cinderpaw", "infill")

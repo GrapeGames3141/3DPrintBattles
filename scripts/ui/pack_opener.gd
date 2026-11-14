@@ -441,8 +441,8 @@ func _tag_text(k: int) -> Array:
 	var info: Dictionary = cards[k]
 	var rarity: String = GameData.card(info["id"])["rarity"]
 	var rarity_name: String = GameData.RARITIES[rarity]["name"]
-	if int(info["recycled"]) > 0:
-		return ["Spare copy: +%d coins%s" % [int(info["recycled"]), ", +1 spare" if bool(info.get("spare", false)) else ""], UI.MUTED]
+	if bool(info.get("lost", false)):
+		return ["You already have the most copies", UI.MUTED]
 	if bool(info["new"]):
 		return ["NEW!  %s" % rarity_name, UI.GOLD if _rank(k) < 2 else _rarity_color(k)]
 	return [rarity_name, _rarity_color(k)]
@@ -539,15 +539,15 @@ func _build_summary(animate: bool) -> void:
 		_make_cards()
 		animate = false
 	var fresh := 0
-	var coins := 0
+	var lost := 0
 	for info in cards:
 		fresh += 1 if bool(info["new"]) else 0
-		coins += int(info["recycled"])
+		lost += 1 if bool(info.get("lost", false)) else 0
 	var parts: Array = []
 	if fresh > 0:
 		parts.append("%d new for your collection" % fresh)
-	if coins > 0:
-		parts.append("+%d coins from spare copies" % coins)
+	if lost > 0:
+		parts.append("%d extra cop%s not kept" % [lost, "y" if lost == 1 else "ies"])
 	_hint.text = ",  ".join(parts) if not parts.is_empty() else "More copies for your decks"
 
 	var s := _grid_scale()
@@ -567,7 +567,7 @@ func _build_summary(animate: bool) -> void:
 		else:
 			_put(card, spot, s)
 		var tag := _tag_text(k)
-		var label := UI.label(tag[0], 16 if int(cards[k]["recycled"]) > 0 else 20, tag[1], true, 6)
+		var label := UI.label(tag[0], 16 if bool(cards[k].get("lost", false)) else 20, tag[1], true, 6)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(self, label, Vector2(spot.x - CardView.W * s * 0.5 - 20, spot.y + half_h + 12), Vector2(CardView.W * s + 40, 28))
 		if animate:

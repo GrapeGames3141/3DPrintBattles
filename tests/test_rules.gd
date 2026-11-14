@@ -14,12 +14,14 @@ func _initialize() -> void:
 	_keywords()
 	_heat_and_theft()
 	_effects()
+	_triggers()
 	_limits()
 	_printing()
 	_mods()
 	_mods2()
 	_blueprints()
 	_progression()
+	_packs()
 	_random_mods()
 	_ranked()
 	_network_view()
@@ -90,9 +92,13 @@ func _catalog() -> void:
 		ids[c["id"]] = true
 		ok(GameData.RARITIES.has(c["rarity"]), c["id"] + " rarity")
 		ok(c["type"] in ["creature", "tool", "upgrade"], c["id"] + " type")
-		for list in [c.get("on_print", []), c.get("shatter", []), c.get("effects", [])]:
+		var lists: Array = [c.get("on_print", []), c.get("shatter", []), c.get("effects", [])]
+		for t in c.get("trig", []):
+			ok(t["when"] in ["attack", "hurt", "kill", "turn_start", "turn_end", "ally_print", "foe_print", "tool", "ally_shatter", "foe_shatter"], c["id"] + " trigger " + str(t["when"]))
+			lists.append(t["fx"])
+		for list in lists:
 			for e in list:
-				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal"], c["id"] + " op " + e["op"])
+				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill"], c["id"] + " op " + e["op"])
 				if e["op"] == "summon":
 					ok(GameData.has_card(e["card"]), c["id"] + " summons a real card")
 		for k in c.get("kw", []):
@@ -473,6 +479,199 @@ func _effects() -> void:
 	ok(int(st["players"][0]["board"][1]["atk"]) == 1, "...and only the first")
 
 
+## Triggered abilities: one test per ability, run through the real engine.
+func _triggers() -> void:
+	print("triggered abilities")
+	var made := 0
+	var texts := {}
+	for c in GameData.collectible():
+		if c.has("trig"):
+			made += 1
+			ok(not texts.has(c["text"]), "%s has an ability no other card has" % c["id"])
+			texts[c["text"]] = true
+	ok(made >= 32, "at least 32 cards carry a triggered ability (%d)" % made)
+	# Turn Start / Turn End
+	var st := game([], [])
+	var u := put(st, 0, "sproutling")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(u["hp"]) == 2 and int(u["atk"]) == 1, "Sproutling grows +0/+1 at the start of its owner's turn")
+	st = game([], [])
+	put(st, 0, "runemite")
+	st["players"][0]["hp"] = 10
+	act(st, 0, {"t": "end"})
+	ok(int(st["players"][0]["hp"]) == 11, "Runemite repairs the Printer at the end of the turn")
+	st = game([], [])
+	put(st, 0, "sparkbug")
+	var tgt := put(st, 1, "stoneback")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(tgt["hp"]) == 5, "Sparkbug pings a random enemy print at the start of its turn")
+	st = game([], [])
+	put(st, 0, "snowmite")
+	tgt = put(st, 1, "stoneback")
+	act(st, 0, {"t": "end"})
+	ok(int(tgt["jam"]) == 1, "Snowmite jams a random enemy print at the end of its turn")
+	st = game([], [])
+	put(st, 0, "seedpup")
+	var spool0: int = int(st["players"][0]["spool"])
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(st["players"][0]["spool"]) == spool0 + 1, "Seedpup adds 1 Filament to the Spool each turn")
+	st = game([], [])
+	put(st, 0, "zapkit")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(st["players"][0]["flow"]) == int(st["players"][0]["speed"]) + 1, "Zapkit gives +1 Print Speed at the start of its turn")
+	st = game([], [])
+	put(st, 0, "snowdrift")
+	put(st, 1, "stoneback")
+	put(st, 1, "mossmunk")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(st["players"][1]["board"][0]["hp"]) == 5 and int(st["players"][1]["board"][1]["hp"]) == 2, "Snowdrift hits every enemy print at the start of its turn")
+	st = game([], [])
+	u = put(st, 0, "chronocat")
+	u["hp"] = 1
+	act(st, 0, {"t": "end"})
+	ok(int(u["hp"]) == 3, "Chronocat repairs itself 2 at the end of the turn")
+	st = game([], [])
+	put(st, 0, "tidemaw")
+	st["players"][0]["hp"] = 10
+	act(st, 0, {"t": "end"})
+	ok(int(st["players"][0]["hp"]) == 12, "Tidemaw repairs the Printer 2 at the end of the turn")
+	st = game([], [])
+	put(st, 0, "glaciermaw")
+	tgt = put(st, 1, "stoneback")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(tgt["jam"]) == 1, "Glaciermaw jams a random enemy print at the start of its turn")
+	# On Attack
+	st = game([], [])
+	u = put(st, 0, "pinfeather")
+	var hand0: int = (st["players"][0]["hand"] as Array).size()
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "p1"})
+	ok((st["players"][0]["hand"] as Array).size() == hand0 + 1, "Pinfeather draws a card when it attacks")
+	st = game([], [])
+	u = put(st, 0, "sandpiper")
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "p1"})
+	ok(int(st["players"][0]["armor"]) == 1, "Sandpiper gives your Printer 1 Armor when it attacks")
+	st = game([], [])
+	u = put(st, 0, "gustkit")
+	var php: int = int(st["players"][1]["hp"])
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "p1"})
+	ok(int(st["players"][1]["hp"]) == php - 2, "Gustkit's attack also hurts the enemy Printer for 1 more")
+	st = game([], [])
+	u = put(st, 0, "lavalynx")
+	var a1 := put(st, 1, "stoneback")
+	var a2 := put(st, 1, "mossmunk")
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "u%d" % int(a1["uid"])})
+	ok(int(a2["hp"]) == 2, "Lavalynx's attack also hits every enemy print for 1")
+	st = game([], [])
+	u = put(st, 0, "basaltbison")
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "p1"})
+	ok(int(u["atk"]) == 4, "Basalt Bison gets +1 Attack each time it attacks")
+	st = game([], [])
+	u = put(st, 0, "granitegriffin")
+	php = int(st["players"][1]["hp"])
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "p1"})
+	ok(int(st["players"][1]["hp"]) == php - 6, "Granite Griffin adds 2 damage to the enemy Printer")
+	st = game([], [])
+	u = put(st, 0, "gustgriffin")
+	tgt = put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "u%d" % int(tgt["uid"])})
+	ok(int(tgt["hp"]) == 6 - 4 - 1 and int(u["hp"]) > 0, "Gustgriffin also pings a random enemy print")
+	# On Kill
+	st = game([], [])
+	u = put(st, 0, "reefhopper")
+	tgt = put(st, 1, "breezepup")
+	hand0 = (st["players"][0]["hand"] as Array).size()
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "u%d" % int(tgt["uid"])})
+	ok((st["players"][0]["hand"] as Array).size() == hand0 + 1, "Reefhopper draws a card when it destroys a print")
+	st = game([], [])
+	u = put(st, 0, "staticcub")
+	tgt = put(st, 1, "breezepup")
+	tgt["atk"] = 0
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "u%d" % int(tgt["uid"])})
+	ok(int(st["players"][0]["flow"]) == 11 - 0 and BattleEngine.find_unit(st, int(tgt["uid"])).is_empty(), "Staticcub destroyed it and gains +1 Print Speed")
+	st = game([], [])
+	u = put(st, 0, "gridstag")
+	tgt = put(st, 1, "breezepup")
+	act(st, 0, {"t": "attack", "unit": int(u["uid"]), "target": "u%d" % int(tgt["uid"])})
+	ok(int(u["attacks"]) == 0 and BattleEngine.can_attack(u), "Gridstag can attack again after it destroys a print")
+	# On Hurt
+	st = game([], [])
+	u = put(st, 0, "cairncrab")
+	var ev: Array = []
+	BattleEngine._damage(st, "u%d" % int(u["uid"]), 1, ev)
+	ok(int(u["atk"]) == 3, "Cairncrab gets +1 Attack when it is hurt")
+	st = game([], [])
+	u = put(st, 0, "pebblepup")
+	BattleEngine._damage(st, "u%d" % int(u["uid"]), 1, ev)
+	ok(int(st["players"][0]["armor"]) == 1, "Pebblepup gives your Printer 1 Armor when it is hurt")
+	st = game([], [])
+	u = put(st, 1, "slushpup")
+	var mine := put(st, 0, "mossmunk")
+	act(st, 0, {"t": "attack", "unit": int(mine["uid"]), "target": "u%d" % int(u["uid"])})
+	ok(int(mine["jam"]) == 1 and int(u["hp"]) == 1, "Slushpup jams a random enemy print when it is hurt")
+	# Ally / foe prints
+	st = game([], [])
+	u = put(st, 0, "mistwalker")
+	act(st, 0, {"t": "play", "hand": give(st, 0, "mossmunk")})
+	ok(int(u["atk"]) == 2, "Mistwalker gets +1 Attack whenever you print another print")
+	st = game([], [])
+	u = put(st, 0, "capacitor")
+	act(st, 0, {"t": "play", "hand": give(st, 0, "kilnpup")})
+	var kp: Dictionary = st["players"][0]["board"][1]
+	ok(int(kp["atk"]) == 3, "Capacitor gives each print that arrives +1 Attack")
+	st = game([], [])
+	u = put(st, 1, "cloudhopper")
+	act(st, 0, {"t": "play", "hand": give(st, 0, "mossmunk")})
+	ok(int(u["atk"]) == 2, "Cloudhopper gets +1 Attack when an enemy print arrives")
+	st = game([], [])
+	put(st, 1, "gravelhopper")
+	act(st, 0, {"t": "play", "hand": give(st, 0, "mossmunk")})
+	ok(int(st["players"][0]["board"][0]["hp"]) == 2, "Gravelhopper hits an arriving enemy print for 1")
+	# On Tool
+	st = game([], [])
+	u = put(st, 0, "glyphhare")
+	tgt = put(st, 1, "stoneback")
+	act(st, 0, {"t": "play", "hand": give(st, 0, "heat_gun"), "target": "u%d" % int(tgt["uid"])})
+	ok(int(u["atk"]) == 3 and int(u["hp"]) == 4, "Glyphhare gets +1/+1 when you use a tool")
+	st = game([], [])
+	put(st, 0, "voidmoth")
+	st["players"][0]["hp"] = 10
+	tgt = put(st, 1, "stoneback")
+	act(st, 0, {"t": "play", "hand": give(st, 0, "heat_gun"), "target": "u%d" % int(tgt["uid"])})
+	ok(int(st["players"][0]["hp"]) == 12, "Voidmoth repairs your Printer 2 when you use a tool")
+	# Shatter triggers
+	st = game([], [])
+	put(st, 0, "bubbleray")
+	var doomed := put(st, 0, "breezepup")
+	st["players"][0]["hp"] = 10
+	doomed["hp"] = 0
+	BattleEngine._resolve(st, ev)
+	ok(int(st["players"][0]["hp"]) == 11, "Bubbleray repairs the Printer when another of your prints is destroyed")
+	st = game([], [])
+	u = put(st, 0, "monolith")
+	doomed = put(st, 0, "breezepup")
+	doomed["hp"] = 0
+	BattleEngine._resolve(st, ev)
+	ok(int(u["atk"]) == 5, "Monolith gets +2 Attack when one of your prints is destroyed")
+	st = game([], [])
+	u = put(st, 0, "bramblemaw")
+	doomed = put(st, 1, "breezepup")
+	doomed["hp"] = 0
+	BattleEngine._resolve(st, ev)
+	ok(int(u["atk"]) == 4 and int(u["hp"]) == 6, "Bramblemaw gets +1/+1 when an enemy print is destroyed")
+	# New effects and limits
+	st = game([], [])
+	var deck1: int = (st["players"][1]["deck"] as Array).size()
+	BattleEngine._run(st, 0, [{"op": "mill", "n": 3}, {"op": "give", "card": "heat_gun"}], {}, ev)
+	ok((st["players"][1]["deck"] as Array).size() == deck1 - 3 and st["players"][0]["hand"][-1]["id"] == "heat_gun", "mill empties the foe's deck and give adds a card to your hand")
+	ok(int(st["depth"]) == 0, "trigger depth is back to zero after a chain")
+
+
 func _limits() -> void:
 	print("limits")
 	var st := game([], [])
@@ -538,6 +737,23 @@ func _printing() -> void:
 		if e["e"] == "summon":
 			summon = e
 	ok(bool(summon.get("built", false)), "the summon is marked as already built")
+
+	# Print Speed gained mid-turn goes to a long print still in progress first.
+	st = slow_game()
+	p0 = st["players"][0]
+	act(st, 0, {"t": "play", "hand": give(st, 0, "ironmaw")})
+	ok(int(p0["job"]["paid"]) == 3 and int(p0["flow"]) == 0, "a 5-cost print has 3 of 5 paid")
+	p0["flow"] = 1
+	res = act(st, 0, {"t": "play", "hand": give(st, 0, "spare_spool")})
+	ok(res["ok"] and int(p0["job"]["paid"]) == 5 and BattleEngine.job_ready(p0["job"]) and int(p0["flow"]) == 0, "Spare Spool's +2 Print Speed finishes it (the 1 Filament it cost is spent)")
+	var jev := false
+	for e in res["events"]:
+		jev = jev or (e["e"] == "job" and int(e["paid"]) == 5)
+	ok(jev and BattleEngine.legal_actions(st, 0).has({"t": "deploy"}), "the job event is sent and it can be deployed now")
+	p0["job"] = {}
+	p0["flow"] = 1
+	act(st, 0, {"t": "play", "hand": give(st, 0, "spare_spool")})
+	ok(int(p0["flow"]) == 2, "with no print in progress the extra speed stays on hand")
 
 	# A long print that needs a target picks it when it is deployed.
 	st = slow_game()
@@ -771,6 +987,7 @@ func fresh_profile() -> Node:
 	pr.path = "user://test_profile_rules.json"
 	pr.data = pr.fresh()
 	pr.choose_starter("cinderpaw")
+	pr.give_starter_deck()
 	return pr
 
 
@@ -837,6 +1054,13 @@ func _progression() -> void:
 	ok(pr.install_mod("ember_forge", "spool_rack") != "", "the Rack cannot go on a Printer with no Spool")
 	ok(pr.install_mod("stone_kiln", "spool_rack") == "", "but it goes on the Printer that has the Spool")
 	ok(pr.install_mod("ember_forge", "spool") == "" and not pr.installed_mods("stone_kiln").has("spool_rack"), "moving the Spool back drops the Rack again")
+
+	# One active Printer, for every deck.
+	ok(pr.active_printer() == "ember_forge" and pr.deck(0)["printer"] == "ember_forge" and pr.deck(2)["printer"] == "ember_forge", "the starter Printer is the active one, on every deck")
+	ok(pr.set_active_printer("stone_kiln") == "" and pr.active_printer() == "stone_kiln" and pr.deck(0)["printer"] == "stone_kiln" and pr.deck(1)["printer"] == "stone_kiln", "choosing another makes every deck use it")
+	ok(pr.set_active_printer("nope") != "" and pr.set_active_printer("delta_rig") != "" and pr.active_printer() == "stone_kiln", "a Printer you do not own cannot be active")
+	ok(pr.battle_mods(pr.deck(0)["printer"]) == pr.battle_mods("stone_kiln") and not pr.battle_mods("stone_kiln").has("spool_rack"), "a battle takes only the active Printer's mods")
+	pr.set_active_printer("ember_forge")
 
 	# Upgrades: levels, price, rank, and what a level does in a battle.
 	ok(GameData.mod_effect("stepper", 1) == 1 and GameData.mod_effect("stepper", 4) == 4 and GameData.mod_effect("stepper", 9) == 4, "Stepper Motors add 1 Filament a turn per level, up to 4")
@@ -946,9 +1170,94 @@ func _progression() -> void:
 	ok(int(p3.data["version"]) == Profile.SAVE_VERSION and not p3.data.has("installed") and not p3.data.has("mods"), "and the save is on version 4")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
 	p3.free()
+	# A version 4 save may hold spare copies: they come back as coins and the key goes.
+	var v4 := {"version": 4, "started": true, "coins": 100, "printers": ["ember_forge", "stone_kiln"], "mod_items": [{"id": "spool", "lvl": 1, "on": "ember_forge"}],
+		"cards": {"mossmunk": 2}, "spares": {"mossmunk": 2, "starloom": 1},
+		"decks": [{"cards": [], "printer": "stone_kiln"}, {"cards": [], "printer": "ember_forge"}, {"cards": [], "printer": "ember_forge"}]}
+	f = FileAccess.open("user://test_profile_rules.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(v4))
+	f.close()
+	var p4: Node = load("res://scripts/core/profile.gd").new()
+	p4.path = "user://test_profile_rules.json"
+	p4.data = p4.fresh()
+	p4.load_profile()
+	var starloom_worth: int = {"common": 40, "uncommon": 80, "rare": 160, "epic": 400, "legendary": 1000}[GameData.card("starloom")["rarity"]]
+	ok(p4.coins() == 100 + 2 * 40 + int(starloom_worth) and not p4.data.has("spares"), "spare copies in an older save come back as coins (%d)" % p4.coins())
+	ok(p4.installed_mods("ember_forge") == ["spool"] and int(p4.data["version"]) == Profile.SAVE_VERSION, "and the mods and version are right")
+	ok(p4.active_printer() == "stone_kiln" and p4.deck(1)["printer"] == "stone_kiln", "an older save's active deck decides the active Printer")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
+	p4.free()
 	pv.free()
 	pr.free()
 	pm.free()
+
+
+func _packs() -> void:
+	print("packs and the new player")
+	var pn: Node = load("res://scripts/core/profile.gd").new()
+	pn.path = "user://test_profile_rules.json"
+	pn.data = pn.fresh()
+	pn.choose_starter("cinderpaw")
+	var owned_total := 0
+	for id in pn.data["cards"]:
+		owned_total += int(pn.data["cards"][id])
+	ok(owned_total == 0 and pn.packs("basic") == GameData.STARTER_PACKS and GameData.STARTER_PACKS * 5 >= 100, "a new player has no cards, only %d Basic Packs (%d cards)" % [GameData.STARTER_PACKS, GameData.STARTER_PACKS * 5])
+	ok(pn.deck_error(0) != "" and (pn.deck(0)["cards"] as Array).is_empty(), "so the first deck is empty")
+	ok(pn.deck_add(0, "mossmunk") != "", "a card you have never opened cannot go in a deck")
+	pn.data["coins"] = 100000
+	ok(not pn.has_method("craft") and not pn.has_method("craft_spare") and not pn.has_method("spares"), "printing for coins and spare copies are gone: a card only comes from a pack")
+	var commons := 0
+	var seen := 0
+	for i in GameData.STARTER_PACKS:
+		for c in pn.open_pack("basic"):
+			seen += 1
+			if GameData.card(str(c["id"]))["rarity"] == "common":
+				commons += 1
+	ok(seen == GameData.STARTER_PACKS * 5 and pn.packs("basic") == 0, "the packs open to %d cards" % seen)
+	ok(commons >= int(seen * 0.6), "most of them are Common (%d of %d)" % [commons, seen])
+	pn.deck_autofill(0)
+	ok(pn.deck_error(0) == "", "and they are enough for a legal deck (%d cards)" % (pn.deck(0)["cards"] as Array).size())
+	var extras := 0
+	for kind2 in ["basic"]:
+		pn.data["packs"][kind2] = 60
+		for i in 60:
+			for c in pn.open_pack(kind2):
+				extras += 1 if bool(c["lost"]) else 0
+	var over := false
+	for id in pn.data["cards"]:
+		over = over or int(pn.data["cards"][id]) > GameData.max_copies(str(id))
+	ok(extras > 0 and not over, "extra copies past the limit are lost (%d lost), never kept" % extras)
+	# Pack odds: every pack can give good cards, and the better packs give more.
+	for kind in GameData.PACK_ORDER:
+		var def: Dictionary = GameData.PACKS[kind]
+		var total := 0
+		for r in def["weights"]:
+			total += int(def["weights"][r])
+		ok(total == 10000, "%s odds add up to 10000 (%d)" % [kind, total])
+		for r in GameData.RARITY_ORDER:
+			ok(int(def["weights"].get(r, 0)) > 0, "%s can give a %s card" % [kind, r])
+	ok(int(GameData.PACKS["basic"]["price"]) < int(GameData.PACKS["standard"]["price"]) and int(GameData.PACKS["standard"]["price"]) < int(GameData.PACKS["premium"]["price"]), "better packs cost more")
+	var rare_up := {"basic": 0, "standard": 0, "premium": 0}
+	var floor_ok := true
+	var rich: Node = fresh_profile()
+	for kind in GameData.PACK_ORDER:
+		rich.data["packs"][kind] = 400
+		for i in 400:
+			var got: Array = rich.open_pack(kind)
+			var best := 0
+			for c in got:
+				best = maxi(best, GameData.RARITY_ORDER.find(GameData.card(str(c["id"]))["rarity"]))
+			if best >= 2:
+				rare_up[kind] += 1
+			var want: String = GameData.PACKS[kind]["guarantee"]
+			if want != "" and best < GameData.RARITY_ORDER.find(want):
+				floor_ok = false
+	ok(floor_ok, "Blueprint Packs always hold an Uncommon+ and Golden Spool Packs an Epic+")
+	ok(int(rare_up["basic"]) < int(rare_up["standard"]) and int(rare_up["standard"]) < int(rare_up["premium"]), "Rare or better turns up more in better packs (%s of 400)" % str(rare_up))
+	ok(int(rare_up["basic"]) > 0, "even Basic Packs sometimes hold a Rare or better")
+	rich.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
+	pn.free()
 
 
 func _random_mods() -> void:
@@ -1083,30 +1392,29 @@ func _blueprints() -> void:
 
 	# Profile: the Blueprint shop.
 	var pr := fresh_profile()
-	ok(pr.build_of("mossmunk")["tier"] == 1 and pr.spares("mossmunk") == 0, "everything starts at Mk I")
+	ok(pr.build_of("mossmunk")["tier"] == 1, "everything starts at Level 1")
 	pr.data["coins"] = 100000
 	pr.data["xp"] = 0
-	ok(pr.tier_error("mossmunk") != "", "Mk II needs rank and a spare copy")
+	ok(pr.tier_error("mossmunk") != "", "Level 2 needs Maker Rank")
 	pr.data["xp"] = 1000
-	ok(pr.tier_error("mossmunk").begins_with("Needs 1 spare"), "...and the spare copy is what is missing")
+	ok(pr.tier_error("mossmunk") == "", "...and with rank only coins are needed (no spare copies)")
+	var owned_before: int = pr.owned_count("mossmunk")
+	var coins_before: int = pr.coins()
 	var r1: Dictionary = pr.add_card("mossmunk")
-	ok(not bool(r1["new"]) and int(r1["recycled"]) > 0 and bool(r1["spare"]) and pr.spares("mossmunk") == 1, "a duplicate beyond the deck limit is kept as a spare (and pays a little)")
+	if owned_before >= GameData.max_copies("mossmunk"):
+		ok(bool(r1["lost"]) and pr.owned_count("mossmunk") == owned_before and pr.coins() == coins_before, "a card beyond the deck limit is simply lost")
 	var c1: int = pr.coins()
-	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 2, "Mk II")
-	ok(c1 - pr.coins() == GameData.tier_coins("mossmunk", 2) and pr.spares("mossmunk") == 0, "it cost coins and the spare")
+	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 2, "Level 2")
+	ok(c1 - pr.coins() == GameData.tier_coins("mossmunk", 2), "it cost coins only")
 	ok(pr.set_card_mod("mossmunk", "sharp_nozzle") != "", "a mod must be unlocked first")
 	ok(pr.buy_card_mod("sharp_nozzle") == "" and pr.set_card_mod("mossmunk", "sharp_nozzle") == "", "unlock it, then fit it")
 	ok(pr.set_card_mod("mossmunk", "heat_gun") != "" and pr.set_card_mod("mossmunk", "overcharge") != "", "only a known mod that fits (not a tool mod on a creature)")
-	ok(pr.set_card_mod("voltwig", "sharp_nozzle") == "Mods fit from Mk II.", "a Mk I card has no mod slot yet")
+	ok(pr.set_card_mod("voltwig", "sharp_nozzle") == "Mods fit from Level 2.", "a Level 1 card has no mod slot yet")
 	ok(pr.set_paint("mossmunk", "gold") != "", "an unbought paint cannot be applied")
 	pr.data["xp"] = 100000
 	ok(pr.buy_paint("gold") == "" and pr.set_paint("mossmunk", "gold") == "", "a bought paint can be applied")
 	ok(pr.builds_for(["mossmunk", "mossmunk", "voltwig"]) == {"mossmunk": {"tier": 2, "mod": "sharp_nozzle", "mod2": "", "paint": "gold"}}, "a battle takes the Blueprints of the cards in the deck")
-	ok(pr.upgrade_card("mossmunk") != "", "Mk III needs three spares")
-	for i in 3:
-		pr.add_card("mossmunk")
-	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 3 and pr.upgrade_card("mossmunk") != "", "Mk III, and that is the top")
-	ok(pr.craft_spare("mossmunk") == "" and pr.spares("mossmunk") == 1, "a spare can be printed for coins")
+	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 3 and pr.upgrade_card("mossmunk") != "", "Level 3, and that is the top")
 	# Mk III carries two mods; Mk II only one.
 	ok(pr.card_mods_on("mossmunk") == ["sharp_nozzle"], "Mk III keeps the mod fitted at Mk II")
 	ok(pr.buy_card_mod("infill") == "" and pr.set_card_mod("mossmunk", "infill") == "", "a second mod fits at Mk III")

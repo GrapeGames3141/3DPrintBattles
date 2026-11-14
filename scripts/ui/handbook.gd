@@ -23,6 +23,12 @@ const GLOSSARY := [
 	["Armor", "Shields a Printer. Damage comes off Armor before Health. It stays until it is used up."],
 	["Shatter", "What a print does when it is destroyed. Its owner also gets 1 Filament back on the Spool."],
 	["On Print", "What a print does the moment it arrives on the bench."],
+	["Turn Start / Turn End", "Happens to the print on its owner's turn: at the start (after Heat) or the end. Seedpup adds Filament, Chronocat repairs itself."],
+	["On Attack / On Kill", "When the print attacks, or when its attack destroys a print. Courier draws a card; Gridstag can attack again."],
+	["On Hurt", "When the print takes damage and survives. Cairncrab gets angrier; Pebblepup armours your Printer."],
+	["On Ally Print / On Foe Print", "When another of your prints arrives, or when an enemy print does. Capacitor powers up each new print; Gravelhopper hits the enemy ones."],
+	["On Tool", "When you use a tool. Glyphhare grows, Voidmoth repairs your Printer."],
+	["On Ally / Foe Shatter", "When one of your prints, or one of theirs, is destroyed. Monolith and Bramblemaw both grow."],
 	["Fresh", "A print that has only just arrived. The tag says COOLING. It can attack from your next turn, unless it has Rush."],
 ]
 
@@ -101,11 +107,11 @@ static func _fill(col: VBoxContainer, chapter: int, width: float) -> void:
 			_entry(col, width, "star", UI.GOLD, "Elements", "Eight elements: Fire, Water, Lightning, Nature, Ice, Stone, Wind and Arcane. A print that shares its Printer's element gets +1 Health.")
 			_entry(col, width, "hex", UI.CYAN, "Rarity", "Common, Uncommon, Rare, Epic and Legendary, shown by the colour of the card's frame. Rarer cards cost more and do more.")
 		4:
-			_entry(col, width, "burst", UI.GOLD, "Packs", "Win battles and finish the campaign to earn packs. Open them in Card Packs. Spare copies of a card are kept for Blueprints.")
-			_entry(col, width, "cube", UI.AMBER, "Blueprints", "Spend coins and a spare copy to take a card from Mk I to Mk II and Mk III: stronger or cheaper. A card takes one mod at Mk II and a second at Mk III, and can be painted. Every copy you print has it.")
-			_entry(col, width, "gear", UI.CYAN, "Printer mods", "Bought in the Workshop. Each copy fits one Printer at a time and moves freely between Printers; buy extra copies to fit the same mod on several. A Printer carries one of each mod, and some mods need others fitted first. Upgrade a fitted mod for coins and Maker Rank to make it stronger: Stepper Motors reach +4 Filament a turn. A Printer's Tune adds up its mods, and ranked opponents match yours.")
+			_entry(col, width, "burst", UI.GOLD, "Packs", "You start with no cards, only Basic Packs: open them in Card Packs to find your cards. Basic Packs are nearly all Common; Blueprint Packs always hold an Uncommon or better, and Golden Spool Packs an Epic or better. Every pack can give a good card, the better packs just do it far more often. A card only goes in a deck once you have opened it.")
+			_entry(col, width, "cube", UI.AMBER, "Blueprints", "Spend coins to take a card from Level 1 to Level 2 and Level 3: stronger or cheaper. Level 2 adds a mod slot and Level 3 a second one, and you can paint the card. Every copy of the card in your decks has it.")
+			_entry(col, width, "gear", UI.CYAN, "Printer mods", "You battle with one active Printer, chosen in the Workshop (Use) or in Collection (Change): every deck uses it and only its mods count. Mods are bought in the Workshop. Each copy fits one Printer at a time and moves freely between Printers; buy extra copies to fit the same mod on several. A Printer carries one of each mod, and some mods need others fitted first. Upgrade a fitted mod for coins and Maker Rank to make it stronger: Stepper Motors reach +4 Filament a turn. A Printer's Tune adds up its mods, and ranked opponents match yours.")
 			_entry(col, width, "star", UI.GOLD, "Maker Rank", "Every battle gives XP. Higher ranks unlock Printers, mods and Blueprint tiers in the shops.")
-			_entry(col, width, "coin", UI.GOLD, "Coins", "Earn coins from battles and spare copies. Spend them on packs, printing a card directly, Printers, mods and Blueprints.")
+			_entry(col, width, "coin", UI.GOLD, "Coins", "Earn coins from battles. Spend them on packs, Printers, mods, card levels and paints.")
 
 
 static func _entry(col: VBoxContainer, width: float, icon: String, color: Color, head: String, text: String) -> void:

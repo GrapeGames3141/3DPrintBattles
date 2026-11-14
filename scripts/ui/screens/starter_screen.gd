@@ -14,7 +14,7 @@ func build() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(self, title, Vector2(20, 110 if P else 28), Vector2(W - 40, 96 if P else 56))
-	var sub := UI.label("Choose your first print. It comes with a Printer, a starter deck and three card packs.", 19 if P else 21, UI.MUTED, false)
+	var sub := UI.label("Choose your first print. It comes with a Printer and 20 card packs. Every card you play has to be opened from a pack.", 19 if P else 21, UI.MUTED, false)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(self, sub, Vector2(30, 216 if P else 88), Vector2(W - 60, 56 if P else 30))

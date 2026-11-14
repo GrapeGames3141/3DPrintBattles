@@ -1,10 +1,10 @@
 extends GameScreen
 ## Blueprints: improve a card you own. Every copy you print afterwards has it.
-## A card goes Mk I, Mk II, Mk III (spending coins and a spare copy each time),
-## can carry one mod from Mk II, and can be painted any colour you own.
+## A card goes up to level 2 and level 3 for coins, can carry one mod from level
+## 2 (a second from level 3), and can be painted any colour you own.
 
 const FILTERS := [["All", ""], ["Prints", "creature"], ["Tools", "tool"], ["Armor", "upgrade"]]
-const TIER_NAMES := ["", "Mk I", "Mk II", "Mk III"]
+const TIER_NAMES := ["", "Level 1", "Level 2", "Level 3"]
 
 var _sel := ""
 var _filter := ""
@@ -140,7 +140,7 @@ func _editor() -> void:
 	var title := UI.label("%s   %s" % [def["name"], TIER_NAMES[tier]], 28 if not P else 22, UI.GOLD, true, 5)
 	UI.place(content, title, Vector2(0, y), Vector2(w, 36))
 	y += 40.0
-	var spare := UI.label("Spare copies: %d    Maker Rank %d" % [Profile.spares(_sel), Profile.rank_level()], 16, UI.MUTED, false)
+	var spare := UI.label("Maker Rank %d" % Profile.rank_level(), 16, UI.MUTED, false)
 	UI.place(content, spare, Vector2(0, y), Vector2(w, 22))
 	y += 32.0
 	y = _tier_section(content, y, w, tier)
@@ -155,23 +155,23 @@ func _content_height(w: float) -> float:
 			mods += 1
 	var per_row := maxi(int((w + 8.0) / 76.0), 1)
 	var paint_rows := ceili(float(GameData.PAINTS.size()) / per_row)
-	return 40.0 + 32.0 + 250.0 + 70.0 + mods * 70.0 + 70.0 + paint_rows * 92.0 + 40.0
+	return 40.0 + 32.0 + 200.0 + 70.0 + mods * 70.0 + 70.0 + paint_rows * 92.0 + 40.0
 
 
 func _tier_section(content: Control, y: float, w: float, tier: int) -> float:
-	UI.place(content, UI.label("Tier", 20, UI.CREAM), Vector2(0, y), Vector2(w, 26))
+	UI.place(content, UI.label("Level", 20, UI.CREAM), Vector2(0, y), Vector2(w, 26))
 	y += 30.0
 	for t in range(1, GameData.MAX_TIER + 1):
 		var on := t <= tier
 		UI.panel(content, Rect2(0, y, w, 46), UI.box(Color(0.04, 0.07, 0.14, 0.9), UI.GOLD if t == tier else (UI.BRASS_DARK if on else Color("2a3346")), 2, 12))
-		UI.place(content, UI.label(TIER_NAMES[t], 19, UI.GOLD if on else UI.MUTED), Vector2(14, y + 10), Vector2(70, 26))
+		UI.place(content, UI.label(TIER_NAMES[t], 19, UI.GOLD if on else UI.MUTED), Vector2(14, y + 10), Vector2(90, 26))
 		var gain := _gain_text(t)
 		var l := UI.label(gain, 15, UI.CREAM if on else UI.MUTED, false)
 		l.clip_text = true
-		UI.place(content, l, Vector2(86, y + 12), Vector2(w - 100, 24))
+		UI.place(content, l, Vector2(106, y + 12), Vector2(w - 120, 24))
 		y += 52.0
 	if tier >= GameData.MAX_TIER:
-		UI.place(content, UI.label("Fully built.", 18, UI.GOOD), Vector2(0, y + 4), Vector2(w, 26))
+		UI.place(content, UI.label("Top level.", 18, UI.GOOD), Vector2(0, y + 4), Vector2(w, 26))
 		y += 34.0
 	else:
 		var next := tier + 1
@@ -181,24 +181,11 @@ func _tier_section(content: Control, y: float, w: float, tier: int) -> float:
 		up.pressed.connect(_upgrade)
 		UI.place(content, up, Vector2(0, y + 4))
 		var cost := "%d coins" % GameData.tier_coins(_sel, next)
-		if int(GameData.TIER_SPARES[next]) > 0:
-			cost += "  +  %d spare" % int(GameData.TIER_SPARES[next])
 		var info := UI.label(err if err != "" else cost, 14, UI.AMBER if err != "" else UI.MUTED, false)
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.place(content, info, Vector2(0, y + 60), Vector2(w, 40))
 		y += 92.0
-	var craft_cost := Profile.craft_cost(_sel)
-	var spare := UI.button("Print a spare  (%d)" % craft_cost, "plain", Vector2(minf(w, 300.0), 44), 17)
-	spare.disabled = Profile.coins() < craft_cost or Profile.spares(_sel) >= GameData.MAX_SPARES
-	spare.pressed.connect(func():
-		var e := Profile.craft_spare(_sel)
-		if e != "":
-			_fail(e)
-		else:
-			Audio.sfx("print")
-			relayout())
-	UI.place(content, spare, Vector2(0, y))
-	return y + 60.0
+	return y + 8.0
 
 
 ## What reaching a tier adds, in words.
@@ -233,7 +220,7 @@ func _mod_section(content: Control, y: float, w: float, tier: int, build: Dictio
 	UI.place(content, UI.label(head, 20, UI.CREAM), Vector2(0, y), Vector2(w, 26))
 	y += 30.0
 	if tier < 2:
-		var lock := UI.label("A mod fits a card from Mk II, and a second one at Mk III. Each mod gives something and takes something.", 15, UI.MUTED, false)
+		var lock := UI.label("A mod fits a card from Level 2, and a second one at Level 3. Each mod gives something and takes something.", 15, UI.MUTED, false)
 		lock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.place(content, lock, Vector2(0, y), Vector2(w, 44))
 		return y + 60.0

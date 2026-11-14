@@ -118,7 +118,7 @@ func _printer_cell(p: Dictionary, pos: Vector2) -> void:
 	var col := GameData.element_color(p["element"])
 	var owned := Profile.owns_printer(id)
 	var rank_ok := Profile.rank_level() >= Profile.printer_rank(id)
-	var cell := UI.panel(_body, Rect2(pos, Vector2(250, 318)), UI.box(Color(UI.PANEL, 0.95), col if owned else UI.BRASS_DARK, 3 if owned else 2, 14, 6))
+	var cell := UI.panel(_body, Rect2(pos, Vector2(250, 318)), UI.box(Color(UI.PANEL, 0.95), UI.GOLD if (owned and Profile.active_printer() == id) else (col if owned else UI.BRASS_DARK), 4 if (owned and Profile.active_printer() == id) else (3 if owned else 2), 14, 6))
 	var img := PrinterRig.make(id, Profile.installed_mods(id) if owned else [], Rect2(55, 6, 140, 124))
 	if not owned:
 		img.modulate = Color(0.55, 0.58, 0.66) if rank_ok else Color(0.3, 0.32, 0.38)
@@ -134,9 +134,19 @@ func _printer_cell(p: Dictionary, pos: Vector2) -> void:
 	pw.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(cell, pw, Vector2(10, 180), Vector2(230, 62))
 	if owned:
-		var b := UI.button("Mods  (%d fitted)" % Profile.installed_mods(id).size(), "go", Vector2(200, 46), 19)
+		var b := UI.button("Mods (%d)" % Profile.installed_mods(id).size(), "plain", Vector2(112, 46), 17)
 		b.pressed.connect(func(): _open_install(id))
-		UI.place(cell, b, Vector2(25, 256))
+		UI.place(cell, b, Vector2(10, 256))
+		var active := Profile.active_printer() == id
+		var use := UI.button("ACTIVE" if active else "Use", "go" if active else "primary", Vector2(112, 46), 17)
+		use.disabled = active
+		use.tooltip_text = "The Printer you battle with. Only its mods count."
+		use.pressed.connect(func():
+			Profile.set_active_printer(id)
+			Audio.sfx("buy")
+			app.toast("%s is your battle Printer." % p["name"], UI.GOOD)
+			relayout())
+		UI.place(cell, use, Vector2(128, 256))
 	elif not rank_ok:
 		var lock := UI.label("Needs Maker Rank %d" % Profile.printer_rank(id), 17, UI.AMBER)
 		lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

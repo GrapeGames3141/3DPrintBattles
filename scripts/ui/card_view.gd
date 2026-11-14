@@ -309,9 +309,9 @@ func _vs(now: int, base: int, lower_is_better: bool) -> Color:
 	return UI.GOOD if (now < base) == lower_is_better else Color("ff8a8a")
 
 
-## "Mk II" marker for a built-up card (a gold tag under the cost badge).
+## "Lv 2" marker for a built-up card (a gold tag under the cost badge).
 func _tier_tag(tier: int) -> void:
-	var names := ["", "", "Mk II", "Mk III"]
+	var names := ["", "", "Lv 2", "Lv 3"]
 	var tag := UI.panel(self, Rect2(56, 8, 72, 28), UI.box(Color("0b1220"), UI.GOLD, 2, 14))
 	tag.z_index = 3
 	var l := UI.label(names[tier], 16, UI.GOLD)

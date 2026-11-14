@@ -53,7 +53,7 @@ func _build(margin: float) -> void:
 		_mat.set_shader_parameter("art_aspect", (tex.get_width() * region.z) / (tex.get_height() * region.w))
 
 	var ink := Color(def["foil_deep"]).darkened(0.55)
-	var brand := UI.label("PRINTFORGE LEGENDS", 15, Color(1, 1, 1, 0.92), true, 4)
+	var brand := UI.label("3D PRINT ARENA", 15, Color(1, 1, 1, 0.92), true, 4)
 	brand.add_theme_color_override("font_outline_color", Color(ink, 0.85))
 	brand.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(self, brand, Vector2(0, 62), Vector2(W, 22))
@@ -63,12 +63,12 @@ func _build(margin: float) -> void:
 	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	UI.place(self, nm, Vector2(0, 360), Vector2(W, 50))
-	var promise := "%d CARDS  -  %s OR BETTER INSIDE" % [int(def["size"]), str(GameData.RARITIES[def["guarantee"]]["name"]).to_upper()]
+	var promise := "%d CARDS  -  %s OR BETTER INSIDE" % [int(def["size"]), str(GameData.RARITIES[def["guarantee"]]["name"]).to_upper()] if def["guarantee"] != "" else "%d CARDS  -  MOSTLY COMMON" % int(def["size"])
 	var sub := UI.label(promise, 14, Color(1, 1, 1, 0.95), true, 4)
 	sub.add_theme_color_override("font_outline_color", Color(ink, 0.85))
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(self, sub, Vector2(0, 418), Vector2(W, 22))
-	var gem := IconView.make("star" if kind == "premium" else "hex", 30, GameData.rarity_color(def["guarantee"]))
+	var gem := IconView.make("star" if kind == "premium" else "hex", 30, GameData.rarity_color(def["guarantee"] if def["guarantee"] != "" else "common"))
 	gem.position = Vector2(W * 0.5 - 15, 446)
 	add_child(gem)
 

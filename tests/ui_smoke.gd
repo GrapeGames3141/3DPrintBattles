@@ -113,6 +113,7 @@ func run() -> void:
 	for starter in GameData.STARTER_PRINTER:
 		profile.data = profile.fresh()
 		profile.choose_starter(starter)
+		profile.give_starter_deck()
 		for slot in profile.DECK_SLOTS:
 			ok(str(profile.deck(slot)["printer"]) == str(GameData.STARTER_PRINTER[starter]), "deck %d starts on the %s you picked" % [slot + 1, starter])
 		var tut = Session.tutorial()
@@ -122,6 +123,7 @@ func run() -> void:
 	# A save stuck on an empty deck switches back to the one that can battle.
 	profile.data = profile.fresh()
 	profile.choose_starter("voltwig")
+	profile.give_starter_deck()
 	profile.set_active_deck(1)
 	profile.ensure_battle_deck()
 	ok(int(profile.data["active_deck"]) == 0, "an empty active deck falls back to the playable one")
@@ -139,6 +141,7 @@ func run() -> void:
 	ok(profile.rank_level() == 10, "testing tools can set Maker Rank 10")
 	profile.data = profile.fresh()
 	profile.choose_starter("cinderpaw")
+	profile.give_starter_deck()
 	app = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(app)
 	await wait(0.5)
@@ -215,14 +218,14 @@ func ranked_checks(profile) -> void:
 ## the cards, with a turn of the screen in the middle.
 func pack_checks(profile) -> void:
 	print("card packs")
-	var owned_before: int = profile.packs("standard")
+	var owned_before: int = profile.packs("basic")
 	app.go("shop")
 	await wait(0.6)
 	var scr = app.current
-	scr._open("standard")
+	scr._open("basic")
 	await wait(0.6)
 	var op = scr._opener
-	ok(op != null and op.stage == "sealed" and profile.packs("standard") == owned_before - 1, "opening a pack shows it sealed")
+	ok(op != null and op.stage == "sealed" and profile.packs("basic") == owned_before - 1, "opening a pack shows it sealed")
 	var box: Rect2 = op._pack_rect()
 	var y: float = box.position.y + 40.0
 	# A short swipe only starts the tear.
@@ -267,7 +270,7 @@ func pack_checks(profile) -> void:
 		again.pressed.emit()
 		await wait(0.6)
 		op = scr._opener
-		ok(op != null and op.stage == "sealed" and profile.packs("standard") == owned_before - 2, "Open another starts the next pack")
+		ok(op != null and op.stage == "sealed" and profile.packs("basic") == owned_before - 2, "Open another starts the next pack")
 		# A tap on the pack rips it without a swipe; Skip jumps to the spread.
 		await click(op._pack_center())
 		await wait(2.0)
@@ -290,14 +293,13 @@ func blueprint_checks(profile) -> void:
 	profile.data["xp"] = 6000
 	profile.data["coins"] = 5000
 	profile.data["cards"]["cinderpaw"] = 2
-	profile.data["spares"]["cinderpaw"] = 1
 	app.go("blueprints", {"card": "cinderpaw"})
 	await wait(0.6)
 	var scr = app.current
 	ok(scr._sel == "cinderpaw", "the Blueprint screen opens on the chosen card")
 	scr._upgrade()
 	await wait(0.4)
-	ok(int(profile.build_of("cinderpaw")["tier"]) == 2, "Upgrade takes the card to Mk II")
+	ok(int(profile.build_of("cinderpaw")["tier"]) == 2, "Upgrade takes the card to Level 2")
 	app.current._unlock_mod("sharp_nozzle")
 	app.current._fit_mod("sharp_nozzle")
 	app.current._paint("rose")

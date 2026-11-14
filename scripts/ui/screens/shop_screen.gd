@@ -15,9 +15,13 @@ var _resume_index := 0
 func build() -> void:
 	app.set_background("res://assets/ui/workshop/workshop_yard_closeup_v2.png", 0.72)
 	top_bar("Card Packs")
-	_body = Control.new()
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_body)
+	if P:
+		# Three packs stacked: the page scrolls.
+		_body = scroll_body(92, GameData.PACK_ORDER.size() * 532.0 + 70.0)
+	else:
+		_body = Control.new()
+		_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_body)
 	_refresh()
 	if not _open_cards.is_empty():
 		_start_opener(_resume_stage, _resume_index)
@@ -43,19 +47,19 @@ func _pack_at(kind: String, top_left: Vector2, s: float, lean: float = 0.0) -> P
 func _refresh() -> void:
 	for ch in _body.get_children():
 		ch.queue_free()
-	var kinds := ["standard", "premium"]
-	var pw := 460.0
+	var kinds: Array = GameData.PACK_ORDER
+	var pw := 460.0 if P else 400.0
 	var ph := 520.0 if P else 580.0
 	# Vertical offsets inside a pack panel: art, text, buy, count, open.
-	var off: Array = [14.0, 312.0, 346.0, 406.0, 440.0] if P else [20.0, 322.0, 362.0, 432.0, 470.0]
+	var off: Array = [14.0, 304.0, 366.0, 424.0, 456.0] if P else [20.0, 322.0, 384.0, 448.0, 484.0]
 	var ps := 0.56
 	var art_w := PackView.W * ps
 	var art_h := PackView.H * ps
 	for i in kinds.size():
 		var kind: String = kinds[i]
 		var def: Dictionary = GameData.PACKS[kind]
-		var x := (W - pw) * 0.5 if P else 150.0 + i * 520.0
-		var y := 92.0 + i * (ph + 12.0) if P else 104.0
+		var x := (W - 12.0 - pw) * 0.5 if P else 20.0 + i * 420.0
+		var y := i * (ph + 12.0) if P else 104.0
 		UI.panel(_body, Rect2(x, y, pw, ph))
 		var have := Profile.packs(kind)
 		# Unopened packs pile up behind the front one.
@@ -77,22 +81,23 @@ func _refresh() -> void:
 			UI.place(_body, tap, corner, Vector2(art_w, art_h))
 		var desc := UI.label(def["text"], 18, UI.CREAM, false)
 		desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		UI.place(_body, desc, Vector2(x, y + off[1]), Vector2(pw, 26))
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.place(_body, desc, Vector2(x + 10, y + off[1]), Vector2(pw - 20, 52))
 		var buy := UI.button("Buy for %d" % int(def["price"]), "primary", Vector2(300, 52), 24)
 		buy.disabled = Profile.coins() < int(def["price"])
 		buy.pressed.connect(_buy.bind(kind))
-		UI.place(_body, buy, Vector2(x + 80, y + off[2]))
+		UI.place(_body, buy, Vector2(x + (pw - 300.0) * 0.5, y + off[2]))
 		var hl := UI.label("You have %d to open" % have if have > 0 else "None waiting to be opened", 18, UI.GOLD if have > 0 else UI.MUTED, false)
 		hl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(_body, hl, Vector2(x, y + off[3]), Vector2(pw, 26))
 		var open := UI.button("Open a pack", "go", Vector2(300, 60), 26)
 		open.disabled = have <= 0
 		open.pressed.connect(_open.bind(kind))
-		UI.place(_body, open, Vector2(x + 80, y + off[4]))
-	var tip := UI.label("Win battles to earn Forge Coins. Spare copies you cannot use are recycled into coins.", 17, UI.MUTED, false)
+		UI.place(_body, open, Vector2(x + (pw - 300.0) * 0.5, y + off[4]))
+	var tip := UI.label("Win battles to earn Forge Coins. The only way to get a card is to open a pack. Extra copies of a card you already have are not kept.", 17, UI.MUTED, false)
 	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.place(_body, tip, Vector2(20, 1172 if P else 690), Vector2(W - 40, 60 if P else 24))
+	UI.place(_body, tip, Vector2(20, GameData.PACK_ORDER.size() * 532.0 + 4.0 if P else 690), Vector2(W - 52 if P else W - 40, 60 if P else 24))
 
 
 func _buy(kind: String) -> void:

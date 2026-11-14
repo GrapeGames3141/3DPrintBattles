@@ -4,9 +4,9 @@ extends Node
 
 signal changed
 
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 ## Save keys whose contents are free-form dictionaries (ids come from the save).
-const FREE_KEYS := ["cards", "builds", "spares"]
+const FREE_KEYS := ["cards", "builds"]
 const DECK_SLOTS := 3
 
 var path := "user://printforge_profile.json"
@@ -37,10 +37,10 @@ static func fresh() -> Dictionary:
 		"decks": decks,
 		"active_deck": 0,
 		"printers": [],
+		"active_printer": "",
 		"xp": 0,
 		"mod_items": [],
 		"builds": {},
-		"spares": {},
 		"card_mods": [],
 		"paints": ["original", "sky", "rose", "lime"],
 		"packs": {"standard": 0, "premium": 0},
@@ -139,6 +139,20 @@ func _migrate(parsed: Dictionary) -> bool:
 	var version := int(parsed.get("version", 1))
 	if version >= SAVE_VERSION:
 		return false
+	# Version 5 dropped spare copies and printing: spares go back as the coins
+	# they were worth, so nothing a player paid for is lost.
+	if parsed.get("spares") is Dictionary:
+		var worth := {"common": 40, "uncommon": 80, "rare": 160, "epic": 400, "legendary": 1000}
+		var back := 0
+		for id in parsed["spares"]:
+			var def := GameData.card(str(id))
+			if not def.is_empty():
+				back += int(parsed["spares"][id]) * int(worth.get(def["rarity"], 0))
+		parsed["coins"] = int(parsed.get("coins", 0)) + back
+		parsed.erase("spares")
+	if version >= 4:
+		parsed["version"] = SAVE_VERSION
+		return true
 	var mods: Dictionary = {}
 	if version < 2:
 		var old: Dictionary = parsed.get("upgrades", {}) if parsed.get("upgrades") is Dictionary else {}
@@ -196,11 +210,6 @@ func _sanitize() -> void:
 			if clean.has(str(id)):
 				builds[str(id)] = clean[str(id)]
 	data["builds"] = builds
-	var spares: Dictionary = {}
-	for id in data["spares"]:
-		if cards.has(str(id)) and int(data["spares"][id]) > 0:
-			spares[str(id)] = mini(int(data["spares"][id]), GameData.MAX_SPARES)
-	data["spares"] = spares
 	var card_mods: Array = []
 	for id in data["card_mods"]:
 		if not GameData.card_mod(str(id)).is_empty() and not card_mods.has(str(id)):
@@ -225,6 +234,10 @@ func _sanitize() -> void:
 	while decks.size() < DECK_SLOTS:
 		decks.append({"cards": [], "printer": "ember_forge", "sleeve": "forge"})
 	decks.resize(DECK_SLOTS)
+	# An older save chose a Printer per deck: the active deck's Printer becomes the active one.
+	if not owned.has(str(data.get("active_printer", ""))):
+		var from_deck := str(decks[clampi(int(data["active_deck"]), 0, DECK_SLOTS - 1)].get("printer", ""))
+		data["active_printer"] = from_deck if owned.has(from_deck) else (owned[0] if not owned.is_empty() else "")
 	for d in decks:
 		if not Sleeves.unlocked(str(d.get("sleeve", "forge")), rank_level()):
 			d["sleeve"] = "forge"
@@ -619,18 +632,26 @@ func choose_starter(creature_id: String) -> void:
 	data["started"] = true
 	data["starter"] = creature_id
 	data["coins"] = GameData.STARTER_COINS
-	data["packs"]["standard"] = GameData.STARTER_PACKS
+	data["packs"][GameData.STARTER_PACK_KIND] = GameData.STARTER_PACKS
 	var printer_id: String = GameData.STARTER_PRINTER[creature_id]
 	data["printers"] = [printer_id]
+	data["active_printer"] = printer_id
+	# No cards yet: every card has to be opened from a pack. Every deck starts
+	# empty, on the Printer you picked; the others are not yours yet.
+	for i in data["decks"].size():
+		data["decks"][i] = {"cards": [], "printer": printer_id, "sleeve": "forge"}
+	data["active_deck"] = 0
+	save()
+
+
+## The old fixed starter collection and deck, for tests and the testing tools:
+## real players get packs instead (choose_starter).
+func give_starter_deck() -> void:
 	for id in GameData.STARTER_DECK:
 		data["cards"][id] = int(GameData.STARTER_DECK[id])
 	for id in GameData.STARTER_EXTRA:
 		data["cards"][id] = mini(owned_count(id) + int(GameData.STARTER_EXTRA[id]), GameData.max_copies(id))
-	data["decks"][0] = {"cards": GameData.expand(GameData.STARTER_DECK), "printer": printer_id}
-	# Every deck starts on the Printer you picked; the others are not yours yet.
-	for i in range(1, data["decks"].size()):
-		data["decks"][i]["printer"] = printer_id
-	data["active_deck"] = 0
+	data["decks"][0]["cards"] = GameData.expand(GameData.STARTER_DECK)
 	save()
 
 
@@ -638,11 +659,27 @@ func choose_starter(creature_id: String) -> void:
 
 func deck(slot: int) -> Dictionary:
 	var d: Dictionary = data["decks"][clampi(slot, 0, DECK_SLOTS - 1)]
-	# A deck can only sit on a Printer you own.
-	var owned: Array = data["printers"]
-	if not owned.is_empty() and not owned.has(str(d.get("printer", ""))):
-		d["printer"] = owned[0]
+	# Every deck battles on the one active Printer.
+	if not (data["printers"] as Array).is_empty():
+		d["printer"] = active_printer()
 	return d
+
+
+## The one Printer you battle with, whatever the deck. Only its mods count.
+func active_printer() -> String:
+	var owned: Array = data["printers"]
+	var id := str(data.get("active_printer", ""))
+	if owned.has(id):
+		return id
+	return str(owned[0]) if not owned.is_empty() else "ember_forge"
+
+
+func set_active_printer(printer_id: String) -> String:
+	if not owns_printer(printer_id):
+		return "You do not own that Printer."
+	data["active_printer"] = printer_id
+	save()
+	return ""
 
 
 func active_deck() -> Dictionary:
@@ -703,10 +740,9 @@ func deck_remove(slot: int, id: String) -> void:
 		save()
 
 
-func deck_set_printer(slot: int, printer_id: String) -> void:
-	if owns_printer(printer_id):
-		deck(slot)["printer"] = printer_id
-		save()
+## Kept for older callers: the Printer is chosen once for every deck.
+func deck_set_printer(_slot: int, printer_id: String) -> void:
+	set_active_printer(printer_id)
 
 
 func deck_sleeve(slot: int) -> Dictionary:
@@ -756,44 +792,17 @@ func _fill_score(c: Dictionary, element: String) -> float:
 
 # ------------------------------------------------------------- collection
 
-## Adds one copy. Extra copies past the deck limit are recycled into coins.
-## Returns {"id", "new": bool, "recycled": int}.
+## Adds one copy. Copies past the deck limit are simply lost: a card only ever
+## comes from opening a pack. Returns {"id", "new": bool, "lost": bool}.
 func add_card(id: String) -> Dictionary:
 	var have := owned_count(id)
 	if have >= GameData.max_copies(id):
-		# A spare copy: a little coin, and a spare kept for the card's Blueprint.
-		var refund: int = int(GameData.RARITIES[GameData.card(id)["rarity"]]["recycle"])
-		data["coins"] = coins() + refund
-		var kept := spares(id) < GameData.MAX_SPARES
-		if kept:
-			data["spares"][id] = spares(id) + 1
-		return {"id": id, "new": false, "recycled": refund, "spare": kept}
+		return {"id": id, "new": false, "lost": true}
 	data["cards"][id] = have + 1
-	return {"id": id, "new": have == 0, "recycled": 0}
-
-
-func craft_cost(id: String) -> int:
-	return int(GameData.RARITIES[GameData.card(id)["rarity"]]["craft"])
-
-
-## Print one copy of a card for coins. Returns "" or the reason it failed.
-func craft(id: String) -> String:
-	if owned_count(id) >= GameData.max_copies(id):
-		return "You already own the most copies a deck can hold."
-	var cost := craft_cost(id)
-	if coins() < cost:
-		return "Not enough Forge Coins."
-	data["coins"] = coins() - cost
-	data["cards"][id] = owned_count(id) + 1
-	save()
-	return ""
+	return {"id": id, "new": have == 0, "lost": false}
 
 
 # --------------------------------------------------------------- Blueprints
-
-func spares(id: String) -> int:
-	return int(data["spares"].get(id, 0))
-
 
 ## The card's Blueprint, with defaults filled in.
 func build_of(id: String) -> Dictionary:
@@ -818,12 +827,10 @@ func tier_error(id: String) -> String:
 		return "You do not own that card."
 	var tier := int(build_of(id)["tier"])
 	if tier >= GameData.MAX_TIER:
-		return "Already Mk III."
+		return "Already at the top level."
 	var next := tier + 1
 	if rank_level() < GameData.TIER_RANK[next]:
-		return "Reach Maker Rank %d for Mk %s." % [GameData.TIER_RANK[next], ["", "I", "II", "III"][next]]
-	if spares(id) < GameData.TIER_SPARES[next]:
-		return "Needs %d spare cop%s (you have %d)." % [GameData.TIER_SPARES[next], "y" if GameData.TIER_SPARES[next] == 1 else "ies", spares(id)]
+		return "Reach Maker Rank %d for Level %d." % [GameData.TIER_RANK[next], next]
 	if coins() < GameData.tier_coins(id, next):
 		return "Not enough Forge Coins."
 	return ""
@@ -836,28 +843,8 @@ func upgrade_card(id: String) -> String:
 	var b := build_of(id)
 	var next: int = int(b["tier"]) + 1
 	data["coins"] = coins() - GameData.tier_coins(id, next)
-	var left: int = spares(id) - int(GameData.TIER_SPARES[next])
-	if left > 0:
-		data["spares"][id] = left
-	else:
-		data["spares"].erase(id)
 	b["tier"] = next
 	_set_build(id, b)
-	save()
-	return ""
-
-
-## Print an extra copy of a card to keep as a spare for its Blueprint.
-func craft_spare(id: String) -> String:
-	if owned_count(id) <= 0:
-		return "You need the card itself first."
-	if spares(id) >= GameData.MAX_SPARES:
-		return "You are holding the most spares you can."
-	var cost := craft_cost(id)
-	if coins() < cost:
-		return "Not enough Forge Coins."
-	data["coins"] = coins() - cost
-	data["spares"][id] = spares(id) + 1
 	save()
 	return ""
 
@@ -888,8 +875,8 @@ func card_mods_on(id: String) -> Array:
 	return GameData.fitted_mods(id, int(b["tier"]), [str(b["mod"]), str(b["mod2"])])
 
 
-## Fits an unlocked mod into the card's next free slot (one slot at Mk II, two at
-## Mk III), or takes it off if it is already fitted.
+## Fits an unlocked mod into the card's next free slot (one slot at Level 2, two at
+## Level 3), or takes it off if it is already fitted.
 func set_card_mod(id: String, mod_id: String) -> String:
 	if owned_count(id) <= 0:
 		return "You do not own that card."
@@ -902,11 +889,11 @@ func set_card_mod(id: String, mod_id: String) -> String:
 		now.erase(mod_id)
 	else:
 		if tier < 2:
-			return "Mods fit from Mk II."
+			return "Mods fit from Level 2."
 		if not owns_card_mod(mod_id):
 			return "Unlock that mod first."
 		if now.size() >= GameData.mod_slots(tier):
-			return "Both mod slots are full." if GameData.mod_slots(tier) > 1 else "Mk III adds a second mod slot."
+			return "Both mod slots are full." if GameData.mod_slots(tier) > 1 else "Level 3 adds a second mod slot."
 		var asm: Array = GameData.fitted_mods(id, tier, now + [mod_id])
 		if not asm.has(mod_id):
 			return "That mod does not fit this card."
@@ -991,22 +978,22 @@ func _random_of_rarity(rarity: String) -> String:
 	return pool[_rng.randi_range(0, pool.size() - 1)]
 
 
-## Opens one owned pack. Returns the cards as [{"id", "new", "recycled"}].
+## Opens one owned pack. Returns the cards as [{"id", "new", "lost"}].
 func open_pack(kind: String) -> Array:
 	if packs(kind) <= 0:
 		return []
 	var def: Dictionary = GameData.PACKS[kind]
 	data["packs"][kind] = packs(kind) - 1
 	data["stats"]["packs_opened"] = int(data["stats"]["packs_opened"]) + 1
-	var floor_rank: int = GameData.RARITY_ORDER.find(def["guarantee"])
+	var floor_rank: int = GameData.RARITY_ORDER.find(def["guarantee"]) if def["guarantee"] != "" else 0
 	var rolled: Array = []
 	var best := 0
 	for i in int(def["size"]):
-		var r := _pick_weighted(GameData.PACK_WEIGHTS)
+		var r := _pick_weighted(def["weights"])
 		best = maxi(best, GameData.RARITY_ORDER.find(r))
 		rolled.append(r)
 	if best < floor_rank:
-		rolled[rolled.size() - 1] = _pick_weighted(GameData.PACK_GUARANTEE_WEIGHTS[def["guarantee"]])
+		rolled[rolled.size() - 1] = _pick_weighted(def["guarantee_weights"])
 	var out: Array = []
 	for r in rolled:
 		out.append(add_card(_random_of_rarity(r)))

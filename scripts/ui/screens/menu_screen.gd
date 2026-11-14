@@ -54,7 +54,7 @@ func build() -> void:
 		"battle": ["Battle", [[("%s  -  Deck %d ready" % [p["name"], int(Profile.data["active_deck"]) + 1]) if err == "" else "Deck needs attention", UI.GOOD if err == "" else UI.BAD],
 			["%d of %d rivals beaten  -  %d W, %d L" % [beaten, GameData.RIVALS.size(), int(st["wins"]), int(st["losses"])], UI.MUTED]],
 			"Rivals, quick battles, a friend or the tutorial", UI.GOOD],
-		"blueprints": ["Blueprints", [["Upgrade, mod and paint your cards", UI.MUTED]], "Mk II and III, card mods and paints", UI.GOLD],
+		"blueprints": ["Blueprints", [["Upgrade, mod and paint your cards", UI.MUTED]], "Card levels, mods and paints", UI.GOLD],
 		"workshop": ["Workshop", [["Printers & Mods", UI.MUTED]], "Buy Printers and fit mods to them", UI.GOLD],
 		"collection": ["Collection & Decks", [["%d of %d cards collected" % [prog.x, prog.y], UI.MUTED]], "Browse every card and build your decks", UI.CYAN],
 		"shop": ["Card Packs", [[("%d to open" % packs) if packs > 0 else "Buy and open packs", UI.GOLD if packs > 0 else UI.MUTED]], "Rip open packs for new cards", UI.AMBER],
