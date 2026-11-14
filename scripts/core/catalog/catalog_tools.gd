@@ -36,4 +36,12 @@ const LIST := [
 	{"id": "fire_extinguisher", "name": "Fire Extinguisher", "type": "tool", "cost": 3, "rarity": "rare", "text": "Jam all enemy prints.", "effects": [{"op": "jam", "to": "enemy_prints"}]},
 	{"id": "dry_box", "name": "Dry Box", "type": "tool", "cost": 3, "rarity": "epic", "text": "Add 10 Filament to your Spool. Draw a card.", "effects": [{"op": "spool", "n": 10}, {"op": "draw", "n": 1}]},
 	{"id": "resin_printer", "name": "Resin Printer", "type": "tool", "cost": 6, "rarity": "legendary", "text": "Deal 3 damage to all enemy prints. Repair your Printer by 4.", "effects": [{"op": "damage", "n": 3, "to": "enemy_prints"}, {"op": "heal", "n": 4, "to": "own_printer"}]},
+	{"id": "cable_management", "name": "Cable Management", "type": "tool", "cost": 2, "rarity": "common", "text": "Your Printer gains 2 Armor. Draw a card.", "effects": [{"op": "armor", "n": 2}, {"op": "draw", "n": 1}]},
+	{"id": "post_processing_kit", "name": "Post-Processing Kit", "type": "tool", "cost": 2, "rarity": "uncommon", "text": "Repair all your prints by 3.", "effects": [{"op": "heal", "n": 3, "to": "friendly_prints"}]},
+	{"id": "glow_filament", "name": "Glow Filament", "type": "tool", "cost": 2, "rarity": "uncommon", "text": "Give your prints +1/+1.", "effects": [{"op": "buff", "atk": 1, "hp": 1, "kw": [], "to": "friendly_prints"}]},
+	{"id": "pressure_advance", "name": "Pressure Advance", "type": "tool", "cost": 3, "rarity": "rare", "text": "Give a friendly print +2/+0 and Rush. +1 Print Speed this turn.", "target": "friendly_print", "effects": [{"op": "buff", "atk": 2, "hp": 0, "kw": ["rush"], "to": "target"}, {"op": "filament", "n": 1}]},
+	{"id": "power_loss_recovery", "name": "Power Loss Recovery", "type": "tool", "cost": 4, "rarity": "rare", "text": "Repair your Printer by 5. Add 4 Filament to your Spool.", "effects": [{"op": "heal", "n": 5, "to": "own_printer"}, {"op": "spool", "n": 4}]},
+	{"id": "thermal_runaway", "name": "Thermal Runaway", "type": "tool", "cost": 4, "rarity": "epic", "text": "Deal 5 damage.", "target": "enemy", "effects": [{"op": "damage", "n": 5, "to": "target"}]},
+	{"id": "firmware_update", "name": "Firmware Update", "type": "tool", "cost": 5, "rarity": "epic", "text": "Give your prints +2/+2.", "effects": [{"op": "buff", "atk": 2, "hp": 2, "kw": [], "to": "friendly_prints"}]},
+	{"id": "open_source_blueprint", "name": "Open Source Blueprint", "type": "tool", "cost": 7, "rarity": "legendary", "text": "Print 2 Test Bots. Draw 2 cards.", "effects": [{"op": "summon", "n": 2, "card": "test_bot"}, {"op": "draw", "n": 2}]},
 ]

@@ -170,4 +170,16 @@ C("gantrymantis", "Gantry Mantis", D, 4, 4, 3, "uncommon", ["twin"], None, "src:
 C("layershifter", "Layer Shifter", A, 4, 3, 3, "rare", [], ability(draw(1)), "src:layer_shifter")
 C("cutie", "Cutie", S, 8, 8, 9, "legendary", ["twin", "brim"], ability(dmg(3, "all"), sh_draw(2)), "src:cutie")
 
+# ---------------------------------- Modelled prints, second wave (render_art5.gd)
+C("spoolsnail", "Spool Snail", N, 4, 2, 5, "rare", ["guard"], ability(spool(3)), "src:spool_snail")
+C("supporttreant", "Tree Support Treant", N, 6, 4, 7, "epic", ["guard"], ability(heal(2, "all")), "src:support_treant")
+C("spoolcolossus", "Spool Colossus", N, 8, 7, 9, "legendary", ["guard", "brim"], ability(spool(6), heal(3, "all")), "src:spool_colossus")
+C("chillfan", "Chillfan", I, 4, 3, 4, "rare", [], ability(jam()), "src:chillfan")
+C("multimeterbeetle", "Multimeter Beetle", L, 5, 4, 4, "epic", ["rush"], ability(dmg(2, "enemy")), "src:multimeter_beetle")
+C("resinjelly", "Resin Jellyfish", W, 6, 4, 6, "epic", [], ability(heal(4, "printer"), draw(1)), "src:resin_jelly")
+C("rotordrone", "Rotor Drone", D, 3, 3, 3, "rare", ["rush"], ability(speed(1)), "src:rotor_drone")
+C("hexnuthog", "Hexnut Hog", S, 4, 3, 5, "rare", ["guard", "brim"], None, "src:hexnut_hog")
+C("gcodegolem", "G-code Golem", A, 6, 4, 6, "epic", [], ability(draw(2)), "src:gcode_golem")
+C("heatbedhedgehog", "Heatbed Hedgehog", F, 3, 2, 4, "rare", ["scorch"], ability(heat(1, "print")), "src:heatbed_hedgehog")
+
 assert len({c["id"] for c in CREATURES}) == len(CREATURES), "duplicate creature id"

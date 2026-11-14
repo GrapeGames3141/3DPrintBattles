@@ -80,7 +80,7 @@ func run() -> void:
 		app.current._refresh()
 		app.current._show_preview("glassdrake")
 		await shot("collection_preview")
-		for id in ["cutie", "benchyboss"]:
+		for id in ["spoolcolossus", "multimeterbeetle", "firmware_update", "corexy_frame"]:
 			app.current._show_preview(id)
 			await shot("preview_" + id)
 	if want("shop"):

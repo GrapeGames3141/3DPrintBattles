@@ -27,4 +27,10 @@ const LIST := [
 	{"id": "glass_bed_shield", "name": "Glass Bed Shield", "type": "upgrade", "cost": 3, "rarity": "uncommon", "text": "Give a friendly print +1/+5 and Guard.", "target": "friendly_print", "buff": {"atk": 1, "hp": 5, "kw": ["guard"]}},
 	{"id": "lead_screw_lance", "name": "Lead Screw Lance", "type": "upgrade", "cost": 4, "rarity": "rare", "text": "Give a friendly print +4/+2 and Rush.", "target": "friendly_print", "buff": {"atk": 4, "hp": 2, "kw": ["rush"]}},
 	{"id": "hotend_crown", "name": "Hotend Crown", "type": "upgrade", "cost": 5, "rarity": "epic", "text": "Give a friendly print +3/+4 and Scorch, Brim.", "target": "friendly_print", "buff": {"atk": 3, "hp": 4, "kw": ["scorch", "brim"]}},
+	{"id": "belt_tensioner", "name": "Belt Tensioner", "type": "upgrade", "cost": 1, "rarity": "common", "text": "Give a friendly print +1/+2.", "target": "friendly_print", "buff": {"atk": 1, "hp": 2, "kw": []}},
+	{"id": "linear_rails", "name": "Linear Rails", "type": "upgrade", "cost": 2, "rarity": "uncommon", "text": "Give a friendly print +1/+3 and Rush.", "target": "friendly_print", "buff": {"atk": 1, "hp": 3, "kw": ["rush"]}},
+	{"id": "direct_drive_gearbox", "name": "Direct Drive Gearbox", "type": "upgrade", "cost": 4, "rarity": "rare", "text": "Give a friendly print +3/+3 and Siphon.", "target": "friendly_print", "buff": {"atk": 3, "hp": 3, "kw": ["siphon"]}},
+	{"id": "enclosure_panels", "name": "Enclosure Panels", "type": "upgrade", "cost": 4, "rarity": "rare", "text": "Give a friendly print +1/+6 and Guard, Brim.", "target": "friendly_print", "buff": {"atk": 1, "hp": 6, "kw": ["guard", "brim"]}},
+	{"id": "laser_engraver", "name": "Laser Engraver", "type": "upgrade", "cost": 5, "rarity": "epic", "text": "Give a friendly print +5/+2 and Twin Nozzle, Scorch.", "target": "friendly_print", "buff": {"atk": 5, "hp": 2, "kw": ["twin", "scorch"]}},
+	{"id": "corexy_frame", "name": "CoreXY Frame", "type": "upgrade", "cost": 6, "rarity": "legendary", "text": "Give a friendly print +4/+6 and Guard, Twin Nozzle, Rush.", "target": "friendly_print", "buff": {"atk": 4, "hp": 6, "kw": ["guard", "twin", "rush"]}},
 ]

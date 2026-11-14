@@ -59,6 +59,16 @@ T("fire_extinguisher", "Fire Extinguisher", 3, "rare", jam("all"))
 T("dry_box", "Dry Box", 3, "epic", spool(10), draw(1))
 T("resin_printer", "Resin Printer", 6, "legendary", dmg(3, "all"), heal(4, "printer"))
 
+# ------------------------------------------------- newest tools, second wave
+T("cable_management", "Cable Management", 2, "common", armor(2), draw(1))
+T("post_processing_kit", "Post-Processing Kit", 2, "uncommon", heal(3, "all"))
+T("glow_filament", "Glow Filament", 2, "uncommon", buff(1, 1, "all"))
+T("pressure_advance", "Pressure Advance", 3, "rare", buff(2, 0, "print", ["rush"]), speed(1))
+T("power_loss_recovery", "Power Loss Recovery", 4, "rare", heal(5, "printer"), spool(4))
+T("thermal_runaway", "Thermal Runaway", 4, "epic", dmg(5, "enemy"))
+T("firmware_update", "Firmware Update", 5, "epic", buff(2, 2, "all"))
+T("open_source_blueprint", "Open Source Blueprint", 7, "legendary", summon(2), draw(2))
+
 # -------------------------------------------------------------- equipment
 U("rubber_feet", "Rubber Feet", 1, "common", 0, 3)
 U("mini_fan", "Mini Fan", 1, "common", 2, 0)
@@ -90,5 +100,13 @@ U("bowden_whip", "Bowden Whip", 2, "uncommon", 2, 1, ["thief"])
 U("glass_bed_shield", "Glass Bed Shield", 3, "uncommon", 1, 5, ["guard"])
 U("lead_screw_lance", "Lead Screw Lance", 4, "rare", 4, 2, ["rush"])
 U("hotend_crown", "Hotend Crown", 5, "epic", 3, 4, ["scorch", "brim"])
+
+# ------------------------------------------- newest equipment, second wave
+U("belt_tensioner", "Belt Tensioner", 1, "common", 1, 2)
+U("linear_rails", "Linear Rails", 2, "uncommon", 1, 3, ["rush"])
+U("direct_drive_gearbox", "Direct Drive Gearbox", 4, "rare", 3, 3, ["siphon"])
+U("enclosure_panels", "Enclosure Panels", 4, "rare", 1, 6, ["guard", "brim"])
+U("laser_engraver", "Laser Engraver", 5, "epic", 5, 2, ["twin", "scorch"])
+U("corexy_frame", "CoreXY Frame", 6, "legendary", 4, 6, ["guard", "twin", "rush"])
 
 assert len({c["id"] for c in TOOLS + UPGRADES}) == len(TOOLS) + len(UPGRADES)
