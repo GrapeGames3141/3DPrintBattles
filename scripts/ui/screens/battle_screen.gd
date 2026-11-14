@@ -1836,7 +1836,7 @@ func _show_result_panel() -> void:
 		line = "Tutorial complete. You are ready for real rivals." if won else "Give the tutorial another go whenever you like."
 	elif session.mode == "hotseat":
 		line = "Friendly match: no coins this time."
-	elif session.mode == "ranked":
+	elif session.mode == "ranked" or (session.mode == "lan" and not session.opponent.is_empty()):
 		var o: Dictionary = session.opponent
 		line = ("You beat %s!" if won else "%s wins this one.") % o["name"]
 	if line != "":

@@ -267,7 +267,7 @@ func _join() -> void:
 
 func _on_connected() -> void:
 	var d := Profile.active_deck()
-	app.net.send_hello({"deck": d["cards"], "printer": d["printer"], "mods": Profile.battle_mods(d["printer"]), "builds": Profile.builds_for(d["cards"])})
+	app.net.send_hello({"deck": d["cards"], "printer": d["printer"], "mods": Profile.battle_mods(d["printer"]), "builds": Profile.builds_for(d["cards"]), "who": Profile.who()})
 
 
 func _on_guest_ready(info: Dictionary) -> void:
@@ -277,7 +277,7 @@ func _on_guest_ready(info: Dictionary) -> void:
 		close_modal(_wait)
 		app.toast("Your opponent's deck was not valid.", UI.AMBER)
 		return
-	app.go("battle", {"session": BattleSession.lan_host(app.net, Profile.active_deck(), cfg)})
+	app.go("battle", {"session": BattleSession.lan_host(app.net, Profile.active_deck(), cfg, PlayerIdentity.read_who(info.get("who", {})))})
 
 
 func _on_game_started(view: Dictionary, info: Dictionary) -> void:

@@ -101,15 +101,16 @@ static func hotseat(deck0: Dictionary, deck1: Dictionary) -> BattleSession:
 	return s
 
 
-static func lan_host(link: NetLink, deck: Dictionary, guest: Dictionary) -> BattleSession:
+static func lan_host(link: NetLink, deck: Dictionary, guest: Dictionary, guest_who: Dictionary = {}) -> BattleSession:
 	var s := BattleSession.new()
 	s.mode = "lan"
 	s.net = link
-	s.names = ["You", "Opponent"]
+	s.opponent = guest_who
+	s.names = ["You", str(guest_who.get("name", "Opponent"))]
 	s._start(player_config(deck), guest)
 	link.action_received.connect(s._on_guest_action)
 	link.dropped.connect(s._on_dropped)
-	link.send_start(BattleEngine.view_for(s.state, 1), {"arena": s.arena})
+	link.send_start(BattleEngine.view_for(s.state, 1), {"arena": s.arena, "who": Profile.who()})
 	return s
 
 
@@ -120,7 +121,8 @@ static func lan_guest(link: NetLink, view: Dictionary, info: Dictionary) -> Batt
 	s.is_guest = true
 	s.my_seat = 1
 	s.humans = [1]
-	s.names = ["Opponent", "You"]
+	s.opponent = PlayerIdentity.read_who(info.get("who", {}))
+	s.names = [str(s.opponent["name"]), "You"]
 	s.arena = str(info.get("arena", "daily_arena"))
 	s.state = view
 	link.update_received.connect(s._on_update)

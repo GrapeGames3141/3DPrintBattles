@@ -1005,6 +1005,11 @@ func avatar_id() -> String:
 	return ""
 
 
+## What an opponent is told about you in a direct-connect game.
+func who() -> Dictionary:
+	return PlayerIdentity.who_of(data["player"], avatar_id())
+
+
 func owned_creatures() -> Array:
 	var out: Array = []
 	for c in GameData.collectible():

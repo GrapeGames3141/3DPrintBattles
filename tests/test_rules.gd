@@ -1108,6 +1108,13 @@ func _ranked() -> void:
 		if GameData.card(id)["rarity"] in ["epic", "legendary"]:
 			rare_high += 1
 	ok(rare_low == 0 and int(low["tier"]) < int(high["tier"]), "low-rated opponents use no epics or legendaries and lower Blueprint tiers")
+	# What a direct-connect opponent sees: numbers in, name built locally, junk refused.
+	var who := PlayerIdentity.who_of({"adj": 3, "noun": 5, "num": 42, "rating": 1234}, "cinderpaw")
+	var read := PlayerIdentity.read_who(who)
+	ok(read["name"] == PlayerIdentity.name_of(3, 5, 42) and int(read["rating"]) == 1234 and read["avatar"] == "cinderpaw", "an opponent's profile arrives as numbers and becomes a name here")
+	var junk := PlayerIdentity.read_who({"adj": "<b>", "noun": 1e9, "num": -7, "rating": 99999999, "avatar": "heat_gun", "name": "Evil"})
+	ok(not str(junk["name"]).contains("<") and not str(junk["name"]).contains("Evil") and int(junk["rating"]) <= 5000 and junk["avatar"] == "", "junk from the other side is cleaned: no sent text, rating capped, only prints as pictures")
+	ok(PlayerIdentity.read_who("nope")["name"] == PlayerIdentity.name_of(0, 0, 0), "a missing profile is harmless")
 	# Deck identity: automatic names, curves and sleeves.
 	ok(DeckInfo.analyse([])["name"] == "Empty deck", "an empty deck is called that")
 	ok(DeckInfo.analyse(["mossmunk", "voltwig"])["name"] == "Unfinished deck", "a few cards are an unfinished deck")

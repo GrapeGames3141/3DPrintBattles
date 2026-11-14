@@ -85,3 +85,19 @@ static func titles(best_rating: int, wins: int, best_streak: int, rivals_beaten:
 	for i in range(1, top + 1):
 		out.append({"id": "league_%d" % i, "name": "%s Maker" % Rating.LEAGUES[i]["name"]})
 	return out
+
+
+## What you tell an opponent about yourself. Numbers only: the other side builds
+## the name from its own word lists, so no text ever crosses the wire.
+static func who_of(player: Dictionary, avatar: String) -> Dictionary:
+	return {"adj": int(player["adj"]), "noun": int(player["noun"]), "num": int(player["num"]), "rating": int(player["rating"]), "avatar": avatar}
+
+
+## Reads what an opponent sent, trusting none of it.
+static func read_who(d: Variant) -> Dictionary:
+	var src: Dictionary = d if d is Dictionary else {}
+	var avatar := str(src.get("avatar", ""))
+	if GameData.card(avatar).get("type", "") != "creature":
+		avatar = ""
+	return {"name": name_of(int(src.get("adj", 0)), int(src.get("noun", 0)), int(src.get("num", 0))),
+		"rating": clampi(int(src.get("rating", Rating.START)), Rating.FLOOR, 5000), "avatar": avatar}
