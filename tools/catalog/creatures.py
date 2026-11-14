@@ -31,7 +31,7 @@ C("wickfox", "Wickfox", F, 2, 2, 2, "uncommon", [], ability(buff(2, 0, "print"))
 C("cindermoth", "Cindermoth", F, 3, 2, 3, "uncommon", [], ability(heat(2, "print")), "starloom:18:glow")
 C("slagrhino", "Slagrhino", F, 4, 3, 5, "uncommon", ["guard"], None, "verdantitan:12:carbon")
 C("thermochameleon", "Thermochameleon", F, 4, 3, 4, "rare", ["scorch"], ability(heat(2, "print")), "src:chamelion")
-C("blazehound", "Blazehound", F, 5, 4, 4, "rare", ["rush", "scorch"], None, "coalgriffin:8:metal:24")
+C("blazehound", "Blazehound", F, 5, 5, 4, "rare", ["rush", "scorch"], None, "coalgriffin:8:metal:24")
 C("furnacedrake", "Furnacedrake", F, 5, 4, 5, "epic", [], ability(dmg(2, "all")), "glassdrake:15:lava")
 C("phoenixfilament", "Phoenix Filament", F, 6, 5, 4, "epic", [], ability(sh_dmg(3, "all")), "aurorawing:22:glow")
 C("cinderwyrm", "Cinderwyrm", F, 8, 7, 7, "legendary", ["scorch"], ability(heat(3, "all")), "worldcoil:8:lava")
@@ -49,10 +49,10 @@ C("pearlback", "Pearlback", W, 4, 2, 7, "uncommon", ["guard"], ability(heal(2, "
 C("siphonshark", "Siphonshark", W, 4, 4, 4, "uncommon", ["thief"], None, "ironmaw:190:metal:205")
 C("kelpwyrm", "Kelpwyrm", W, 3, 2, 3, "uncommon", [], ability(buff(1, 2, "print")), "worldcoil:150:marble:120")
 C("glassserpent", "Glassserpent", W, 4, 3, 4, "rare", ["siphon"], None, "src:glassserpent")
-C("undertow", "Undertow", W, 5, 4, 6, "rare", [], ability(bounce()), "tidewhale:175:silk:200")
-C("brineleech", "Brineleech", W, 5, 3, 6, "rare", ["thief"], None, "coralisk:170:carbon")
+C("undertow", "Undertow", W, 5, 3, 5, "rare", [], ability(bounce()), "tidewhale:175:silk:200")
+C("brineleech", "Brineleech", W, 5, 4, 6, "rare", ["thief"], None, "coralisk:170:carbon")
 C("tsunamiray", "Tsunami Ray", W, 6, 4, 6, "epic", [], ability(jam("all")), "voidmanta:205:glass")
-C("leviathanvat", "Leviathan Vat", W, 8, 6, 9, "legendary", [], ability(heal(6, "printer"), draw(2)), "tidewhale:230:glow")
+C("leviathanvat", "Leviathan Vat", W, 7, 7, 9, "legendary", [], ability(heal(6, "printer"), draw(2)), "tidewhale:230:glow")
 
 # -------------------------------------------------------------- Lightning
 L = "Lightning"
@@ -69,7 +69,7 @@ C("voltviper", "Voltviper", L, 4, 3, 3, "rare", ["rush", "thief"], None, "src:vo
 C("arcflicker", "Arcflicker", L, 4, 2, 3, "rare", ["twin"], None, "voltwig:62:glass")
 C("overcharger", "Overcharger", L, 5, 4, 5, "rare", [], ability(jam()), "coalgriffin:56:silk:40")
 C("surgebeast", "Surgebeast", L, 6, 5, 5, "epic", ["rush"], ability(dmg(2, "printer")), "pyraxis:52:metal:50")
-C("stormcoil", "Stormcoil", L, 8, 7, 7, "legendary", ["twin"], None, "worldcoil:50:volt")
+C("stormcoil", "Stormcoil", L, 8, 8, 7, "legendary", ["twin"], None, "worldcoil:50:volt")
 
 # ----------------------------------------------------------------- Nature
 N = "Nature"
@@ -116,11 +116,11 @@ C("quarrymole", "Quarrymole", S, 2, 2, 2, "uncommon", [], ability(armor(2)), "mo
 C("basaltbison", "Basaltbison", S, 4, 4, 5, "uncommon", [], None, "verdantitan:25:carbon")
 C("geodefox", "Geodefox", S, 3, 3, 3, "uncommon", [], ability(spool(2)), "miragefox:40:glass")
 C("obsidianray", "Obsidian Ray", S, 4, 3, 4, "uncommon", ["siphon"], None, "voidmanta:260:carbon")
-C("crystalscorp", "Crystalscorp", S, 5, 4, 4, "rare", ["scorch", "thief"], None, "src:crystalscorp")
+C("crystalscorp", "Crystalscorp", S, 5, 4, 5, "rare", ["scorch", "thief"], None, "src:crystalscorp")
 C("monolith", "Monolith", S, 6, 3, 9, "rare", ["guard"], None, "stoneback:35:carbon")
 C("granitegriffin", "Granite Griffin", S, 5, 4, 6, "rare", ["brim"], None, "skyforge:30:metal:210")
 C("titanminer", "Titan Miner", S, 6, 5, 6, "epic", [], ability(dmg(3, "print")), "coalgriffin:30:carbon")
-C("mountainwyrm", "Mountain Wyrm", S, 8, 7, 9, "legendary", ["guard", "brim"], None, "worldcoil:20:marble:30")
+C("mountainwyrm", "Mountain Wyrm", S, 8, 7, 8, "legendary", ["guard", "brim"], None, "worldcoil:20:marble:30")
 
 # ------------------------------------------------------------------- Wind
 D = "Wind"
@@ -131,13 +131,13 @@ C("pinfeather", "Pinfeather", D, 1, 2, 1, "common", [], None, "aurorawing:180:pl
 C("slipstream", "Slipstream", D, 3, 3, 2, "common", ["rush"], None, "thunderelk:150:stripes")
 C("zephyrfinch", "Zephyrfinch", D, 3, 3, 3, "uncommon", [], ability(speed(1)), "aurorawing:170:silk:150")
 C("swiftwhip", "Swiftwhip", D, 2, 2, 1, "uncommon", ["rush"], None, "sparkotter:155:stripes")
-C("galemoth", "Gale Moth", D, 4, 3, 3, "uncommon", [], ability(bounce()), "starloom:160:silk:140")
+C("galemoth", "Gale Moth", D, 4, 3, 2, "uncommon", [], ability(bounce()), "starloom:160:silk:140")
 C("skyhawk", "Skyhawk", D, 4, 4, 3, "uncommon", ["rush"], None, "coalgriffin:175:metal:190")
 C("tempestlynx", "Tempest Lynx", D, 4, 3, 4, "rare", ["twin"], None, "miragefox:158:glow")
-C("squallmaw", "Squallmaw", D, 5, 4, 4, "rare", [], ability(bounce()), "ironmaw:165:carbon")
+C("squallmaw", "Squallmaw", D, 5, 3, 4, "rare", [], ability(bounce()), "ironmaw:165:carbon")
 C("stormdrake", "Stormdrake", D, 4, 3, 5, "rare", ["brim"], None, "glassdrake:165:silk:145")
-C("vortexray", "Vortex Ray", D, 6, 5, 5, "epic", ["rush"], ability(bounce()), "voidmanta:170:glass")
-C("tempestforge", "Tempestforge", D, 8, 7, 6, "legendary", ["twin", "rush"], None, "skyforge:160:glow")
+C("vortexray", "Vortex Ray", D, 6, 5, 4, "epic", ["rush"], ability(bounce()), "voidmanta:170:glass")
+C("tempestforge", "Tempestforge", D, 8, 7, 7, "legendary", ["twin", "rush"], None, "skyforge:160:glow")
 
 # ------------------------------------------------------------------ Arcane
 A = "Arcane"
@@ -147,7 +147,7 @@ C("hexcat", "Hexcat", A, 2, 2, 1, "common", [], ability(speed(1)), "starloom:285
 C("glyphhare", "Glyphhare", A, 3, 3, 3, "common", [], None, "voltwig:270:marble:300")
 C("gearspider", "Gearspider", A, 3, 2, 3, "uncommon", ["thief"], None, "src:gearspider")
 C("sigilowl", "Sigilowl", A, 4, 3, 4, "uncommon", [], ability(draw(1)), "brambleowl:270:silk:300")
-C("voidmoth", "Voidmoth", A, 4, 3, 3, "uncommon", ["siphon"], None, "starloom:265:carbon")
+C("voidmoth", "Voidmoth", A, 4, 3, 4, "uncommon", ["siphon"], None, "starloom:265:carbon")
 C("hexstag", "Hexstag", A, 5, 4, 4, "rare", [], ability(heat(2, "print"), jam()), "runestag:290:glow")
 C("sigilsmith", "Sigilsmith", A, 4, 3, 3, "rare", [], ability(buff(2, 2, "print")), "miragefox:275:metal:280")
 C("chronocat", "Chronocat", A, 5, 4, 5, "rare", ["brim"], None, "cinderpaw:300:marble:270")
@@ -160,7 +160,7 @@ C("voidwyrm", "Voidwyrm", A, 9, 8, 8, "legendary", [], ability(destroy()), "worl
 # Modelled from primitives by tools/render_art4.gd; every one is a print gone
 # wonderfully wrong or a piece of printer come to life.
 C("clogglin", "Clog Goblin", F, 2, 2, 2, "common", [], ability(heat(1, "print")), "src:clog_goblin")
-C("trihydra", "Tri-Head Hydra", F, 8, 6, 7, "legendary", ["twin", "scorch"], None, "src:tri_head_hydra")
+C("trihydra", "Tri-Head Hydra", F, 8, 7, 8, "legendary", ["twin", "scorch"], None, "src:tri_head_hydra")
 C("benchyboss", "Benchy Boss", W, 5, 4, 6, "rare", [], ability(heal(3, "printer")), "src:benchy_boss")
 C("coilcobra", "Coil Cobra", L, 3, 3, 2, "rare", ["rush"], ability(dmg(1, "print")), "src:coil_cobra")
 C("spaghettimess", "Spaghetti Mess", N, 3, 2, 3, "uncommon", [], ability(jam()), "src:spaghetti_mess")
@@ -177,9 +177,9 @@ C("spoolcolossus", "Spool Colossus", N, 8, 7, 9, "legendary", ["guard", "brim"],
 C("chillfan", "Chillfan", I, 4, 3, 4, "rare", [], ability(jam()), "src:chillfan")
 C("multimeterbeetle", "Multimeter Beetle", L, 5, 4, 4, "epic", ["rush"], ability(dmg(2, "enemy")), "src:multimeter_beetle")
 C("resinjelly", "Resin Jellyfish", W, 6, 4, 6, "epic", [], ability(heal(4, "printer"), draw(1)), "src:resin_jelly")
-C("rotordrone", "Rotor Drone", D, 3, 3, 3, "rare", ["rush"], ability(speed(1)), "src:rotor_drone")
-C("hexnuthog", "Hexnut Hog", S, 4, 3, 5, "rare", ["guard", "brim"], None, "src:hexnut_hog")
-C("gcodegolem", "G-code Golem", A, 6, 4, 6, "epic", [], ability(draw(2)), "src:gcode_golem")
+C("rotordrone", "Rotor Drone", D, 3, 3, 2, "rare", ["rush"], ability(speed(1)), "src:rotor_drone")
+C("hexnuthog", "Hexnut Hog", S, 4, 3, 4, "rare", ["guard", "brim"], None, "src:hexnut_hog")
+C("gcodegolem", "G-code Golem", A, 6, 5, 6, "epic", [], ability(draw(2)), "src:gcode_golem")
 C("heatbedhedgehog", "Heatbed Hedgehog", F, 3, 2, 4, "rare", ["scorch"], ability(heat(1, "print")), "src:heatbed_hedgehog")
 
 assert len({c["id"] for c in CREATURES}) == len(CREATURES), "duplicate creature id"

@@ -94,6 +94,8 @@ PRINTFORGE_PROFILE=neta godot --headless --path . -s tests/net_smoke.gd -- host 
 PRINTFORGE_PROFILE=netb godot --headless --path . -s tests/net_smoke.gd -- join
 ```
 
+`tools/card_winrates.gd` plays thousands of computer-vs-computer games with random legal decks and prints each card's win rate (`godot --headless --path . -s tools/card_winrates.gd -- 5000 100`); a card more than a few points off 50% at its cost is a balance suspect.
+
 `PRINTFORGE_PROFILE` points the game at a throwaway save so tests never touch
 your real one. `tools/sim_balance.gd` prints win rates of stand-in players
 against every campaign rival.
