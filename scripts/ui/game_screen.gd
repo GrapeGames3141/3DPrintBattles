@@ -119,6 +119,9 @@ func dialog(layer: Control, box_size: Vector2, style: StyleBox = null) -> Panel:
 	return UI.panel(layer, Rect2((Vector2(W, H) - s) * 0.5, s), style)
 
 
-func close_modal(inner: Control) -> void:
-	if is_instance_valid(inner):
+## `inner` is untyped on purpose: a screen often keeps the layer it opened, and
+## after Cancel that object is already freed (a typed Control argument would
+## make the call itself fail, so the next dialog never opened).
+func close_modal(inner) -> void:
+	if inner != null and is_instance_valid(inner):
 		inner.get_parent().queue_free()
