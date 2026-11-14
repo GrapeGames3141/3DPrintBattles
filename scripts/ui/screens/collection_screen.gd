@@ -282,6 +282,7 @@ func _build_grid() -> void:
 		if not P:
 			hit.mouse_entered.connect(_show_preview.bind(id))
 			hit.mouse_exited.connect(_hide_preview)
+			hit.button_up.connect(func(): if DisplayServer.is_touchscreen_available(): _hide_preview())
 
 		var own := UI.label("Owned %d/%d" % [owned, cap], 15, UI.CREAM if owned > 0 else UI.MUTED, false)
 		UI.place(_grid, own, pos + Vector2(2, ch_px + 3), Vector2(90, 22))

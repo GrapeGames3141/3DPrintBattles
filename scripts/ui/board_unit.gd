@@ -46,6 +46,7 @@ var _pose := -1
 var _walking := false
 var _frame := -1
 var _clock := 0.0
+var _last_step := -1
 
 
 static func make(unit: Dictionary, is_mirrored: bool) -> BoardUnit:
@@ -118,6 +119,9 @@ func _process(delta: float) -> void:
 	if _walking:
 		# Stepping: the walk cycle, a hop on every stride and a lean into it.
 		var stride := _clock / 0.1
+		if int(stride) % 2 == 0 and int(stride) != _last_step:
+			_last_step = int(stride)
+			Audio.sfx("step", 1.0 + (hash(str(def.get("id", ""))) % 5) * 0.06)
 		_show(_pose if _pose >= 0 else WALK_CYCLE[int(stride) % WALK_CYCLE.size()])
 		_sprite.scale = Vector2.ONE
 		_sprite.position = Vector2(6, -12 - absf(sin(stride * PI * 0.5)) * 6.0)
@@ -529,7 +533,13 @@ func shatter() -> void:
 	_mat.set_shader_parameter("crumble_kind", kind)
 	_mat.set_shader_parameter("crumble_seed", _card_seed())
 	var dur: float = CRUMBLE_TIME[kind]
+	var grand: float = {"epic": 1.15, "legendary": 1.4}.get(str(def.get("rarity", "common")), 1.0)
+	dur *= grand
 	_crumble_bits(kind, dur)
+	if grand > 1.0:
+		# Rarer prints go out bigger: a second wave of bits and a ring of light.
+		_crumble_bits(kind, dur)
+		Effects.burst(self, Vector2(70, 90), "ring", GameData.element_color(def.get("element", "Neutral")), 1.0 + (grand - 1.0) * 2.0)
 	var tw := create_tween()
 	tw.tween_method(func(v: float): _mat.set_shader_parameter("crumble", maxf(v, 0.0001)), 0.0, 1.0, dur)
 	tw.parallel().tween_property(_base, "modulate:a", 0.0, 0.3).set_delay(dur * 0.75)

@@ -19,6 +19,7 @@ var raw := false
 var _glow: Panel
 var _glow_color: Variant = null
 var _glow_k := 1.0
+var _glow_t := 0.0
 var _count: Label
 
 
@@ -99,6 +100,7 @@ func set_glow(color: Variant) -> void:
 		set_notify_transform(true)
 	_glow.visible = color != null
 	_glow_color = color
+	set_process(color != null)
 	_style_glow()
 
 
@@ -117,6 +119,14 @@ func _style_glow() -> void:
 	s.shadow_color = Color(col, 0.5)
 	s.shadow_size = roundi(10.0 * k)
 	_glow.add_theme_stylebox_override("panel", s)
+
+
+## A card you can use breathes: its outline slowly swells and dims.
+func _process(delta: float) -> void:
+	if _glow == null or not _glow.visible:
+		return
+	_glow_t += delta
+	_glow.modulate.a = 0.72 + 0.28 * sin(_glow_t * 3.2 + float(get_instance_id() % 7))
 
 
 func _notification(what: int) -> void:

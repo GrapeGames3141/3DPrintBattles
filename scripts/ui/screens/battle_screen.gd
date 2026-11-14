@@ -1277,7 +1277,11 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			var uid: int = int(e["uid"])
 			var node: BoardUnit = _units.get(uid)
 			if node != null:
-				Audio.sfx("shatter")
+				var el: String = str(node.def.get("element", "Neutral")).to_lower()
+				Audio.sfx("die_" + el)
+				Audio.sfx("shatter", 1.0, 0.5)
+				if str(node.def.get("rarity", "")) == "legendary":
+					_shake_board()
 				_units.erase(uid)
 				(_rows[int(e["seat"])] as Array).erase(uid)
 				await node.shatter()
@@ -1351,16 +1355,79 @@ func _ev_play(e: Dictionary) -> void:
 			_tips_done["tool"] = true
 		elif def["type"] == "upgrade":
 			_tips_done["upgrade"] = true
+		var from := banner_pos
+		for h in _hand:
+			if int(h["uid"]) == int(e["card"]["uid"]):
+				var cn: CardView = h["node"]
+				from = cn.position + Vector2(CardView.W, CardView.H) * 0.5 * cn.scale.x
 		_drop_hand_card(int(e["card"]["uid"]))
 		if def["type"] != "creature":
 			Audio.sfx("attach" if def["type"] == "upgrade" else "tool")
-			await _wait(0.2)
+			await _cast(from, def, str(e.get("target", "")), seat)
+			await _wait(0.1)
 		return
 	# The opponent's card is shown face-up long enough to read.
 	if not _foe_backs.is_empty():
 		(_foe_backs.pop_back() as Node).queue_free()
 	_layout_hand()
 	await _show_foe_card(id, Vector2(backs_x - 45, -30), 0.55 if def["type"] == "creature" else 0.95, def["type"] != "creature", seat)
+	if def["type"] != "creature":
+		await _cast(show_pos + Vector2(CardView.W, CardView.H) * 0.35, def, str(e.get("target", "")), seat)
+
+
+## A tool or equipment flies from where it was played to what it is aimed at, a
+## glowing bolt coloured for what it does, and bursts on arrival. Tools that
+## hit everything burst across the enemy side instead.
+func _cast(from: Vector2, def: Dictionary, target: String, seat: int) -> void:
+	var ops: Array = def.get("effects", [])
+	var op: String = str((ops[0] as Dictionary).get("op", "")) if not ops.is_empty() else ""
+	var tint := {"damage": Color("ff8a3a"), "heal": UI.GOOD, "buff": UI.GOLD, "jam": Color("bfeaff"), "heat": Color("ff6a1a"),
+		"draw": UI.CYAN, "destroy": Color("d05cff"), "bounce": Color("8fb4e8"), "armor": Color("dfe6f0")}.get(op, UI.GOLD) as Color
+	if def["type"] == "upgrade":
+		tint = UI.GOLD
+	var to: Vector2
+	if target != "":
+		to = _center_of(target)
+	else:
+		var foe := 1 - seat
+		to = (_center_of("p%d" % foe) if op in ["damage", "jam", "destroy"] else _center_of("p%d" % seat)).lerp(Vector2(mid_x, banner_pos.y), 0.55)
+	var orb := TextureRect.new()
+	orb.texture = Effects.dot()
+	orb.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	orb.size = Vector2(54, 54)
+	orb.pivot_offset = orb.size * 0.5
+	orb.modulate = tint
+	orb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	orb.z_index = 44
+	orb.position = from - orb.size * 0.5
+	var trail := CPUParticles2D.new()
+	trail.texture = Effects.dot()
+	trail.position = orb.size * 0.5
+	trail.local_coords = false
+	trail.amount = 22
+	trail.lifetime = 0.28
+	trail.spread = 180.0
+	trail.gravity = Vector2.ZERO
+	trail.initial_velocity_min = 10.0
+	trail.initial_velocity_max = 50.0
+	trail.scale_amount_min = 0.15
+	trail.scale_amount_max = 0.35
+	trail.color = tint
+	orb.add_child(trail)
+	_fx.add_child(orb)
+	var arc := Vector2(0, -90.0 if from.y > to.y else 60.0)
+	var tw := create_tween()
+	tw.tween_method(func(t: float):
+		var q := 1.0 - t
+		var mid := from.lerp(to, 0.5) + arc
+		orb.position = q * q * from + 2.0 * q * t * mid + t * t * to - orb.size * 0.5
+		orb.scale = Vector2.ONE * (0.8 + 0.5 * sin(t * PI)), 0.0, 1.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	await tw.finished
+	if not is_inside_tree():
+		return
+	orb.queue_free()
+	Effects.burst(_fx, to, "ring" if target == "" else "spark", tint, 1.3)
+	Effects.burst(_fx, to, "hit" if op in ["damage", "destroy"] else "buff", tint)
 
 
 ## A card of mine leaves the hand: it lifts and fades.
@@ -1609,6 +1676,15 @@ func _ev_attack(e: Dictionary) -> void:
 	back.tween_callback(func():
 		node.z_index = 0
 		node.set_walking(false))
+
+
+## The whole battlefield jolts: for the loss of a legendary print.
+func _shake_board() -> void:
+	var home := _board.position
+	var tw := create_tween()
+	for i in 6:
+		tw.tween_property(_board, "position", home + Vector2(randf_range(-7, 7), randf_range(-5, 5)), 0.04)
+	tw.tween_property(_board, "position", home, 0.05)
 
 
 func _ev_damage(e: Dictionary) -> void:

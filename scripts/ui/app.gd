@@ -147,6 +147,8 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	if MUSIC.has(screen):
 		Audio.music(MUSIC[screen])
 	s.build()
+	if screen != "battle" and screen != "menu":
+		_stagger_in(s)
 	var enter := s.create_tween().set_parallel(true)
 	enter.tween_property(s, "modulate:a", 1.0, 0.2)
 	s.position.y = 14.0
@@ -156,6 +158,26 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	if s.size != stage_size:
 		s.size = stage_size
 		s.relayout()
+
+
+## The pieces of a screen arrive one after another instead of all at once: each
+## top-level control fades and rises into place, a few hundredths apart.
+func _stagger_in(screen_node: Control) -> void:
+	var i := 0
+	for c in screen_node.get_children():
+		if not (c is Control) or (c as Control).size.x >= stage_size.x * 0.9 and (c as Control).size.y >= stage_size.y * 0.9:
+			continue
+		var ctl := c as Control
+		if ctl.modulate.a < 0.99:
+			continue
+		var delay := minf(i * 0.018, 0.3)
+		i += 1
+		var rest := ctl.position
+		ctl.modulate.a = 0.0
+		ctl.position = rest + Vector2(0, 18)
+		var tw := ctl.create_tween().set_parallel(true)
+		tw.tween_property(ctl, "modulate:a", 1.0, 0.22).set_delay(delay)
+		tw.tween_property(ctl, "position", rest, 0.26).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 
 
 func toast(text: String, color: Color = UI.CREAM) -> void:

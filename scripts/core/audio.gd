@@ -16,7 +16,7 @@ const TUNE := {
 	"print": [0.7, 0.04], "job_start": [0.75, 0.0], "print_done": [0.8, 0.0], "deploy": [0.8, 0.03],
 	"shatter": [0.8, 0.07], "scrap": [0.55, 0.1], "spool_low": [0.7, 0.0],
 	"turn_mine": [0.7, 0.0], "turn_foe": [0.6, 0.0], "win": [0.95, 0.0], "lose": [0.9, 0.0],
-	"reveal": [0.8, 0.0], "reveal_epic": [0.9, 0.0], "heartbeat": [0.8, 0.02],
+	"reveal": [0.8, 0.0], "reveal_epic": [0.9, 0.0], "heartbeat": [0.8, 0.02], "step": [0.3, 0.12],
 }
 ## Old names still used here and there, mapped to the effect that replaced them.
 const ALIAS := {"card": "pick", "error": "deny"}
@@ -32,7 +32,7 @@ const TRACKS := {
 }
 const FADE_IN := 1.4
 const FADE_OUT := 1.0
-const LAYER_RATE := 0.5          # layer fades take about two seconds
+const LAYER_RATE := 0.9          # layer fades take about a second, so the music follows the fight
 
 var _pool: Array[AudioStreamPlayer] = []
 var _streams: Dictionary = {}

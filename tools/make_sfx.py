@@ -368,6 +368,93 @@ def atk_arcane():
     return shimmer * np.sin(np.pi * np.clip(t / 0.6, 0, 1)) ** 0.7 + ping(2093.0, 0.4, 9.0) * 0.2
 
 
+# -------------------------------------------------------------- deaths
+
+def _fall(f0, f1, dur, decay=6.0):
+    n = secs(dur)
+    return Sig(chirp(f0, f1, n, 1.0) * np.exp(-tt(n) * decay))
+
+
+@sfx
+def die_fire():
+    """Burning away: a roar that gutters, with crackle on top."""
+    return place([(0.0, crunch(0.9, 800.0, 9000.0, 2200.0, 3.5) * 0.9), (0.0, whoosh(0.6, 250.0, 3000.0, 0.25, False) * 0.7),
+                  (0.0, thump(65.0, 0.35, 10.0) * 0.6)], 1.0)
+
+
+@sfx
+def die_water():
+    """A splash and a gurgle as it slumps into a puddle."""
+    parts = [(0.0, crunch(0.35, 300.0, 4500.0, 900.0, 8.0) * 0.6), (0.0, thump(80.0, 0.25, 14.0) * 0.5)]
+    for k, (t0, a, b) in enumerate([(0.05, 900.0, 300.0), (0.17, 700.0, 240.0), (0.3, 560.0, 200.0), (0.46, 480.0, 170.0)]):
+        parts.append((t0, _fall(a, b, 0.14, 12.0) * (0.6 - 0.1 * k)))
+    return place(parts, 0.9)
+
+
+@sfx
+def die_lightning():
+    """A snap and a fizzle."""
+    return place([(0.0, crunch(0.5, 2000.0, 12000.0, 4200.0, 7.0) * 0.9), (0.0, _fall(5000.0, 160.0, 0.22, 10.0) * 0.8),
+                  (0.0, thump(70.0, 0.3, 12.0) * 0.6), (0.12, crunch(0.25, 3000.0, 12000.0, 3000.0, 12.0) * 0.5)], 0.7)
+
+
+@sfx
+def die_nature():
+    """Dry leaves rustling away, with a wooden creak."""
+    return place([(0.0, crunch(0.9, 1200.0, 7000.0, 1500.0, 3.0) * 0.7), (0.0, whoosh(0.7, 500.0, 2500.0, 0.5, False) * 0.45),
+                  (0.0, _fall(260.0, 110.0, 0.5, 4.5) * 0.45)], 1.0)
+
+
+@sfx
+def die_ice():
+    """Glass breaking, then tinkling."""
+    parts = [(0.0, crunch(0.55, 3000.0, 14000.0, 3600.0, 7.0) * 0.9), (0.0, thump(100.0, 0.18, 24.0) * 0.4)]
+    for t0, f in [(0.02, 2600.0), (0.07, 3300.0), (0.13, 2100.0), (0.2, 3900.0), (0.3, 3000.0)]:
+        parts.append((t0, ping(f, 0.3, 14.0, ((1, 1), (1.6, 0.5), (2.3, 0.25))) * 0.35))
+    return place(parts, 0.8)
+
+
+@sfx
+def die_stone():
+    """A rumble and rocks falling."""
+    parts = [(0.0, drum(50.0, 0.9)), (0.0, thump(45.0, 0.7, 5.0) * 0.8), (0.0, crunch(0.9, 100.0, 2500.0, 800.0, 3.5) * 0.8)]
+    for t0, f in [(0.12, 160.0), (0.22, 210.0), (0.33, 140.0), (0.46, 180.0), (0.6, 120.0)]:
+        parts.append((t0, thump(f, 0.12, 28.0) * 0.6 + clank(f * 3.0, 0.2)))
+    return place(parts, 1.1)
+
+
+@sfx
+def die_wind():
+    """A gust carrying it off."""
+    return place([(0.0, whoosh(1.0, 300.0, 5000.0, 0.4, True) * 0.8), (0.1, whoosh(0.7, 700.0, 7500.0, 0.5, True) * 0.4)], 1.1)
+
+
+@sfx
+def die_arcane():
+    """It is drawn in on itself, then a soft boom and a chime."""
+    n = secs(0.4)
+    suck = Sig(chirp(2600.0, 220.0, n, 1.0) * np.minimum(tt(n) / 0.3, 1.0) ** 1.5 * 0.5)
+    return place([(0.0, suck), (0.4, thump(70.0, 0.4, 7.0) * 0.8), (0.4, bell(hz(96), 1.0, 0.8) * 0.6), (0.45, bell(hz(103), 1.0, 0.6) * 0.4)], 1.5)
+
+
+@sfx
+def die_neutral():
+    """Layers letting go one after another: a run of clacks, then a thump."""
+    parts = [(0.0, thump(85.0, 0.3, 11.0) * 0.5)]
+    t = 0.0
+    for k in range(9):
+        parts.append((t, tick(rng, 900.0 + 70.0 * k) * 0.8 + clank(700.0 + 90.0 * k, 0.12)))
+        t += 0.085 - 0.006 * k
+    parts.append((t, drum(78.0, 0.6)))
+    return place(parts, 1.1)
+
+
+@sfx
+def step():
+    """One footfall."""
+    return tick(rng, 700.0) * 0.5 + thump(140.0, 0.07, 40.0) * 0.5
+
+
 # ------------------------------------------------------------- turns, state
 
 @sfx
