@@ -37,7 +37,7 @@ func _initialize() -> void:
 		"cube_crab": [_crab, -28.0, 0.62], "layer_shifter": [_shifter, -20.0, 0.85],
 		"stepper_golem": [_golem, -22.0, 0.95], "coil_cobra": [_cobra, -16.0, 0.95],
 		"clog_goblin": [_goblin, -20.0, 0.72], "gantry_mantis": [_mantis, -24.0, 1.0],
-		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, -12.0, 1.4, 8.6, 20.0],
+		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, -12.0, 1.4, 9.0, 18.0],
 	}
 	for id in tools:
 		if only.is_empty() or only.has(id):
@@ -489,7 +489,7 @@ func _roto() -> void:
 	var white := Color("f3f3f1")
 	var shade := Color("dcdcd8")
 	var dark := Color("16181c")
-	var cy := 1.0
+	var cy := 0.98
 	var R := 0.74
 	var lm := mat(white, 0.03, Vector3(0, 0, 1), 0.38, 0.45)
 	# The plate, its hole, studs and slots.
@@ -507,19 +507,27 @@ func _roto() -> void:
 	for i in 8:
 		var a := deg_to_rad(i * 45.0 + 22.5)
 		box(c, Vector3(0.07, 0.2, 0.2), Vector3(cos(a) * (R - 0.1), cy + sin(a) * (R - 0.1), 0.1), shade, Vector3(0, 0, rad_to_deg(a)), lm, 0.02)
-	# Square stud plates hanging off the rim, each at its own angle.
-	var angles := [150.0, 188.0, 228.0, 270.0, 312.0, 352.0, 30.0]
-	for i in angles.size():
-		var deg: float = angles[i]
-		var a := deg_to_rad(deg)
-		var wob := float((i * 53) % 31 - 15)
-		var rim := Vector3(cos(a) * (R - 0.05), cy + sin(a) * (R - 0.05), 0.06)
-		var out := Vector3(cos(a) * (R + 0.2), cy + sin(a) * (R + 0.2), 0.02 + (i % 2) * 0.04)
-		stick(c, rim, out, 0.045, white)
-		var node := Node3D.new()
-		_place(c, node, out, Vector3(0, 0, deg - 90.0 + wob))
-		box(node, Vector3(0.32, 0.32, 0.08), Vector3(0, 0, 0.0), white, Vector3.ZERO, lm, 0.02)
-		cyl(node, 0.095, 0.095, 0.06, Vector3(0, 0, 0.07), white, Vector3(90, 0, 0), 24, lm)
+	# The square stud plates are its legs: five planted on the ground, two raised
+	# mid-step. Each hangs off the rim on a clip, bends at a knee and ends in a flat
+	# foot with the stud facing up.
+	var legs := [
+		[212.0, -0.98, 0.1, 0.0], [241.0, -0.5, 0.1, 0.28],
+		[270.0, 0.0, 0.1, 0.1],
+		[299.0, 0.5, 0.1, 0.28], [328.0, 0.98, 0.1, 0.0],
+		[160.0, -1.2, 0.62, 0.12], [24.0, 1.2, 0.5, 0.2],
+	]
+	for i in legs.size():
+		var L: Array = legs[i]
+		var a := deg_to_rad(L[0])
+		var rim := Vector3(cos(a) * (R - 0.02), cy + sin(a) * (R - 0.02), 0.07)
+		var foot := Vector3(L[1], L[2], L[3])
+		ball(c, 0.09, rim, shade)
+		stick(c, rim, foot + Vector3(0, 0.1, 0), 0.085, white)
+		var wob := float((i * 41) % 25 - 12)
+		var pad := Node3D.new()
+		_place(c, pad, foot, Vector3(0, wob, 0))
+		box(pad, Vector3(0.46, 0.14, 0.46), Vector3(0, 0.05, 0), white, Vector3.ZERO, lm, 0.03)
+		cyl(pad, 0.13, 0.13, 0.07, Vector3(0, 0.15, 0), white, Vector3.ZERO, 24, lm)
 	# Neck block and the eye bar.
 	box(c, Vector3(0.3, 0.3, 0.3), Vector3(0, cy + R + 0.1, 0.0), white, Vector3.ZERO, lm, 0.03)
 	cyl(c, 0.09, 0.09, 0.06, Vector3(0, cy + R + 0.1, 0.17), white, Vector3(90, 0, 0), 24, lm)
