@@ -6,7 +6,7 @@ Prices and Maker Rank follow rarity:
   common 200-300 / rank 2-4, uncommon 450-700 / 4-8, rare 900-1500 / 8-13,
   epic 1800-2600 / 14-20, legendary 4000-6000 / 22-28.
 """
-from .fx import armor, draw, heal, heat, sh_armor, sh_dmg, sh_draw, sh_summon, speed, spool, summon, dmg
+from .fx import armor, draw, heal, heat, jam, sh_armor, sh_dmg, sh_draw, sh_heal, sh_spool, sh_summon, speed, spool, summon, dmg
 
 CARD_MODS = []
 PRINTER_MODS = []
@@ -62,6 +62,20 @@ M("potent_mix", "Potent Mix", "flame", TU, "rare", 1200, 10, "Its effect is 2 st
 M("bulk_discount", "Bulk Discount", "coin", TU, "epic", 2000, 15, "Costs 1 less.", dcost=-1)
 assert len(CARD_MODS) == 32, len(CARD_MODS)
 
+# ------------------------------------------ second wave of card mods (build variety)
+M("spool_pocket", "Spool Pocket", "spool", CR, "common", 230, 3, "Shatter: Add 2 Filament to your Spool.", sh=[sh_spool(2)])
+M("supports_removed", "Supports Removed", "check", CR, "common", 250, 4, "Costs 1 less, -1 Attack.", atk=-1, dcost=-1)
+M("hot_rod", "Hot Rod", "flame", CR, "uncommon", 560, 6, "+2 Attack, costs 1 more.", atk=2, dcost=1)
+M("resin_bath", "Resin Bath", "drop", CR, "uncommon", 640, 7, "On Print: Repair all your prints by 1, costs 1 more.", on=[heal(1, "all")], dcost=1)
+M("backup_battery", "Backup Battery", "star", CR, "rare", 1250, 11, "Shatter: Repair your Printer by 4.", sh=[sh_heal(4)])
+M("cold_start", "Cold Start", "snow", CR, "rare", 1500, 12, "On Print: Jam all enemy prints, costs 2 more.", on=[jam("all")], dcost=2)
+M("mirror_finish", "Mirror Finish", "hex", CR, "epic", 2100, 16, "Gains Siphon and +1 Health, costs 1 more.", hp=1, kw=["siphon"], dcost=1)
+M("quad_core", "Quad Core", "twin", CR, "legendary", 5500, 26, "+1/+1, Twin Nozzle and Rush, costs 3 more.", atk=1, hp=1, kw=["twin", "rush"], dcost=3)
+M("armor_boost", "Armor Boost", "shield", ALL, "common", 260, 4, "Your Printer gains 2 Armor when used, costs 1 more.", on=[armor(2)], dcost=1)
+M("overflow_valve", "Overflow Valve", "burst", ALL, "rare", 1350, 11, "Deal 1 damage to all enemy prints when used, costs 1 more.", on=[dmg(1, "all")], dcost=1)
+M("recharge", "Recharge", "spool", ALL, "epic", 2300, 17, "Repair your Printer by 3 and add 3 Filament when used, costs 1 more.", on=[heal(3, "printer"), spool(3)], dcost=1)
+assert len(CARD_MODS) == 43, len(CARD_MODS)
+
 
 def P(pid, name, icon, rarity, text, per, cost, rank, requires=()):
     row = {"id": pid, "name": name, "icon": icon, "rarity": rarity, "text": text, "per": per, "cost": cost, "rank": rank}
@@ -96,3 +110,11 @@ P("preheat_chamber", "Preheat Chamber", "flame", "uncommon", "Your first long pr
 P("liquid_hot_end", "Liquid-cooled Hot End", "drop", "rare", "Your Printer Power costs %d less Filament.", 1, 2800, 16, requires=["hot_end"])
 P("overdrive_board", "Overdrive Board", "burst", "epic", "%d more Print Speed on your first turn.", 3, 3600, 18, requires=["capacitor_bank", "stepper"])
 P("auto_sorter", "Auto Sorter", "coin", "uncommon", "Earn %d more Forge Coins for each win.", 6, 700, 8, requires=["sorter"])
+
+# Second wave of Printer mods: each has an engine hook and a modelled part.
+P("guard_frame", "Guard Frame", "shield", "uncommon", "Your prints with Guard have %d more Health.", 1, 1100, 9, requires=["frame"])
+P("overflow_hopper", "Overflow Hopper", "cube", "uncommon", "Your hand holds %d more card.", 1, 900, 8)
+P("tool_beacon", "Tool Beacon", "star", "uncommon", "Whenever you use a tool, repair your Printer by %d.", 1, 1000, 8)
+P("rush_springs", "Spring-Loaded Bed", "burst", "rare", "Your prints with Rush have %d more Attack.", 1, 2000, 13, requires=["quick_release"])
+P("salvage_arm", "Salvage Arm", "check", "rare", "When one of your prints shatters, your Printer gains %d Armor.", 1, 2100, 12, requires=["scrap_chute"])
+P("twin_gantry", "Twin Gantry", "twin", "epic", "Your prints with Twin Nozzle have %d more Attack and Health.", 1, 3800, 19, requires=["guard_frame", "rush_springs"])

@@ -49,6 +49,12 @@ const LOOKS := {
 	"liquid_hot_end": [0.45, 0.45, 0.09],
 	"overdrive_board": [0.78, 0.60, 0.11],
 	"auto_sorter": [0.96, 0.78, 0.10],
+	"guard_frame": [0.31, 0.40, 0.10],
+	"overflow_hopper": [0.87, 0.55, 0.10],
+	"tool_beacon": [0.88, 0.04, 0.09],
+	"rush_springs": [0.60, 0.78, 0.10],
+	"salvage_arm": [0.05, 0.47, 0.11],
+	"twin_gantry": [0.52, 0.13, 0.16],
 }
 
 var printer_id := ""

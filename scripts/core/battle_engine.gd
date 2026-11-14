@@ -69,6 +69,12 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 			"heat_bonus": GameData.mv(mods, "thermal_mass"),
 			"thief_bonus": GameData.mv(mods, "prehensile_gantry"),
 			"extra_draw": GameData.mv(mods, "quantum_slicer"),
+			"guard_hp": GameData.mv(mods, "guard_frame"),
+			"rush_atk": GameData.mv(mods, "rush_springs"),
+			"twin_stats": GameData.mv(mods, "twin_gantry"),
+			"hand_bonus": GameData.mv(mods, "overflow_hopper"),
+			"shatter_armor": GameData.mv(mods, "salvage_arm"),
+			"tool_heal": GameData.mv(mods, "tool_beacon"),
 			"ls_used": false, "rush_used": false, "sd_turn": -1,
 			"turns": 0,
 			"builds": GameData.clean_builds(deck, pc.get("builds", {})),
@@ -456,6 +462,8 @@ static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_
 			_run(st, seat, def.get("on_print", []), {"target": target, "self": int(u["uid"])}, ev)
 		"tool":
 			_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
+			if int(p["tool_heal"]) > 0:
+				_heal(st, "p%d" % seat, int(p["tool_heal"]), ev)
 		"upgrade":
 			var u := unit_of(st, target)
 			if not u.is_empty():
@@ -805,6 +813,17 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 			p["rush_used"] = true
 			if not (u["kw"] as Array).has("rush"):
 				(u["kw"] as Array).append("rush")
+	# Printer mods that reward a build: Guard, Rush and Twin Nozzle prints come out stronger.
+	var kws: Array = u["kw"]
+	if kws.has("guard") and int(p["guard_hp"]) > 0:
+		u["hp"] += int(p["guard_hp"])
+		u["max_hp"] += int(p["guard_hp"])
+	if kws.has("rush") and int(p["rush_atk"]) > 0:
+		u["atk"] += int(p["rush_atk"])
+	if kws.has("twin") and int(p["twin_stats"]) > 0:
+		u["atk"] += int(p["twin_stats"])
+		u["hp"] += int(p["twin_stats"])
+		u["max_hp"] += int(p["twin_stats"])
 	(p["board"] as Array).insert(clampi(slot, 0, (p["board"] as Array).size()), u)
 	ev.append({"e": "summon", "seat": seat, "unit": u.duplicate(true), "slot": (p["board"] as Array).find(u), "hand": from_hand, "built": built})
 	return u
@@ -823,7 +842,7 @@ static func _draw(st: Dictionary, seat: int, ev: Array) -> void:
 
 static func _give(st: Dictionary, seat: int, card_id: String, ev: Array, from_deck: bool = false) -> void:
 	var p: Dictionary = st["players"][seat]
-	if (p["hand"] as Array).size() >= GameData.MAX_HAND:
+	if (p["hand"] as Array).size() >= GameData.MAX_HAND + int(p["hand_bonus"]):
 		ev.append({"e": "burn", "seat": seat, "id": card_id})
 		return
 	var c := {"uid": _next_uid(st), "id": card_id}
@@ -849,6 +868,9 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 			if int(owner["shatter_draw"]) > 0 and int(owner["sd_turn"]) != int(st["turn"]):
 				owner["sd_turn"] = int(st["turn"])
 				_draw(st, int(u["seat"]), ev)
+			if int(owner["shatter_armor"]) > 0 and not GameData.card(u["id"]).get("token", false):
+				owner["armor"] = int(owner["armor"]) + int(owner["shatter_armor"])
+				ev.append({"e": "armor", "seat": int(u["seat"]), "armor": int(owner["armor"])})
 			# The pieces of a real print (not a token) go back on the spool.
 			if int(owner["refund"]) > 0 and not GameData.card(u["id"]).get("token", false):
 				owner["spool"] = int(owner["spool"]) + int(owner["refund"])

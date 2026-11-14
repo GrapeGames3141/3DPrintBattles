@@ -17,6 +17,7 @@ func _initialize() -> void:
 	_limits()
 	_printing()
 	_mods()
+	_mods2()
 	_blueprints()
 	_progression()
 	_random_mods()
@@ -698,6 +699,54 @@ func _mods() -> void:
 
 
 ## A throwaway Profile to test saves, ranks and the shop without touching the real one.
+## The second wave of Printer mods: each rewards a kind of build.
+func _mods2() -> void:
+	ok(GameData.clean_mods("ember_forge", {"guard_frame": 1}).is_empty() and GameData.clean_mods("ember_forge", {"guard_frame": 1, "frame": 1}).size() == 2, "Guard Frame needs the Frame")
+	ok(GameData.clean_mods("ember_forge", {"twin_gantry": 1, "guard_frame": 1, "frame": 1}).size() == 2, "Twin Gantry needs both Guard Frame and Spring-Loaded Bed")
+	ok(GameData.clean_mods("ember_forge", {"twin_gantry": 1, "guard_frame": 1, "frame": 1, "rush_springs": 1, "quick_release": 1}).size() == 5, "...and works once it has them")
+	# Prints come out stronger for the keyword each mod rewards.
+	for case in [
+			{"mod": {"frame": 1, "guard_frame": 1}, "base": {"frame": 1}, "card": "slagrhino", "atk": 0, "hp": 1, "name": "Guard Frame: +1 Health on Guard prints"},
+			{"mod": {"quick_release": 1, "rush_springs": 1}, "base": {"quick_release": 1}, "card": "kilnpup", "atk": 1, "hp": 0, "name": "Spring-Loaded Bed: +1 Attack on Rush prints"},
+			{"mod": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1, "twin_gantry": 1}, "base": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1}, "card": "tempestlynx", "atk": 1, "hp": 1, "name": "Twin Gantry: +1/+1 on Twin Nozzle prints"}]:
+		var a := game([], [], "ember_forge", "tide_press", case["base"])
+		var b := game([], [], "ember_forge", "tide_press", case["mod"])
+		# A second print, so Quick-Release's free Rush on the first does not muddy the check.
+		put(a, 0, "mossmunk")
+		put(b, 0, "mossmunk")
+		var ua := put(a, 0, case["card"])
+		var ub := put(b, 0, case["card"])
+		ok(int(ub["atk"]) - int(ua["atk"]) == int(case["atk"]) and int(ub["hp"]) - int(ua["hp"]) == int(case["hp"]), "%s (%d/%d vs %d/%d)" % [case["name"], int(ub["atk"]), int(ub["hp"]), int(ua["atk"]), int(ua["hp"])])
+	var plain := put(game([], [], "ember_forge", "tide_press"), 0, "aquafin")
+	var other := put(game([], [], "ember_forge", "tide_press", {"frame": 1, "guard_frame": 1}), 0, "aquafin")
+	ok(int(plain["hp"]) == int(other["hp"]), "Guard Frame leaves prints without Guard alone")
+	# Overflow Hopper: a tenth card fits.
+	var h0 := game([], [], "ember_forge", "tide_press")
+	var h1 := game([], [], "ember_forge", "tide_press", {"overflow_hopper": 1})
+	for st in [h0, h1]:
+		st["players"][0]["hand"] = []
+		for i in GameData.MAX_HAND:
+			give(st, 0, "mossmunk")
+		BattleEngine._draw(st, 0, [])
+	ok((h0["players"][0]["hand"] as Array).size() == GameData.MAX_HAND and (h1["players"][0]["hand"] as Array).size() == GameData.MAX_HAND + 1, "Overflow Hopper: the hand holds one more card")
+	# Tool Beacon: using a tool repairs the Printer.
+	var tb := game([], [], "ember_forge", "tide_press", {"tool_beacon": 1})
+	tb["players"][0]["hp"] = 10
+	act(tb, 0, {"t": "play", "hand": give(tb, 0, "nozzle_brush")})
+	ok(int(tb["players"][0]["hp"]) == 11, "Tool Beacon repairs 1 when you use a tool")
+	var tn := game([], [], "ember_forge", "tide_press")
+	tn["players"][0]["hp"] = 10
+	act(tn, 0, {"t": "play", "hand": give(tn, 0, "nozzle_brush")})
+	ok(int(tn["players"][0]["hp"]) == 10, "...and not without it")
+	# Salvage Arm: a shattered print armours your Printer.
+	var sa := game([], [], "ember_forge", "tide_press", {"scrap_chute": 1, "salvage_arm": 1})
+	var mine := put(sa, 0, "voltwig")
+	var wall := put(sa, 1, "stoneback")
+	var armor0: int = int(sa["players"][0]["armor"])
+	act(sa, 0, {"t": "attack", "unit": int(mine["uid"]), "target": "u%d" % int(wall["uid"])})
+	ok(BattleEngine.find_unit(sa, int(mine["uid"])).is_empty() and int(sa["players"][0]["armor"]) == armor0 + 1, "Salvage Arm: your print shatters and your Printer gains 1 Armor")
+
+
 func fresh_profile() -> Node:
 	var pr: Node = load("res://scripts/core/profile.gd").new()
 	pr.path = "user://test_profile_rules.json"

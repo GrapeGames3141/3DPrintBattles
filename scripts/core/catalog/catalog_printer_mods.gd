@@ -26,4 +26,10 @@ const LIST := [
 	{"id": "liquid_hot_end", "name": "Liquid-cooled Hot End", "icon": "drop", "rarity": "rare", "text": "Your Printer Power costs %d less Filament.", "per": 1, "cost": 2800, "rank": 16, "requires": ["hot_end"]},
 	{"id": "overdrive_board", "name": "Overdrive Board", "icon": "burst", "rarity": "epic", "text": "%d more Print Speed on your first turn.", "per": 3, "cost": 3600, "rank": 18, "requires": ["capacitor_bank", "stepper"]},
 	{"id": "auto_sorter", "name": "Auto Sorter", "icon": "coin", "rarity": "uncommon", "text": "Earn %d more Forge Coins for each win.", "per": 6, "cost": 700, "rank": 8, "requires": ["sorter"]},
+	{"id": "guard_frame", "name": "Guard Frame", "icon": "shield", "rarity": "uncommon", "text": "Your prints with Guard have %d more Health.", "per": 1, "cost": 1100, "rank": 9, "requires": ["frame"]},
+	{"id": "overflow_hopper", "name": "Overflow Hopper", "icon": "cube", "rarity": "uncommon", "text": "Your hand holds %d more card.", "per": 1, "cost": 900, "rank": 8},
+	{"id": "tool_beacon", "name": "Tool Beacon", "icon": "star", "rarity": "uncommon", "text": "Whenever you use a tool, repair your Printer by %d.", "per": 1, "cost": 1000, "rank": 8},
+	{"id": "rush_springs", "name": "Spring-Loaded Bed", "icon": "burst", "rarity": "rare", "text": "Your prints with Rush have %d more Attack.", "per": 1, "cost": 2000, "rank": 13, "requires": ["quick_release"]},
+	{"id": "salvage_arm", "name": "Salvage Arm", "icon": "check", "rarity": "rare", "text": "When one of your prints shatters, your Printer gains %d Armor.", "per": 1, "cost": 2100, "rank": 12, "requires": ["scrap_chute"]},
+	{"id": "twin_gantry", "name": "Twin Gantry", "icon": "twin", "rarity": "epic", "text": "Your prints with Twin Nozzle have %d more Attack and Health.", "per": 1, "cost": 3800, "rank": 19, "requires": ["guard_frame", "rush_springs"]},
 ]
