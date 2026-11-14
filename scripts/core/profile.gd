@@ -47,6 +47,7 @@ static func fresh() -> Dictionary:
 		"packs": {"standard": 0, "premium": 0},
 		"rivals_beaten": [],
 		"stats": {"wins": 0, "losses": 0, "packs_opened": 0},
+		"player": PlayerIdentity.fresh_player(),
 		"settings": {"music": 0.5, "sfx": 0.8, "fullscreen": false},
 	}
 
@@ -252,6 +253,9 @@ func _sanitize() -> void:
 		d["cards"] = list
 		if not owned.has(str(d.get("printer", ""))):
 			d["printer"] = owned[0] if not owned.is_empty() else "ember_forge"
+	data["player"] = PlayerIdentity.sanitize(data.get("player", {}) if data.get("player") is Dictionary else {})
+	if not _earned_titles().any(func(t): return t["id"] == data["player"]["title"]):
+		data["player"]["title"] = "rookie"
 
 
 # ------------------------------------------------------------------ basics
@@ -911,7 +915,7 @@ func next_rival_index() -> int:
 ## Records a finished battle and pays out. mode: "rival" | "quick" | "tutorial" | "lan" | "hotseat".
 ## `printer_id` is the Printer the player used (its Coin Sorter counts).
 ## Returns {"coins", "xp", "pack", "first_clear", "rank_from", "rank_to"}.
-func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "", printer_id: String = "") -> Dictionary:
+func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "", printer_id: String = "", opponent: Dictionary = {}) -> Dictionary:
 	var reward := {"coins": 0, "xp": 0, "pack": "", "first_clear": false, "rank_from": rank_level(), "rank_to": rank_level()}
 	if mode == "hotseat":
 		return reward
@@ -935,7 +939,7 @@ func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "
 	if won:
 		data["stats"]["wins"] = int(data["stats"]["wins"]) + 1
 		reward["coins"] = int(GameData.WIN_COINS[lv]) + sorter
-		reward["xp"] = GameData.XP_PVP_WIN if mode == "lan" else int(GameData.XP_WIN[lv])
+		reward["xp"] = GameData.XP_PVP_WIN if mode in ["lan", "ranked"] else int(GameData.XP_WIN[lv])
 		if mode == "rival" and rival_id != "" and not rival_beaten(rival_id):
 			var r := GameData.rival(rival_id)
 			(data["rivals_beaten"] as Array).append(rival_id)
@@ -947,7 +951,9 @@ func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "
 	else:
 		data["stats"]["losses"] = int(data["stats"]["losses"]) + 1
 		reward["coins"] = GameData.LOSS_COINS
-		reward["xp"] = GameData.XP_PVP_LOSS if mode == "lan" else int(GameData.XP_LOSS[lv])
+		reward["xp"] = GameData.XP_PVP_LOSS if mode in ["lan", "ranked"] else int(GameData.XP_LOSS[lv])
+	if mode == "ranked":
+		reward["rating"] = record_ranked(str(opponent.get("name", "Rival")), int(opponent.get("rating", rating())), won)
 	data["coins"] = coins() + int(reward["coins"])
 	add_xp(int(reward["xp"]))
 	reward["rank_to"] = rank_level()
@@ -956,3 +962,103 @@ func record_battle(mode: String, won: bool, level: int = 1, rival_id: String = "
 		reward["found_mod"] = award_random_mod()
 	save()
 	return reward
+
+
+# ----------------------------------------------------- player profile & rating
+
+func player() -> Dictionary:
+	return data["player"]
+
+
+func player_name() -> String:
+	var p: Dictionary = data["player"]
+	return PlayerIdentity.name_of(int(p["adj"]), int(p["noun"]), int(p["num"]))
+
+
+func rating() -> int:
+	return int(data["player"]["rating"])
+
+
+## The print shown as your picture: your pick if you still own it, else the first creature you own.
+func avatar_id() -> String:
+	var want := str(data["player"]["avatar"])
+	if want != "" and owned_count(want) > 0 and GameData.card(want).get("type", "") == "creature":
+		return want
+	for c in GameData.collectible():
+		if c["type"] == "creature" and owned_count(str(c["id"])) > 0:
+			return str(c["id"])
+	return ""
+
+
+func owned_creatures() -> Array:
+	var out: Array = []
+	for c in GameData.collectible():
+		if c["type"] == "creature" and owned_count(str(c["id"])) > 0:
+			out.append(str(c["id"]))
+	return out
+
+
+## Picks the words and number of your name and your picture. Only fixed choices are allowed.
+func set_player_look(adj: int, noun: int, num: int, avatar: String) -> void:
+	var p: Dictionary = data["player"]
+	p["adj"] = posmod(adj, PlayerIdentity.ADJECTIVES.size())
+	p["noun"] = posmod(noun, PlayerIdentity.NOUNS.size())
+	p["num"] = posmod(num, 100)
+	p["avatar"] = avatar if owned_creatures().has(avatar) else ""
+	save()
+	changed.emit()
+
+
+func _earned_titles() -> Array:
+	var p: Dictionary = data["player"]
+	var unique := 0
+	for id in data["cards"]:
+		unique += 1
+	return PlayerIdentity.titles(int(p["best_rating"]), int(data["stats"]["wins"]), int(p["best_streak"]), (data["rivals_beaten"] as Array).size(), unique)
+
+
+func earned_titles() -> Array:
+	return _earned_titles()
+
+
+func title_name() -> String:
+	for t in _earned_titles():
+		if t["id"] == data["player"]["title"]:
+			return str(t["name"])
+	return "Rookie Maker"
+
+
+func set_title(id: String) -> bool:
+	if not _earned_titles().any(func(t): return t["id"] == id):
+		return false
+	data["player"]["title"] = id
+	save()
+	changed.emit()
+	return true
+
+
+## Applies one finished ranked game to the rating, streak and history.
+func record_ranked(opp_name: String, opp_rating: int, won: bool) -> Dictionary:
+	var p: Dictionary = data["player"]
+	var before := int(p["rating"])
+	var d := Rating.delta(before, opp_rating, won, int(p["ranked_games"]))
+	var after := maxi(Rating.FLOOR, before + d)
+	var league_before := Rating.league(before)
+	p["rating"] = after
+	p["ranked_games"] = int(p["ranked_games"]) + 1
+	var run := int(p["streak"])
+	if won:
+		p["ranked_wins"] = int(p["ranked_wins"]) + 1
+		run = run + 1 if run > 0 else 1
+	else:
+		run = run - 1 if run < 0 else -1
+	p["streak"] = run
+	p["best_streak"] = maxi(int(p["best_streak"]), int(p["streak"]))
+	p["best_rating"] = maxi(int(p["best_rating"]), after)
+	(p["history"] as Array).append({"opp": opp_name.substr(0, 28), "opp_rating": opp_rating, "won": won, "delta": after - before, "mode": "ranked"})
+	if (p["history"] as Array).size() > PlayerIdentity.HISTORY_LIMIT:
+		p["history"] = (p["history"] as Array).slice((p["history"] as Array).size() - PlayerIdentity.HISTORY_LIMIT)
+	var league_after := Rating.league(after)
+	return {"before": before, "after": after, "delta": after - before, "league": Rating.league_text(after),
+		"promoted": int(league_after["index"]) > int(league_before["index"]) or (int(league_after["index"]) == int(league_before["index"]) and int(league_after["division"]) != 0 and int(league_after["division"]) < int(league_before["division"])),
+		"demoted": int(league_after["index"]) < int(league_before["index"])}

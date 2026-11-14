@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_blueprints()
 	_progression()
 	_random_mods()
+	_ranked()
 	_network_view()
 	_ai_games()
 	_fuzz_games()
@@ -987,6 +988,90 @@ func _blueprints() -> void:
 		if int(r["winner"]) == -3:
 			bad += 1
 	ok(bad == 0, "matches with fully built cards finish")
+
+
+## Ratings, leagues, the matchmaker, player identity and the ranked ladder.
+func _ranked() -> void:
+	var v: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://backend/test/rating_vectors.json"))
+	for c in v["rating"]:
+		ok(Rating.delta(int(c["a"]), int(c["b"]), bool(c["won"]), int(c["games"])) == int(c["delta"]), "rating vector %s" % str(c))
+	for w in v["windows"]:
+		ok(Matchmaker.window(int(w["seconds"])) == int(w["window"]), "match window after %ds" % int(w["seconds"]))
+	for l in v["leagues"]:
+		var got := Rating.league(int(l["rating"]))
+		ok(got["name"] == l["name"] and int(got["division"]) == int(l["division"]), "league at %d is %s %d (got %s %d)" % [int(l["rating"]), l["name"], int(l["division"]), got["name"], int(got["division"])])
+	for m in v["matchmaking"]:
+		var got := Matchmaker.pairs(v["queue"], int(m["now"]))
+		ok(str(got) == str(m["pairs"]), "pairs at %ds: %s (got %s)" % [int(m["now"]), str(m["pairs"]), str(got)])
+	ok(Rating.after(100, 1500, false, 50) == Rating.FLOOR, "rating never falls below the floor")
+	ok(Rating.delta(1000, 1000, true, 0) == -Rating.delta(1000, 1000, false, 0), "an even game is zero-sum")
+	ok(Rating.delta(1000, 1400, true, 40) > Rating.delta(1000, 1000, true, 40), "beating a stronger player pays more")
+	ok(Matchmaker.should_offer_ghost(Matchmaker.GHOST_AFTER) and not Matchmaker.should_offer_ghost(Matchmaker.GHOST_AFTER - 1), "a computer opponent is offered after the wait")
+	# Nobody is matched with someone they just played, and a lone player gets no pair.
+	var two := [{"id": "x", "rating": 1000, "joined": 0, "recent": ["y"]}, {"id": "y", "rating": 1000, "joined": 0, "recent": []}]
+	ok(Matchmaker.pairs(two, 500).is_empty(), "recent opponents are not paired again")
+	ok(Matchmaker.pairs([two[0]], 500).is_empty(), "one player alone is not paired")
+	# Identity: names come from fixed lists, ids are well formed, damaged saves are repaired.
+	var pl := PlayerIdentity.fresh_player()
+	ok(PlayerIdentity.valid_id(str(pl["id"])), "a new player gets a 16-hex id")
+	ok(PlayerIdentity.name_of(0, 0, 7) == "Swift Maker 07", "names are an adjective, a noun and two digits")
+	var bad := PlayerIdentity.sanitize({"id": "nope", "adj": 99, "noun": -3, "num": 1234, "rating": -50, "ranked_games": 3, "ranked_wins": 99, "title": "x",
+		"history": [{"opp": "<b>Hax\n</b>", "opp_rating": -4, "won": 1, "delta": 3, "mode": "ranked"}, 5]})
+	ok(PlayerIdentity.valid_id(str(bad["id"])) and int(bad["adj"]) < PlayerIdentity.ADJECTIVES.size() and int(bad["noun"]) < PlayerIdentity.NOUNS.size(), "a damaged player record is repaired")
+	ok(int(bad["rating"]) == Rating.FLOOR and int(bad["ranked_wins"]) == 3 and (bad["history"] as Array).size() == 1, "ratings are floored, wins capped, junk history dropped")
+	ok(not str(bad["history"][0]["opp"]).contains("<") and not str(bad["history"][0]["opp"]).contains("\n"), "opponent names in history keep only letters, digits and spaces")
+	# The profile applies a ranked result.
+	var pr := fresh_profile()
+	ok(pr.rating() == Rating.START and pr.title_name() == "Rookie Maker", "a new profile starts at 1000 as a Rookie Maker")
+	var r1: Dictionary = pr.record_ranked("Swift Maker 07", 1000, true)
+	ok(int(r1["delta"]) == 20 and pr.rating() == 1020, "a first win against an equal pays 20 (calibration)")
+	ok(int(pr.player()["streak"]) == 1 and int(pr.player()["ranked_wins"]) == 1, "the win starts a streak")
+	var r2: Dictionary = pr.record_ranked("Bold Gear 01", 1100, false)
+	ok(int(r2["delta"]) < 0 and int(pr.player()["streak"]) == -1, "a loss ends it")
+	for i in 30:
+		pr.record_ranked("Quiet Bolt 03", 1000, true)
+	ok((pr.player()["history"] as Array).size() == PlayerIdentity.HISTORY_LIMIT, "history keeps the last %d games" % PlayerIdentity.HISTORY_LIMIT)
+	ok(int(pr.player()["best_streak"]) >= 30 and int(pr.player()["best_rating"]) == pr.rating(), "best streak and best rating are tracked")
+	ok(pr.set_title("streak") and pr.title_name() == "Hot Streak", "a title you earned can be worn")
+	ok(not pr.set_title("league_6"), "a title you have not earned cannot")
+	var reward: Dictionary = pr.record_battle("ranked", true, 1, "", "ember_forge", {"name": "Sunny Spool 09", "rating": pr.rating()})
+	ok(reward.has("rating") and int(reward["xp"]) == GameData.XP_PVP_WIN, "a ranked win pays PvP XP and carries the rating change")
+	pr.set_player_look(2, 3, 105, "cinderpaw")
+	ok(pr.player_name() == "Clever Spool 05" and pr.avatar_id() == "cinderpaw", "you choose your name words, number (mod 100) and picture")
+	pr.set_player_look(2, 3, 5, "glassdrake")
+	ok(pr.avatar_id() != "glassdrake", "you cannot wear a print you do not own")
+	# The ladder builds legal, rating-appropriate opponents, the same way every time.
+	for rating in [100, 800, 1000, 1250, 1500, 1900, 2400]:
+		for sd in 6:
+			var o: Dictionary = Ladder.opponent(rating, 100 + sd)
+			ok(GameData.deck_error(o["deck"]) == "", "ladder deck at %d (seed %d) is legal" % [rating, sd])
+			ok(absi(int(o["rating"]) - rating) <= 60 or rating < 160, "the opponent sits near rating %d (%d)" % [rating, int(o["rating"])])
+			ok(GameData.printer(str(o["printer"]))["id"] == o["printer"], "the opponent has a real Printer")
+	ok(str(Ladder.opponent(1300, 5)) == str(Ladder.opponent(1300, 5)), "the same seed makes the same opponent")
+	var low: Dictionary = Ladder.opponent(500, 3)
+	var high: Dictionary = Ladder.opponent(2000, 3)
+	var rare_low := 0
+	var rare_high := 0
+	for id in low["deck"]:
+		if GameData.card(id)["rarity"] in ["epic", "legendary"]:
+			rare_low += 1
+	for id in high["deck"]:
+		if GameData.card(id)["rarity"] in ["epic", "legendary"]:
+			rare_high += 1
+	ok(rare_low == 0 and int(low["tier"]) < int(high["tier"]), "low-rated opponents use no epics or legendaries and lower Blueprint tiers")
+	# A full battle against a ladder opponent can be played out, as the ranked session sets it up.
+	var opp: Dictionary = Ladder.opponent(1000, 9)
+	var mine: Array = GameData.expand(GameData.STARTER_DECK)
+	var st := BattleEngine.new_game({"seed": 5, "players": [
+		{"printer": "ember_forge", "deck": mine, "builds": GameData.uniform_builds(mine, 1)},
+		{"printer": opp["printer"], "deck": (opp["deck"] as Array).duplicate(), "hp_bonus": int(opp["hp_bonus"]),
+			"builds": GameData.uniform_builds(opp["deck"], int(opp["tier"]))}]})
+	var steps := 0
+	while not st["over"] and steps < 5000:
+		steps += 1
+		var seat: int = int(st["active"])
+		BattleEngine.apply(st, seat, BattleAI.choose(st, seat, int(opp["level"])))
+	ok(st["over"], "a game against a ladder opponent finishes")
 
 
 func _network_view() -> void:

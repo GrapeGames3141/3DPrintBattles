@@ -1,0 +1,253 @@
+{
+ "rating": [
+  {
+   "a": 1000,
+   "b": 1000,
+   "won": true,
+   "games": 0,
+   "delta": 20
+  },
+  {
+   "a": 1000,
+   "b": 1000,
+   "won": false,
+   "games": 0,
+   "delta": -20
+  },
+  {
+   "a": 1000,
+   "b": 1200,
+   "won": true,
+   "games": 5,
+   "delta": 30
+  },
+  {
+   "a": 1000,
+   "b": 1200,
+   "won": false,
+   "games": 5,
+   "delta": -10
+  },
+  {
+   "a": 1400,
+   "b": 1000,
+   "won": true,
+   "games": 12,
+   "delta": 3
+  },
+  {
+   "a": 1400,
+   "b": 1000,
+   "won": false,
+   "games": 12,
+   "delta": -25
+  },
+  {
+   "a": 1800,
+   "b": 1750,
+   "won": true,
+   "games": 40,
+   "delta": 9
+  },
+  {
+   "a": 1800,
+   "b": 1750,
+   "won": false,
+   "games": 40,
+   "delta": -11
+  },
+  {
+   "a": 500,
+   "b": 1500,
+   "won": true,
+   "games": 31,
+   "delta": 20
+  },
+  {
+   "a": 100,
+   "b": 100,
+   "won": false,
+   "games": 2,
+   "delta": -20
+  },
+  {
+   "a": 1650,
+   "b": 1655,
+   "won": true,
+   "games": 29,
+   "delta": 14
+  },
+  {
+   "a": 2000,
+   "b": 900,
+   "won": false,
+   "games": 100,
+   "delta": -20
+  }
+ ],
+ "windows": [
+  {
+   "seconds": 0,
+   "window": 100
+  },
+  {
+   "seconds": 1,
+   "window": 115
+  },
+  {
+   "seconds": 10,
+   "window": 250
+  },
+  {
+   "seconds": 40,
+   "window": 700
+  },
+  {
+   "seconds": 100,
+   "window": 700
+  }
+ ],
+ "leagues": [
+  {
+   "rating": 100,
+   "name": "Spool",
+   "division": 3
+  },
+  {
+   "rating": 899,
+   "name": "Spool",
+   "division": 1
+  },
+  {
+   "rating": 900,
+   "name": "Filament",
+   "division": 3
+  },
+  {
+   "rating": 1049,
+   "name": "Filament",
+   "division": 1
+  },
+  {
+   "rating": 1050,
+   "name": "Nozzle",
+   "division": 3
+  },
+  {
+   "rating": 1199,
+   "name": "Nozzle",
+   "division": 1
+  },
+  {
+   "rating": 1200,
+   "name": "Hotend",
+   "division": 3
+  },
+  {
+   "rating": 1399,
+   "name": "Hotend",
+   "division": 1
+  },
+  {
+   "rating": 1400,
+   "name": "Extruder",
+   "division": 3
+  },
+  {
+   "rating": 1599,
+   "name": "Extruder",
+   "division": 1
+  },
+  {
+   "rating": 1600,
+   "name": "Gantry",
+   "division": 3
+  },
+  {
+   "rating": 1849,
+   "name": "Gantry",
+   "division": 1
+  },
+  {
+   "rating": 1850,
+   "name": "Print Master",
+   "division": 0
+  },
+  {
+   "rating": 3000,
+   "name": "Print Master",
+   "division": 0
+  }
+ ],
+ "matchmaking": [
+  {
+   "now": 0,
+   "pairs": [
+    [
+     "a",
+     "b"
+    ]
+   ]
+  },
+  {
+   "now": 10,
+   "pairs": [
+    [
+     "a",
+     "b"
+    ],
+    [
+     "c",
+     "e"
+    ]
+   ]
+  },
+  {
+   "now": 60,
+   "pairs": [
+    [
+     "a",
+     "b"
+    ],
+    [
+     "c",
+     "e"
+    ]
+   ]
+  }
+ ],
+ "queue": [
+  {
+   "id": "a",
+   "rating": 1000,
+   "joined": 0,
+   "recent": []
+  },
+  {
+   "id": "b",
+   "rating": 1090,
+   "joined": 0,
+   "recent": []
+  },
+  {
+   "id": "c",
+   "rating": 1500,
+   "joined": 0,
+   "recent": []
+  },
+  {
+   "id": "d",
+   "rating": 1560,
+   "joined": 5,
+   "recent": [
+    "c"
+   ]
+  },
+  {
+   "id": "e",
+   "rating": 1300,
+   "joined": 2,
+   "recent": []
+  }
+ ]
+}

@@ -2,6 +2,12 @@
   "name": "printforge-authority",
   "private": true,
   "version": "0.1.0",
-  "scripts": { "check": "tsc --noEmit", "build": "tsc --outDir dist --noEmit false", "test": "npm run check && npm run build && node test/authority.test.js" },
-  "devDependencies": { "typescript": "^5.7.0" }
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "tsc --outDir dist --noEmit false",
+    "test": "npm run check && npm run build && node test/authority.test.js && node test/rating.test.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
 }

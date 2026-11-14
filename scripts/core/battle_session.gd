@@ -17,6 +17,7 @@ var arena := "daily_arena"
 var names: Array = ["You", "Rival"]
 var net: NetLink
 var is_guest := false
+var opponent: Dictionary = {}   # ranked: who you are playing (name, rating)
 
 
 static func player_config(deck: Dictionary) -> Dictionary:
@@ -50,6 +51,19 @@ static func quick(deck: Dictionary, level: int) -> BattleSession:
 	s.arena = GameData.ARENAS[randi() % GameData.ARENAS.size()]
 	s.names = ["You", "%s Sparring Rig" % GameData.AI_LEVELS[level]]
 	s._start(player_config(deck), {"printer": r["printer"], "deck": GameData.expand(r["deck"])})
+	return s
+
+
+## A ranked game against a built-to-measure opponent near your rating.
+static func ranked(deck: Dictionary, opp: Dictionary) -> BattleSession:
+	var s := BattleSession.new()
+	s.mode = "ranked"
+	s.opponent = opp
+	s.ai_level = int(opp["level"])
+	s.arena = GameData.ARENAS[randi() % GameData.ARENAS.size()]
+	s.names = ["You", str(opp["name"])]
+	s._start(player_config(deck), {"printer": opp["printer"], "deck": (opp["deck"] as Array).duplicate(), "hp_bonus": int(opp["hp_bonus"]),
+		"builds": GameData.uniform_builds(opp["deck"], int(opp["tier"]))})
 	return s
 
 
@@ -149,7 +163,7 @@ func is_human(seat: int) -> bool:
 
 
 func is_ai_turn() -> bool:
-	return mode in ["rival", "quick", "tutorial"] and not state["over"] and not is_human(int(state["active"]))
+	return mode in ["rival", "quick", "tutorial", "ranked"] and not state["over"] and not is_human(int(state["active"]))
 
 
 ## Sends a player's action. Returns "" or the reason it was refused.

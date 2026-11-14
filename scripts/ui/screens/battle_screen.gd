@@ -1794,7 +1794,7 @@ func _show_result(winner: int) -> void:
 	_show_tip("")
 	_result_winner = winner
 	var won: bool = session.mode != "hotseat" and winner == session.my_seat
-	_reward = Profile.record_battle(session.mode, won, session.ai_level, session.rival_id, str(st["players"][session.my_seat]["printer"]))
+	_reward = Profile.record_battle(session.mode, won, session.ai_level, session.rival_id, str(st["players"][session.my_seat]["printer"]), session.opponent)
 	Audio.set_intensity(0.0)
 	Audio.stinger("win" if won or session.mode == "hotseat" else "lose", 0.2)
 	if int(_reward["coins"]) > 0:
