@@ -284,8 +284,12 @@ func _build_grid() -> void:
 			hit.mouse_exited.connect(_hide_preview)
 			hit.button_up.connect(func(): if DisplayServer.is_touchscreen_available(): _hide_preview())
 
-		var own := UI.label("Owned %d/%d" % [owned, cap], 15, UI.CREAM if owned > 0 else UI.MUTED, false)
-		UI.place(_grid, own, pos + Vector2(2, ch_px + 3), Vector2(90, 22))
+		var spare := Profile.spare_count(id)
+		var own_text := "Owned %d" % owned
+		if spare > 0:
+			own_text += "  (%d spare)" % spare
+		var own := UI.label(own_text, 15, UI.AMBER if spare > 0 else (UI.CREAM if owned > 0 else UI.MUTED), false)
+		UI.place(_grid, own, pos + Vector2(2, ch_px + 3), Vector2(cw - 34, 22))
 		var look := UI.button("?", "plain", Vector2(30, 26), 14)
 		look.tooltip_text = "Look at this card up close"
 		look.pressed.connect(_open_inspect.bind(id))
@@ -480,6 +484,9 @@ func _help_lines(id: String) -> String:
 		help.append("Upgrades stay on the print for the rest of the battle.")
 	if Profile.owned_count(id) == 0:
 		help.append("Not owned yet: shown as a raw, unpainted print.")
+	else:
+		var spare := Profile.spare_count(id)
+		help.append("You own %d. A deck can hold %d of this card.%s" % [Profile.owned_count(id), GameData.max_copies(id), ("  %d spare." % spare) if spare > 0 else ""])
 	return "\n".join(help)
 
 
@@ -525,6 +532,23 @@ func _open_inspect(id: String) -> void:
 	var done := UI.button("Close", "go", Vector2(200, 52))
 	done.pressed.connect(func(): close_modal(_inspect))
 	UI.place(_inspect, done, Vector2(W * 0.5 - 210, top + size_px.y + 112))
+	var spare := Profile.spare_count(id)
+	if spare > 0:
+		var worth := spare * GameData.recycle_value(id)
+		var rec := UI.button("Recycle %d spare  +%d coins" % [spare, worth], "plain", Vector2(420, 48), 19)
+		rec.tooltip_text = "Only copies a deck cannot hold are recycled; the ones you can use are kept."
+		var armed := [false]
+		rec.pressed.connect(func():
+			if not armed[0]:
+				armed[0] = true
+				rec.text = "Tap again to recycle  +%d coins" % worth
+				return
+			var paid: int = Profile.recycle_spares([id])
+			Audio.sfx("coin")
+			app.toast("Recycled for %d coins" % paid, UI.GOLD)
+			close_modal(_inspect)
+			_refresh())
+		UI.place(_inspect, rec, Vector2(W * 0.5 - 210, top + size_px.y + 176))
 	if Profile.owned_count(id) > 0:
 		var bp := UI.button("Blueprint", "primary", Vector2(200, 52))
 		bp.pressed.connect(func(): app.go("blueprints", {"card": id}))

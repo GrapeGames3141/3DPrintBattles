@@ -717,6 +717,16 @@ static func rival(id: String) -> Dictionary:
 	return {}
 
 
+## Coins a spare copy (one a deck cannot use) is worth when it is recycled.
+const RECYCLE_COINS := {"common": 5, "uncommon": 12, "rare": 30, "epic": 80, "legendary": 200}
+
+
+static func recycle_value(id: String) -> int:
+	return int(RECYCLE_COINS.get(card(id).get("rarity", "common"), 5))
+
+
+## The most copies of one card a single deck can hold. You may own more; the
+## rest are spares.
 static func max_copies(id: String) -> int:
 	return int(RARITIES[card(id).get("rarity", "common")]["copies"])
 

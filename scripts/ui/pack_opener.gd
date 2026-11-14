@@ -441,11 +441,13 @@ func _tag_text(k: int) -> Array:
 	var info: Dictionary = cards[k]
 	var rarity: String = GameData.card(info["id"])["rarity"]
 	var rarity_name: String = GameData.RARITIES[rarity]["name"]
-	if bool(info.get("lost", false)):
-		return ["You already have the most copies", UI.MUTED]
 	if bool(info["new"]):
 		return ["NEW!  %s" % rarity_name, UI.GOLD if _rank(k) < 2 else _rarity_color(k)]
-	return [rarity_name, _rarity_color(k)]
+	# A card you already had: your number goes up.
+	var owned := int(info.get("owned", 2))
+	if bool(info.get("spare", false)):
+		return ["You own %d  -  spare!" % owned, UI.AMBER]
+	return ["You own %d" % owned, _rarity_color(k)]
 
 
 ## Presents the card that has just come to the top of the stack.
@@ -539,15 +541,15 @@ func _build_summary(animate: bool) -> void:
 		_make_cards()
 		animate = false
 	var fresh := 0
-	var lost := 0
+	var spare := 0
 	for info in cards:
 		fresh += 1 if bool(info["new"]) else 0
-		lost += 1 if bool(info.get("lost", false)) else 0
+		spare += 1 if bool(info.get("spare", false)) else 0
 	var parts: Array = []
 	if fresh > 0:
 		parts.append("%d new for your collection" % fresh)
-	if lost > 0:
-		parts.append("%d extra cop%s not kept" % [lost, "y" if lost == 1 else "ies"])
+	if spare > 0:
+		parts.append("%d spare cop%s" % [spare, "y" if spare == 1 else "ies"])
 	_hint.text = ",  ".join(parts) if not parts.is_empty() else "More copies for your decks"
 
 	var s := _grid_scale()
@@ -567,7 +569,7 @@ func _build_summary(animate: bool) -> void:
 		else:
 			_put(card, spot, s)
 		var tag := _tag_text(k)
-		var label := UI.label(tag[0], 16 if bool(cards[k].get("lost", false)) else 20, tag[1], true, 6)
+		var label := UI.label(tag[0], 18 if bool(cards[k].get("spare", false)) else 20, tag[1], true, 6)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(self, label, Vector2(spot.x - CardView.W * s * 0.5 - 20, spot.y + half_h + 12), Vector2(CardView.W * s + 40, 28))
 		if animate:
@@ -575,6 +577,19 @@ func _build_summary(animate: bool) -> void:
 			label.create_tween().tween_property(label, "modulate:a", 1.0, 0.2).set_delay(0.3)
 
 	var by := lowest + (76.0 if _p else 86.0)
+	# Spares (copies no deck can hold) can be turned into coins right here.
+	var ids: Array = []
+	for info in cards:
+		ids.append(str(info["id"]))
+	var worth: int = Profile.recycle_worth(ids)
+	if worth > 0:
+		var recycle := UI.button("Recycle spares  +%d coins" % worth, "plain", Vector2(340, 48), 19)
+		recycle.pressed.connect(func():
+			var paid: int = Profile.recycle_spares(ids)
+			Audio.sfx("coin")
+			recycle.text = "Recycled!  +%d coins" % paid
+			recycle.disabled = true)
+		UI.place(self, recycle, Vector2(_w * 0.5 - 170, by - 62.0))
 	var done_btn := UI.button("Done", "go", Vector2(200, 56), 23)
 	done_btn.pressed.connect(func(): done.emit())
 	if more > 0:

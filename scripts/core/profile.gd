@@ -200,7 +200,7 @@ func _sanitize() -> void:
 	for id in data["cards"]:
 		var def := GameData.card(str(id))
 		if not def.is_empty() and not def.get("token", false) and int(data["cards"][id]) > 0:
-			cards[str(id)] = mini(int(data["cards"][id]), GameData.max_copies(str(id)))
+			cards[str(id)] = int(data["cards"][id])
 	data["cards"] = cards
 	data["xp"] = maxi(0, int(data["xp"]))
 	var builds: Dictionary = {}
@@ -792,14 +792,46 @@ func _fill_score(c: Dictionary, element: String) -> float:
 
 # ------------------------------------------------------------- collection
 
-## Adds one copy. Copies past the deck limit are simply lost: a card only ever
-## comes from opening a pack. Returns {"id", "new": bool, "lost": bool}.
+## Adds one copy. Every card you open counts: your number only goes up. Copies
+## past what a deck can hold are spares, which can be recycled for coins.
+## Returns {"id", "new": bool, "owned": int, "spare": bool}.
 func add_card(id: String) -> Dictionary:
 	var have := owned_count(id)
-	if have >= GameData.max_copies(id):
-		return {"id": id, "new": false, "lost": true}
 	data["cards"][id] = have + 1
-	return {"id": id, "new": have == 0, "lost": false}
+	return {"id": id, "new": have == 0, "owned": have + 1, "spare": have + 1 > GameData.max_copies(id)}
+
+
+## Copies of a card no deck can use (more than one deck can hold).
+func spare_count(id: String) -> int:
+	return maxi(0, owned_count(id) - GameData.max_copies(id))
+
+
+## Coins for recycling every spare among `ids` (all cards when empty).
+func recycle_worth(ids: Array = []) -> int:
+	var total := 0
+	for id in (ids if not ids.is_empty() else (data["cards"] as Dictionary).keys()):
+		total += spare_count(str(id)) * GameData.recycle_value(str(id))
+	return total
+
+
+## Turns spare copies into coins. Only copies beyond what a deck can hold are
+## ever taken, so a card you can use is never recycled. Returns the coins paid.
+func recycle_spares(ids: Array = []) -> int:
+	var coins := 0
+	var seen := {}
+	for id in (ids if not ids.is_empty() else (data["cards"] as Dictionary).keys()):
+		var sid := str(id)
+		if seen.has(sid):
+			continue
+		seen[sid] = true
+		var spare := spare_count(sid)
+		if spare > 0:
+			data["cards"][sid] = owned_count(sid) - spare
+			coins += spare * GameData.recycle_value(sid)
+	if coins > 0:
+		data["coins"] = int(data["coins"]) + coins
+		save()
+	return coins
 
 
 # --------------------------------------------------------------- Blueprints

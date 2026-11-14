@@ -94,7 +94,7 @@ func _refresh() -> void:
 		open.disabled = have <= 0
 		open.pressed.connect(_open.bind(kind))
 		UI.place(_body, open, Vector2(x + (pw - 300.0) * 0.5, y + off[4]))
-	var tip := UI.label("Win battles to earn Forge Coins. The only way to get a card is to open a pack. Extra copies of a card you already have are not kept.", 17, UI.MUTED, false)
+	var tip := UI.label("Win battles to earn Forge Coins. The only way to get a card is to open a pack. Every copy counts: your number goes up. A deck holds only 2 of a card (1 if Legendary), and spares can be recycled for coins.", 17, UI.MUTED, false)
 	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.place(_body, tip, Vector2(20, GameData.PACK_ORDER.size() * 532.0 + 4.0 if P else 690), Vector2(W - 52 if P else W - 40, 60 if P else 24))

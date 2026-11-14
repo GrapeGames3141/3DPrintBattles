@@ -1304,16 +1304,55 @@ func _packs() -> void:
 	ok(commons >= int(seen * 0.6), "most of them are Common (%d of %d)" % [commons, seen])
 	pn.deck_autofill(0)
 	ok(pn.deck_error(0) == "", "and they are enough for a legal deck (%d cards)" % (pn.deck(0)["cards"] as Array).size())
-	var extras := 0
+	var before := {}
+	for id in pn.data["cards"]:
+		before[id] = int(pn.data["cards"][id])
+	var opened := 0
+	var spares := 0
+	var always_up := true
 	for kind2 in ["basic"]:
 		pn.data["packs"][kind2] = 60
 		for i in 60:
 			for c in pn.open_pack(kind2):
-				extras += 1 if bool(c["lost"]) else 0
+				opened += 1
+				spares += 1 if bool(c["spare"]) else 0
+				always_up = always_up and int(c["owned"]) >= 1
+	var total_now := 0
+	for id in pn.data["cards"]:
+		total_now += int(pn.data["cards"][id])
+	var total_before := 0
+	for id in before:
+		total_before += int(before[id])
+	ok(total_now == total_before + opened and always_up, "every card opened adds to the collection: %d -> %d" % [total_before, total_now])
 	var over := false
 	for id in pn.data["cards"]:
 		over = over or int(pn.data["cards"][id]) > GameData.max_copies(str(id))
-	ok(extras > 0 and not over, "extra copies past the limit are lost (%d lost), never kept" % extras)
+	ok(over and spares > 0, "copies past a deck's limit are kept as spares (%d)" % spares)
+	# A deck can only take what is owned and what a deck may hold.
+	var pick := ""
+	for id in pn.data["cards"]:
+		if int(pn.data["cards"][id]) >= 3 and GameData.card(str(id))["rarity"] != "legendary":
+			pick = str(id)
+			break
+	if pick != "":
+		pn.deck_clear(0)
+		ok(pn.deck_add(0, pick) == "" and pn.deck_add(0, pick) == "" and pn.deck_add(0, pick) != "", "a deck takes at most %d of a card even when more are owned" % GameData.max_copies(pick))
+	pn.data["cards"]["voidmoth"] = 1
+	pn.deck_clear(0)
+	ok(pn.deck_add(0, "voidmoth") == "" and pn.deck_add(0, "voidmoth") != "", "with only one copy a card goes in a deck once")
+	# Recycling: only spares are ever taken, and they pay a small amount.
+	var worth: int = pn.recycle_worth()
+	var coins0: int = pn.coins()
+	var paid: int = pn.recycle_spares()
+	ok(paid == worth and paid > 0 and pn.coins() == coins0 + paid, "recycling the spares pays their worth (%d coins)" % paid)
+	var still_over := false
+	var lost_usable := false
+	for id in pn.data["cards"]:
+		still_over = still_over or int(pn.data["cards"][id]) > GameData.max_copies(str(id))
+	for id in before:
+		lost_usable = lost_usable or pn.owned_count(str(id)) < mini(int(before[id]), GameData.max_copies(str(id)))
+	ok(not still_over and not lost_usable and pn.recycle_spares() == 0, "no spares are left and every usable copy is kept")
+	ok(GameData.recycle_value("mossmunk") < GameData.recycle_value("pyraxis"), "rarer cards recycle for more")
 	# Pack odds: every pack can give good cards, and the better packs give more.
 	for kind in GameData.PACK_ORDER:
 		var def: Dictionary = GameData.PACKS[kind]
@@ -1488,8 +1527,7 @@ func _blueprints() -> void:
 	var owned_before: int = pr.owned_count("mossmunk")
 	var coins_before: int = pr.coins()
 	var r1: Dictionary = pr.add_card("mossmunk")
-	if owned_before >= GameData.max_copies("mossmunk"):
-		ok(bool(r1["lost"]) and pr.owned_count("mossmunk") == owned_before and pr.coins() == coins_before, "a card beyond the deck limit is simply lost")
+	ok(pr.owned_count("mossmunk") == owned_before + 1 and int(r1["owned"]) == owned_before + 1 and pr.coins() == coins_before, "a card you already own always goes up by one")
 	var c1: int = pr.coins()
 	ok(pr.upgrade_card("mossmunk") == "" and pr.build_of("mossmunk")["tier"] == 2, "Level 2")
 	ok(c1 - pr.coins() == GameData.tier_coins("mossmunk", 2), "it cost coins only")
