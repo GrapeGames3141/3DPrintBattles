@@ -478,41 +478,58 @@ func _hydra() -> void:
 		glow(c, 0.045, Vector3(-0.5 + i * 0.25, 0.4 + fmod(i * 0.37, 0.7), -0.2), ORANGE, 2.5)
 
 
-## Cutie: a wheel on scraper pads with a pair of eyes on stalks. Built
-## from the maker's own printed figure (white plastic, black stalks and treads).
+## Cutie: a wheel-shaped print with eyes on stalks. Built from the maker's own
+## printed figure: a solid disc whose face has a hub with a hole and five
+## dimples, ribbed pockets and a rim, hollow square trays around the edge, and a
+## chunky eye bar on top with two black stalks and flat round eyes.
 func _roto() -> void:
 	var c := _beast_root
 	var white := Color("f1f2f4")
+	var shade := Color("d9dce1")
 	var dark := Color("1a1d22")
 	var cy := 1.0
-	var R := 0.85
-	torus(c, R, 0.17, Vector3(0, cy, 0), white, Vector3(90, 0, 0), mat(white, 0.03, Vector3(0, 0, 1), 0.4, 0.5))
-	torus(c, R - 0.28, 0.07, Vector3(0, cy, 0.0), white, Vector3(90, 0, 0), mat(white, 0.03, Vector3(0, 0, 1), 0.4, 0.5))
-	cyl(c, 0.3, 0.3, 0.3, Vector3(0, cy, 0), white, Vector3(90, 0, 0), 32)
-	cyl(c, 0.12, 0.12, 0.32, Vector3(0, cy, 0.02), dark, Vector3(90, 0, 0), 24)
-	for i in 8:
-		var a := i * TAU / 8.0
-		var mid := Vector3(cos(a), sin(a), 0) * (0.5)
-		box(c, Vector3(0.36, 0.14, 0.2), Vector3(0, cy, 0) + mid, white, Vector3(0, 0, rad_to_deg(a)), null, 0.04)
-		# Black treads on the back of the rim.
-		box(c, Vector3(0.12, 0.3, 0.1), Vector3(cos(a + 0.2) * R, cy + sin(a + 0.2) * R, -0.2), dark, Vector3(0, 0, rad_to_deg(a + 0.2)), null, 0.02)
-	# Scraper pads hanging off the lower rim, each tilted a little differently.
+	var R := 0.78
+	var lm := mat(white, 0.03, Vector3(0, 0, 1), 0.42, 0.5)
+	# The disc: back plate, outer rim and the raised hub.
+	cyl(c, R, R, 0.16, Vector3(0, cy, -0.06), white, Vector3(90, 0, 0), 48, lm)
+	torus(c, R - 0.05, 0.12, Vector3(0, cy, 0.04), white, Vector3(90, 0, 0), lm)
+	cyl(c, 0.3, 0.3, 0.32, Vector3(0, cy, 0.04), white, Vector3(90, 0, 0), 40, lm)
+	cyl(c, 0.08, 0.08, 0.34, Vector3(0, cy, 0.05), dark, Vector3(90, 0, 0), 20)
 	for i in 5:
-		var a := deg_to_rad(205.0 + i * 32.0)
-		var pos := Vector3(cos(a) * (R + 0.12), cy + sin(a) * (R + 0.12), 0.08 + (i % 2) * 0.06)
-		box(c, Vector3(0.36, 0.36, 0.14), pos, white, Vector3(0, 0, rad_to_deg(a) + 90.0 + (i - 2) * 8.0), null, 0.05)
-		box(c, Vector3(0.2, 0.2, 0.05), pos + Vector3(0, 0, 0.08), white.darkened(0.06), Vector3(0, 0, rad_to_deg(a) + 90.0 + (i - 2) * 8.0), null, 0.03)
-		cyl(c, 0.06, 0.06, 0.05, pos + Vector3(0, 0, 0.12), white.darkened(0.12), Vector3(90, 0, 0), 16)
-	# The eye bar and its stalks.
-	box(c, Vector3(0.3, 0.3, 0.28), Vector3(0, cy + R + 0.2, 0), white, Vector3.ZERO, null, 0.05)
-	box(c, Vector3(1.2, 0.26, 0.34), Vector3(0, cy + R + 0.48, 0), white, Vector3.ZERO, null, 0.09)
+		var a := i * TAU / 5.0 + 0.3
+		cyl(c, 0.045, 0.045, 0.02, Vector3(cos(a) * 0.19, cy + sin(a) * 0.19, 0.21), shade, Vector3(90, 0, 0), 14)
+	# Ribs between the hub and the rim make the pockets.
+	for i in 8:
+		var a := i * TAU / 8.0 + 0.2
+		var mid := Vector3(cos(a), sin(a), 0) * 0.5
+		box(c, Vector3(0.3, 0.07, 0.2), Vector3(0, cy, 0.0) + mid + Vector3(0, 0, 0.0), white, Vector3(0, 0, rad_to_deg(a)), lm, 0.02)
+		box(c, Vector3(0.08, 0.1, 0.07), Vector3(0, cy, 0.0) + Vector3(cos(a + 0.4), sin(a + 0.4), 0) * 0.5 + Vector3(0, 0, 0.0), shade, Vector3(0, 0, rad_to_deg(a)), lm, 0.02)
+	# Hollow square trays around the edge, each hung a little differently.
+	for i in 8:
+		var deg := i * 45.0 + 22.5
+		if absf(deg - 90.0) < 30.0:
+			continue
+		var a := deg_to_rad(deg)
+		var node := Node3D.new()
+		var wob := float((i * 37) % 17 - 8)
+		_place(c, node, Vector3(cos(a), sin(a) + cy / (R + 0.2), 0) * 0.0 + Vector3(cos(a) * (R + 0.2), cy + sin(a) * (R + 0.2), 0.0 + (i % 2) * 0.04), Vector3(wob * 0.5, 0, deg - 90.0 + wob))
+		box(node, Vector3(0.4, 0.38, 0.05), Vector3(0, 0, -0.04), white, Vector3.ZERO, lm, 0.015)
+		box(node, Vector3(0.05, 0.38, 0.17), Vector3(-0.175, 0, 0.04), white, Vector3.ZERO, lm, 0.015)
+		box(node, Vector3(0.05, 0.38, 0.17), Vector3(0.175, 0, 0.04), white, Vector3.ZERO, lm, 0.015)
+		box(node, Vector3(0.4, 0.05, 0.17), Vector3(0, -0.165, 0.04), white, Vector3.ZERO, lm, 0.015)
+		box(node, Vector3(0.4, 0.05, 0.17), Vector3(0, 0.165, 0.04), white, Vector3.ZERO, lm, 0.015)
+		# A black tread on the far side of each tray.
+		box(node, Vector3(0.3, 0.1, 0.05), Vector3(0, 0.0, -0.1), dark, Vector3.ZERO, null, 0.01)
+	# The eye bar: a chunky tile on top of the rim.
+	box(c, Vector3(0.34, 0.22, 0.3), Vector3(0, cy + R + 0.06, -0.02), white, Vector3.ZERO, lm, 0.04)
+	box(c, Vector3(1.25, 0.3, 0.38), Vector3(0, cy + R + 0.25, -0.02), white, Vector3.ZERO, lm, 0.13)
 	for sx in [-1.0, 1.0]:
-		var base := Vector3(sx * 0.42, cy + R + 0.55, 0.0)
-		cyl(c, 0.085, 0.085, 0.42, base + Vector3(sx * 0.03, 0.2, 0), dark, Vector3(0, 0, -sx * 6.0), 24)
-		var top := base + Vector3(sx * 0.06, 0.45, 0.0)
-		var tilt := Vector3(50, 0, -sx * 6.0)
-		var n := Vector3(0, cos(deg_to_rad(50.0)), sin(deg_to_rad(50.0)))
-		cyl(c, 0.26, 0.26, 0.1, top, white, tilt, 36)
-		cyl(c, 0.21, 0.21, 0.03, top + n * 0.06, Color("9fd4ee"), tilt, 36)
-		cyl(c, 0.18, 0.18, 0.04, top + n * 0.075, dark, tilt, 36)
-		ball(c, 0.04, top + n * 0.1 + Vector3(sx * 0.05, 0.07, 0.0), WHITE)
+		var base := Vector3(sx * 0.4, cy + R + 0.39, -0.02)
+		cyl(c, 0.09, 0.09, 0.36, base + Vector3(0, 0.18, 0.0), dark, Vector3.ZERO, 24)
+		var top := base + Vector3(0, 0.4, 0.0)
+		var tilt := Vector3(48, 0, 0)
+		var n := Vector3(0, cos(deg_to_rad(48.0)), sin(deg_to_rad(48.0)))
+		cyl(c, 0.27, 0.27, 0.14, top, white, tilt, 40, lm)
+		cyl(c, 0.22, 0.22, 0.03, top + n * 0.08, Color("9fd4ee"), tilt, 40)
+		cyl(c, 0.185, 0.185, 0.04, top + n * 0.095, dark, tilt, 40)
+		ball(c, 0.042, top + n * 0.12 + Vector3(sx * 0.05, 0.07, 0.0), WHITE)
