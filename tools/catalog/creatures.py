@@ -7,7 +7,7 @@ finish, see tools/creature_finish.py) or "src:name" (a design cut out of
 tools/creature_sources/). Stat lines follow cost: roughly 2 x cost + 2 points,
 less for abilities and keywords, more for legendaries.
 """
-from .fx import (a_buff, a_dmg, a_give, a_heal, a_heat, a_jam, a_mill, a_refresh, on, ability, armor, bounce, buff, destroy, dmg, draw, heal, heat, jam, sh_armor, sh_buff, sh_dmg,
+from .fx import (a_poison, cleanse, sleep, weakness, a_buff, a_dmg, a_give, a_heal, a_heat, a_jam, a_mill, a_refresh, on, ability, armor, bounce, buff, destroy, dmg, draw, heal, heat, jam, sh_armor, sh_buff, sh_dmg,
                  sh_draw, sh_heal, sh_spool, sh_summon, speed, spool, steal, summon)
 
 CREATURES = []
@@ -24,7 +24,7 @@ def C(cid, name, element, cost, atk, hp, rarity, kw=(), fx=None, art=""):
 F = "Fire"
 C("emberling", "Emberling", F, 1, 1, 2, "common", ["scorch"], None, "frostling:14:glow")
 C("sootsprite", "Sootsprite", F, 2, 2, 2, "common", [], ability(dmg(1, "print")), "galehopper:10:carbon")
-C("kilnpup", "Kilnpup", F, 2, 2, 1, "common", ["rush"], None, "voltwig:24:silk:50")
+C("kilnpup", "Kilnpup", F, 2, 2, 1, "common", ["rush"], weakness("Nature"), "voltwig:24:silk:50")
 C("forgefinch", "Forgefinch", F, 3, 2, 3, "common", [], ability(speed(2)), "aurorawing:20:silk:44")
 C("lavalynx", "Lavalynx", F, 3, 3, 2, "common", [], ability(on("attack", a_dmg(1, "enemy_prints"))), "cinderpaw:5:stripes")
 C("wickfox", "Wickfox", F, 2, 2, 2, "uncommon", [], ability(buff(2, 0, "print")), "miragefox:16:glitter")
@@ -46,11 +46,11 @@ C("reefhopper", "Reefhopper", W, 3, 3, 2, "common", [], ability(on("kill", draw(
 C("mistwalker", "Mistwalker", W, 2, 1, 2, "common", [], ability(on("ally_print", a_buff(1, 0, "self"))), "aquafin:182:pla")
 C("tideotter", "Tideotter", W, 2, 2, 1, "uncommon", [], ability(draw(1)), "sparkotter:215:marble:180")
 C("pearlback", "Pearlback", W, 4, 2, 7, "uncommon", ["guard"], ability(heal(2, "printer")), "stoneback:200:marble:195")
-C("siphonshark", "Siphonshark", W, 4, 4, 4, "uncommon", ["thief"], None, "ironmaw:190:metal:205")
+C("siphonshark", "Siphonshark", W, 4, 4, 4, "uncommon", ["thief"], weakness("Fire"), "ironmaw:190:metal:205")
 C("kelpwyrm", "Kelpwyrm", W, 3, 2, 3, "uncommon", [], ability(buff(1, 2, "print")), "worldcoil:150:marble:120")
 C("glassserpent", "Glassserpent", W, 4, 3, 4, "rare", ["siphon"], None, "src:glassserpent")
 C("undertow", "Undertow", W, 5, 3, 5, "rare", [], ability(bounce()), "tidewhale:175:silk:200")
-C("brineleech", "Brineleech", W, 5, 4, 6, "rare", ["thief"], None, "coralisk:170:carbon")
+C("brineleech", "Brineleech", W, 5, 4, 6, "rare", [], ability(on("attack", a_poison())), "coralisk:170:carbon")
 C("tsunamiray", "Tsunami Ray", W, 6, 4, 6, "epic", [], ability(jam("all")), "voidmanta:205:glass")
 C("leviathanvat", "Leviathan Vat", W, 7, 7, 9, "legendary", [], ability(heal(6, "printer"), draw(2)), "tidewhale:230:glow")
 
@@ -75,7 +75,7 @@ C("stormcoil", "Stormcoil", L, 8, 8, 7, "legendary", ["twin"], None, "worldcoil:
 N = "Nature"
 C("sproutling", "Sproutling", N, 1, 1, 1, "common", [], ability(on("turn_start", a_buff(0, 1, "self"))), "mossmunk:100:wood")
 C("leafmite", "Leafmite", N, 2, 2, 2, "common", [], ability(heal(2)), "galehopper:110:glitter")
-C("barkback", "Barkback", N, 3, 2, 5, "common", ["guard"], None, "stoneback:90:wood")
+C("barkback", "Barkback", N, 3, 2, 5, "common", ["guard"], weakness("Water"), "stoneback:90:wood")
 C("mushmunk", "Mushmunk", N, 2, 1, 3, "common", [], ability(heal(2, "printer")), "mossmunk:20:marble:130")
 C("seedpup", "Seedpup", N, 1, 2, 1, "common", [], ability(on("turn_start", spool(1))), "frostling:100:pla")
 C("petalfawn", "Petalfawn", N, 3, 2, 3, "uncommon", [], ability(buff(1, 0, "others")), "runestag:320:silk:100")
@@ -92,7 +92,7 @@ C("worldroot", "Worldroot", N, 9, 6, 11, "legendary", ["guard"], ability(buff(2,
 I = "Ice"
 C("snowmite", "Snowmite", I, 2, 1, 2, "common", [], ability(on("turn_end", a_jam())), "frostling:190:glitter")
 C("slushpup", "Slushpup", I, 2, 2, 2, "common", [], ability(on("hurt", a_jam())), "galehopper:195:glass")
-C("rimefox", "Rimefox", I, 2, 2, 1, "common", ["rush"], None, "miragefox:200:silk:185")
+C("rimefox", "Rimefox", I, 3, 2, 2, "common", [], ability(sleep(2)), "miragefox:200:silk:185")
 C("frostbite", "Frostbite", I, 3, 3, 2, "common", [], ability(dmg(1, "printer")), "cinderpaw:200:pla")
 C("snowdrift", "Snowdrift", I, 5, 2, 5, "common", [], ability(on("turn_start", a_dmg(1, "enemy_prints"))), "verdantitan:200:marble:180")
 C("icehare", "Icehare", I, 3, 2, 3, "uncommon", [], ability(jam()), "voltwig:185:glass")
@@ -124,7 +124,7 @@ C("mountainwyrm", "Mountain Wyrm", S, 8, 7, 8, "legendary", ["guard", "brim"], N
 
 # ------------------------------------------------------------------- Wind
 D = "Wind"
-C("breezepup", "Breezepup", D, 1, 1, 2, "common", [], None, "frostling:160:glitter")
+C("breezepup", "Breezepup", D, 2, 1, 3, "common", [], ability(cleanse()), "frostling:160:glitter")
 C("gustkit", "Gustkit", D, 2, 1, 2, "common", [], ability(on("attack", a_dmg(1, "enemy_printer"))), "cinderpaw:150:silk:175")
 C("cloudhopper", "Cloudhopper", D, 2, 1, 3, "common", [], ability(on("foe_print", a_buff(1, 0, "self"))), "galehopper:165:glass")
 C("pinfeather", "Pinfeather", D, 2, 2, 1, "common", [], ability(on("attack", draw(1))), "aurorawing:180:pla")

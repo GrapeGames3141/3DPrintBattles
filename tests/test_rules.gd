@@ -13,6 +13,7 @@ func _initialize() -> void:
 	_basics()
 	_keywords()
 	_keywords2()
+	_wave3()
 	_heat_and_theft()
 	_effects()
 	_triggers()
@@ -99,7 +100,7 @@ func _catalog() -> void:
 			lists.append(t["fx"])
 		for list in lists:
 			for e in list:
-				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill"], c["id"] + " op " + e["op"])
+				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill", "poison", "sleep", "cleanse"], c["id"] + " op " + e["op"])
 				if e["op"] == "summon":
 					ok(GameData.has_card(e["card"]), c["id"] + " summons a real card")
 		for k in c.get("kw", []):
@@ -386,6 +387,63 @@ func _keywords2() -> void:
 	for id in ["skyhawk", "gantrymantis", "gearspider", "vinehare", "obsidianray", "rimestag", "swiftwhip", "stormdrake", "tempestlynx"]:
 		fuzz.append(GameData.card(id)["kw"])
 	ok(fuzz.size() == 9, "nine cards carry the new keywords")
+
+
+func _wave3() -> void:
+	print("wave 3: poison, sleep, cleanse, weakness")
+	var uid := func(u: Dictionary) -> String: return "u%d" % int(u["uid"])
+	# Toxic
+	var st := game([], [])
+	var leech := put(st, 0, "brineleech")
+	var victim := put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(leech["uid"]), "target": uid.call(victim)})
+	ok(int(victim["tox"]) == 1, "Brineleech poisons the print it hits")
+	victim["hp"] = 20
+	victim["max_hp"] = 20
+	var hp0: int = 20
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(victim["hp"]) == hp0 - 1 and int(victim["tox"]) == 2, "poison bites for 1 at the start of its owner's turn, then grows")
+	act(st, 1, {"t": "end"})
+	act(st, 0, {"t": "end"})
+	ok(int(victim["hp"]) == hp0 - 3 and int(victim["tox"]) == 3, "...then 2")
+	act(st, 1, {"t": "end"})
+	act(st, 0, {"t": "end"})
+	ok(int(victim["hp"]) == hp0 - 6 and int(victim["tox"]) == 0, "...then 3, and it wears off")
+	# Standby (sleep)
+	st = game([], [])
+	var target := put(st, 1, "cinderpaw")
+	var h := give(st, 0, "rimefox")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(target)})
+	ok(int(target["jam"]) == 2, "Rimefox puts a print to sleep for two turns")
+	act(st, 0, {"t": "end"})
+	ok((BattleEngine.attack_targets(st, int(target["uid"])) as Array).is_empty(), "a sleeping print cannot attack on its next turn")
+	act(st, 1, {"t": "end"})
+	act(st, 0, {"t": "end"})
+	ok((BattleEngine.attack_targets(st, int(target["uid"])) as Array).is_empty(), "...or the one after")
+	act(st, 1, {"t": "end"})
+	ok(int(target["jam"]) == 0, "then it wakes")
+	# Cleanse
+	st = game([], [])
+	var mine := put(st, 0, "cinderpaw")
+	mine["heat"] = 2
+	mine["jam"] = 1
+	mine["tox"] = 2
+	h = give(st, 0, "breezepup")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(int(mine["heat"]) == 0 and int(mine["jam"]) == 0 and int(mine["tox"]) == 0, "Breezepup cleanses Heat, Jam and Poison")
+	# Weakness
+	st = game([], [])
+	var fire := put(st, 0, "kilnpup")
+	var plant := put(st, 1, "mossmunk")
+	var stone := put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(fire["uid"]), "target": uid.call(plant)})
+	ok(int(plant["hp"]) == 3 - 4 or not st["players"][1]["board"].has(plant), "Kilnpup deals +2 to a Nature print (2 + 2)")
+	st = game([], [])
+	fire = put(st, 0, "kilnpup")
+	stone = put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(fire["uid"]), "target": uid.call(stone)})
+	ok(int(stone["hp"]) == 4, "...and no extra against other elements")
 
 
 func _heat_and_theft() -> void:

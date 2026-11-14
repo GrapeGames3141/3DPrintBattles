@@ -526,20 +526,21 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 	var quick: bool = (u["kw"] as Array).has("quick")
 	var dealt := 0
 	var overkill := 0
+	var power: int = int(u["atk"]) + _weakness_bonus(u, t)
 	if not t.is_empty() and not quick and (t["kw"] as Array).has("quick") and counter > 0:
 		# The defender hits first; a print it destroys never gets to swing.
 		_damage(st, "u%d" % uid, counter, ev)
 		_snap(st, t, u, ev)
 		if int(u["hp"]) > 0:
-			dealt = _damage(st, target, int(u["atk"]), ev)
+			dealt = _damage(st, target, power, ev)
 			_snap(st, u, t, ev)
 	else:
 		var hp_before: int = int(t["hp"]) if not t.is_empty() else 0
-		dealt = _damage(st, target, int(u["atk"]), ev)
+		dealt = _damage(st, target, power, ev)
 		if not t.is_empty():
 			_snap(st, u, t, ev)
 			if dealt > 0 and int(t["hp"]) <= 0:
-				overkill = maxi(int(u["atk"]) - hp_before, 0)
+				overkill = maxi(power - hp_before, 0)
 		var silenced: bool = quick and not t.is_empty() and int(t["hp"]) <= 0
 		if counter > 0 and not silenced:
 			var back := _damage(st, "u%d" % uid, counter, ev)
@@ -555,11 +556,25 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 			_heat(st, target, 2, ev, seat)
 		if (u["kw"] as Array).has("thief"):
 			_steal(st, uid, target, 1 + int(st["players"][seat].get("thief_bonus", 0)), 0, 1, ev)
-	_fire_unit(st, u, "attack", {"target": target}, ev)
+	_fire_unit(st, u, "attack", {"target": target, "trigger": target}, ev)
 	if not t.is_empty() and int(t["hp"]) <= 0:
 		_fire_unit(st, u, "kill", {"target": target}, ev)
 	_resolve(st, ev)
 	return ""
+
+
+## Weakness: a print that "beats" an element hits prints of it for 2 more.
+static func _weakness_bonus(attacker: Dictionary, target: Dictionary) -> int:
+	if target.is_empty():
+		return 0
+	var beats: String = str(def_of_unit(attacker).get("beats", ""))
+	if beats != "" and str(def_of_unit(target).get("element", "")) == beats:
+		return 2
+	return 0
+
+
+static func def_of_unit(u: Dictionary) -> Dictionary:
+	return GameData.card(str(u["id"]))
 
 
 ## Snap: a print with it destroys whatever it just damaged.
@@ -596,8 +611,10 @@ static func _end_turn(st: Dictionary, ev: Array) -> void:
 	var seat: int = int(st["active"])
 	for u in st["players"][seat]["board"]:
 		if int(u["jam"]) > 0:
-			u["jam"] = 0
-			ev.append({"e": "unjam", "uid": int(u["uid"])})
+			# Jam wears off with the owner's turn; a print put to sleep stays jammed longer.
+			u["jam"] = int(u["jam"]) - 1
+			if int(u["jam"]) == 0:
+				ev.append({"e": "unjam", "uid": int(u["uid"])})
 	_fire_board(st, seat, "turn_end", {}, ev)
 	_resolve(st, ev)
 	if st["over"]:
@@ -628,6 +645,13 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 			u["heat"] = int(u["heat"]) - 1
 			ev.append({"e": "melt", "uid": int(u["uid"]), "n": int(u["heat"])})
 			_damage(st, "u%d" % int(u["uid"]), 1, ev)
+	# Poison bites harder each turn: 1, then 2, then 3, then it wears off.
+	for u in (p["board"] as Array).duplicate():
+		if int(u.get("tox", 0)) > 0:
+			var bite: int = int(u["tox"])
+			u["tox"] = bite + 1 if bite < 3 else 0
+			ev.append({"e": "tox", "uid": int(u["uid"]), "n": bite, "left": int(u["tox"])})
+			_damage(st, "u%d" % int(u["uid"]), bite, ev)
 	_fire_board(st, seat, "turn_start", {}, ev)
 	# The Printer carries on with its long print before anything else.
 	var job: Dictionary = p["job"]
@@ -724,6 +748,26 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 				ev.append({"e": "jam", "uid": int(u["uid"])})
 		"heat":
 			_heat(st, ref, int(e.get("n", 2)), ev, seat)
+		"poison":
+			var u := unit_of(st, ref)
+			if not u.is_empty() and int(u["hp"]) > 0:
+				if int(u.get("tox", 0)) <= 0:
+					u["tox"] = 1
+				ev.append({"e": "tox", "uid": int(u["uid"]), "n": 0, "left": int(u["tox"])})
+		"sleep":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				u["jam"] = maxi(int(u["jam"]), int(e.get("n", 2)))
+				ev.append({"e": "jam", "uid": int(u["uid"])})
+		"cleanse":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				if int(u["jam"]) > 0:
+					u["jam"] = 0
+					ev.append({"e": "unjam", "uid": int(u["uid"])})
+				u["heat"] = 0
+				u["tox"] = 0
+				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
 		"destroy":
 			var u := unit_of(st, ref)
 			if not u.is_empty():
@@ -919,7 +963,7 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 		"atk": int(def["atk"]), "hp": int(def["hp"]), "max_hp": int(def["hp"]),
 		"kw": (def.get("kw", []) as Array).duplicate(),
 		"fresh": true, "attacks": 0, "jam": 0, "gear": [],
-		"heat": 0, "loot": 0, "loot_el": "",
+		"heat": 0, "tox": 0, "loot": 0, "loot_el": "",
 		"mk": int(def.get("mk", 1)),
 		"paint": str((st["players"][seat].get("builds", {}).get(card_id, {}) as Dictionary).get("paint", "original")),
 	}

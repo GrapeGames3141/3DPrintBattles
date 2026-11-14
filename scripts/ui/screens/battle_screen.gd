@@ -1248,6 +1248,19 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 					"ally_print": "Ally Print", "foe_print": "Foe Print", "tool": "Tool", "ally_shatter": "Ally Shatter", "foe_shatter": "Foe Shatter"}.get(str(e["when"]), str(e.get("label", ""))))
 				UI.floater(_fx, label, tnode.center() + Vector2(0, -70), UI.GOLD, 18)
 			await _wait(0.2)
+		"tox":
+			var tnode: BoardUnit = _units.get(int(e["uid"]))
+			if tnode != null:
+				var tdata: Dictionary = tnode.u
+				tdata["tox"] = int(e["left"])
+				tnode.refresh(tdata, false)
+				Effects.burst(_fx, tnode.center() + Vector2(0, 10), "heal", Color("8be04a"))
+				if int(e["n"]) == 0:
+					Audio.sfx("jam", 0.8)
+					UI.floater(_fx, "Poisoned!", tnode.center() + Vector2(0, -50), Color("8be04a"), 24)
+				else:
+					UI.floater(_fx, "Poison", tnode.center() + Vector2(0, -50), Color("8be04a"), 20)
+			await _wait(0.25)
 		"melt":
 			var node: BoardUnit = _units.get(int(e["uid"]))
 			if node != null:

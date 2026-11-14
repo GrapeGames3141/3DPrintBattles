@@ -769,7 +769,7 @@ func deck_autofill(slot: int) -> void:
 	var element: String = GameData.printer(deck(slot)["printer"])["element"]
 	var pool: Array = []
 	for c in GameData.collectible():
-		for i in owned_count(c["id"]) - list.count(c["id"]):
+		for i in mini(owned_count(c["id"]), GameData.max_copies(c["id"])) - list.count(c["id"]):
 			pool.append(c)
 	# Prefer prints, cheap cards, and the Printer's own element.
 	pool.sort_custom(func(a, b): return _fill_score(a, element) > _fill_score(b, element))

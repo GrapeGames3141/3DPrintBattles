@@ -70,27 +70,27 @@ are still next. Idle is dropped because Twin Nozzle already does it. Reach here 
 | 48 | Magnet | Enemy prints must attack it if it is the only unjammed print | MtG goad | Next |
 | 49 | Cloak | Cannot be targeted by tools until it attacks | MtG hexproof | **Tempest Lynx** |
 
-## Wave 3: conditions and element play (Next, 17)
+## Wave 3: conditions and element play (4 built, 13 next)
 
-| # | Ability | What it does | From |
-|---|---|---|---|
-| 50 | Standby | Puts a print to sleep: it cannot attack for 2 turns | PKMN sleep |
-| 51 | Confuse | The target attacks a random target next turn | PKMN confusion |
-| 52 | Toxic | Poison that stacks: 1, then 2, then 3 damage a turn | PKMN poison |
-| 53 | Weakness | Deals +2 to prints of the element it beats (Fire>Nature>Water>Fire...) | PKMN |
-| 54 | Resistance | Takes 1 less from the element it resists | PKMN |
-| 55 | Type Change | Becomes the element of the print it hit | PKMN |
-| 56 | Evolve | After 2 turns on the bench it becomes a stronger print | PKMN |
-| 57 | Badge | +1/+1 for every element in your deck beyond the first | MtG domain |
-| 58 | Frostbite | A frozen print cannot attack or be healed until your next turn | PKMN |
-| 59 | Overheat | At 3 Heat a print is destroyed | PKMN burn |
-| 60 | Cleanse | Removes Heat and Jam from your prints | PKMN |
-| 61 | Coat | Prints that share its element get Brim | PKMN |
-| 62 | Synergy | +1/+1 for each other print of its element on your bench | MtG tribal |
-| 63 | Mimic | Copies the Attack of the strongest enemy print | PKMN Ditto |
-| 64 | Adapt | Takes on a keyword from the print that last hurt it | MtG |
-| 65 | Rain Dance | While in play, all Water prints get +1/+0 | PKMN weather |
-| 66 | Sandstorm | While in play, non-Stone prints take 1 at the start of their turn | PKMN weather |
+| # | Ability | What it does | From | Card |
+|---|---|---|---|---|
+| 50 | Standby | Puts a print to sleep: it cannot attack for 2 turns | PKMN sleep | **Rimefox** |
+| 51 | Confuse | The target attacks a random target next turn | PKMN confusion | Next |
+| 52 | Toxic | Poison that stacks: 1, then 2, then 3 damage a turn | PKMN poison | **Brineleech** |
+| 53 | Weakness | Deals +2 to prints of the element it beats (Fire>Nature>Water>Fire...) | PKMN | **Kilnpup, Barkback, Siphonshark (Fire, Water, Nature)** |
+| 54 | Resistance | Takes 1 less from the element it resists | PKMN | Next |
+| 55 | Type Change | Becomes the element of the print it hit | PKMN | Next |
+| 56 | Evolve | After 2 turns on the bench it becomes a stronger print | PKMN | Next |
+| 57 | Badge | +1/+1 for every element in your deck beyond the first | MtG domain | Next |
+| 58 | Frostbite | A frozen print cannot attack or be healed until your next turn | PKMN | Next |
+| 59 | Overheat | At 3 Heat a print is destroyed | PKMN burn | Next |
+| 60 | Cleanse | Removes Heat and Jam from your prints | PKMN | **Breezepup** |
+| 61 | Coat | Prints that share its element get Brim | PKMN | Next |
+| 62 | Synergy | +1/+1 for each other print of its element on your bench | MtG tribal | Next |
+| 63 | Mimic | Copies the Attack of the strongest enemy print | PKMN Ditto | Next |
+| 64 | Adapt | Takes on a keyword from the print that last hurt it | MtG | Next |
+| 65 | Rain Dance | While in play, all Water prints get +1/+0 | PKMN weather | Next |
+| 66 | Sandstorm | While in play, non-Stone prints take 1 at the start of their turn | PKMN weather | Next |
 
 ## Wave 4: sacrifice, graveyard and costs (Next, 17)
 
@@ -136,6 +136,6 @@ are still next. Idle is dropped because Twin Nozzle already does it. Reach here 
 | 99 | Draft | Choose 1 of 3 random cards to add to your hand | MtG |
 | 100 | Tag Team | Two prints attack as one, adding their Attack | YGO |
 
-Entries 50-100 and the rest of wave 2 each need an engine change before they can be a card; they are listed in the
+Entries 51, 54-59, 61-66, wave 4 and wave 5 and the rest of wave 2 each need an engine change before they can be a card; they are listed in the
 order that costs the least first. Wave 1 shows the pattern: define the moment in the
 catalog (`tools/catalog/fx.py`), give the engine a hook, write a test, then put it on a card.

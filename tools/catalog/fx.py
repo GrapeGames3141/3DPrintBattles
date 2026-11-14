@@ -77,6 +77,27 @@ def heat(n=2, at="print"):
     return _e("heat", "Heat an enemy print.", "enemy_print", n=n, to="target")
 
 
+def poison():
+    return _e("poison", "Poison an enemy print: 1, then 2, then 3 damage at the start of its turns.", "enemy_print", to="target")
+
+
+def sleep(n=2):
+    return _e("sleep", "Put an enemy print to sleep: it cannot attack for %d turns." % n, "enemy_print", n=n, to="target")
+
+
+def cleanse():
+    return _e("cleanse", "Cleanse your prints of Heat, Jam and Poison.", "", to="friendly_prints")
+
+
+def weakness(element):
+    """A creature's Weakness ability: it hits prints of one element harder."""
+    return {"text": "Weakness: Deals +2 damage to %s prints." % element, "target": "", "on_print": [], "shatter": [], "beats": element}
+
+
+def a_poison():
+    return _e("poison", "Poison the print it hit.", "", to="trigger")
+
+
 def steal(a, h, bonus=0):
     s = "Steal %d Attack and %d Health from an enemy print." % (a, h) if h else "Steal %d Attack from an enemy print." % a
     return _e("steal", s, "enemy_print", atk=a, hp=h, bonus_hp=bonus, to="target")

@@ -29,6 +29,10 @@ const KEYWORD_MORE := {
 const GLOSSARY := [
 	["Heat", "A Heated print takes 1 damage at the start of its owner's turn. Scorch and some tools cause it. It does not wear off."],
 	["Jam", "A jammed print cannot attack until the end of its owner's next turn. The tag on the print says JAMMED."],
+	["Poison", "Hurts a print at the start of its owner's turns: 1, then 2, then 3 damage, then it wears off. Cleanse removes it."],
+	["Sleep", "A sleeping print is jammed for two of its owner's turns instead of one."],
+	["Cleanse", "Removes Heat, Jam and Poison from your prints."],
+	["Weakness", "A print with Weakness deals 2 extra damage to prints of one element, named on its card (Kilnpup: Nature)."],
 	["Armor", "Shields a Printer. Damage comes off Armor before Health. It stays until it is used up."],
 	["Shatter", "What a print does when it is destroyed. Its owner also gets 1 Filament back on the Spool."],
 	["On Print", "What a print does the moment it arrives on the bench."],

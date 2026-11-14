@@ -337,6 +337,8 @@ func _draw_fx() -> void:
 		marks.append(["snow", UI.CYAN])
 	if int(u.get("heat", 0)) > 0:
 		marks.append(["flame", Color("ff7a2e")])
+	if int(u.get("tox", 0)) > 0:
+		marks.append(["#T", Color("8be04a")])
 	if int(u.get("loot", 0)) > 0:
 		marks.append(["spool", GameData.element_color(str(u.get("loot_el", "Neutral")))])
 	var x := 70.0 - (marks.size() - 1) * 10.0
