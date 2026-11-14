@@ -84,7 +84,7 @@ func _juice(n: Node) -> void:
 	b.mouse_entered.connect(func(): if not b.disabled: to.call(1.04, 0.12))
 	b.mouse_exited.connect(func(): to.call(1.0, 0.12))
 	b.button_down.connect(func(): to.call(0.95, 0.06))
-	b.button_up.connect(func(): to.call(1.04 if b.is_hovered() else 1.0, 0.12))
+	b.button_up.connect(func(): to.call(1.04 if b.is_hovered() and not DisplayServer.is_touchscreen_available() else 1.0, 0.12))
 
 
 ## Picks the landscape or portrait stage from the window's shape.

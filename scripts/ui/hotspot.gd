@@ -153,10 +153,16 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 		elif _down:
 			_down = false
+			var inside := _has_point(event.position)
+			# A finger leaves no "pointer exit" behind when it lifts, so the
+			# label has to go now: either the touch ended off the object, or it
+			# is a touch (which has no hover) at all.
+			if not inside or event.device == InputEvent.DEVICE_ID_EMULATION:
+				_set_hover(false)
 			_plaque.visible = _hover
 			queue_redraw()
 			accept_event()
-			if _has_point(event.position):
+			if inside:
 				Audio.sfx("click")
 				activated.emit()
 
