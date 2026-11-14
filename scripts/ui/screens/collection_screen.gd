@@ -276,6 +276,8 @@ func _build_deck() -> void:
 		UI.place(_deck_panel, b, Vector2(x + 12 + i * (tabw + 6), y + 12))
 
 	var d := Profile.deck(_slot)
+	_deck_identity(x, y + 54.0, w, d)
+	y += 38.0
 	var p: Dictionary = GameData.printer(d["printer"])
 	_deck_panel.add_child(PrinterRig.make(p["id"], Profile.installed_mods(p["id"]), Rect2(x + 10, y + 60, 84, 76)))
 	UI.place(_deck_panel, UI.label(p["name"], 20, GameData.element_color(p["element"])), Vector2(x + 100, y + 62), Vector2(w - 200, 26))
@@ -309,7 +311,7 @@ func _build_deck() -> void:
 		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		UI.place(_deck_panel, hint, Vector2(x + w - 250, y + 148), Vector2(236, 22))
 
-	var list_h := r.size.y - 176 - 62
+	var list_h := r.size.y - 176 - 62 - 38.0
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.place(_deck_panel, scroll, Vector2(x + 12, y + 176), Vector2(w - 22, list_h))
@@ -369,6 +371,36 @@ func _build_deck() -> void:
 		Profile.deck_clear(_slot)
 		_refresh())
 	UI.place(_deck_panel, clear, Vector2(x + 24 + half, r.end.y - 56))
+
+
+## The deck's automatic name, its cost curve and its sleeve.
+func _deck_identity(x: float, y: float, w: float, d: Dictionary) -> void:
+	var info := DeckInfo.analyse(d["cards"], str(d["printer"]))
+	var sl: Dictionary = Profile.deck_sleeve(_slot)
+	var sw := UI.panel(_deck_panel, Rect2(x + 14, y, 24, 32), UI.box(Color(str(sl["deep"])), Color(str(sl["color"])), 2, 5))
+	sw.add_child(IconView.make(str(sl["emblem"]), 16, Color(str(sl["color"]))))
+	(sw.get_child(0) as Control).position = Vector2(3, 7)
+	var nm := UI.label(str(info["name"]), 18, UI.GOLD)
+	UI.place(_deck_panel, nm, Vector2(x + 46, y - 2), Vector2(w - 200, 24))
+	var sub := UI.label("avg cost %.1f  -  %d prints" % [float(info["avg_cost"]), int(info["creatures"])], 12, UI.MUTED, false)
+	UI.place(_deck_panel, sub, Vector2(x + 46, y + 18), Vector2(w - 200, 18))
+	var curve: Array = info["curve"]
+	var peak := 1
+	for n in curve:
+		peak = maxi(peak, int(n))
+	for i in curve.size():
+		var h := maxf(2.0, 26.0 * float(int(curve[i])) / float(peak))
+		var bar := ColorRect.new()
+		bar.color = Color(UI.CYAN, 0.85) if int(curve[i]) > 0 else Color(1, 1, 1, 0.12)
+		bar.position = Vector2(x + w - 168 + i * 11, y + 30 - h)
+		bar.size = Vector2(8, h)
+		_deck_panel.add_child(bar)
+	var style := UI.button("Sleeve", "plain", Vector2(62, 28), 13)
+	style.tooltip_text = "%s - change this deck's card sleeve (more unlock with Maker Rank)" % sl["name"]
+	style.pressed.connect(func():
+		Profile.deck_set_sleeve(_slot, Sleeves.next_unlocked(str(sl["id"]), Profile.rank_level()))
+		_refresh())
+	UI.place(_deck_panel, style, Vector2(x + w - 76, y + 2))
 
 
 func _pick_slot(i: int) -> void:

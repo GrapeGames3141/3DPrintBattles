@@ -1059,6 +1059,30 @@ func _ranked() -> void:
 		if GameData.card(id)["rarity"] in ["epic", "legendary"]:
 			rare_high += 1
 	ok(rare_low == 0 and int(low["tier"]) < int(high["tier"]), "low-rated opponents use no epics or legendaries and lower Blueprint tiers")
+	# Deck identity: automatic names, curves and sleeves.
+	ok(DeckInfo.analyse([])["name"] == "Empty deck", "an empty deck is called that")
+	ok(DeckInfo.analyse(["mossmunk", "voltwig"])["name"] == "Unfinished deck", "a few cards are an unfinished deck")
+	var cheap: Array = []
+	for c in GameData.collectible():
+		if c["type"] == "creature" and int(c["cost"]) <= 2 and cheap.size() < 20:
+			cheap.append(str(c["id"]))
+	var swarm := DeckInfo.analyse(cheap.slice(0, 16) + ["heat_gun", "heat_gun", "helm", "helm"])
+	ok(swarm["style"] == "Swarm" and int(swarm["creatures"]) == 16 and float(swarm["avg_cost"]) <= 2.6, "sixteen cheap prints make a Swarm deck (%s)" % swarm["name"])
+	var heavy: Array = []
+	for c in GameData.collectible():
+		if c["type"] == "creature" and int(c["cost"]) >= 6 and heavy.size() < 20:
+			heavy.append(str(c["id"]))
+	ok(DeckInfo.analyse(heavy)["style"] == "Heavy", "a deck of 6+ cost prints is Heavy")
+	var st_info := DeckInfo.analyse(GameData.expand(GameData.STARTER_DECK), "ember_forge")
+	ok(int((st_info["curve"] as Array).reduce(func(a, b): return a + b, 0)) == 20 and str(st_info["name"]).length() > 4, "the starter deck has a full curve and a name (%s)" % st_info["name"])
+	ok(Sleeves.unlocked("forge", 1) and not Sleeves.unlocked("gold", 1) and Sleeves.unlocked("gold", 24), "sleeves unlock by Maker Rank")
+	ok(Sleeves.next_unlocked("forge", 1) == "tide" and Sleeves.next_unlocked("spark", 1) == "forge", "cycling sleeves skips locked ones and wraps")
+	var ps := fresh_profile()
+	ok(ps.deck_set_sleeve(0, "tide") and ps.deck_sleeve(0)["id"] == "tide", "a free sleeve can be put on a deck")
+	ok(not ps.deck_set_sleeve(1, "gold") and ps.deck_sleeve(1)["id"] == "forge", "a locked sleeve cannot")
+	ps.data["decks"][2]["sleeve"] = "gold"
+	ps._sanitize()
+	ok(ps.deck_sleeve(2)["id"] == "forge", "a locked sleeve in a save falls back to the default")
 	# A full battle against a ladder opponent can be played out, as the ranked session sets it up.
 	var opp: Dictionary = Ladder.opponent(1000, 9)
 	var mine: Array = GameData.expand(GameData.STARTER_DECK)

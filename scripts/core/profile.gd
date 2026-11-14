@@ -26,7 +26,7 @@ func _ready() -> void:
 static func fresh() -> Dictionary:
 	var decks: Array = []
 	for i in DECK_SLOTS:
-		decks.append({"cards": [], "printer": "ember_forge"})
+		decks.append({"cards": [], "printer": "ember_forge", "sleeve": "forge"})
 	return {
 		"version": SAVE_VERSION,
 		"started": false,
@@ -243,9 +243,11 @@ func _sanitize() -> void:
 	data["installed"] = installed
 	var decks: Array = data["decks"]
 	while decks.size() < DECK_SLOTS:
-		decks.append({"cards": [], "printer": "ember_forge"})
+		decks.append({"cards": [], "printer": "ember_forge", "sleeve": "forge"})
 	decks.resize(DECK_SLOTS)
 	for d in decks:
+		if not Sleeves.unlocked(str(d.get("sleeve", "forge")), rank_level()):
+			d["sleeve"] = "forge"
 		var list: Array = []
 		for id in d.get("cards", []):
 			if owned_count(str(id)) > 0:
@@ -576,6 +578,19 @@ func deck_set_printer(slot: int, printer_id: String) -> void:
 	if owns_printer(printer_id):
 		deck(slot)["printer"] = printer_id
 		save()
+
+
+func deck_sleeve(slot: int) -> Dictionary:
+	return Sleeves.get_sleeve(str(deck(slot).get("sleeve", "forge")))
+
+
+## Gives a deck a sleeve you have unlocked.
+func deck_set_sleeve(slot: int, id: String) -> bool:
+	if not Sleeves.unlocked(id, rank_level()):
+		return false
+	deck(slot)["sleeve"] = id
+	save()
+	return true
 
 
 func deck_clear(slot: int) -> void:
