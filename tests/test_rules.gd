@@ -97,7 +97,7 @@ func _catalog() -> void:
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 257, "257 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 258, "258 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
 		if c["type"] == "creature":
@@ -107,7 +107,7 @@ func _catalog() -> void:
 	for c in GameData.collectible():
 		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
 		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
-	ok(by_type == {"creature": 161, "tool": 59, "upgrade": 37}, "161 prints, 59 tools, 37 pieces of equipment (%s)" % str(by_type))
+	ok(by_type == {"creature": 162, "tool": 59, "upgrade": 37}, "162 prints, 59 tools, 37 pieces of equipment (%s)" % str(by_type))
 	# Every kind of card, and every element of print, comes in every rarity.
 	for kind in ["creature", "tool", "upgrade"]:
 		for r in GameData.RARITY_ORDER:

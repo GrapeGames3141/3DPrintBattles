@@ -124,4 +124,5 @@ const LIST := [
 	{"id": "steppergolem", "name": "Stepper Golem", "type": "creature", "cost": 5, "atk": 4, "hp": 5, "element": "Stone", "rarity": "uncommon", "kw": ["guard"], "text": "Shatter: Your Printer gains 2 Armor.", "shatter": [{"op": "armor", "n": 2}]},
 	{"id": "gantrymantis", "name": "Gantry Mantis", "type": "creature", "cost": 4, "atk": 4, "hp": 3, "element": "Wind", "rarity": "uncommon", "kw": ["twin"], "text": ""},
 	{"id": "layershifter", "name": "Layer Shifter", "type": "creature", "cost": 4, "atk": 3, "hp": 3, "element": "Arcane", "rarity": "rare", "kw": [], "text": "On Print: Draw a card.", "on_print": [{"op": "draw", "n": 1}]},
+	{"id": "cutie", "name": "Cutie", "type": "creature", "cost": 8, "atk": 8, "hp": 9, "element": "Stone", "rarity": "legendary", "kw": ["twin", "brim"], "text": "On Print: Deal 3 damage to all enemy prints. Shatter: Draw 2 cards.", "on_print": [{"op": "damage", "n": 3, "to": "enemy_prints"}], "shatter": [{"op": "draw", "n": 2}]},
 ]

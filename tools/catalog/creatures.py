@@ -168,5 +168,6 @@ C("cubecrab", "Cube Crab", I, 2, 2, 3, "common", ["guard"], None, "src:cube_crab
 C("steppergolem", "Stepper Golem", S, 5, 4, 5, "uncommon", ["guard"], ability(sh_armor(2)), "src:stepper_golem")
 C("gantrymantis", "Gantry Mantis", D, 4, 4, 3, "uncommon", ["twin"], None, "src:gantry_mantis")
 C("layershifter", "Layer Shifter", A, 4, 3, 3, "rare", [], ability(draw(1)), "src:layer_shifter")
+C("cutie", "Cutie", S, 8, 8, 9, "legendary", ["twin", "brim"], ability(dmg(3, "all"), sh_draw(2)), "src:cutie")
 
 assert len({c["id"] for c in CREATURES}) == len(CREATURES), "duplicate creature id"

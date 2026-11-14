@@ -37,7 +37,7 @@ func _initialize() -> void:
 		"cube_crab": [_crab, -28.0, 0.62], "layer_shifter": [_shifter, -20.0, 0.85],
 		"stepper_golem": [_golem, -22.0, 0.95], "coil_cobra": [_cobra, -16.0, 0.95],
 		"clog_goblin": [_goblin, -20.0, 0.72], "gantry_mantis": [_mantis, -24.0, 1.0],
-		"tri_head_hydra": [_hydra, -14.0, 1.0],
+		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, -16.0, 1.5, 8.6],
 	}
 	for id in tools:
 		if only.is_empty() or only.has(id):
@@ -68,7 +68,7 @@ func _initialize() -> void:
 			(job[0] as Callable).call()
 			_holder = stage
 			cam.fov = 28.0
-			_aim(14.0, 6.2, job[2])
+			_aim(14.0, float(job[3]) if job.size() > 3 else 6.2, job[2])
 			await _settle()
 			vp.get_texture().get_image().save_png(ProjectSettings.globalize_path(SRC_OUT % id))
 			print("rendered ", id)
@@ -476,3 +476,43 @@ func _hydra() -> void:
 			cyl(c, 0.07, 0.0, 0.26, hp + Vector3(s * 0.2, 0.28, -0.05), belly, Vector3(0, 0, -s * 25), 4)
 	for i in 5:
 		glow(c, 0.045, Vector3(-0.5 + i * 0.25, 0.4 + fmod(i * 0.37, 0.7), -0.2), ORANGE, 2.5)
+
+
+## Cutie: a wheel on scraper pads with a pair of eyes on stalks. Built
+## from the maker's own printed figure (white plastic, black stalks and treads).
+func _roto() -> void:
+	var c := _beast_root
+	var white := Color("f1f2f4")
+	var dark := Color("1a1d22")
+	var cy := 1.0
+	var R := 0.85
+	torus(c, R, 0.17, Vector3(0, cy, 0), white, Vector3(90, 0, 0), mat(white, 0.03, Vector3(0, 0, 1), 0.4, 0.5))
+	torus(c, R - 0.28, 0.07, Vector3(0, cy, 0.0), white, Vector3(90, 0, 0), mat(white, 0.03, Vector3(0, 0, 1), 0.4, 0.5))
+	cyl(c, 0.3, 0.3, 0.3, Vector3(0, cy, 0), white, Vector3(90, 0, 0), 32)
+	cyl(c, 0.12, 0.12, 0.32, Vector3(0, cy, 0.02), dark, Vector3(90, 0, 0), 24)
+	for i in 8:
+		var a := i * TAU / 8.0
+		var mid := Vector3(cos(a), sin(a), 0) * (0.5)
+		box(c, Vector3(0.36, 0.14, 0.2), Vector3(0, cy, 0) + mid, white, Vector3(0, 0, rad_to_deg(a)), null, 0.04)
+		# Black treads on the back of the rim.
+		box(c, Vector3(0.12, 0.3, 0.1), Vector3(cos(a + 0.2) * R, cy + sin(a + 0.2) * R, -0.2), dark, Vector3(0, 0, rad_to_deg(a + 0.2)), null, 0.02)
+	# Scraper pads hanging off the lower rim, each tilted a little differently.
+	for i in 5:
+		var a := deg_to_rad(205.0 + i * 32.0)
+		var pos := Vector3(cos(a) * (R + 0.12), cy + sin(a) * (R + 0.12), 0.08 + (i % 2) * 0.06)
+		box(c, Vector3(0.36, 0.36, 0.14), pos, white, Vector3(0, 0, rad_to_deg(a) + 90.0 + (i - 2) * 8.0), null, 0.05)
+		box(c, Vector3(0.2, 0.2, 0.05), pos + Vector3(0, 0, 0.08), white.darkened(0.06), Vector3(0, 0, rad_to_deg(a) + 90.0 + (i - 2) * 8.0), null, 0.03)
+		cyl(c, 0.06, 0.06, 0.05, pos + Vector3(0, 0, 0.12), white.darkened(0.12), Vector3(90, 0, 0), 16)
+	# The eye bar and its stalks.
+	box(c, Vector3(0.3, 0.3, 0.28), Vector3(0, cy + R + 0.2, 0), white, Vector3.ZERO, null, 0.05)
+	box(c, Vector3(1.2, 0.26, 0.34), Vector3(0, cy + R + 0.48, 0), white, Vector3.ZERO, null, 0.09)
+	for sx in [-1.0, 1.0]:
+		var base := Vector3(sx * 0.42, cy + R + 0.55, 0.0)
+		cyl(c, 0.085, 0.085, 0.42, base + Vector3(sx * 0.03, 0.2, 0), dark, Vector3(0, 0, -sx * 6.0), 24)
+		var top := base + Vector3(sx * 0.06, 0.45, 0.0)
+		var tilt := Vector3(50, 0, -sx * 6.0)
+		var n := Vector3(0, cos(deg_to_rad(50.0)), sin(deg_to_rad(50.0)))
+		cyl(c, 0.26, 0.26, 0.1, top, white, tilt, 36)
+		cyl(c, 0.21, 0.21, 0.03, top + n * 0.06, Color("9fd4ee"), tilt, 36)
+		cyl(c, 0.18, 0.18, 0.04, top + n * 0.075, dark, tilt, 36)
+		ball(c, 0.04, top + n * 0.1 + Vector3(sx * 0.05, 0.07, 0.0), WHITE)
