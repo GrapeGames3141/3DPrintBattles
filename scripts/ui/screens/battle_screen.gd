@@ -1198,6 +1198,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			Audio.sfx("heal")
 			var n := _node_for(e["target"])
 			UI.floater(_fx, "+%d" % int(e["n"]), _center_of(e["target"]), UI.GOOD, 34)
+			Effects.burst(_fx, _center_of(e["target"]) + Vector2(0, 20), "heal", UI.GOOD)
 			if n is PrinterView:
 				var p: Dictionary = st["players"][(n as PrinterView).seat]
 				(n as PrinterView).set_health(int(e["hp"]), int(p["max_hp"]), int(p["armor"]))
@@ -1212,6 +1213,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			if node != null:
 				node.refresh(e["unit"], false)
 				node.pulse(UI.GOOD)
+				Effects.burst(_fx, node.center() + Vector2(0, 10), "buff", UI.GOLD if e["e"] == "gear" else UI.GOOD)
 				Audio.sfx("attach" if e["e"] == "gear" else "buff")
 				if e["e"] == "gear":
 					UI.floater(_fx, GameData.card(e["id"])["name"], node.center() + Vector2(0, -70), UI.GOLD, 22)
@@ -1224,6 +1226,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 				node.refresh(data, false)
 				if e["e"] == "jam":
 					Audio.sfx("jam")
+					Effects.burst(_fx, node.center(), "frost", Color("bfeaff"))
 					UI.floater(_fx, "Jammed!", node.center() + Vector2(0, -50), UI.CYAN, 24)
 					await _wait(0.1 if next.get("e", "") == "jam" else 0.25)
 		"heat":
@@ -1234,6 +1237,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 				node.refresh(data, false)
 				node.pulse(Color("ff8a3a"))
 				Audio.sfx("burn")
+				Effects.burst(_fx, node.center() + Vector2(0, 20), "flame", Color("ff8a3a"))
 				UI.floater(_fx, "Heated!", node.center() + Vector2(0, -50), Color("ff8a3a"), 24)
 			await _wait(0.25)
 		"trig":
@@ -1298,6 +1302,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			_set_res(seat, int(e["flow"]), int(e["spool"]))
 			var pv: PrinterView = _printers[seat]
 			pv.pulse()
+			Effects.burst(_fx, pv.center(), "ring", UI.GOLD)
 			Audio.sfx("power")
 			UI.floater(_fx, GameData.printer(pv.printer_id)["power"]["name"], pv.center() + Vector2(40, -90), UI.GOLD, 24)
 			await _wait(0.35)
@@ -1322,10 +1327,16 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			pv.set_health(int(p["hp"]), int(p["max_hp"]), int(e["armor"]))
 			pv.pulse()
 			Audio.sfx("armor")
+			Effects.burst(_fx, pv.center(), "ring", Color("dfe6f0"))
 			UI.floater(_fx, "Armor up", pv.center() + Vector2(0, -80), Color("dfe6f0"), 24)
 			await _wait(0.25)
 		"over":
-			await _wait(0.5)
+			var lost: int = int(e["winner"])
+			for seat in 2:
+				if lost < 0 or seat != lost:
+					(_printers[seat] as PrinterView).wreck()
+					Audio.sfx("shatter", 0.7)
+			await _wait(1.1)
 			_show_result(int(e["winner"]))
 
 
@@ -1555,6 +1566,7 @@ func _ev_summon(e: Dictionary, next: Dictionary) -> void:
 	node.z_index = 0
 	node.set_bare(false)
 	Audio.sfx("drop", 0.8)
+	Effects.burst(_fx, node.center() + Vector2(0, 56 * unit_scale), "dust", Color(0.85, 0.85, 0.8, 0.55))
 	var land := node.create_tween()
 	land.tween_property(node, "scale", Vector2(unit_scale * 1.12, unit_scale * 0.88), 0.07)
 	land.tween_property(node, "scale", Vector2(unit_scale, unit_scale), 0.12)
@@ -1618,6 +1630,7 @@ func _ev_damage(e: Dictionary) -> void:
 	else:
 		Audio.sfx("hit_heavy" if int(e["n"]) >= 4 else "hit")
 	UI.floater(_fx, "-%d" % int(e["n"]), at + Vector2(randf_range(-10, 10), -10), UI.BAD, 40)
+	Effects.burst(_fx, at, "hit", Color("ffd9a0") if int(e["n"]) < 4 else Color("ff7a4a"), 1.0 + minf(int(e["n"]) * 0.08, 0.8))
 	if n is PrinterView:
 		var pv: PrinterView = n
 		var p: Dictionary = st["players"][pv.seat]

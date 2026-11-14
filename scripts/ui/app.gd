@@ -55,10 +55,36 @@ func _ready() -> void:
 	net = NetLink.new()
 	net.name = "Net"
 	add_child(net)
+	get_tree().node_added.connect(_juice)
 	apply_fullscreen()
 	_fit()
 	get_tree().root.size_changed.connect(_fit)
 	go("menu" if Profile.started() else "starter")
+
+
+## Every button in the game gets the same feel: it swells under the pointer and
+## squashes when pressed.
+func _juice(n: Node) -> void:
+	if not (n is Button) or n.has_meta("still"):
+		return
+	var b := n as Button
+	b.resized.connect(func(): b.pivot_offset = b.size * 0.5)
+	b.pivot_offset = b.size * 0.5
+	var to := func(target: float, t: float):
+		if not is_instance_valid(b) or not b.is_inside_tree():
+			return
+		var key := "_juice_tw"
+		if b.has_meta(key):
+			var old = b.get_meta(key)
+			if old is Tween and (old as Tween).is_valid():
+				(old as Tween).kill()
+		var tw := b.create_tween()
+		b.set_meta(key, tw)
+		tw.tween_property(b, "scale", Vector2(target, target), t).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	b.mouse_entered.connect(func(): if not b.disabled: to.call(1.04, 0.12))
+	b.mouse_exited.connect(func(): to.call(1.0, 0.12))
+	b.button_down.connect(func(): to.call(0.95, 0.06))
+	b.button_up.connect(func(): to.call(1.04 if b.is_hovered() else 1.0, 0.12))
 
 
 ## Picks the landscape or portrait stage from the window's shape.
@@ -121,7 +147,10 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	if MUSIC.has(screen):
 		Audio.music(MUSIC[screen])
 	s.build()
-	s.create_tween().tween_property(s, "modulate:a", 1.0, 0.16)
+	var enter := s.create_tween().set_parallel(true)
+	enter.tween_property(s, "modulate:a", 1.0, 0.2)
+	s.position.y = 14.0
+	enter.tween_property(s, "position:y", 0.0, 0.22).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_switching = false
 	# The window may have turned while the old screen was fading out.
 	if s.size != stage_size:

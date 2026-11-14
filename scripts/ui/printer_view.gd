@@ -15,6 +15,11 @@ var _art: TextureRect
 var _hp: Badge
 var _armor: Badge
 var _name: Label
+var _working := false
+var _wrecked := false
+var _t := randf() * 10.0
+var _steam_clock := 0.0
+var _hit_hold := 0.0
 
 
 ## `flipped` mirrors the machine so the two Printers face each other.
@@ -91,7 +96,50 @@ func _draw() -> void:
 		draw_style_box(UI.box(Color(target_color, 0.16), target_color, 4, 18), Rect2(Vector2(-4, -4), SIZE + Vector2(8, 8)))
 
 
+## The machine is alive: it hums and bobs a touch when idle, and shakes and
+## steams while it is printing.
+func _process(delta: float) -> void:
+	if _wrecked:
+		return
+	_t += delta
+	var home := Vector2(8, 0)
+	if _hit_hold > 0.0:
+		_hit_hold -= delta
+		return
+	if _working:
+		_art.position = home + Vector2(sin(_t * 71.0) * 1.2, sin(_t * 53.0) * 0.8)
+		_art.rotation = sin(_t * 37.0) * 0.004
+		_steam_clock -= delta
+		if _steam_clock <= 0.0:
+			_steam_clock = 0.28
+			Effects.burst(self, Vector2(88, 40), "steam", Color(0.9, 0.93, 1.0, 0.5), 0.8)
+	else:
+		_art.position = home + Vector2(0, sin(_t * 1.6) * 1.4)
+		_art.rotation = sin(_t * 0.9) * 0.0025
+
+
+## The machine gives out: it jolts, sparks and smoke, sags and darkens.
+func wreck() -> void:
+	if _wrecked:
+		return
+	_wrecked = true
+	_working = false
+	var home := Vector2(8, 0)
+	for i in 4:
+		Effects.burst(self, Vector2(40 + randf() * 100.0, 30 + randf() * 80.0), "spark", Color("ffd36a"), 1.2)
+		Effects.burst(self, Vector2(40 + randf() * 100.0, 20 + randf() * 50.0), "steam", Color(0.3, 0.3, 0.32, 0.7), 1.1)
+	var shake := create_tween()
+	for i in 10:
+		shake.tween_property(_art, "position", home + Vector2(randf_range(-9, 9), randf_range(-5, 5)), 0.04)
+	var sag := create_tween().set_parallel(true)
+	sag.tween_property(_art, "rotation", 0.09 * (-1.0 if flipped else 1.0), 0.7).set_ease(Tween.EASE_OUT).set_delay(0.4)
+	sag.tween_property(_art, "position", home + Vector2(0, 8), 0.7).set_delay(0.4)
+	sag.tween_property(_art, "modulate", Color(0.45, 0.42, 0.42), 0.9).set_delay(0.3)
+
+
 func flash() -> void:
+	_hit_hold = 0.3
+	_art.rotation = 0.0
 	var tw := create_tween()
 	tw.tween_property(_art, "modulate", Color(2.2, 1.2, 1.2), 0.05)
 	tw.tween_property(_art, "modulate", Color.WHITE, 0.25)
@@ -111,4 +159,6 @@ func pulse() -> void:
 
 ## A gentle hum while a print is on the bed.
 func set_working(on: bool) -> void:
-	_art.modulate = Color(1.15, 1.1, 1.0) if on else Color.WHITE
+	_working = on
+	if not _wrecked:
+		_art.modulate = Color(1.15, 1.1, 1.0) if on else Color.WHITE
