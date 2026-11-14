@@ -37,7 +37,7 @@ func _initialize() -> void:
 		"cube_crab": [_crab, -28.0, 0.62], "layer_shifter": [_shifter, -20.0, 0.85],
 		"stepper_golem": [_golem, -22.0, 0.95], "coil_cobra": [_cobra, -16.0, 0.95],
 		"clog_goblin": [_goblin, -20.0, 0.72], "gantry_mantis": [_mantis, -24.0, 1.0],
-		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, -12.0, 1.4, 9.0, 18.0],
+		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, -22.0, 1.15, 9.0, 20.0],
 	}
 	for id in tools:
 		if only.is_empty() or only.has(id):
@@ -480,16 +480,23 @@ func _hydra() -> void:
 
 ## Cutie: built from the maker's own figure. One flat round plate with a centre
 ## hole, four round studs and four small slots; a ring of curved tube segments
-## round the rim with little clips between them; seven square stud plates hung off
-## the rim on thin arms; and on top a 1x1 neck block carrying a thick rounded eye
-## bar. Black pins rise from the bar and end in white round eye tiles with a dark
-## pupil, a pale ring and a pink-white glint.
+## round the rim with little clips between them; square stud plates that are its
+## legs; and on top a 1x1 neck block carrying a thick rounded eye bar. Black pins
+## rise from the bar and end in white round eye tiles with a dark pupil, a pale
+## ring and a pink-white glint. It stands tilted back like a shell: the legs hang
+## off the low front edge and rest on the ground, the eye bar sticks out of the
+## high back edge.
 func _roto() -> void:
-	var c := _beast_root
+	var c: Node3D = _beast_root
+	var pv := Node3D.new()
+	c.add_child(pv)
+	pv.position = Vector3(0, 0.84, 0)
+	pv.rotation_degrees = Vector3(-42, 0, 0)
+	c = pv
 	var white := Color("f3f3f1")
 	var shade := Color("dcdcd8")
 	var dark := Color("16181c")
-	var cy := 0.98
+	var cy := 0.0
 	var R := 0.74
 	var lm := mat(white, 0.03, Vector3(0, 0, 1), 0.38, 0.45)
 	# The plate, its hole, studs and slots.
@@ -507,32 +514,28 @@ func _roto() -> void:
 	for i in 8:
 		var a := deg_to_rad(i * 45.0 + 22.5)
 		box(c, Vector3(0.07, 0.2, 0.2), Vector3(cos(a) * (R - 0.1), cy + sin(a) * (R - 0.1), 0.1), shade, Vector3(0, 0, rad_to_deg(a)), lm, 0.02)
-	# The square stud plates are its legs: five planted on the ground, two raised
-	# mid-step. Each hangs off the rim on a clip, bends at a knee and ends in a flat
-	# foot with the stud facing up.
-	var legs := [
-		[212.0, -0.98, 0.1, 0.0], [241.0, -0.5, 0.1, 0.28],
-		[270.0, 0.0, 0.1, 0.1],
-		[299.0, 0.5, 0.1, 0.28], [328.0, 0.98, 0.1, 0.0],
-		[160.0, -1.2, 0.62, 0.12], [24.0, 1.2, 0.5, 0.2],
-	]
+	# Legs: square stud plates on little clips off the low edge. The two outer pairs
+	# reach further so all five reach the ground once the wheel is tilted back; two
+	# small ones sit up the sides.
+	var legs := [[-60.0, 1.28], [-30.0, 1.05], [0.0, 0.95], [30.0, 1.05], [60.0, 1.28], [195.0, 0.95], [-15.0, 0.95]]
 	for i in legs.size():
 		var L: Array = legs[i]
-		var a := deg_to_rad(L[0])
-		var rim := Vector3(cos(a) * (R - 0.02), cy + sin(a) * (R - 0.02), 0.07)
-		var foot := Vector3(L[1], L[2], L[3])
-		ball(c, 0.09, rim, shade)
-		stick(c, rim, foot + Vector3(0, 0.1, 0), 0.085, white)
+		var deg: float = 270.0 + float(L[0]) if i < 5 else float(L[0])
+		var a := deg_to_rad(deg)
+		var rr: float = L[1]
+		var rim := Vector3(cos(a) * (R - 0.04), cy + sin(a) * (R - 0.04), 0.07)
+		var out := Vector3(cos(a) * rr, cy + sin(a) * rr, 0.02)
+		stick(c, rim, out, 0.05, white)
 		var wob := float((i * 41) % 25 - 12)
 		var pad := Node3D.new()
-		_place(c, pad, foot, Vector3(0, wob, 0))
-		box(pad, Vector3(0.46, 0.14, 0.46), Vector3(0, 0.05, 0), white, Vector3.ZERO, lm, 0.03)
-		cyl(pad, 0.13, 0.13, 0.07, Vector3(0, 0.15, 0), white, Vector3.ZERO, 24, lm)
+		_place(c, pad, out, Vector3(0, 0, deg - 90.0 + wob * 0.6))
+		box(pad, Vector3(0.34, 0.34, 0.09), Vector3.ZERO, white, Vector3.ZERO, lm, 0.02)
+		cyl(pad, 0.1, 0.1, 0.07, Vector3(0, 0, 0.08), white, Vector3(90, 0, 0), 24, lm)
 	# Neck block and the eye bar.
 	box(c, Vector3(0.3, 0.3, 0.3), Vector3(0, cy + R + 0.1, 0.0), white, Vector3.ZERO, lm, 0.03)
 	cyl(c, 0.09, 0.09, 0.06, Vector3(0, cy + R + 0.1, 0.17), white, Vector3(90, 0, 0), 24, lm)
 	box(c, Vector3(1.15, 0.36, 0.4), Vector3(0, cy + R + 0.42, 0.0), white, Vector3.ZERO, lm, 0.15)
-	var lean := 28.0
+	var lean := 62.0
 	var d := Vector3(0, cos(deg_to_rad(lean)), sin(deg_to_rad(lean)))
 	for sx in [-1.0, 1.0]:
 		var base := Vector3(sx * 0.4, cy + R + 0.55, 0.0)
