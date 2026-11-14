@@ -136,20 +136,95 @@ def sh_summon(n=1):
     return x
 
 
+
+# ------------------------------------------------------------- triggers
+# A creature can also carry abilities that fire on moments other than arriving
+# or being destroyed. `on(when, effect...)` wraps effects with their moment;
+# the effects aim at things that need no choice (itself, a random enemy...).
+TRIGGERS = {
+    "attack": "On Attack", "hurt": "On Hurt", "kill": "On Kill", "turn_start": "Turn Start", "turn_end": "Turn End",
+    "ally_print": "On Ally Print", "foe_print": "On Foe Print", "tool": "On Tool",
+    "ally_shatter": "On Ally Shatter", "foe_shatter": "On Foe Shatter",
+}
+
+
+def on(when, *parts):
+    assert when in TRIGGERS, when
+    out = []
+    for p in parts:
+        q = dict(p)
+        q["when"] = when
+        out.append(q)
+    return out if len(out) > 1 else out[0]
+
+
+def a_dmg(n, to):
+    s = {"random_enemy": "Deal %d damage to a random enemy print.", "enemy_printer": "Deal %d damage to the enemy Printer.",
+         "enemy_prints": "Deal %d damage to all enemy prints.", "trigger": "Deal %d damage to it.",
+         "target": "Deal %d damage to the print it hit."}[to]
+    return _e("damage", s % n, "", n=n, to=to)
+
+
+def a_buff(a, h, to, kw=()):
+    sign = "+%d/+%d" % (a, h)
+    s = {"self": "This gets %s." % sign, "trigger": "Give it %s." % sign,
+         "friendly_prints": "Give your prints %s." % sign, "other_friendly_prints": "Give your other prints %s." % sign,
+         "random_friendly": "Give a random friendly print %s." % sign}[to]
+    return _e("buff", s, "", atk=a, hp=h, kw=list(kw), to=to)
+
+
+def a_heal(n, to):
+    s = {"self": "Repair this by %d.", "own_printer": "Repair your Printer by %d.", "friendly_prints": "Repair your prints by %d."}[to]
+    return _e("heal", s % n, "", n=n, to=to)
+
+
+def a_jam(to="random_enemy"):
+    s = {"random_enemy": "Jam a random enemy print.", "enemy_prints": "Jam all enemy prints."}[to]
+    return _e("jam", s, "", to=to)
+
+
+def a_heat(n, to="random_enemy"):
+    s = {"random_enemy": "Heat a random enemy print.", "enemy_prints": "Heat all enemy prints."}[to]
+    return _e("heat", s, "", n=n, to=to)
+
+
+def a_refresh():
+    return _e("refresh", "This can attack again.", "", to="self")
+
+
+def a_give(card, name):
+    return _e("give", "Add a %s to your hand." % name, "", card=card)
+
+
+def a_mill(n):
+    return _e("mill", "Your opponent's deck loses %d card%s." % (n, "" if n == 1 else "s"), "", n=n)
+
+
 def _join(parts):
     return " ".join(p["text"] for p in parts)
 
 
 def ability(*parts):
-    """For creatures: On Print effects, then Shatter effects."""
-    on = [p for p in parts if not p.get("shatter")]
-    sh = [p for p in parts if p.get("shatter")]
+    """For creatures: On Print effects, then triggered ones, then Shatter effects."""
+    flat = []
+    for p in parts:
+        flat.extend(p if isinstance(p, list) else [p])
+    on_ = [p for p in flat if not p.get("shatter") and not p.get("when")]
+    sh = [p for p in flat if p.get("shatter")]
+    tr = [p for p in flat if p.get("when")]
     out = {"text": "", "target": "", "on_print": [], "shatter": []}
     lines = []
-    if on:
-        lines.append("On Print: " + _join(on))
-        out["on_print"] = [p["effect"] for p in on]
-        out["target"] = next((p["target"] for p in on if p["target"]), "")
+    if on_:
+        lines.append("On Print: " + _join(on_))
+        out["on_print"] = [p["effect"] for p in on_]
+        out["target"] = next((p["target"] for p in on_ if p["target"]), "")
+    if tr:
+        out["trig"] = []
+        for when in TRIGGERS:
+            group = [p for p in tr if p["when"] == when]
+            if group:
+                out["trig"].append({"when": when, "fx": [p["effect"] for p in group]})
+                lines.append(TRIGGERS[when] + ": " + _join(group))
     if sh:
         lines.append("Shatter: " + _join(sh))
         out["shatter"] = [p["effect"] for p in sh]
