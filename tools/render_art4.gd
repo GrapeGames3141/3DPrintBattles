@@ -37,7 +37,7 @@ func _initialize() -> void:
 		"cube_crab": [_crab, -28.0, 0.62], "layer_shifter": [_shifter, -20.0, 0.85],
 		"stepper_golem": [_golem, -22.0, 0.95], "coil_cobra": [_cobra, -16.0, 0.95],
 		"clog_goblin": [_goblin, -20.0, 0.72], "gantry_mantis": [_mantis, -24.0, 1.0],
-		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, -22.0, 1.15, 9.0, 20.0],
+		"tri_head_hydra": [_hydra, -14.0, 1.0], "cutie": [_roto, 205.0, 0.75, 8.6, 34.0],
 	}
 	for id in tools:
 		if only.is_empty() or only.has(id):
@@ -478,71 +478,69 @@ func _hydra() -> void:
 		glow(c, 0.045, Vector3(-0.5 + i * 0.25, 0.4 + fmod(i * 0.37, 0.7), -0.2), ORANGE, 2.5)
 
 
-## Cutie: built from the maker's own figure. One flat round plate with a centre
-## hole, four round studs and four small slots; a ring of curved tube segments
-## round the rim with little clips between them; square stud plates that are its
-## legs; and on top a 1x1 neck block carrying a thick rounded eye bar. Black pins
-## rise from the bar and end in white round eye tiles with a dark pupil, a pale
-## ring and a pink-white glint. It stands tilted back like a shell: the legs hang
-## off the low front edge and rest on the ground, the eye bar sticks out of the
-## high back edge.
+## Cutie: built from the maker's own figure. It stands like a crab: the round
+## plate (centre hole, four studs, four slots, a tube ring round the rim) lies flat
+## on top like a shell; seven square 1x1 stud plates are its legs, each clipped
+## straight onto the rim and hanging down underneath with its stud facing out; and
+## the head pokes out of the eighth clip: a 1x1 neck block, a thick three-long bar
+## across it, and two black pins running forward to round white eye tiles.
 func _roto() -> void:
-	var c: Node3D = _beast_root
-	var pv := Node3D.new()
-	c.add_child(pv)
-	pv.position = Vector3(0, 0.84, 0)
-	pv.rotation_degrees = Vector3(-42, 0, 0)
-	c = pv
 	var white := Color("f3f3f1")
-	var shade := Color("dcdcd8")
+	var shade := Color("dedede")
 	var dark := Color("16181c")
-	var cy := 0.0
 	var R := 0.74
-	var lm := mat(white, 0.03, Vector3(0, 0, 1), 0.38, 0.45)
+	# Built with the wheel in the XY plane facing +Z, then laid flat (face up).
+	var c := Node3D.new()
+	_beast_root.add_child(c)
+	c.position = Vector3(0, 0.62, 0)
+	c.rotation_degrees = Vector3(-90, 0, 0)
+	var lm := mat(white, 0.03, Vector3(0, 1, 0), 0.38, 0.45)
 	# The plate, its hole, studs and slots.
-	cyl(c, R, R, 0.1, Vector3(0, cy, -0.02), white, Vector3(90, 0, 0), 56, lm)
-	cyl(c, 0.085, 0.085, 0.02, Vector3(0, cy, 0.04), dark, Vector3(90, 0, 0), 20)
+	cyl(c, R, R, 0.1, Vector3(0, 0, -0.02), white, Vector3(90, 0, 0), 56, lm)
+	cyl(c, 0.085, 0.085, 0.02, Vector3(0, 0, 0.04), dark, Vector3(90, 0, 0), 20)
 	for i in 4:
 		var a := i * PI * 0.5
-		var sp := Vector3(cos(a) * 0.3, cy + sin(a) * 0.3, 0.0)
+		var sp := Vector3(cos(a) * 0.3, sin(a) * 0.3, 0.0)
 		cyl(c, 0.15, 0.15, 0.1, sp + Vector3(0, 0, 0.06), white, Vector3(90, 0, 0), 28, lm)
-		cyl(c, 0.085, 0.085, 0.05, sp + Vector3(0, 0, 0.14), shade, Vector3(90, 0, 0), 20, lm)
 		var d := a + PI * 0.25
-		box(c, Vector3(0.12, 0.05, 0.04), Vector3(cos(d) * 0.47, cy + sin(d) * 0.47, 0.04), dark, Vector3(0, 0, rad_to_deg(d) + 90.0), null, 0.01)
-	# The rim: a tube ring with a clip across each joint.
-	torus(c, R - 0.12, 0.12, Vector3(0, cy, 0.07), white, Vector3(90, 0, 0), lm)
+		box(c, Vector3(0.12, 0.05, 0.04), Vector3(cos(d) * 0.45, sin(d) * 0.45, 0.04), dark, Vector3(0, 0, rad_to_deg(d) + 90.0), null, 0.01)
+	torus(c, R - 0.12, 0.12, Vector3(0, 0, 0.07), white, Vector3(90, 0, 0), lm)
+	# Eight clips round the rim. Seven carry a leg; the one at the front carries
+	# the head.
 	for i in 8:
-		var a := deg_to_rad(i * 45.0 + 22.5)
-		box(c, Vector3(0.07, 0.2, 0.2), Vector3(cos(a) * (R - 0.1), cy + sin(a) * (R - 0.1), 0.1), shade, Vector3(0, 0, rad_to_deg(a)), lm, 0.02)
-	# Legs: square stud plates on little clips off the low edge. The two outer pairs
-	# reach further so all five reach the ground once the wheel is tilted back; two
-	# small ones sit up the sides.
-	var legs := [[-60.0, 1.28], [-30.0, 1.05], [0.0, 0.95], [30.0, 1.05], [60.0, 1.28], [195.0, 0.95], [-15.0, 0.95]]
-	for i in legs.size():
-		var L: Array = legs[i]
-		var deg: float = 270.0 + float(L[0]) if i < 5 else float(L[0])
-		var a := deg_to_rad(deg)
-		var rr: float = L[1]
-		var rim := Vector3(cos(a) * (R - 0.04), cy + sin(a) * (R - 0.04), 0.07)
-		var out := Vector3(cos(a) * rr, cy + sin(a) * rr, 0.02)
-		stick(c, rim, out, 0.05, white)
-		var wob := float((i * 41) % 25 - 12)
-		var pad := Node3D.new()
-		_place(c, pad, out, Vector3(0, 0, deg - 90.0 + wob * 0.6))
-		box(pad, Vector3(0.34, 0.34, 0.09), Vector3.ZERO, white, Vector3.ZERO, lm, 0.02)
-		cyl(pad, 0.1, 0.1, 0.07, Vector3(0, 0, 0.08), white, Vector3(90, 0, 0), 24, lm)
-	# Neck block and the eye bar.
-	box(c, Vector3(0.3, 0.3, 0.3), Vector3(0, cy + R + 0.1, 0.0), white, Vector3.ZERO, lm, 0.03)
-	cyl(c, 0.09, 0.09, 0.06, Vector3(0, cy + R + 0.1, 0.17), white, Vector3(90, 0, 0), 24, lm)
-	box(c, Vector3(1.15, 0.36, 0.4), Vector3(0, cy + R + 0.42, 0.0), white, Vector3.ZERO, lm, 0.15)
-	var lean := 62.0
-	var d := Vector3(0, cos(deg_to_rad(lean)), sin(deg_to_rad(lean)))
+		var deg := i * 45.0
+		var arm := Node3D.new()
+		_place(c, arm, Vector3.ZERO, Vector3(0, 0, deg))
+		box(arm, Vector3(0.3, 0.1, 0.16), Vector3(R - 0.1, 0, 0.09), shade, Vector3.ZERO, lm, 0.03)
+		if i == 2:
+			continue
+		# The leg: a square plate hinged at the clip, hanging down and a little out.
+		var hinge := Node3D.new()
+		_place(arm, hinge, Vector3(R + 0.07, 0, 0.0), Vector3(0, -38.0 - float((i * 7) % 9), float((i * 13) % 11 - 5)))
+		box(hinge, Vector3(0.14, 0.14, 0.26), Vector3(-0.02, 0, -0.02), white, Vector3.ZERO, lm, 0.03)
+		box(hinge, Vector3(0.1, 0.4, 0.4), Vector3(0, 0, -0.26), white, Vector3.ZERO, lm, 0.02)
+		cyl(hinge, 0.11, 0.11, 0.07, Vector3(0.08, 0, -0.26), white, Vector3(0, 0, 90), 24, lm)
+	# The head, angled up off the front clip.
+	var head := Node3D.new()
+	_place(c, head, Vector3(0, R - 0.02, 0.08), Vector3(28, 0, 0))
+	box(head, Vector3(0.3, 0.3, 0.3), Vector3(0, 0.2, 0.0), white, Vector3.ZERO, lm, 0.03)
+	cyl(head, 0.09, 0.09, 0.06, Vector3(0, 0.2, 0.17), white, Vector3(90, 0, 0), 24, lm)
+	box(head, Vector3(1.15, 0.34, 0.4), Vector3(0, 0.5, 0.06), white, Vector3.ZERO, lm, 0.16)
 	for sx in [-1.0, 1.0]:
-		var base := Vector3(sx * 0.4, cy + R + 0.55, 0.0)
-		stick(c, base, base + d * 0.55, 0.075, dark)
-		var top := base + d * 0.62
-		var tilt := Vector3(lean, 0, 0)
-		cyl(c, 0.24, 0.24, 0.13, top, white, tilt, 44, lm)
-		cyl(c, 0.2, 0.2, 0.03, top + d * 0.075, Color("cfe3ee"), tilt, 44)
-		cyl(c, 0.165, 0.165, 0.04, top + d * 0.09, dark, tilt, 44)
-		ball(c, 0.045, top + d * 0.115 + Vector3(sx * 0.04, -0.06, 0.04), Color("ffd9e6"))
+		var x: float = sx * 0.4
+		cyl(head, 0.11, 0.11, 0.03, Vector3(x, 0.325, 0.06), dark, Vector3.ZERO, 24)
+		cyl(head, 0.075, 0.075, 0.5, Vector3(x, 0.9, 0.06), dark, Vector3.ZERO, 24)
+		cyl(head, 0.105, 0.105, 0.05, Vector3(x, 0.7, 0.06), dark, Vector3.ZERO, 24)
+		cyl(head, 0.24, 0.24, 0.13, Vector3(x, 1.2, 0.06), white, Vector3.ZERO, 44, lm)
+		cyl(head, 0.2, 0.2, 0.02, Vector3(x, 1.27, 0.06), Color("cfe3ee"), Vector3.ZERO, 44, _flat(Color("b9d7e8")))
+		cyl(head, 0.165, 0.165, 0.02, Vector3(x, 1.28, 0.06), dark, Vector3.ZERO, 44, _flat(Color("0b0c0f")))
+		var glint := ball(head, 0.05, Vector3(x + sx * 0.03, 1.292, 0.01), Color("ffd9e6"), Vector3(1.0, 0.4, 1.0))
+		glint.material_override = _flat(Color("ffd9e6"))
+
+
+## A plain unlit colour, for printed eye faces that must stay true.
+func _flat(col: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return m
