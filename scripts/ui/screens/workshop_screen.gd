@@ -105,7 +105,7 @@ func _printers_tab() -> void:
 	var pitch := 270.0
 	var cols := maxi(1, int((W - 12.0 + 20.0) / pitch))
 	var rows := ceili(float(GameData.PRINTERS.size()) / cols)
-	_body = scroll_body(206, rows * 332.0 + 20.0)
+	_body = scroll_body(206, rows * 332.0 + 20.0, "printers")
 	var x0 := (W - 12.0 - (cols * pitch - 20.0)) * 0.5
 	for i in GameData.PRINTERS.size():
 		var p: Dictionary = GameData.PRINTERS[i]
@@ -172,7 +172,7 @@ func _mods_tab() -> void:
 			return ra < rb
 		return int(a["cost"]) < int(b["cost"]))
 	var rows := ceili(float(mods.size()) / cols)
-	_body = scroll_body(206, rows * 150.0 + 20.0)
+	_body = scroll_body(206, rows * 150.0 + 20.0, "mods")
 	var width := minf(W - 40.0, 580.0)
 	var x0 := (W - 12.0 - (cols * pitch_x - (pitch_x - width))) * 0.5
 	for i in mods.size():

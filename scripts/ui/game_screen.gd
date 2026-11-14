@@ -82,10 +82,16 @@ func _exit_tree() -> void:
 
 
 ## A scrolling area from `top` to the bottom of the stage. Returns the content
-## node (W wide, `content_h` tall) to place things on.
-func scroll_body(top: float, content_h: float) -> Control:
+## node (W wide, `content_h` tall) to place things on. Rebuilding the screen
+## with the same `key` (after buying something, say) keeps the list where it was.
+func scroll_body(top: float, content_h: float, key := "") -> Control:
+	var keep := 0
+	if is_instance_valid(_body_scroll) and key == _body_scroll_key:
+		keep = _body_scroll.scroll_vertical
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# A finger has to move a little before a tap turns into a scroll.
+	scroll.scroll_deadzone = 14
 	scroll.position = Vector2(0, top)
 	scroll.size = Vector2(W, H - top)
 	add_child(scroll)
@@ -93,7 +99,33 @@ func scroll_body(top: float, content_h: float) -> Control:
 	inner.custom_minimum_size = Vector2(W - 12, content_h)
 	inner.mouse_filter = Control.MOUSE_FILTER_PASS
 	scroll.add_child(inner)
+	_body_scroll = scroll
+	_body_scroll_key = key
+	if keep > 0:
+		_restore_scroll(scroll, keep)
+	_let_drags_through.call_deferred(inner)
 	return inner
+
+
+var _body_scroll: ScrollContainer
+var _body_scroll_key := ""
+
+
+func _restore_scroll(scroll: ScrollContainer, y: int) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(scroll):
+		scroll.scroll_vertical = y
+
+
+## Buttons in a scrolling list pass a drag on to the list, so a finger that
+## lands on a button can still scroll.
+func _let_drags_through(n: Node) -> void:
+	if not is_instance_valid(n):
+		return
+	for c in n.get_children():
+		if c is BaseButton:
+			(c as Control).mouse_filter = Control.MOUSE_FILTER_PASS
+		_let_drags_through(c)
 
 
 ## A modal dimmer that swallows clicks; returns a stage-sized layer for content.
@@ -103,7 +135,9 @@ func modal(alpha: float = 0.9) -> Control:
 	m.position = Vector2(-700, -700)
 	m.size = Vector2(W + 1400, H + 1400)
 	m.mouse_filter = Control.MOUSE_FILTER_STOP
-	m.z_index = 40
+	# Above the battle's coaching tip (48), so a tip's highlight ring never
+	# shows through a menu or the Handbook.
+	m.z_index = 49
 	add_child(m)
 	var inner := Control.new()
 	inner.position = Vector2(700, 700)

@@ -22,6 +22,8 @@ var _anchor := Vector2.ZERO
 var _badge: PanelContainer
 var _phase := 0.0
 var _shimmer_was := false
+const GLINT_EVERY := 6.0
+const GLINT_TIME := 1.8
 
 
 ## `points` outline the object; `label_at` is where the plaque's middle sits.
@@ -48,7 +50,7 @@ static func make(points: PackedVector2Array, label_at: Vector2, title: String, s
 	h._build_plaque(title, subs, desc)
 	# Hidden until the pointer is on the object, so the picture stays clear.
 	h._plaque.visible = false
-	h._phase = float(hash(title) % 1000) / 1000.0 * 8.0
+	h._phase = float(absi(hash(title)) % 1000) / 1000.0 * GLINT_EVERY
 	return h
 
 
@@ -176,25 +178,64 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
+## 0..1 while this object's glint is running, else -1. Every few seconds a
+## gold light runs once around the object, each on its own beat, so a finger
+## can see what is there to tap without a label in the way.
+func _glint() -> float:
+	var ph := fmod(_t + _phase, GLINT_EVERY)
+	return ph / GLINT_TIME if ph < GLINT_TIME else -1.0
+
+
 func _shimmer() -> float:
-	var ph := fmod(_t + _phase, 8.0)
-	return sin(PI * ph / 1.6) * 0.28 if ph < 1.6 else 0.0
+	var g := _glint()
+	return sin(PI * g) if g >= 0.0 else 0.0
 
 
 func _draw() -> void:
 	var glow := 0.0
+	var col := accent
 	if _down:
 		glow = 1.0
 	elif _hover:
 		glow = 0.7 + 0.15 * sin(_t * 5.0)
 	elif attention:
 		glow = 0.25 + 0.2 * sin(_t * 2.6)
-	else:
-		glow = _shimmer()
-	if glow <= 0.0:
-		return
-	draw_colored_polygon(_local, Color(accent.r, accent.g, accent.b, 0.13 * glow))
 	var ring := _local.duplicate()
 	ring.append(_local[0])
-	draw_polyline(ring, Color(accent.r, accent.g, accent.b, 0.22 * glow), 9.0, true)
-	draw_polyline(ring, Color(accent.r, accent.g, accent.b, 0.85 * glow), 3.0, true)
+	if glow > 0.0:
+		draw_colored_polygon(_local, Color(col.r, col.g, col.b, 0.13 * glow))
+		draw_polyline(ring, Color(col.r, col.g, col.b, 0.22 * glow), 9.0, true)
+		draw_polyline(ring, Color(col.r, col.g, col.b, 0.85 * glow), 3.0, true)
+	if _hover or _down:
+		return
+	var g := _glint()
+	if g < 0.0:
+		return
+	# The glint: a soft gold outline that swells and fades, with a bright
+	# spark of light running once around it.
+	var gold := UI.GOLD
+	var swell := sin(PI * g)
+	draw_colored_polygon(_local, Color(gold.r, gold.g, gold.b, 0.07 * swell))
+	draw_polyline(ring, Color(gold.r, gold.g, gold.b, 0.18 * swell), 8.0, true)
+	draw_polyline(ring, Color(gold.r, gold.g, gold.b, 0.45 * swell), 2.5, true)
+	var total := 0.0
+	for i in ring.size() - 1:
+		total += ring[i].distance_to(ring[i + 1])
+	var head := g * total
+	var tail := head - total * 0.22
+	var run := PackedVector2Array()
+	var walked := 0.0
+	for i in ring.size() - 1:
+		var a := ring[i]
+		var b := ring[i + 1]
+		var seg := a.distance_to(b)
+		var s0 := clampf((tail - walked) / maxf(seg, 0.001), 0.0, 1.0)
+		var s1 := clampf((head - walked) / maxf(seg, 0.001), 0.0, 1.0)
+		if s1 > s0:
+			if run.is_empty():
+				run.append(a.lerp(b, s0))
+			run.append(a.lerp(b, s1))
+		walked += seg
+	if run.size() >= 2:
+		draw_polyline(run, Color(gold.r, gold.g, gold.b, 0.35 * swell), 10.0, true)
+		draw_polyline(run, Color(1.0, 0.96, 0.75, 0.95 * swell), 3.5, true)

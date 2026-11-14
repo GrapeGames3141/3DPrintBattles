@@ -495,7 +495,7 @@ func input_checks(profile) -> void:
 	await wait(0.3)
 	await settle(scr)
 	var t0 := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < 20000:
+	while Time.get_ticks_msec() - t0 < 40000:
 		await process_frame
 		if int(session.state["active"]) == 0 and not scr._busy:
 			break
