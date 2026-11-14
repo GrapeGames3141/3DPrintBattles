@@ -371,14 +371,14 @@ func _open_help() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, title, Vector2(0, 18), Vector2(bw, 46))
 	var rules := [
-		["spool", UI.CYAN, "Filament", "Your Printer prints %d Filament a turn. Cards cost Filament, and it all comes off your Spool." % GameData.PRINT_SPEED],
+		["spool", UI.CYAN, "Filament", "Your Printer prints %d Filament a turn to start, and mods can raise that. Cards cost Filament, and it all comes off your Spool." % GameData.PRINT_SPEED],
 		["snow", UI.CYAN, "Long prints", "Bigger cards go on your Printer and finish over the next turns. Tap the print when it is ready."],
 		["cube", UI.AMBER, "Prints", "Drag a print from your hand onto your side of the bench. It can attack from your next turn."],
 		["burst", UI.AMBER, "Attacking", "Drag your print onto an enemy print or Printer. Prints deal their Attack to each other."],
 		["flame", UI.BAD, "Tools", "One-shot effects. Drag a tool onto its target, or tap the card and then tap the target."],
 		["shield", Color("dfe6f0"), "Upgrades", "Printed armor that you bolt onto one of your prints. It stays on for the rest of the battle."],
 		["star", UI.GOLD, "Printer Power", "Each Printer has a Power. It costs Filament and can be used once per turn."],
-		["hex", UI.BAD, "Winning", "Bring the enemy Printer's Health to 0. Win coins, open card packs, and build a stronger deck."],
+		["hex", UI.BAD, "Winning", "Bring the enemy Printer's Health to 0 (mods can make a Printer tougher). Win coins, open card packs, and build a stronger deck."],
 	]
 	var y := 78.0
 	var pitch := 92.0 if P else 56.0
