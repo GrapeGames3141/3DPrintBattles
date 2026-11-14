@@ -81,6 +81,16 @@ func build() -> void:
 	pl.position = Vector2(44, 6)
 	pl.size = Vector2(200, 30)
 	pill.add_child(pl)
+	# The pill opens your profile.
+	var open_profile := Button.new()
+	open_profile.flat = true
+	open_profile.focus_mode = Control.FOCUS_NONE
+	open_profile.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	open_profile.set_anchors_preset(Control.PRESET_FULL_RECT)
+	open_profile.pressed.connect(func():
+		Audio.sfx("click")
+		app.go("profile"))
+	pill.add_child(open_profile)
 	var how := UI.button("?", "plain" if bool(Profile.data["tutorial_done"]) else "go", Vector2(46, 44), 22)
 	how.pressed.connect(_open_help)
 	UI.place(self, how, Vector2(W - 14 - 46 - 8 - 112 - 8 - 76, 12))

@@ -159,8 +159,55 @@ func run() -> void:
 	await full_match("quick", Session.quick(profile.active_deck(), 2), profile)
 	await full_match("hotseat", Session.hotseat(profile.active_deck(), profile.active_deck()), profile)
 	Engine.time_scale = 1.0
+	await ranked_checks(profile)
 	print("\nui smoke: %d failed" % fails)
 	quit(1 if fails > 0 else 0)
+
+
+## Profile and the ranked queue: open the profile from the menu pill, find a
+## match, see the preview, then play the battle and check the rating moves.
+func ranked_checks(profile) -> void:
+	print("ranked ladder")
+	app.go("menu")
+	await wait(0.6)
+	var pill: Button = null
+	for b in app.current.find_children("*", "Button", true, false):
+		if b.flat and b.get_parent() is Panel and b.size.x > 200:
+			pill = b
+	ok(pill != null, "the coin pill is a button")
+	if pill != null:
+		pill.pressed.emit()
+	await wait(0.6)
+	ok(app.current.get_script().resource_path.ends_with("profile_screen.gd"), "the pill opens the profile")
+	var scr = app.current
+	var name_before: String = profile.player_name()
+	for b in scr.find_children("*", "Button", true, false):
+		if b.text == ">":
+			b.pressed.emit()
+			break
+	await wait(0.4)
+	ok(profile.player_name() != name_before or profile.player()["adj"] != 0, "the arrows change your name words")
+	scr = app.current
+	scr._toggle_search()
+	await wait(0.4)
+	ok(scr._searching or not scr._found.is_empty(), "the search starts")
+	await wait(2.4)
+	scr = app.current
+	ok(not scr._found.is_empty(), "a ranked opponent is found")
+	var fight: Button = null
+	for b in scr.find_children("*", "Button", true, false):
+		if b.text == "Fight!":
+			fight = b
+	ok(fight != null, "the match preview offers Fight!")
+	var opp: Dictionary = scr._found
+	var before: int = profile.rating()
+	var games_before: int = int(profile.player()["ranked_games"])
+	Engine.time_scale = 12.0
+	await full_match("ranked", Session.ranked(profile.active_deck(), opp), profile)
+	Engine.time_scale = 1.0
+	ok(int(profile.player()["ranked_games"]) == games_before + 1, "the ranked game is counted")
+	ok(profile.rating() != before, "the rating moved (%d -> %d)" % [before, profile.rating()])
+	ok((profile.player()["history"] as Array).size() >= 1, "the game is in your history")
 
 
 ## Opens a pack the way a player does: swipe to rip it, flick and tap through
@@ -468,5 +515,5 @@ func full_match(label: String, session, profile) -> void:
 	if cont != null:
 		cont.pressed.emit()
 	await wait(1.0)
-	var home := "menu_screen.gd" if label == "tutorial" else "play_screen.gd"
+	var home := "menu_screen.gd" if label == "tutorial" else ("profile_screen.gd" if label == "ranked" else "play_screen.gd")
 	ok(app.current.get_script().resource_path.ends_with(home), "Continue returns to %s" % home)

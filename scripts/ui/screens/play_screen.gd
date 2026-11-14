@@ -139,9 +139,13 @@ func _versus_section(r: Rect2) -> void:
 	UI.panel(_body, r)
 	_heading("Practice", Vector2(x, y))
 	y += 38
-	var tut := UI.button("Tutorial  (learn to play)", "plain" if bool(Profile.data["tutorial_done"]) else "go", Vector2(w, 44), 18)
+	var half := (w - 8.0) * 0.5
+	var tut := UI.button("Tutorial", "plain" if bool(Profile.data["tutorial_done"]) else "go", Vector2(half, 44), 18)
 	tut.pressed.connect(func(): app.go("battle", {"session": BattleSession.tutorial()}))
 	UI.place(_body, tut, Vector2(x, y))
+	var ranked := UI.button("Ranked  %s" % Rating.league_text(Profile.rating()), "primary", Vector2(half, 44), 16)
+	ranked.pressed.connect(func(): app.go("profile"))
+	UI.place(_body, ranked, Vector2(x + half + 8.0, y))
 	y += 52
 	for i in GameData.AI_LEVELS.size():
 		var b := UI.button("%s  (+%d coins)" % [GameData.AI_LEVELS[i], int(GameData.WIN_COINS[i])], "plain", Vector2(w, 44), 18)

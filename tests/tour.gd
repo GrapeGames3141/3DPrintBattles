@@ -185,6 +185,17 @@ func run() -> void:
 		await go("battle", {"session": load("res://scripts/core/battle_session.gd").quick(profile.active_deck(), 1)})
 		await wait(0.8)
 		await shot("battle_modded")
+	if want("profile"):
+		for g in [[1010, true], [1030, true], [1100, false], [1060, true], [1210, true]]:
+			profile.record_ranked("Swift Gear 07", int(g[0]), bool(g[1]))
+		await go("profile")
+		await shot("profile")
+		app.current._found = Ladder.opponent(profile.rating(), 21)
+		app.current.relayout()
+		await wait(0.4)
+		await shot("profile_match")
+		app.current._found = {}
+		app.current.relayout()
 	if want("play"):
 		await go("play")
 		await shot("play")

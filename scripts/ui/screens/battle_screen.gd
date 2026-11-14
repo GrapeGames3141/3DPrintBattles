@@ -264,7 +264,7 @@ func _battle_track() -> String:
 		for i in GameData.RIVALS.size():
 			if GameData.RIVALS[i]["id"] == session.rival_id:
 				return "battle2" if i >= 7 else "battle1"
-	elif session.mode == "quick" and session.ai_level >= 2:
+	elif session.mode in ["quick", "ranked"] and session.ai_level >= 2:
 		return "battle2"
 	return "battle1"
 
@@ -1836,6 +1836,9 @@ func _show_result_panel() -> void:
 		line = "Tutorial complete. You are ready for real rivals." if won else "Give the tutorial another go whenever you like."
 	elif session.mode == "hotseat":
 		line = "Friendly match: no coins this time."
+	elif session.mode == "ranked":
+		var o: Dictionary = session.opponent
+		line = ("You beat %s!" if won else "%s wins this one.") % o["name"]
 	if line != "":
 		var l := UI.label(line, 21, UI.CREAM, false)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1856,6 +1859,16 @@ func _show_result_panel() -> void:
 		xl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(box, xl, Vector2(0, y), Vector2(bw, 30))
 		y += 38.0
+	if _reward.has("rating"):
+		var rr: Dictionary = _reward["rating"]
+		var rl := "Rating %d  (%+d)   %s" % [int(rr["after"]), int(rr["delta"]), rr["league"]]
+		if bool(rr["promoted"]):
+			rl += "   Promoted!"
+		var rcol: Color = UI.GOOD if int(rr["delta"]) >= 0 else UI.AMBER
+		var rlab := UI.label(rl, 22, rcol, true, 3)
+		rlab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.place(box, rlab, Vector2(0, y), Vector2(bw, 30))
+		y += 38.0
 	var found: Dictionary = _reward.get("found_mod", {})
 	if not found.is_empty():
 		var fl := UI.label("Found a mod: %s" % found["name"], 22, GameData.rarity_color(str(found["rarity"])), true, 4)
@@ -1868,7 +1881,7 @@ func _show_result_panel() -> void:
 		box.add_child(pack)
 		var pl := UI.label("First win reward:\n%s" % GameData.PACKS[_reward["pack"]]["name"], 21, UI.CYAN)
 		UI.place(box, pl, Vector2(bw * 0.5 - 60, y + 34), Vector2(260, 70))
-	var home := "menu" if session.mode == "tutorial" else "play"
+	var home := "menu" if session.mode == "tutorial" else ("profile" if session.mode == "ranked" else "play")
 	var cont := UI.button("Continue", "go", Vector2(240, 60), 26)
 	cont.pressed.connect(func(): app.go(home))
 	UI.place(box, cont, Vector2(bw * 0.5 - 250 if has_pack or (session.mode == "tutorial" and not won) else bw * 0.5 - 120, 460))

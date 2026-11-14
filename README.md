@@ -43,7 +43,7 @@ the card stack for packs and the shelf of figures and armour for Blueprints.
 | **Handbook** | A player handbook (from the `?` popup and the in-battle Menu) explaining turns, Filament, every keyword, Heat, Jam, Armor, card types, elements, rarity and Blueprints. |
 | **Tutorial** | A guided first battle with on-screen tips that follow what you do. Replay it from the Battle menu or How to Play. |
 | **Vs computer** | A 10-rival campaign with first-win pack rewards, and Quick Battle at Apprentice, Craftsman or Master. |
-| **Vs a friend** | Pass & Play on one screen, or Host / Join over the local network (port 24842; over the internet the host must forward that port). |
+| **Profile & ranked** | Tap the coin pill on the menu (or Ranked on the Battle screen). Your profile has an anonymous player id, a name built from two fixed word lists and a number, a picture (one of your prints), earned titles, a Maker Rating with leagues (Spool to Print Master), your record and recent games. Ranked finds an opponent near your rating, shows who it is and what you stand to win or lose, and plays your active deck. There is no typed text. Until an online server is deployed the opponents are built-to-measure computer players; the rating and matchmaking code is the same that a server will run (`backend/src/rating.ts`). |\n| **Vs a friend** | Pass & Play on one screen, or Host / Join over the local network (port 24842; over the internet the host must forward that port). |
 
 The arena is a workbench: your Printer stands in the near corner and builds
 each print layer by layer before it hops onto your lane; the enemy's Printer
