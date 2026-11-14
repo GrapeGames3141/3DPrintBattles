@@ -16,7 +16,7 @@ const TUNE := {
 	"print": [0.7, 0.04], "job_start": [0.75, 0.0], "print_done": [0.8, 0.0], "deploy": [0.8, 0.03],
 	"shatter": [0.8, 0.07], "scrap": [0.55, 0.1], "spool_low": [0.7, 0.0],
 	"turn_mine": [0.7, 0.0], "turn_foe": [0.6, 0.0], "win": [0.95, 0.0], "lose": [0.9, 0.0],
-	"reveal": [0.8, 0.0], "reveal_epic": [0.9, 0.0],
+	"reveal": [0.8, 0.0], "reveal_epic": [0.9, 0.0], "heartbeat": [0.8, 0.02],
 }
 ## Old names still used here and there, mapped to the effect that replaced them.
 const ALIAS := {"card": "pick", "error": "deny"}

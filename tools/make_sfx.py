@@ -15,6 +15,7 @@ from audiolib import (
     OUT, SR, adsr, attack, band, brass, chirp, ep, exp_env, fft_filter, hz, marimba, noise, pluck, saw, secs, sine,
     soft_clip, tt, tick, write_wav,
 )
+from audiolib import anvil as _anvil, bell as _bell, crash as _crash, heartbeat as _heartbeat, strings as _strings, taiko as _taiko
 
 rng = np.random.default_rng(3141)
 SFX = {}
@@ -52,6 +53,11 @@ def sigout(fn):
 tick = sigout(tick)
 brass = sigout(brass)
 ep = sigout(ep)
+clank = sigout(lambda f, vel=1.0: _anvil(rng, f) * vel)
+drum = sigout(lambda f, vel=1.0: _taiko(rng, f) * vel)
+cymbal = sigout(lambda vel=1.0: _crash(rng) * vel)
+bell = sigout(_bell)
+strings = sigout(_strings)
 chirp = sigout(chirp)
 
 
@@ -168,7 +174,7 @@ def pick():
 
 @sfx
 def drop():
-    return thump(95.0, 0.14, 26.0) * 0.8 + tick(rng, 900.0) * 0.5
+    return thump(95.0, 0.14, 26.0) * 0.8 + tick(rng, 900.0) * 0.5 + clank(900.0, 0.25)
 
 
 # ---------------------------------------------------------------- printing
@@ -226,25 +232,27 @@ def swing():
 
 @sfx
 def hit():
-    return place([(0.0, thump(120.0, 0.18, 24.0) * 0.9), (0.0, crunch(0.14, 500.0, 5000.0, 900.0, 24.0) * 0.5)], 0.25)
+    return place([(0.0, thump(110.0, 0.2, 22.0) * 0.9), (0.0, crunch(0.14, 500.0, 5000.0, 900.0, 24.0) * 0.5),
+                  (0.0, clank(640.0, 0.5)), (0.0, drum(95.0, 0.35))], 0.5)
 
 
 @sfx
 def hit_heavy():
-    return place([(0.0, thump(60.0, 0.4, 9.0) * 1.0), (0.0, crunch(0.3, 200.0, 4000.0, 1200.0, 12.0) * 0.6), (0.01, ping(180.0, 0.3, 14.0) * 0.3)], 0.45)
+    return place([(0.0, drum(58.0, 0.9)), (0.0, thump(55.0, 0.5, 8.0) * 0.7), (0.0, crunch(0.3, 200.0, 5000.0, 1400.0, 11.0) * 0.6),
+                  (0.0, clank(430.0, 0.8)), (0.02, clank(960.0, 0.4)), (0.03, cymbal(0.35))], 1.0)
 
 
 @sfx
 def hit_printer():
-    """A struck metal frame: inharmonic partials plus a thud."""
     partial = ((1.0, 1.0), (2.76, 0.7), (5.4, 0.5), (8.93, 0.3))
-    return place([(0.0, thump(80.0, 0.3, 12.0) * 0.8), (0.0, ping(410.0, 0.6, 7.0, partial) * 0.55), (0.0, crunch(0.15, 1000.0, 9000.0, 800.0, 25.0) * 0.4)], 0.65)
+    return place([(0.0, drum(52.0, 0.8)), (0.0, ping(410.0, 0.7, 6.0, partial) * 0.55), (0.0, crunch(0.2, 1000.0, 9000.0, 900.0, 22.0) * 0.45),
+                  (0.0, clank(330.0, 0.7)), (0.04, cymbal(0.3))], 1.1)
 
 
 @sfx
 def shatter():
-    return place([(0.0, crunch(0.55, 1500.0, 12000.0, 2600.0, 6.5) * 1.0), (0.0, thump(90.0, 0.2, 20.0) * 0.5),
-                  (0.04, ping(2400.0, 0.2, 18.0, ((1, 1), (1.6, 0.6))) * 0.25)], 0.6)
+    return place([(0.0, crunch(0.6, 1500.0, 12000.0, 2800.0, 6.0) * 1.0), (0.0, drum(80.0, 0.7)), (0.0, clank(760.0, 0.5)),
+                  (0.05, clank(1180.0, 0.35)), (0.09, ping(2400.0, 0.25, 16.0, ((1, 1), (1.6, 0.6))) * 0.25)], 0.9)
 
 
 @sfx
@@ -364,12 +372,21 @@ def atk_arcane():
 
 @sfx
 def turn_mine():
-    return place([(0.0, ping(659.0, 0.5, 6.0, ((1, 1), (2, 0.3)))), (0.12, ping(880.0, 0.7, 5.0, ((1, 1), (2, 0.3), (3.0, 0.1))))], 0.85) * 0.8
+    # A horn call: root and fifth, with a bell on top.
+    return place([(0.0, brass(hz(62), 0.35, 0.9)), (0.0, brass(hz(69), 0.35, 0.8)), (0.18, brass(hz(69), 0.7, 0.9)), (0.18, brass(hz(74), 0.7, 0.8)),
+                  (0.18, bell(hz(86), 0.6, 0.8) * 0.5), (0.0, drum(75.0, 0.5))], 1.2) * 0.8
 
 
 @sfx
 def turn_foe():
-    return place([(0.0, ping(294.0, 0.5, 7.0, ((1, 1), (2, 0.3)))), (0.14, ping(247.0, 0.6, 6.0, ((1, 1), (2, 0.3))))], 0.75) * 0.7
+    # A low answer: a taiko hit and a falling minor horn.
+    return place([(0.0, drum(66.0, 0.8)), (0.0, brass(hz(55), 0.4, 0.8)), (0.2, brass(hz(52), 0.7, 0.8)), (0.2, clank(300.0, 0.4))], 1.1) * 0.8
+
+
+@sfx
+def heartbeat():
+    """The Printer is nearly gone: a slow double thump."""
+    return Sig(_heartbeat(rng)) * 0.9
 
 
 @sfx
@@ -392,22 +409,26 @@ def reveal_epic():
 @sfx
 def win():
     parts = []
-    for k, (m, d) in enumerate([(67, 0.0), (72, 0.18), (76, 0.36), (79, 0.54)]):
-        parts.append((d, brass(hz(m), 0.34 if k < 3 else 1.4, 0.9)))
-    for m in (60, 64, 67, 72):
-        parts.append((0.72, brass(hz(m), 1.5, 0.8) * 0.6))
-    parts.append((0.72, ping(hz(91), 1.4, 3.0, ((1, 1), (2, 0.2))) * 0.3))
-    return place(parts, 2.6)
+    for k, (m, d) in enumerate([(62, 0.0), (66, 0.2), (69, 0.4), (74, 0.6)]):
+        parts.append((d, brass(hz(m), 0.3 if k < 3 else 1.6, 0.95)))
+        parts.append((d, strings(hz(m + 12), 0.3 if k < 3 else 1.8, 0.8, 0.02) * 0.6))
+    for m in (62, 66, 69, 74):
+        parts.append((0.8, brass(hz(m), 1.5, 0.8) * 0.6))
+    parts += [(0.0, drum(70.0, 0.7)), (0.4, drum(70.0, 0.6)), (0.8, drum(60.0, 0.9)), (0.8, cymbal(0.7)),
+              (0.8, bell(hz(98), 1.5, 0.8) * 0.5), (0.95, bell(hz(102), 1.5, 0.7) * 0.4)]
+    return place(parts, 3.0)
 
 
 @sfx
 def lose():
     parts = []
-    for k, (m, d) in enumerate([(69, 0.0), (66, 0.35), (62, 0.7)]):
-        parts.append((d, ep(hz(m), 0.6 if k < 2 else 1.6, 0.8)))
-    parts.append((1.05, ep(hz(57), 1.8, 0.7) * 0.7))
-    parts.append((0.0, thump(50.0, 0.8, 4.0) * 0.4))
-    return place(parts, 3.0)
+    for k, (m, d) in enumerate([(62, 0.0), (60, 0.45), (57, 0.9)]):
+        parts.append((d, strings(hz(m), 0.5 if k < 2 else 1.8, 0.9, 0.12)))
+        parts.append((d, strings(hz(m + 7), 0.5 if k < 2 else 1.8, 0.8, 0.12) * 0.8))
+        parts.append((d, drum(48.0 - 4 * k, 0.8)))
+    parts.append((1.3, strings(hz(50), 2.0, 0.8, 0.3) * 0.8))
+    parts.append((0.0, clank(260.0, 0.5)))
+    return place(parts, 3.6)
 
 
 # -------------------------------------------------------------------- packs

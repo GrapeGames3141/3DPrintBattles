@@ -1629,6 +1629,9 @@ func _ev_damage(e: Dictionary) -> void:
 		Audio.sfx("hit_printer")
 	else:
 		Audio.sfx("hit_heavy" if int(e["n"]) >= 4 else "hit")
+	# A big blow makes the music duck for a beat, so it lands.
+	if int(e["n"]) >= 4:
+		Audio.duck(0.45, 0.35)
 	UI.floater(_fx, "-%d" % int(e["n"]), at + Vector2(randf_range(-10, 10), -10), UI.BAD, 40)
 	Effects.burst(_fx, at, "hit", Color("ffd9a0") if int(e["n"]) < 4 else Color("ff7a4a"), 1.0 + minf(int(e["n"]) * 0.08, 0.8))
 	if n is PrinterView:
@@ -1636,6 +1639,9 @@ func _ev_damage(e: Dictionary) -> void:
 		var p: Dictionary = st["players"][pv.seat]
 		pv.set_health(int(e["hp"]), int(p["max_hp"]), int(e.get("armor", 0)))
 		pv.flash()
+		# Your own Printer in trouble: a heartbeat under the music.
+		if pv.seat == me and int(e["hp"]) > 0 and int(e["hp"]) <= 8:
+			get_tree().create_timer(0.45).timeout.connect(func(): Audio.sfx("heartbeat"))
 	else:
 		var bu: BoardUnit = n
 		var data: Dictionary = bu.u
