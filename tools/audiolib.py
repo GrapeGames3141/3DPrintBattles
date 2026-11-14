@@ -250,6 +250,83 @@ def tick(rng, freq=1500.0):
     return (np.sin(TAU * freq * t) * np.exp(-t * 260.0) + noise(n, rng) * np.exp(-t * 500.0) * 0.4) * 0.7
 
 
+# ---------------------------------------------------- orchestral-electro kit
+
+def strings(f, dur, vel=1.0, bite=0.12):
+    """A section of strings: three detuned saws per note, a slow bow, a little vibrato.
+    `bite` is the attack time: short for stabs, long for swells."""
+    n = secs(dur + 0.35)
+    t = tt(n)
+    vib = 1.0 + 0.004 * np.sin(TAU * 5.2 * t) * np.minimum(t / 0.4, 1.0)
+    y = np.zeros(n)
+    for cents in (-9.0, 0.0, 8.0):
+        ph = TAU * np.cumsum(f * vib * 2.0 ** (cents / 1200.0)) / SR
+        y += 2.0 * ((ph / TAU) % 1.0) - 1.0
+    y = fft_filter(y / 3.0, hi=2600.0 + 1800.0 * vel, order=2)
+    rel = np.where(t < dur, 1.0, np.exp(-(t - dur) * 11.0))
+    return y * np.minimum(t / max(bite, 0.004), 1.0) * rel * vel * 0.55
+
+
+def bell(f, dur=0.6, vel=1.0):
+    """A glockenspiel-like bell: inharmonic partials that ring and fade."""
+    n = secs(dur + 0.9)
+    t = tt(n)
+    y = np.zeros(n)
+    for ratio, a, d in [(1.0, 1.0, 2.6), (2.76, 0.55, 4.5), (5.4, 0.3, 7.5), (8.93, 0.14, 12.0)]:
+        if f * ratio < SR * 0.45:
+            y += a * np.sin(TAU * f * ratio * t) * np.exp(-t * d)
+    return y * attack(n, 0.002) * vel * 0.4
+
+
+def saw_bass(f, dur, vel=1.0, cut=900.0):
+    """Analog-style bass: a saw and a sub, filtered and plucked, tight and punchy."""
+    n = secs(dur + 0.06)
+    t = tt(n)
+    y = 0.7 * saw(f, n, 4.0) + 0.7 * saw(f, n, -4.0) + 0.9 * sine(f * 0.5, n)
+    y = fft_filter(y, hi=cut + 1400.0 * vel, order=2)
+    y = soft_clip(y * 1.3, 1.3)
+    return y * adsr(n, 0.004, 0.09, 0.7, 0.04) * vel * 0.42
+
+
+def anvil(rng, freq=520.0):
+    """A hammer on metal: ringing inharmonic partials over a click."""
+    n = secs(0.9)
+    t = tt(n)
+    y = np.zeros(n)
+    for ratio, a, d in [(1.0, 1.0, 5.0), (2.31, 0.7, 7.0), (3.77, 0.5, 11.0), (5.12, 0.3, 15.0)]:
+        y += a * np.sin(TAU * freq * ratio * t) * np.exp(-t * d)
+    y += noise(n, rng) * np.exp(-t * 250.0) * 0.5
+    return y * attack(n, 0.0008) * 0.4
+
+
+def taiko(rng, freq=62.0):
+    """A big drum: a deep pitch-dropping thump with a skin slap."""
+    n = secs(0.9)
+    t = tt(n)
+    ph = TAU * np.cumsum(freq * (1.0 + 0.9 * np.exp(-t * 18.0))) / SR
+    body = np.sin(ph) * np.exp(-t * 4.6)
+    slap = band(noise(n, rng), 600.0, 4000.0, order=1) * np.exp(-t * 60.0) * 0.3
+    return soft_clip(body * 1.4 + slap, 1.3) * 0.85
+
+
+def crash(rng):
+    n = secs(2.2)
+    t = tt(n)
+    return fft_filter(noise(n, rng), lo=3500.0, order=2) * np.exp(-t * 2.4) * 0.3
+
+
+def heartbeat(rng):
+    """A double thump."""
+    n = secs(0.6)
+    t = tt(n)
+    y = np.zeros(n)
+    for off, a in [(0.0, 1.0), (0.17, 0.7)]:
+        i = secs(off)
+        tm = tt(n - i)
+        y[i:] += np.sin(TAU * (52.0 + 30.0 * np.exp(-tm * 28.0)) * tm) * np.exp(-tm * 14.0) * a
+    return y * 0.9
+
+
 # ---------------------------------------------------------------- sequencer
 
 class Song:
