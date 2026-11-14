@@ -169,14 +169,28 @@ static func attack_targets(st: Dictionary, uid: int) -> Array:
 	if u.is_empty() or st["over"] or int(u["seat"]) != int(st["active"]) or not can_attack(u):
 		return []
 	var foe: int = 1 - int(u["seat"])
-	var guard := has_guard(st, foe)
+	var kw: Array = u["kw"]
+	var blocked := guard_blocks(st, foe, u)
 	var out: Array = []
 	for t in st["players"][foe]["board"]:
-		if not guard or (t["kw"] as Array).has("guard"):
+		var tk: Array = t["kw"]
+		if tk.has("hover") and not (kw.has("hover") or kw.has("reach")):
+			continue
+		if not blocked or tk.has("guard"):
 			out.append("u%d" % int(t["uid"]))
-	if not guard and not bool(u["fresh"]):
+	if not blocked and not bool(u["fresh"]):
 		out.append("p%d" % foe)
 	return out
+
+
+## True when Guard prints on `seat`'s side force this attacker to hit them
+## first. Menace gets past a single Guard.
+static func guard_blocks(st: Dictionary, seat: int, attacker: Dictionary) -> bool:
+	var guards := 0
+	for g in st["players"][seat]["board"]:
+		if (g["kw"] as Array).has("guard"):
+			guards += 1
+	return guards > 1 or (guards == 1 and not (attacker["kw"] as Array).has("menace"))
 
 
 ## Characters matching a target kind, from `seat`'s point of view.
@@ -196,6 +210,8 @@ static func targets_for(st: Dictionary, seat: int, kind: String, max_atk: int = 
 	for s in sides:
 		for u in st["players"][s]["board"]:
 			if max_atk >= 0 and int(u["atk"]) > max_atk:
+				continue
+			if s != seat and (u["kw"] as Array).has("cloak"):
 				continue
 			out.append("u%d" % int(u["uid"]))
 		if not kind.ends_with("_print"):
@@ -465,7 +481,13 @@ static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_
 			_fire_board(st, seat, "ally_print", arrived, ev, int(u["uid"]))
 			_fire_board(st, 1 - seat, "foe_print", arrived, ev)
 		"tool":
-			_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
+			var warded := unit_of(st, target)
+			if not warded.is_empty() and int(warded["seat"]) != seat and (warded["kw"] as Array).has("ward"):
+				# Ward: the first tool aimed at it is wasted.
+				(warded["kw"] as Array).erase("ward")
+				ev.append({"e": "trig", "uid": int(warded["uid"]), "label": "Ward"})
+			else:
+				_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
 			if int(p["tool_heal"]) > 0:
 				_heal(st, "p%d" % seat, int(p["tool_heal"]), ev)
 			_fire_board(st, seat, "tool", {}, ev)
@@ -497,12 +519,34 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 		return "That is not a valid target."
 
 	u["attacks"] = int(u["attacks"]) + 1
+	(u["kw"] as Array).erase("cloak")
 	ev.append({"e": "attack", "seat": seat, "uid": uid, "target": target})
 	var t := unit_of(st, target)
 	var counter: int = int(t["atk"]) if not t.is_empty() else 0
-	var dealt: int = _damage(st, target, int(u["atk"]), ev)
-	if counter > 0:
+	var quick: bool = (u["kw"] as Array).has("quick")
+	var dealt := 0
+	var overkill := 0
+	if not t.is_empty() and not quick and (t["kw"] as Array).has("quick") and counter > 0:
+		# The defender hits first; a print it destroys never gets to swing.
 		_damage(st, "u%d" % uid, counter, ev)
+		_snap(st, t, u, ev)
+		if int(u["hp"]) > 0:
+			dealt = _damage(st, target, int(u["atk"]), ev)
+			_snap(st, u, t, ev)
+	else:
+		var hp_before: int = int(t["hp"]) if not t.is_empty() else 0
+		dealt = _damage(st, target, int(u["atk"]), ev)
+		if not t.is_empty():
+			_snap(st, u, t, ev)
+			if dealt > 0 and int(t["hp"]) <= 0:
+				overkill = maxi(int(u["atk"]) - hp_before, 0)
+		var silenced: bool = quick and not t.is_empty() and int(t["hp"]) <= 0
+		if counter > 0 and not silenced:
+			var back := _damage(st, "u%d" % uid, counter, ev)
+			if back > 0 and not t.is_empty():
+				_snap(st, t, u, ev)
+	if overkill > 0 and (u["kw"] as Array).has("overflow"):
+		_damage(st, "p%d" % (1 - seat), overkill, ev)
 	if dealt > 0 and (u["kw"] as Array).has("siphon"):
 		_heal(st, "p%d" % seat, dealt, ev)
 	# Scorch heats the print it hits; Thief takes some of its filament.
@@ -516,6 +560,16 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 		_fire_unit(st, u, "kill", {"target": target}, ev)
 	_resolve(st, ev)
 	return ""
+
+
+## Snap: a print with it destroys whatever it just damaged.
+static func _snap(st: Dictionary, hitter: Dictionary, victim: Dictionary, ev: Array) -> void:
+	if not (hitter["kw"] as Array).has("snap") or int(victim["hp"]) <= 0:
+		return
+	# Only real damage counts: Brim eats a hit and leaves no mark.
+	if int(victim.get("last_hit", 0)) <= 0:
+		return
+	_damage(st, "u%d" % int(victim["uid"]), int(victim["hp"]), ev)
 
 
 static func _power(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> String:
@@ -834,9 +888,11 @@ static func _damage(st: Dictionary, ref: String, n: int, ev: Array) -> int:
 		return 0
 	if (u["kw"] as Array).has("brim"):
 		(u["kw"] as Array).erase("brim")
+		u["last_hit"] = 0
 		ev.append({"e": "damage", "target": ref, "n": 0, "hp": int(u["hp"]), "brim": true})
 		return 0
 	u["hp"] = int(u["hp"]) - n
+	u["last_hit"] = n
 	ev.append({"e": "damage", "target": ref, "n": n, "hp": int(u["hp"])})
 	_fire_unit(st, u, "hurt", {}, ev)
 	return n
@@ -932,6 +988,14 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 		for s in [int(st["active"]), 1 - int(st["active"])]:
 			for u in st["players"][s]["board"]:
 				if int(u["hp"]) <= 0:
+					if (u["kw"] as Array).has("reprint"):
+						# Reprint: back on the bed with 1 Health, once.
+						(u["kw"] as Array).erase("reprint")
+						u["hp"] = 1
+						u["jam"] = 0
+						ev.append({"e": "heal", "target": "u%d" % int(u["uid"]), "n": 1, "hp": 1})
+						ev.append({"e": "trig", "uid": int(u["uid"]), "label": "Reprint"})
+						continue
 					dead.append(u)
 		if dead.is_empty():
 			break

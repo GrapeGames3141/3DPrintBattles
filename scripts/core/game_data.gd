@@ -55,6 +55,15 @@ const KEYWORDS := {
 	"twin": {"name": "Twin Nozzle", "text": "Can attack twice each turn."},
 	"scorch": {"name": "Scorch", "text": "Hits Heat the print they hit. Heated prints take 1 damage each turn."},
 	"thief": {"name": "Filament Thief", "text": "Hits steal 1 Attack and give +1 Health. Twice as much from Heated prints."},
+	"hover": {"name": "Hover", "text": "Only prints with Hover or Reach can attack it."},
+	"reach": {"name": "Reach", "text": "Can attack prints that have Hover."},
+	"snap": {"name": "Snap", "text": "Any damage it deals destroys the print it hits."},
+	"quick": {"name": "Quick Draw", "text": "Hits first. A print it destroys cannot hit back."},
+	"overflow": {"name": "Overflow", "text": "Damage left over after destroying a print hits the enemy Printer."},
+	"reprint": {"name": "Reprint", "text": "The first time it is destroyed it comes back with 1 Health."},
+	"menace": {"name": "Menace", "text": "A single Guard print cannot stop it."},
+	"ward": {"name": "Ward", "text": "The first tool the enemy aims at it is wasted."},
+	"cloak": {"name": "Cloak", "text": "The enemy cannot aim tools at it until it attacks."},
 }
 
 const SPRITE := "res://assets/creatures/2d/%s_sprite_sheet.png"

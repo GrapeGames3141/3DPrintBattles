@@ -6,6 +6,9 @@ extends Control
 const SIZE := Vector2(140, 172)
 const PLATE := Vector2(70, 142)
 const HALO := 76.0
+## Keywords without an icon show a letter in their marker: Hover, Reach, Snap,
+## Quick Draw, Overflow, Reprint, Menace, Ward, Cloak.
+const KEYWORD_LETTERS := {"hover": "H", "reach": "R", "snap": "S", "quick": "Q", "overflow": "O", "reprint": "P", "menace": "M", "ward": "W", "cloak": "C"}
 
 var u: Dictionary = {}
 var def: Dictionary = {}
@@ -266,6 +269,9 @@ func _draw_fx() -> void:
 		marks.append(["drop", UI.GOOD])
 	if kw.has("twin"):
 		marks.append(["twin", UI.AMBER])
+	for k in KEYWORD_LETTERS:
+		if kw.has(k):
+			marks.append(["#" + str(KEYWORD_LETTERS[k]), UI.CREAM])
 	if int(u.get("jam", 0)) > 0:
 		marks.append(["snow", UI.CYAN])
 	if int(u.get("heat", 0)) > 0:
@@ -275,7 +281,13 @@ func _draw_fx() -> void:
 	var x := 70.0 - (marks.size() - 1) * 10.0
 	for m in marks:
 		_fx.draw_circle(Vector2(x, 156), 10.5, Color("0b1220"))
-		UI.draw_icon(_fx, m[0], Vector2(x, 156), 7.5, m[1])
+		if str(m[0]).begins_with("#"):
+			var f := UI.bold()
+			var letter: String = str(m[0]).substr(1)
+			var lw := f.get_string_size(letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			_fx.draw_string(f, Vector2(x - lw * 0.5, 160.5), letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, m[1])
+		else:
+			UI.draw_icon(_fx, m[0], Vector2(x, 156), 7.5, m[1])
 		x += 20.0
 
 

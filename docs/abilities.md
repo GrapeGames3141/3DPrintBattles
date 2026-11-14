@@ -44,29 +44,31 @@ Moments ("When") are the engine's trigger names (`trig` on a card, see
 | 31 | Memorial | Ally Shatter | This gets +2/+0 | MtG | Monolith |
 | 32 | Wellspring | Turn End | Repair your Printer 2 | ORIG | Tidemaw |
 
-## Wave 2: new combat keywords (Next, 17)
+## Wave 2: new combat keywords (9 built, 8 next)
 
-Each is a keyword like Guard and Rush: a badge on the card, a line in the Handbook.
+Each is a keyword like Guard and Rush: a lettered marker on the bench, a line in the Handbook.
+Nine are built and tested; Support, Loner (auras need a live Attack bonus), Pair, Phase, Fury, Mirror and Magnet
+are still next. Idle is dropped because Twin Nozzle already does it. Reach here means "can attack Hover prints".
 
-| # | Ability | What it does | From |
-|---|---|---|---|
-| 33 | Hover | Cannot be attacked by prints without Hover or Reach | MtG flying |
-| 34 | Reach | Can block (be attacked as) a Hover print and attack Hover prints | MtG |
-| 35 | Snap | Any damage it deals destroys the print it hits | MtG deathtouch |
-| 36 | Quick Draw | Deals its damage first; a print it kills deals none back | MtG first strike |
-| 37 | Overflow | Extra damage past a print's Health hits the Printer | MtG trample |
-| 38 | Support | Cannot attack, but gives your other prints +1/+0 | MtG defender |
-| 39 | Ward | The first tool aimed at it by the enemy is wasted | MtG ward / YGO |
-| 40 | Idle | Attacks and can still be attacked as if it had not (stays READY) | MtG vigilance |
-| 41 | Reprint | The first time it is destroyed it returns to the bench with 1 Health | MtG undying |
-| 42 | Pair | Needs another print with the same element beside it to attack | YGO |
-| 43 | Loner | +2/+0 while it is your only print | MtG |
-| 44 | Menace | Cannot be blocked by a single Guard print | MtG |
-| 45 | Phase | Returns to your hand at the end of your turn | YGO Spirit |
-| 46 | Fury | Attacks twice but takes damage from the first strike back only | MtG double strike |
-| 47 | Mirror | Reflects the damage of the first attack on it each turn | ORIG |
-| 48 | Magnet | Enemy prints must attack it if it is the only unjammed print | MtG goad |
-| 49 | Cloak | Cannot be targeted by tools until it attacks | MtG hexproof |
+| # | Ability | What it does | From | Card |
+|---|---|---|---|---|
+| 33 | Hover | Cannot be attacked by prints without Hover or Reach | MtG flying | **Skyhawk** |
+| 34 | Reach | Can block (be attacked as) a Hover print and attack Hover prints | MtG | **Gantry Mantis** |
+| 35 | Snap | Any damage it deals destroys the print it hits | MtG deathtouch | **Gearspider** |
+| 36 | Quick Draw | Deals its damage first; a print it kills deals none back | MtG first strike | **Vinehare** |
+| 37 | Overflow | Extra damage past a print's Health hits the Printer | MtG trample | **Obsidian Ray** |
+| 38 | Support | Cannot attack, but gives your other prints +1/+0 | MtG defender | Next |
+| 39 | Ward | The first tool aimed at it by the enemy is wasted | MtG ward / YGO | **Stormdrake** |
+| 40 | Idle | Attacks and can still be attacked as if it had not (stays READY) | MtG vigilance | Next |
+| 41 | Reprint | The first time it is destroyed it returns to the bench with 1 Health | MtG undying | **Rimestag** |
+| 42 | Pair | Needs another print with the same element beside it to attack | YGO | Next |
+| 43 | Loner | +2/+0 while it is your only print | MtG | Next |
+| 44 | Menace | Cannot be blocked by a single Guard print | MtG | **Swiftwhip** |
+| 45 | Phase | Returns to your hand at the end of your turn | YGO Spirit | Next |
+| 46 | Fury | Attacks twice but takes damage from the first strike back only | MtG double strike | Next |
+| 47 | Mirror | Reflects the damage of the first attack on it each turn | ORIG | Next |
+| 48 | Magnet | Enemy prints must attack it if it is the only unjammed print | MtG goad | Next |
+| 49 | Cloak | Cannot be targeted by tools until it attacks | MtG hexproof | **Tempest Lynx** |
 
 ## Wave 3: conditions and element play (Next, 17)
 
@@ -134,6 +136,6 @@ Each is a keyword like Guard and Rush: a badge on the card, a line in the Handbo
 | 99 | Draft | Choose 1 of 3 random cards to add to your hand | MtG |
 | 100 | Tag Team | Two prints attack as one, adding their Attack | YGO |
 
-Entries 33-100 each need an engine change before they can be a card; they are listed in the
+Entries 50-100 and the rest of wave 2 each need an engine change before they can be a card; they are listed in the
 order that costs the least first. Wave 1 shows the pattern: define the moment in the
 catalog (`tools/catalog/fx.py`), give the engine a hook, write a test, then put it on a card.

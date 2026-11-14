@@ -12,6 +12,7 @@ func _initialize() -> void:
 	_audio()
 	_basics()
 	_keywords()
+	_keywords2()
 	_heat_and_theft()
 	_effects()
 	_triggers()
@@ -299,6 +300,92 @@ func _keywords() -> void:
 	act(st, 1, {"t": "end"})
 	ok(int(foe["jam"]) == 0, "Jam clears after the owner's turn")
 	ok(int(mine["jam"]) == 0, "own prints unaffected")
+
+
+func _keywords2() -> void:
+	print("wave 2 keywords")
+	var uid := func(u: Dictionary) -> String: return "u%d" % int(u["uid"])
+	# Hover / Reach
+	var st := game([], [])
+	var plain := put(st, 0, "cinderpaw")
+	var hov := put(st, 1, "skyhawk")
+	ok(not (BattleEngine.attack_targets(st, int(plain["uid"])) as Array).has(uid.call(hov)), "Hover: a plain print cannot attack it")
+	ok((BattleEngine.attack_targets(st, int(plain["uid"])) as Array).has("p1"), "Hover does not shield the Printer")
+	var reach := put(st, 0, "gantrymantis")
+	ok((BattleEngine.attack_targets(st, int(reach["uid"])) as Array).has(uid.call(hov)), "Reach attacks a Hover print")
+	var flyer := put(st, 0, "skyhawk")
+	ok((BattleEngine.attack_targets(st, int(flyer["uid"])) as Array).has(uid.call(hov)), "Hover attacks a Hover print")
+	# Snap
+	st = game([], [])
+	var snap := put(st, 0, "gearspider")
+	var big := put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(snap["uid"]), "target": uid.call(big)})
+	ok(not st["players"][1]["board"].has(big), "Snap destroys the print it hits")
+	ok(int(snap["hp"]) == 1, "Snap still takes the counter-hit")
+	st = game([], [])
+	snap = put(st, 1, "gearspider")
+	var hitter := put(st, 0, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(hitter["uid"]), "target": uid.call(snap)})
+	ok(not st["players"][0]["board"].has(hitter), "Snap destroys an attacker it hits back")
+	st = game([], [])
+	snap = put(st, 0, "gearspider")
+	var braced := put(st, 1, "brambleowl")
+	act(st, 0, {"t": "attack", "unit": int(snap["uid"]), "target": uid.call(braced)})
+	ok(st["players"][1]["board"].has(braced), "Snap does nothing when Brim swallows the hit")
+	# Quick Draw
+	st = game([], [])
+	var quick := put(st, 0, "vinehare")
+	var weak := put(st, 1, "mossmunk")
+	act(st, 0, {"t": "attack", "unit": int(quick["uid"]), "target": uid.call(weak)})
+	ok(not st["players"][1]["board"].has(weak) and int(quick["hp"]) == 2, "Quick Draw: a print it destroys cannot hit back")
+	st = game([], [])
+	quick = put(st, 1, "vinehare")
+	var rash := put(st, 0, "cinderpaw")
+	act(st, 0, {"t": "attack", "unit": int(rash["uid"]), "target": uid.call(quick)})
+	ok(not st["players"][0]["board"].has(rash) and int(quick["hp"]) == 2, "Quick Draw defends first and wins the exchange")
+	# Overflow
+	st = game([], [])
+	var over := put(st, 0, "obsidianray")
+	var small := put(st, 1, "cinderpaw")
+	var hp1: int = int(st["players"][1]["hp"])
+	act(st, 0, {"t": "attack", "unit": int(over["uid"]), "target": uid.call(small)})
+	ok(int(st["players"][1]["hp"]) == hp1 - 2, "Overflow: 4 damage into a 2 Health print hits the Printer for 2")
+	# Reprint
+	st = game([], [])
+	var rep := put(st, 1, "rimestag")
+	var killer := put(st, 0, "stoneback")
+	killer["atk"] = 9
+	act(st, 0, {"t": "attack", "unit": int(killer["uid"]), "target": uid.call(rep)})
+	ok(st["players"][1]["board"].has(rep) and int(rep["hp"]) == 1 and not rep["kw"].has("reprint"), "Reprint: it comes back once with 1 Health")
+	killer["attacks"] = 0
+	act(st, 0, {"t": "attack", "unit": int(killer["uid"]), "target": uid.call(rep)})
+	ok(not st["players"][1]["board"].has(rep), "Reprint only works once")
+	# Menace
+	st = game([], [])
+	var menace := put(st, 0, "swiftwhip")
+	var guard := put(st, 1, "mossmunk")
+	ok((BattleEngine.attack_targets(st, int(menace["uid"])) as Array).has("p1"), "Menace: one Guard cannot stop it")
+	put(st, 1, "stoneback")
+	ok(not (BattleEngine.attack_targets(st, int(menace["uid"])) as Array).has("p1"), "Menace: two Guards still do")
+	# Ward and Cloak
+	st = game([], [])
+	var ward := put(st, 1, "stormdrake")
+	var h := give(st, 0, "heat_gun")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(ward)})
+	ok(int(ward["hp"]) == 4 and not ward["kw"].has("ward"), "Ward wastes the first tool and goes away")
+	h = give(st, 0, "heat_gun")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(ward)})
+	ok(int(ward["hp"]) == 2, "the second tool lands")
+	st = game([], [])
+	var cloak := put(st, 1, "tempestlynx")
+	ok(not (BattleEngine.play_targets(st, 0, "heat_gun") as Array).has(uid.call(cloak)), "Cloak: tools cannot be aimed at it")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "attack", "unit": int(cloak["uid"]), "target": "p0"})
+	ok((BattleEngine.play_targets(st, 0, "heat_gun") as Array).has(uid.call(cloak)), "Cloak ends once it attacks")
+	var fuzz: Array = []
+	for id in ["skyhawk", "gantrymantis", "gearspider", "vinehare", "obsidianray", "rimestag", "swiftwhip", "stormdrake", "tempestlynx"]:
+		fuzz.append(GameData.card(id)["kw"])
+	ok(fuzz.size() == 9, "nine cards carry the new keywords")
 
 
 func _heat_and_theft() -> void:
@@ -943,7 +1030,7 @@ func _mods2() -> void:
 	for case in [
 			{"mod": {"frame": 1, "guard_frame": 1}, "base": {"frame": 1}, "card": "slagrhino", "atk": 0, "hp": 1, "name": "Guard Frame: +1 Health on Guard prints"},
 			{"mod": {"quick_release": 1, "rush_springs": 1}, "base": {"quick_release": 1}, "card": "kilnpup", "atk": 1, "hp": 0, "name": "Spring-Loaded Bed: +1 Attack on Rush prints"},
-			{"mod": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1, "twin_gantry": 1}, "base": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1}, "card": "tempestlynx", "atk": 1, "hp": 1, "name": "Twin Gantry: +1/+1 on Twin Nozzle prints"}]:
+			{"mod": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1, "twin_gantry": 1}, "base": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1}, "card": "arcflicker", "atk": 1, "hp": 1, "name": "Twin Gantry: +1/+1 on Twin Nozzle prints"}]:
 		var a := game([], [], "ember_forge", "tide_press", case["base"])
 		var b := game([], [], "ember_forge", "tide_press", case["mod"])
 		# A second print, so Quick-Release's free Rush on the first does not muddy the check.

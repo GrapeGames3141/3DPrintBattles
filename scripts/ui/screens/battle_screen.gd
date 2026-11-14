@@ -5,7 +5,7 @@ extends GameScreen
 
 const TIPS := {
 	"goal": ["info", "Welcome to the bench! Break the enemy Printer before it breaks yours. The red number is its Health."],
-	"filament": ["info", "Your Printer can print %d Filament each turn. The blue number on a card is what it costs. The Spool bar is all the Filament you have for the whole battle." % GameData.PRINT_SPEED],
+	"filament": ["info", "Your Printer can print {speed} Filament each turn. The blue number on a card is what it costs. The Spool bar is all the Filament you have for the whole battle: {spool} to start."],
 	"guard": ["info", "A print holding a shield has Guard. You must attack Guard prints before anything else on that side."],
 	"print": ["do", "Drag a glowing card onto your side of the bench (the blue lane), or tap the card and then tap the lane. Your Printer builds it layer by layer."],
 	"fresh": ["info", "Fresh prints need a turn to cool down. They can attack on your next turn."],
@@ -18,6 +18,13 @@ const TIPS := {
 	"end": ["do", "Nothing else to do this turn. Press End Turn."],
 }
 const LOW_SPOOL := 8
+
+
+## A tip's words, with this player's own Filament numbers filled in (mods change them).
+func _tip_text(id: String) -> String:
+	var t: String = TIPS[id][1]
+	var mine: Dictionary = (st.get("players", []) as Array)[me] if st.has("players") and (st["players"] as Array).size() > me else {}
+	return t.replace("{speed}", str(int(mine.get("speed", GameData.PRINT_SPEED)))).replace("{spool}", str(int(mine.get("spool_max", GameData.SPOOL_SIZE))))
 
 const TIP_ORDER := ["goal", "filament", "guard", "deploy", "print", "fresh", "attack", "tool", "upgrade", "long", "power", "end"]
 
@@ -585,7 +592,7 @@ func _show_targets() -> void:
 	# While you are choosing what to attack, everything a Guard print is
 	# shielding goes grey, so it is plain what has to be hit first.
 	var attacking: bool = _mode == "target" and _src.get("kind") == "unit"
-	var walled: bool = attacking and BattleEngine.has_guard(st, 1 - me)
+	var walled: bool = attacking and BattleEngine.has_guard(st, 1 - me) and not _valid.has("p%d" % (1 - me))
 	for uid in _units:
 		var unit: BoardUnit = _units[uid]
 		var ref := "u%d" % uid
@@ -1229,7 +1236,7 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 			if tnode != null:
 				tnode.pulse(UI.GOLD)
 				var label: String = str({"attack": "On Attack", "hurt": "On Hurt", "kill": "On Kill", "turn_start": "Turn Start", "turn_end": "Turn End",
-					"ally_print": "Ally Print", "foe_print": "Foe Print", "tool": "Tool", "ally_shatter": "Ally Shatter", "foe_shatter": "Foe Shatter"}.get(str(e["when"]), ""))
+					"ally_print": "Ally Print", "foe_print": "Foe Print", "tool": "Tool", "ally_shatter": "Ally Shatter", "foe_shatter": "Foe Shatter"}.get(str(e["when"]), str(e.get("label", ""))))
 				UI.floater(_fx, label, tnode.center() + Vector2(0, -70), UI.GOLD, 18)
 			await _wait(0.2)
 		"melt":
@@ -1722,7 +1729,7 @@ func _show_tip(id: String) -> void:
 	pulse.tween_property(ring, "modulate:a", 1.0, 0.6)
 	var box := UI.panel(_tip_node, tip_rect, UI.box(Color(0.04, 0.07, 0.14, 0.97), UI.GOLD, 3, 14, 10))
 	var btn_w := 120.0 if info else 0.0
-	var text := UI.label(TIPS[id][1], 19 if P else 17, UI.CREAM, false)
+	var text := UI.label(_tip_text(id), 19 if P else 17, UI.CREAM, false)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	text.position = Vector2(16, 6)

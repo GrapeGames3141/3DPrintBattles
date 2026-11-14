@@ -111,6 +111,24 @@ static func _unit_value(u: Dictionary) -> float:
 		v += 1.5 + atk * 0.5
 	if kw.has("thief"):
 		v += 2.0 + atk * 0.5
+	if kw.has("hover"):
+		v += 1.5
+	if kw.has("reach"):
+		v += 0.5
+	if kw.has("snap"):
+		v += 2.0 + hp * 0.3
+	if kw.has("quick"):
+		v += 1.0 + atk * 0.5
+	if kw.has("overflow"):
+		v += 1.0
+	if kw.has("reprint"):
+		v += 2.0
+	if kw.has("menace"):
+		v += 1.0
+	if kw.has("ward"):
+		v += 1.0
+	if kw.has("cloak"):
+		v += 1.0
 	v -= float(int(u.get("heat", 0))) * 1.4
 	return v
 
@@ -136,6 +154,24 @@ static func _card_value(id: String) -> float:
 		v += 1.5 + atk * 0.5
 	if kw.has("thief"):
 		v += 2.0 + atk * 0.5
+	if kw.has("hover"):
+		v += 1.5
+	if kw.has("reach"):
+		v += 0.5
+	if kw.has("snap"):
+		v += 2.0 + hp * 0.3
+	if kw.has("quick"):
+		v += 1.0 + atk * 0.5
+	if kw.has("overflow"):
+		v += 1.0
+	if kw.has("reprint"):
+		v += 2.0
+	if kw.has("menace"):
+		v += 1.0
+	if kw.has("ward"):
+		v += 1.0
+	if kw.has("cloak"):
+		v += 1.0
 	if def.has("on_print"):
 		v += 1.0 + 0.6 * float(def["cost"])
 	return v
