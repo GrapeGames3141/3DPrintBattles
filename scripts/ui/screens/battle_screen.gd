@@ -396,7 +396,12 @@ func _layout_row(seat: int, animate := true) -> void:
 		var pos := _slot_pos(seat, i, row.size())
 		node.z_index = 0
 		if animate:
-			node.create_tween().tween_property(node, "position", pos, 0.16).set_ease(Tween.EASE_OUT)
+			var tw := node.create_tween()
+			var far: bool = node.position.distance_to(pos) > 12.0
+			if far and not node._busy_anim_on():
+				node.set_walking(true)
+			tw.tween_property(node, "position", pos, 0.22).set_ease(Tween.EASE_OUT)
+			tw.tween_callback(node.set_walking.bind(false))
 		else:
 			node.position = pos
 
@@ -1568,19 +1573,30 @@ func _ev_attack(e: Dictionary) -> void:
 	var dest := home + (_center_of(e["target"]) - node.center())
 	var reach := home.lerp(dest, 0.72)
 	node.z_index = 10
-	if node._sprite.texture is AtlasTexture:
-		node.set_frame(5)
+	var sheet: bool = node._sprite.texture is AtlasTexture
+	# Wind up (crouch back), run in on its feet, strike, then walk home.
+	if sheet:
+		node.set_pose(4)
 	var tw := node.create_tween()
-	tw.tween_property(node, "position", home + (home - reach).normalized() * 14.0, 0.08)
-	tw.tween_property(node, "position", reach, 0.13).set_ease(Tween.EASE_IN)
+	tw.tween_property(node, "position", home + (home - reach).normalized() * 14.0, 0.11)
+	tw.tween_callback(func():
+		node.clear_pose()
+		node.set_walking(true))
+	tw.tween_property(node, "position", reach, 0.2).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func():
+		node.set_walking(false)
+		if sheet:
+			node.set_pose(5))
 	await tw.finished
 	var back := node.create_tween()
-	back.tween_interval(0.1)
-	back.tween_property(node, "position", home, 0.2).set_ease(Tween.EASE_OUT)
+	back.tween_interval(0.12)
+	back.tween_callback(func():
+		node.clear_pose()
+		node.set_walking(true))
+	back.tween_property(node, "position", home, 0.32).set_ease(Tween.EASE_OUT)
 	back.tween_callback(func():
 		node.z_index = 0
-		if node._sprite.texture is AtlasTexture:
-			node.set_frame(0))
+		node.set_walking(false))
 
 
 func _ev_damage(e: Dictionary) -> void:

@@ -37,6 +37,15 @@ var paint_id := "original"
 var _path := ""
 var _phase := 0.0
 var _busy_anim := false
+## The sprite sheet's eight poses: 0 stand, 1 crouch, 2 stride, 3 tail up,
+## 4 wind-up, 5 strike, 6 low, 7 hurt. `_pose` holds one (attack, hurt) over
+## the idle and walking cycles; -1 lets them run.
+const IDLE_CYCLE := [0, 0, 3, 0, 0, 6]
+const WALK_CYCLE := [2, 0, 1, 0]
+var _pose := -1
+var _walking := false
+var _frame := -1
+var _clock := 0.0
 
 
 static func make(unit: Dictionary, is_mirrored: bool) -> BoardUnit:
@@ -105,10 +114,58 @@ func _process(delta: float) -> void:
 	if _busy_anim:
 		return
 	_phase += delta * 2.2
+	_clock += delta
+	if _walking:
+		# Stepping: the walk cycle, a hop on every stride and a lean into it.
+		var stride := _clock / 0.1
+		_show(_pose if _pose >= 0 else WALK_CYCLE[int(stride) % WALK_CYCLE.size()])
+		_sprite.scale = Vector2.ONE
+		_sprite.position = Vector2(6, -12 - absf(sin(stride * PI * 0.5)) * 6.0)
+		_sprite.rotation = sin(stride * PI * 0.5) * 0.05 * (-1.0 if mirrored else 1.0)
+		return
+	_sprite.position = Vector2(6, -12)
+	_sprite.rotation = 0.0
 	_sprite.scale = Vector2(1.0 + sin(_phase) * 0.012, 1.0 - sin(_phase) * 0.018)
+	if _pose >= 0:
+		_show(_pose)
+	else:
+		# Standing about: it shifts its weight now and then, each print on its own beat.
+		_show(IDLE_CYCLE[int((_clock + _phase * 0.35) / 0.9) % IDLE_CYCLE.size()])
+
+
+func _busy_anim_on() -> bool:
+	return _busy_anim
+
+
+## Starts or stops the walk cycle (the figure steps along while it moves).
+func set_walking(on: bool) -> void:
+	if _walking == on:
+		return
+	_walking = on
+	_clock = 0.0
+	if not on:
+		_sprite.position = Vector2(6, -12)
+		_sprite.rotation = 0.0
+
+
+## Holds one pose (wind-up, strike, hurt) until clear_pose().
+func set_pose(frame: int) -> void:
+	_pose = frame
+	_show(frame)
+
+
+func clear_pose() -> void:
+	_pose = -1
+
+
+func _show(frame: int) -> void:
+	if frame != _frame:
+		_frame = frame
+		set_frame(frame)
 
 
 func set_frame(frame: int) -> void:
+	_frame = frame
 	_sprite.texture = UI.sprite(_path, frame)
 	var r := UI.sprite_region(_path, frame)
 	_mat.set_shader_parameter("region", r)
@@ -421,8 +478,9 @@ func flash() -> void:
 	var tw := create_tween()
 	tw.tween_method(func(v: float): _mat.set_shader_parameter("flash", v), 0.9, 0.0, 0.25)
 	if _sprite.texture is AtlasTexture:
-		set_frame(7)
-		tw.tween_callback(set_frame.bind(0))
+		set_pose(7)
+		tw.tween_interval(0.12)
+		tw.tween_callback(clear_pose)
 	var home := _sprite.position
 	var sh := create_tween()
 	for i in 4:
@@ -440,36 +498,212 @@ func pulse(color: Color) -> void:
 	m.tween_property(self, "modulate", Color.WHITE, 0.2)
 
 
-## Breaks into plastic shards.
+## How each element's prints come apart when they are destroyed.
+const CRUMBLE := {"Neutral": 0, "Fire": 1, "Water": 2, "Lightning": 3, "Nature": 4, "Ice": 5, "Stone": 6, "Wind": 7, "Arcane": 8}
+const CRUMBLE_TIME := [0.9, 1.0, 1.0, 0.8, 1.1, 0.9, 1.0, 0.95, 0.85]
+
+
+## A number that is the same for the same card every time, so each kind of
+## print breaks up in its own pattern.
+func _card_seed() -> float:
+	return float(absi(hash(str(def.get("id", "")))) % 997) * 0.113
+
+
+## Comes apart in the way its element dictates (see print_reveal.gdshader), with
+## matching bits flying off, then its plate fades.
 func shatter() -> void:
 	_busy_anim = true
-	var p := CPUParticles2D.new()
-	p.position = Vector2(70, 90)
-	p.amount = 26
-	p.one_shot = true
-	p.explosiveness = 1.0
-	p.lifetime = 0.55
-	p.direction = Vector2(0, -1)
-	p.spread = 180.0
-	p.gravity = Vector2(0, 620)
-	p.initial_velocity_min = 120.0
-	p.initial_velocity_max = 300.0
-	p.angular_velocity_min = -500.0
-	p.angular_velocity_max = 500.0
-	p.scale_amount_min = 5.0
-	p.scale_amount_max = 11.0
-	p.color = GameData.element_color(def.get("element", "Neutral"))
-	p.emitting = true
-	add_child(p)
+	_walking = false
+	var kind: int = int(CRUMBLE.get(str(def.get("element", "Neutral")), 0))
 	_atk.visible = false
 	_hp.visible = false
 	_gear.visible = false
 	_fx.visible = false
 	if _ambient != null:
 		_ambient.emitting = false
+	_sprite.position = Vector2(6, -12)
+	_sprite.rotation = 0.0
+	_sprite.scale = Vector2.ONE
+	if _sprite.texture is AtlasTexture:
+		set_frame(7)
+	_mat.set_shader_parameter("crumble_kind", kind)
+	_mat.set_shader_parameter("crumble_seed", _card_seed())
+	var dur: float = CRUMBLE_TIME[kind]
+	_crumble_bits(kind, dur)
 	var tw := create_tween()
-	tw.tween_method(func(v: float): _mat.set_shader_parameter("flash", v), 0.0, 1.0, 0.08)
-	tw.tween_property(_sprite, "modulate:a", 0.0, 0.12)
-	tw.parallel().tween_property(_sprite, "scale", Vector2(1.25, 0.7), 0.12)
-	tw.tween_property(_base, "modulate:a", 0.0, 0.3)
+	tw.tween_method(func(v: float): _mat.set_shader_parameter("crumble", maxf(v, 0.0001)), 0.0, 1.0, dur)
+	tw.parallel().tween_property(_base, "modulate:a", 0.0, 0.3).set_delay(dur * 0.75)
 	await tw.finished
+	_sprite.visible = false
+
+
+## One burst of bits for each way of breaking: embers, drips, sparks, leaves,
+## ice, rubble, dust, light.
+func _crumble_bits(kind: int, dur: float) -> void:
+	var col := GameData.element_color(def.get("element", "Neutral"))
+	var p := CPUParticles2D.new()
+	p.position = Vector2(70, 100)
+	p.one_shot = true
+	p.explosiveness = 0.85
+	p.emitting = true
+	p.local_coords = false
+	p.amount = 24
+	p.lifetime = 0.7
+	p.direction = Vector2(0, -1)
+	p.spread = 180.0
+	p.gravity = Vector2(0, 600)
+	p.initial_velocity_min = 100.0
+	p.initial_velocity_max = 260.0
+	p.scale_amount_min = 4.0
+	p.scale_amount_max = 9.0
+	p.color = col
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	p.emission_rect_extents = Vector2(34, 44)
+	match kind:
+		0: # raw filament chips
+			p.amount = 30
+			p.color = col.lightened(0.15)
+			p.gravity = Vector2(0, 700)
+			p.scale_amount_min = 6.0
+			p.scale_amount_max = 14.0
+			p.spread = 90.0
+			p.direction = Vector2(0, 1)
+			p.initial_velocity_min = 40.0
+			p.initial_velocity_max = 180.0
+		1: # embers drifting up
+			p.amount = 46
+			p.lifetime = dur
+			p.explosiveness = 0.2
+			p.direction = Vector2(0, -1)
+			p.spread = 35.0
+			p.gravity = Vector2(0, -70)
+			p.initial_velocity_min = 30.0
+			p.initial_velocity_max = 110.0
+			p.scale_amount_min = 2.0
+			p.scale_amount_max = 6.0
+			var ramp := Gradient.new()
+			ramp.set_color(0, Color("ffd36a"))
+			ramp.add_point(0.4, Color("ff6a1a"))
+			ramp.set_color(2, Color(0.2, 0.15, 0.12, 0.0))
+			p.color_ramp = ramp
+		2: # drips and splashes
+			p.amount = 34
+			p.lifetime = dur * 0.8
+			p.explosiveness = 0.3
+			p.direction = Vector2(0, 1)
+			p.spread = 70.0
+			p.gravity = Vector2(0, 900)
+			p.initial_velocity_min = 20.0
+			p.initial_velocity_max = 130.0
+			p.scale_amount_min = 3.0
+			p.scale_amount_max = 7.0
+			p.position = Vector2(70, 112)
+			p.emission_rect_extents = Vector2(40, 20)
+			_puddle(col, dur)
+		3: # sparks
+			p.amount = 40
+			p.lifetime = 0.4
+			p.explosiveness = 0.5
+			p.gravity = Vector2.ZERO
+			p.initial_velocity_min = 180.0
+			p.initial_velocity_max = 420.0
+			p.scale_amount_min = 2.0
+			p.scale_amount_max = 5.0
+			p.color = Color("fff3a0")
+		4: # leaves drifting down
+			p.amount = 26
+			p.lifetime = dur * 1.1
+			p.explosiveness = 0.25
+			p.direction = Vector2(0.4, 1)
+			p.spread = 60.0
+			p.gravity = Vector2(10, 110)
+			p.initial_velocity_min = 10.0
+			p.initial_velocity_max = 70.0
+			p.angular_velocity_min = -300.0
+			p.angular_velocity_max = 300.0
+			p.scale_amount_min = 5.0
+			p.scale_amount_max = 10.0
+			p.color = Color("8cb84a").lerp(Color("8a5a2a"), 0.4)
+			p.emission_rect_extents = Vector2(34, 50)
+		5: # ice
+			p.amount = 28
+			p.gravity = Vector2(0, 800)
+			p.scale_amount_min = 5.0
+			p.scale_amount_max = 12.0
+			p.color = Color("cfeeff")
+			p.angular_velocity_min = -600.0
+			p.angular_velocity_max = 600.0
+		6: # rubble and dust
+			p.amount = 18
+			p.lifetime = 0.9
+			p.explosiveness = 0.35
+			p.direction = Vector2(0, 1)
+			p.spread = 60.0
+			p.gravity = Vector2(0, 950)
+			p.initial_velocity_min = 20.0
+			p.initial_velocity_max = 120.0
+			p.scale_amount_min = 7.0
+			p.scale_amount_max = 14.0
+			p.color = col.darkened(0.2).lerp(Color("8a8580"), 0.4)
+			p.angular_velocity_min = -250.0
+			p.angular_velocity_max = 250.0
+			var dust := p.duplicate() as CPUParticles2D
+			dust.amount = 30
+			dust.gravity = Vector2(0, -20)
+			dust.initial_velocity_min = 10.0
+			dust.initial_velocity_max = 50.0
+			dust.scale_amount_min = 8.0
+			dust.scale_amount_max = 16.0
+			dust.color = Color(0.7, 0.68, 0.62, 0.35)
+			dust.lifetime = 1.0
+			add_child(dust)
+		7: # a gust of dust going one way
+			p.amount = 56
+			p.lifetime = 0.9
+			p.explosiveness = 0.1
+			p.direction = Vector2(1, -0.15)
+			p.spread = 18.0
+			p.gravity = Vector2(30, -10)
+			p.initial_velocity_min = 140.0
+			p.initial_velocity_max = 380.0
+			p.scale_amount_min = 2.0
+			p.scale_amount_max = 6.0
+			p.color = col.lerp(Color("e8e2c8"), 0.5)
+			p.emission_rect_extents = Vector2(40, 46)
+		_: # light being drawn in
+			p.amount = 36
+			p.lifetime = 0.6
+			p.explosiveness = 0.6
+			p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE_SURFACE
+			p.emission_sphere_radius = 78.0
+			p.position = Vector2(70, 96)
+			p.gravity = Vector2.ZERO
+			p.initial_velocity_min = 0.0
+			p.initial_velocity_max = 0.0
+			p.radial_accel_min = -520.0
+			p.radial_accel_max = -380.0
+			p.scale_amount_min = 3.0
+			p.scale_amount_max = 7.0
+			p.color = Color("d6b8ff")
+	add_child(p)
+
+
+## The puddle a melted print leaves behind: a flat blob that spreads, then dries.
+func _puddle(col: Color, dur: float) -> void:
+	var blob := Control.new()
+	blob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blob.position = Vector2.ZERO
+	blob.size = SIZE
+	blob.set_meta("r", 0.0)
+	blob.draw.connect(func():
+		var r: float = blob.get_meta("r")
+		blob.draw_set_transform(PLATE + Vector2(0, 4), 0.0, Vector2(1.0, 0.33))
+		blob.draw_circle(Vector2.ZERO, r, Color(col.r, col.g, col.b, 0.65))
+		blob.draw_circle(Vector2(0, -3), r * 0.7, Color(col.lightened(0.3), 0.5)))
+	add_child(blob)
+	var tw := blob.create_tween()
+	tw.tween_method(func(v: float):
+		blob.set_meta("r", v)
+		blob.queue_redraw(), 4.0, 58.0, dur * 0.8).set_ease(Tween.EASE_OUT)
+	tw.tween_property(blob, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(blob.queue_free)
