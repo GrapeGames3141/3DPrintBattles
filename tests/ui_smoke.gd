@@ -148,6 +148,7 @@ func run() -> void:
 	await pack_checks(profile)
 	await blueprint_checks(profile)
 	await input_checks(profile)
+	await screen_checks(profile)
 	Engine.time_scale = 12.0
 	await full_match("tutorial", Session.tutorial(), profile)
 	await full_match("rival", Session.vs_rival(profile.active_deck(), GameData.RIVALS[0]), profile)
@@ -326,6 +327,41 @@ func blueprint_checks(profile) -> void:
 	ok(shown.paint_id == "rose", "and it is painted rose on the bench")
 	app.go("menu")
 	await wait(0.5)
+
+
+## Host/Join can be opened again after Cancel, and swiping turns the deck builder's page.
+func screen_checks(profile) -> void:
+	print("host, join and swipe")
+	app.go("play")
+	await wait(0.5)
+	var scr = app.current
+	scr._host()
+	await wait(0.2)
+	ok(is_instance_valid(scr._wait), "Host a game opens its dialog")
+	app.net.close()
+	scr.close_modal(scr._wait)
+	await wait(0.2)
+	scr._join()
+	await wait(0.2)
+	scr._host()
+	await wait(0.2)
+	ok(is_instance_valid(scr._wait) and app.net.role == "host", "Host a game opens again after Cancel and an empty Join")
+	app.net.close()
+	scr.close_modal(scr._wait)
+	app.go("collection")
+	await wait(0.5)
+	scr = app.current
+	var page0: int = scr._page
+	await drag(Vector2(500, 300), Vector2(250, 305))
+	await wait(0.2)
+	ok(scr._page == page0 + 1, "swiping left turns to the next page (page %d)" % scr._page)
+	var deck_before: int = (profile.deck(scr._slot)["cards"] as Array).size()
+	await drag(Vector2(300, 300), Vector2(560, 296))
+	await wait(0.2)
+	ok(scr._page == page0, "swiping right turns back")
+	ok((profile.deck(scr._slot)["cards"] as Array).size() == deck_before, "a swipe does not add the card under the finger")
+	app.go("menu")
+	await wait(0.3)
 
 
 func input_checks(profile) -> void:

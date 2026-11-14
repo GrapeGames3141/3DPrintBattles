@@ -5,7 +5,11 @@ extends RefCounted
 
 const VERSION := "1.0.0"
 
-const DECK_SIZE := 20
+## A deck holds DECK_MIN to DECK_MAX cards. DECK_SIZE is the size the computer
+## builds (and what Auto-fill tops a deck up to): the minimum.
+const DECK_MIN := 20
+const DECK_MAX := 60
+const DECK_SIZE := DECK_MIN
 const MAX_HAND := 9
 const MAX_BOARD := 6
 const PRINTER_HP := 20
@@ -173,9 +177,9 @@ const CARDS_BASE := [
 		"kw": ["guard"], "text": "On Print: Add 8 Filament to your Spool.",
 		"on_print": [{"op": "spool", "n": 8}]},
 	# ----------------------------------------------------------------- tools
-	{"id": "spare_spool", "name": "Spare Spool", "type": "tool", "cost": 0, "rarity": "uncommon",
-		"text": "Add 3 Filament to your Spool. +1 Print Speed this turn.",
-		"effects": [{"op": "spool", "n": 3}, {"op": "filament", "n": 1}]},
+	{"id": "spare_spool", "name": "Spare Spool", "type": "tool", "cost": 1, "rarity": "uncommon",
+		"text": "Add 3 Filament to your Spool. +2 Print Speed this turn.",
+		"effects": [{"op": "spool", "n": 3}, {"op": "filament", "n": 2}]},
 	{"id": "heat_gun", "name": "Heat Gun", "type": "tool", "cost": 1, "rarity": "common",
 		"text": "Deal 2 damage.", "target": "enemy",
 		"effects": [{"op": "damage", "n": 2, "to": "target"}]},
@@ -337,10 +341,11 @@ const PRINTERS := [
 ]
 const STARTER_PRINTER := {"cinderpaw": "ember_forge", "aquafin": "tide_press", "voltwig": "volt_rig"}
 
-## Printer mods. Buy one once and it is yours; you can fit it to every Printer
-## you own, with no limit on how many it carries. `cost` and `rank` are the coins
-## and Maker Rank to buy it, `per` is what it adds, and `requires` (in the
-## generated mods) lists mods a Printer must also carry for it to work.
+## Printer mods. Each copy you buy fits one Printer at a time (move it whenever
+## you like), a Printer carries one copy of each mod, and a copy can be upgraded
+## (MOD_LEVELS). `cost` and `rank` are the coins and Maker Rank to buy it, `per`
+## is what it adds at level 1, and `requires` (in the generated mods) lists mods
+## a Printer must also carry for it to work.
 const PRINTER_MODS_BASE := [
 	{"id": "stepper", "rarity": "rare", "name": "Stepper Motors", "icon": "burst", "text": "Prints %d more Filament each turn.", "per": 1, "cost": 1200, "rank": 5},
 	{"id": "spool", "rarity": "common", "name": "Bigger Spool", "icon": "spool", "text": "Your Spool holds %d more Filament.", "per": 5, "cost": 250, "rank": 1},
@@ -573,13 +578,58 @@ static func mod_dependents(id: String) -> Array:
 	return out
 
 
+## Upgrade levels: [highest level, what each extra level adds]. A mod starts at
+## level 1 (its `per`), and each upgrade adds `step` more. An effect that is
+## all-or-nothing (a keyword, a once-a-turn draw) has one level only.
+const MOD_LEVELS := {
+	"stepper": [4, 1], "dual_extruder": [2, 1], "direct_drive": [2, 1], "spool": [5, 5], "frame": [4, 2], "bed": [3, 1],
+	"enclosure": [4, 2], "sensor": [2, 1], "preheater": [3, 2], "quickstart": [2, 1], "slicer": [3, 1], "hot_end": [2, 1],
+	"mixer": [2, 1], "sorter": [5, 4], "cooling_duct": [3, 1], "self_cleaning": [3, 1], "spool_feeder": [3, 1],
+	"capacitor_bank": [2, 2], "scrap_chute": [1, 0], "quick_release": [1, 0], "failsafe": [3, 3], "plating": [2, 1],
+	"thermal_mass": [2, 1], "prehensile_gantry": [2, 1], "quantum_slicer": [1, 0], "spool_rack": [3, 5], "twin_feed": [2, 1],
+	"titanium_frame": [3, 2], "armor_panels": [3, 2], "auto_leveler": [2, 1], "runout_sensor": [2, 1], "preheat_chamber": [2, 2],
+	"liquid_hot_end": [2, 1], "overdrive_board": [2, 2], "auto_sorter": [4, 3], "guard_frame": [3, 1], "overflow_hopper": [1, 0],
+	"tool_beacon": [3, 1], "rush_springs": [2, 1], "salvage_arm": [3, 1], "twin_gantry": [2, 1],
+}
+## Upgrades are meant to be a long climb: level L to L+1 costs the mod's price
+## times L in coins, and needs this many more Maker Ranks per level.
+const MOD_UPGRADE_RANKS_PER_LEVEL := 3
+## Points a level of a mod counts for in a Printer's Tune, by rarity.
+const MOD_TUNE_POINTS := {"common": 1, "uncommon": 2, "rare": 3, "epic": 5, "legendary": 8}
+
+
+static func mod_max_level(id: String) -> int:
+	return int((MOD_LEVELS.get(id, [1, 0]) as Array)[0])
+
+
+## What the mod does at `level` (clamped to what it can reach).
+static func mod_effect(id: String, level: int) -> int:
+	var m := mod(id)
+	if m.is_empty():
+		return 0
+	var lv := clampi(level, 1, mod_max_level(id))
+	return int(m["per"]) + (lv - 1) * int((MOD_LEVELS.get(id, [1, 0]) as Array)[1])
+
+
+## Coins to take a mod from `level` to the next one, or 0 at the top.
+static func mod_upgrade_cost(id: String, level: int) -> int:
+	if level >= mod_max_level(id):
+		return 0
+	return int(mod(id)["cost"]) * level
+
+
+## Maker Rank needed for that upgrade.
+static func mod_upgrade_rank(id: String, level: int) -> int:
+	return mini(RANK_MAX, int(mod(id)["rank"]) + MOD_UPGRADE_RANKS_PER_LEVEL * level)
+
+
 ## What a mod does, as a player-facing sentence ("Your Spool holds 5 more Filament.").
-static func mod_text(id: String) -> String:
+static func mod_text(id: String, level := 1) -> String:
 	var m := mod(id)
 	if m.is_empty():
 		return ""
 	var text: String = m["text"]
-	var per := int(m["per"])
+	var per := mod_effect(id, level)
 	var n := text.count("%d")
 	if n == 0:
 		return text
@@ -588,9 +638,20 @@ static func mod_text(id: String) -> String:
 	return text % per
 
 
-## What a mod gives in a battle: `per` when the Printer carries it, else 0.
+## A mods dictionary ({mod id: level}) as one number for how strong a Printer is.
+## Ranked play shows it and builds the computer opponent to match it.
+static func tune(mods: Dictionary) -> int:
+	var total := 0
+	for id in mods:
+		var m := mod(str(id))
+		if not m.is_empty():
+			total += int(MOD_TUNE_POINTS[m["rarity"]]) * clampi(int(mods[id]), 1, mod_max_level(str(id)))
+	return total
+
+
+## What a mod gives in a battle: its effect at the level the Printer carries it, else 0.
 static func mv(mods: Dictionary, id: String) -> int:
-	return int(mod(id).get("per", 0)) if mods.has(id) else 0
+	return mod_effect(id, int(mods[id])) if mods.has(id) else 0
 
 
 ## The names of the mods that are missing for a mod to work, from a list of
@@ -604,12 +665,13 @@ static func missing_requirements(id: String, carried: Array) -> Array:
 
 
 ## A mods dictionary cut down to what works on a Printer: known mods only (one
-## each), and nothing whose required mods are missing.
+## each, with the level held to what the mod can reach), and nothing whose
+## required mods are missing.
 static func clean_mods(_printer_id: String, mods: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
 	for id in mods:
 		if int(mods[id]) > 0 and not mod(str(id)).is_empty():
-			out[str(id)] = 1
+			out[str(id)] = clampi(int(mods[id]), 1, mod_max_level(str(id)))
 	var changed := true
 	while changed:
 		changed = false
@@ -668,8 +730,10 @@ static func count_cards(list: Array) -> Dictionary:
 
 ## Returns "" when the list is a legal deck, else a player-facing reason.
 static func deck_error(list: Array) -> String:
-	if list.size() != DECK_SIZE:
-		return "A deck needs exactly %d cards (this one has %d)." % [DECK_SIZE, list.size()]
+	if list.size() < DECK_MIN:
+		return "A deck needs at least %d cards (this one has %d)." % [DECK_MIN, list.size()]
+	if list.size() > DECK_MAX:
+		return "A deck holds at most %d cards (this one has %d)." % [DECK_MAX, list.size()]
 	var counts := count_cards(list)
 	for id in counts:
 		var def := card(id)

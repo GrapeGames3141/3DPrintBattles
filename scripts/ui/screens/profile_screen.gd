@@ -214,7 +214,7 @@ func _toggle_search() -> void:
 	if not is_instance_valid(self) or not _searching:
 		return
 	_searching = false
-	_found = Ladder.opponent(Profile.rating(), randi())
+	_found = Ladder.opponent(Profile.rating(), randi(), Profile.printer_tune(str(Profile.active_deck()["printer"])))
 	relayout()
 
 
@@ -227,17 +227,17 @@ func _show_match() -> void:
 	UI.place(box, t, Vector2(0, 14), Vector2(bw, 52))
 	var mine := Profile.rating()
 	var theirs := int(_found["rating"])
-	_side(box, Vector2(bw * 0.25 - 100 if not P else bw * 0.5 - 100, 76 if not P else 66), Profile.player_name(), mine, Profile.avatar_id(), str(Profile.active_deck()["printer"]), Profile.active_deck()["cards"])
+	_side(box, Vector2(bw * 0.25 - 100 if not P else bw * 0.5 - 100, 76 if not P else 66), Profile.player_name(), mine, Profile.avatar_id(), str(Profile.active_deck()["printer"]), Profile.active_deck()["cards"], Profile.printer_tune(str(Profile.active_deck()["printer"])))
 	if not P:
 		var vs := UI.label("VS", 36, UI.CREAM, true, 6)
 		vs.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(box, vs, Vector2(bw * 0.5 - 40, 150), Vector2(80, 50))
-		_side(box, Vector2(bw * 0.75 - 100, 76), str(_found["name"]), theirs, str(_found["avatar"]), str(_found["printer"]), _found["deck"])
+		_side(box, Vector2(bw * 0.75 - 100, 76), str(_found["name"]), theirs, str(_found["avatar"]), str(_found["printer"]), _found["deck"], int(_found["tune"]))
 	else:
 		var vs2 := UI.label("VS", 30, UI.CREAM, true, 6)
 		vs2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		UI.place(box, vs2, Vector2(bw * 0.5 - 40, 300), Vector2(80, 44))
-		_side(box, Vector2(bw * 0.5 - 100, 350), str(_found["name"]), theirs, str(_found["avatar"]), str(_found["printer"]), _found["deck"])
+		_side(box, Vector2(bw * 0.5 - 100, 350), str(_found["name"]), theirs, str(_found["avatar"]), str(_found["printer"]), _found["deck"], int(_found["tune"]))
 	var stake := UI.label("Win  %+d      Lose  %+d" % [Rating.delta(mine, theirs, true, int(Profile.player()["ranked_games"])), Rating.delta(mine, theirs, false, int(Profile.player()["ranked_games"]))], 22, UI.CYAN)
 	stake.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, stake, Vector2(0, box.size.y - 140), Vector2(bw, 30))
@@ -254,7 +254,7 @@ func _show_match() -> void:
 	UI.place(box, back, Vector2(bw * 0.5 + 10, box.size.y - 84))
 
 
-func _side(box: Control, at: Vector2, name: String, rating: int, art: String, printer_id: String, deck: Array) -> void:
+func _side(box: Control, at: Vector2, name: String, rating: int, art: String, printer_id: String, deck: Array, tune := 0) -> void:
 	var lg := Rating.league(rating)
 	var col: Color = LEAGUE_COLORS[int(lg["index"])]
 	var frame := UI.panel(box, Rect2(at + Vector2(25, 0), Vector2(150, 150)), UI.box(Color("0b1220"), col, 4, 18, 8))
@@ -268,7 +268,7 @@ func _side(box: Control, at: Vector2, name: String, rating: int, art: String, pr
 	var l := UI.label("%s  -  %d" % [Rating.league_text(rating), rating], 17, col)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, l, at + Vector2(-20, 184), Vector2(240, 24))
-	var pn := UI.label(str(GameData.printer(printer_id)["name"]), 15, UI.MUTED, false)
+	var pn := UI.label("%s  -  Tune %d" % [GameData.printer(printer_id)["name"], tune], 15, UI.MUTED, false)
 	pn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, pn, at + Vector2(-20, 208), Vector2(240, 22))
 	var dn := UI.label(str(DeckInfo.analyse(deck, printer_id)["name"]) + " deck", 15, UI.AMBER, false)

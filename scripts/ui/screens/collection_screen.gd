@@ -185,6 +185,42 @@ func _set_filter(f: String) -> void:
 	_refresh()
 
 
+## Swiping the card grid left or right turns the page (finger or mouse drag).
+## A swipe also sets `_swiped_at`, so the card under the finger is not added
+## to the deck when the finger lifts.
+const SWIPE_MIN := 90.0
+var _swipe_from := Vector2.ZERO
+var _swiping := false
+var _swiped_at := -1000
+
+
+func _grid_area() -> Rect2:
+	var pitch_x := 228.0 if P else 212.0
+	var pitch_y := CardView.H * (0.68 if P else 0.6) + 34.0
+	var x0 := 22.0 if P else 34.0
+	return Rect2(0, 130, x0 + _cols() * pitch_x, 2.0 * pitch_y + 30.0)
+
+
+func _input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton or (event as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
+		return
+	if is_instance_valid(_popup) or is_instance_valid(_inspect):
+		_swiping = false
+		return
+	var at: Vector2 = (make_input_local(event) as InputEventMouseButton).position
+	if (event as InputEventMouseButton).pressed:
+		_swiping = _grid_area().has_point(at)
+		_swipe_from = at
+		return
+	if not _swiping:
+		return
+	_swiping = false
+	var d := at - _swipe_from
+	if absf(d.x) >= SWIPE_MIN and absf(d.x) > absf(d.y) * 1.5:
+		_swiped_at = Time.get_ticks_msec()
+		_turn(-1 if d.x > 0.0 else 1)
+
+
 func _turn(dir: int) -> void:
 	var pages := maxi(1, ceili(_cards().size() / float(_cols() * 2)))
 	_page = posmod(_page + dir, pages)
@@ -292,7 +328,7 @@ func _build_deck() -> void:
 
 	var list: Array = d["cards"]
 	var err := Profile.deck_error(_slot)
-	var count := UI.label("%d / %d cards" % [list.size(), GameData.DECK_SIZE], 20, UI.GOOD if err == "" else UI.AMBER)
+	var count := UI.label("%d cards  (%d-%d)" % [list.size(), GameData.DECK_MIN, GameData.DECK_MAX], 20, UI.GOOD if err == "" else UI.AMBER)
 	UI.place(_deck_panel, count, Vector2(x + 16, y + 144), Vector2(200, 26))
 	if err == "" and _slot != int(Profile.data["active_deck"]):
 		var use := UI.button("Use for battles", "go", Vector2(170, 30), 15)
@@ -360,7 +396,7 @@ func _build_deck() -> void:
 
 	var half := (w - 36) * 0.5
 	var fill := UI.button("Auto-fill", "go", Vector2(half, 44), 18)
-	fill.disabled = list.size() >= GameData.DECK_SIZE
+	fill.disabled = list.size() >= GameData.DECK_MIN
 	fill.pressed.connect(func():
 		Profile.deck_autofill(_slot)
 		_refresh())
@@ -418,6 +454,8 @@ func _swap_printer() -> void:
 
 
 func _add(id: String) -> void:
+	if Time.get_ticks_msec() - _swiped_at < 400:
+		return
 	if Profile.owned_count(id) == 0:
 		app.toast("You do not own that card yet. Print it or find it in a pack.", UI.AMBER)
 		return

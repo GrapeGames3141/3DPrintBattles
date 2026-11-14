@@ -4,9 +4,9 @@ extends Node
 
 signal changed
 
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 ## Save keys whose contents are free-form dictionaries (ids come from the save).
-const FREE_KEYS := ["cards", "mods", "installed", "builds", "spares"]
+const FREE_KEYS := ["cards", "builds", "spares"]
 const DECK_SLOTS := 3
 
 var path := "user://printforge_profile.json"
@@ -38,8 +38,7 @@ static func fresh() -> Dictionary:
 		"active_deck": 0,
 		"printers": [],
 		"xp": 0,
-		"mods": {},
-		"installed": {},
+		"mod_items": [],
 		"builds": {},
 		"spares": {},
 		"card_mods": [],
@@ -85,7 +84,6 @@ func load_profile() -> void:
 	_merge(data, parsed)
 	_sanitize()
 	if migrated:
-		_auto_install()
 		save()
 
 
@@ -132,9 +130,11 @@ const LEGACY_LEVEL_COSTS := {
 
 
 ## Brings an older save up to date. Version 1 had four workshop upgrades; they
-## become the matching Printer mods. Version 2 had mod levels and slots: now a
-## mod is bought once, and every mod you own is fitted to every Printer.
-## Returns true if anything was converted.
+## become the matching Printer mods. Version 2 had mod levels and slots: they
+## became one purchase each. Version 3 owned each mod once and fitted it to
+## every Printer; version 4 owns copies, each fitted to one Printer and each with
+## its own upgrade level, so a version 3 save gets one copy for every Printer
+## that carried the mod. Returns true if anything was converted.
 func _migrate(parsed: Dictionary) -> bool:
 	var version := int(parsed.get("version", 1))
 	if version >= SAVE_VERSION:
@@ -157,35 +157,25 @@ func _migrate(parsed: Dictionary) -> bool:
 		var extra: Array = LEGACY_LEVEL_COSTS.get(str(id), [])
 		for i in mini(level - 1, extra.size()):
 			refund += int(extra[i])
-	parsed["mods"] = single
+	var printers: Array = parsed.get("printers", []) if parsed.get("printers") is Array else []
+	var placed: Dictionary = parsed.get("installed", {}) if version >= 3 and parsed.get("installed") is Dictionary else {}
+	var items: Array = []
+	for id in single:
+		var homes: Array = []
+		for printer_id in printers:
+			var here = placed.get(printer_id, [])
+			if version < 3 or (here is Array and (here as Array).has(id)):
+				homes.append(str(printer_id))
+		if homes.is_empty():
+			items.append({"id": str(id), "lvl": 1, "on": ""})
+		for printer_id in homes:
+			items.append({"id": str(id), "lvl": 1, "on": printer_id})
+	parsed["mod_items"] = items
+	parsed.erase("mods")
+	parsed.erase("installed")
 	parsed["coins"] = int(parsed.get("coins", 0)) + refund
 	parsed["version"] = SAVE_VERSION
 	return true
-
-
-## Fits every owned mod to every Printer that can run it.
-func _auto_install() -> void:
-	for printer_id in data["printers"]:
-		var list: Array = []
-		for m in GameData.PRINTER_MODS:
-			if owns_mod(str(m["id"])):
-				list.append(str(m["id"]))
-		data["installed"][printer_id] = _valid_list(list)
-
-
-## A list of mod ids with unowned and unknown ones, repeats, and mods whose
-## requirements are not in the list taken out.
-func _valid_list(list: Array) -> Array:
-	var set: Dictionary = {}
-	for id in list:
-		if owns_mod(str(id)) and not GameData.mod(str(id)).is_empty():
-			set[str(id)] = 1
-	var clean := GameData.clean_mods("", set)
-	var out: Array = []
-	for m in GameData.PRINTER_MODS:
-		if clean.has(m["id"]):
-			out.append(str(m["id"]))
-	return out
 
 
 ## JSON turns every number into a float and may carry stale ids; put it right.
@@ -221,12 +211,6 @@ func _sanitize() -> void:
 		if (data["paints"] as Array).has(p["id"]) or int(p["price"]) == 0:
 			paints.append(p["id"])
 	data["paints"] = paints
-	var mods: Dictionary = {}
-	for k in data["mods"]:
-		var level := clampi(int(data["mods"][k]), 0, 1) if not GameData.mod(str(k)).is_empty() else 0
-		if level > 0:
-			mods[str(k)] = level
-	data["mods"] = mods
 	for k in data["packs"]:
 		data["packs"][k] = maxi(0, int(data["packs"][k]))
 	for k in data["stats"]:
@@ -236,11 +220,7 @@ func _sanitize() -> void:
 		if GameData.printer(str(id))["id"] == str(id) and not owned.has(str(id)):
 			owned.append(str(id))
 	data["printers"] = owned
-	var installed: Dictionary = {}
-	for printer_id in owned:
-		var list: Array = _valid_list(data["installed"].get(printer_id, []))
-		installed[printer_id] = list
-	data["installed"] = installed
+	_clean_mod_items()
 	var decks: Array = data["decks"]
 	while decks.size() < DECK_SLOTS:
 		decks.append({"cards": [], "printer": "ember_forge", "sleeve": "forge"})
@@ -315,7 +295,42 @@ func set_xp(amount: int) -> void:
 # -------------------------------------------------------------- printer mods
 
 func owns_mod(id: String) -> bool:
-	return int(data["mods"].get(id, 0)) > 0
+	return mod_copies(id) > 0
+
+
+## How many copies of a mod you have (each fits one Printer).
+func mod_copies(id: String) -> int:
+	var n := 0
+	for it in data["mod_items"]:
+		if it["id"] == id:
+			n += 1
+	return n
+
+
+## The copy of a mod fitted to a Printer ({} when it carries none).
+func mod_copy_on(printer_id: String, id: String) -> Dictionary:
+	for it in data["mod_items"]:
+		if it["id"] == id and it["on"] == printer_id:
+			return it
+	return {}
+
+
+## Highest level among your copies of a mod (0 if you have none).
+func mod_best_level(id: String) -> int:
+	var best := 0
+	for it in data["mod_items"]:
+		if it["id"] == id:
+			best = maxi(best, int(it["lvl"]))
+	return best
+
+
+## Copies of a mod that are not fitted to any Printer.
+func mod_spare_copies(id: String) -> int:
+	var n := 0
+	for it in data["mod_items"]:
+		if it["id"] == id and it["on"] == "":
+			n += 1
+	return n
 
 
 ## Mods you need to own before you can buy this one.
@@ -378,22 +393,30 @@ func buy_mod_crate(rng: RandomNumberGenerator = null) -> Dictionary:
 	return award_random_mod(rng)
 
 
-## Adds a mod to your collection and fits it to every Printer you own that has
-## what it needs.
+## Adds a copy of a mod to your collection and fits it to a Printer that can
+## use it: the one your active deck uses first. With no such Printer it waits
+## unfitted.
 func _own_mod(id: String) -> void:
-	data["mods"][id] = 1
-	for printer_id in data["printers"]:
-		var list: Array = (data["installed"].get(printer_id, []) as Array).duplicate()
-		list.append(id)
-		data["installed"][printer_id] = _valid_list(list)
+	var item := {"id": id, "lvl": 1, "on": ""}
+	(data["mod_items"] as Array).append(item)
+	var order: Array = [str(active_deck().get("printer", ""))]
+	order.append_array(data["printers"])
+	for printer_id in order:
+		if not owns_printer(str(printer_id)) or not mod_copy_on(str(printer_id), id).is_empty():
+			continue
+		if GameData.missing_requirements(id, installed_mods(str(printer_id))).is_empty():
+			item["on"] = str(printer_id)
+			break
 
 
+## Buys a copy of a mod. You can buy more than one, up to one for each Printer
+## you own, because a Printer carries one copy of each mod.
 func buy_mod(id: String) -> String:
 	var m := GameData.mod(id)
 	if m.is_empty():
 		return "Unknown mod."
-	if owns_mod(id):
-		return "You already have that mod."
+	if mod_copies(id) >= maxi(1, (data["printers"] as Array).size()):
+		return "You have a copy for every Printer you own."
 	var need := mod_locked_by(id)
 	if not need.is_empty():
 		return "Buy %s first." % GameData.mod(str(need[0]))["name"]
@@ -407,38 +430,78 @@ func buy_mod(id: String) -> String:
 	return ""
 
 
+## Ids of the mods fitted to a Printer, in catalog order.
 func installed_mods(printer_id: String) -> Array:
-	return data["installed"].get(printer_id, [])
+	var out: Array = []
+	for m in GameData.PRINTER_MODS:
+		if not mod_copy_on(printer_id, str(m["id"])).is_empty():
+			out.append(str(m["id"]))
+	return out
 
 
-## Fits an owned mod to a Printer. It only works once the mods it needs are on
-## the Printer as well.
+## {mod id: level} for what a Printer carries.
+func installed_levels(printer_id: String) -> Dictionary:
+	var out: Dictionary = {}
+	for it in data["mod_items"]:
+		if it["on"] == printer_id:
+			out[str(it["id"])] = int(it["lvl"])
+	return out
+
+
+## The Printer holding the copy that Fit would take from it, or "" when a spare
+## copy is waiting (or the mod is already on this Printer).
+func mod_donor(printer_id: String, mod_id: String) -> String:
+	if not mod_copy_on(printer_id, mod_id).is_empty() or mod_spare_copies(mod_id) > 0:
+		return ""
+	return str(copy_to_fit(mod_id).get("on", ""))
+
+
+## The copy Fit uses: a spare one (the highest level), else the lowest-level
+## one that is on another Printer, which then moves.
+func copy_to_fit(mod_id: String) -> Dictionary:
+	var spare: Dictionary = {}
+	var worn: Dictionary = {}
+	for it in data["mod_items"]:
+		if it["id"] != mod_id:
+			continue
+		if it["on"] == "":
+			if spare.is_empty() or int(it["lvl"]) > int(spare["lvl"]):
+				spare = it
+		elif worn.is_empty() or int(it["lvl"]) < int(worn["lvl"]):
+			worn = it
+	return spare if not spare.is_empty() else worn
+
+
+## Fits a mod to a Printer. It only works once the mods it needs are on the
+## Printer as well. A copy that is fitted elsewhere moves here, because a copy
+## is only ever on one Printer.
 func install_mod(printer_id: String, mod_id: String) -> String:
 	if not owns_printer(printer_id):
 		return "You do not own that Printer."
 	if not owns_mod(mod_id):
 		return "You have not bought that mod yet."
-	var list: Array = (data["installed"].get(printer_id, []) as Array).duplicate()
-	if list.has(mod_id):
+	if not mod_copy_on(printer_id, mod_id).is_empty():
 		return ""
-	var missing := GameData.missing_requirements(mod_id, list)
+	var missing := GameData.missing_requirements(mod_id, installed_mods(printer_id))
 	if not missing.is_empty():
 		return "Fit %s first." % missing[0]
-	list.append(mod_id)
-	data["installed"][printer_id] = _valid_list(list)
+	var item := copy_to_fit(mod_id)
+	item["on"] = printer_id
+	_settle()
 	save()
 	return ""
 
 
-## Takes a mod off a Printer, and with it every mod that needs it. Returns the
-## ids of the other mods that came off.
+## Takes a mod off a Printer, and with it every mod that needs it. The copies
+## stay yours. Returns the ids of the other mods that came off.
 func remove_mod(printer_id: String, mod_id: String) -> Array:
-	var before: Array = (data["installed"].get(printer_id, []) as Array).duplicate()
-	var list: Array = before.duplicate()
-	list.erase(mod_id)
-	var after := _valid_list(list)
-	data["installed"][printer_id] = after
+	var before := installed_mods(printer_id)
+	var item := mod_copy_on(printer_id, mod_id)
+	if not item.is_empty():
+		item["on"] = ""
+	_settle()
 	save()
+	var after := installed_mods(printer_id)
 	var gone: Array = []
 	for id in before:
 		if id != mod_id and not after.has(id):
@@ -446,13 +509,79 @@ func remove_mod(printer_id: String, mod_id: String) -> Array:
 	return gone
 
 
-## The mods a battle on this Printer gets: {mod id: 1}, only what is fitted.
+## Why the copy of a mod on a Printer cannot be upgraded right now ("" if it can).
+func upgrade_problem(printer_id: String, mod_id: String) -> String:
+	var item := mod_copy_on(printer_id, mod_id)
+	if item.is_empty():
+		return "Fit it to a Printer first."
+	var lvl := int(item["lvl"])
+	if lvl >= GameData.mod_max_level(mod_id):
+		return "Already at its top level."
+	var need := GameData.mod_upgrade_rank(mod_id, lvl)
+	if rank_level() < need:
+		return "Reach Maker Rank %d to upgrade that." % need
+	if coins() < GameData.mod_upgrade_cost(mod_id, lvl):
+		return "Not enough Forge Coins."
+	return ""
+
+
+## Spends coins to take the copy fitted on a Printer up one level.
+func upgrade_mod(printer_id: String, mod_id: String) -> String:
+	var err := upgrade_problem(printer_id, mod_id)
+	if err != "":
+		return err
+	var item := mod_copy_on(printer_id, mod_id)
+	data["coins"] = coins() - GameData.mod_upgrade_cost(mod_id, int(item["lvl"]))
+	item["lvl"] = int(item["lvl"]) + 1
+	save()
+	return ""
+
+
+## The mods a battle on this Printer gets: {mod id: level}, only what is fitted.
 func battle_mods(printer_id: String) -> Dictionary:
-	var out: Dictionary = {}
-	for id in installed_mods(printer_id):
-		if owns_mod(str(id)):
-			out[str(id)] = 1
-	return GameData.clean_mods(printer_id, out)
+	return GameData.clean_mods(printer_id, installed_levels(printer_id))
+
+
+## How strong a Printer's mods make it, as one number (GameData.tune).
+func printer_tune(printer_id: String) -> int:
+	return GameData.tune(battle_mods(printer_id))
+
+
+## Puts the mod copies right: known mods, levels in range, only on a Printer you
+## own, one copy of a mod per Printer, and nothing fitted without what it needs.
+func _clean_mod_items() -> void:
+	var items: Array = []
+	for raw in data["mod_items"]:
+		if not raw is Dictionary or GameData.mod(str(raw.get("id", ""))).is_empty():
+			continue
+		var id := str(raw["id"])
+		var on := str(raw.get("on", ""))
+		items.append({"id": id, "lvl": clampi(int(raw.get("lvl", 1)), 1, GameData.mod_max_level(id)),
+			"on": on if (data["printers"] as Array).has(on) else ""})
+	data["mod_items"] = items
+	_settle()
+
+
+## Takes mods off Printers until everything left is allowed: a Printer carries
+## one copy of each mod, and each mod's requirements are on the same Printer.
+func _settle() -> void:
+	var changed := true
+	while changed:
+		changed = false
+		var seen: Dictionary = {}
+		for it in data["mod_items"]:
+			if it["on"] == "":
+				continue
+			var key := "%s|%s" % [it["on"], it["id"]]
+			if seen.has(key):
+				it["on"] = ""
+				changed = true
+			else:
+				seen[key] = true
+		for it in data["mod_items"]:
+			if it["on"] != "" and not GameData.missing_requirements(str(it["id"]), installed_mods(str(it["on"]))).is_empty():
+				it["on"] = ""
+				changed = true
 
 
 func packs(kind: String) -> int:
@@ -554,8 +683,8 @@ func deck_error(slot: int) -> String:
 ## Adds a card to a deck if the rules allow it. Returns "" or the reason.
 func deck_add(slot: int, id: String) -> String:
 	var list: Array = deck(slot)["cards"]
-	if list.size() >= GameData.DECK_SIZE:
-		return "This deck is full."
+	if list.size() >= GameData.DECK_MAX:
+		return "This deck is full (%d cards)." % GameData.DECK_MAX
 	var have := list.count(id)
 	if have >= owned_count(id):
 		return "You have no more copies of that card."
@@ -609,7 +738,7 @@ func deck_autofill(slot: int) -> void:
 	# Prefer prints, cheap cards, and the Printer's own element.
 	pool.sort_custom(func(a, b): return _fill_score(a, element) > _fill_score(b, element))
 	for c in pool:
-		if list.size() >= GameData.DECK_SIZE:
+		if list.size() >= GameData.DECK_MIN:
 			break
 		list.append(c["id"])
 	save()
@@ -897,7 +1026,6 @@ func buy_printer(id: String) -> String:
 		return "Not enough Forge Coins."
 	data["coins"] = coins() - price
 	(data["printers"] as Array).append(id)
-	data["installed"][id] = _valid_list(data["mods"].keys())
 	save()
 	return ""
 

@@ -103,7 +103,7 @@ static func _fill(col: VBoxContainer, chapter: int, width: float) -> void:
 		4:
 			_entry(col, width, "burst", UI.GOLD, "Packs", "Win battles and finish the campaign to earn packs. Open them in Card Packs. Spare copies of a card are kept for Blueprints.")
 			_entry(col, width, "cube", UI.AMBER, "Blueprints", "Spend coins and a spare copy to take a card from Mk I to Mk II and Mk III: stronger or cheaper. A card takes one mod at Mk II and a second at Mk III, and can be painted. Every copy you print has it.")
-			_entry(col, width, "gear", UI.CYAN, "Printer mods", "Bought once in the Workshop and fitted to every Printer you own, with no limit on how many a Printer carries. Some mods need others fitted first. They show on the machine.")
+			_entry(col, width, "gear", UI.CYAN, "Printer mods", "Bought in the Workshop. Each copy fits one Printer at a time and moves freely between Printers; buy extra copies to fit the same mod on several. A Printer carries one of each mod, and some mods need others fitted first. Upgrade a fitted mod for coins and Maker Rank to make it stronger: Stepper Motors reach +4 Filament a turn. A Printer's Tune adds up its mods, and ranked opponents match yours.")
 			_entry(col, width, "star", UI.GOLD, "Maker Rank", "Every battle gives XP. Higher ranks unlock Printers, mods and Blueprint tiers in the shops.")
 			_entry(col, width, "coin", UI.GOLD, "Coins", "Earn coins from battles and spare copies. Spend them on packs, printing a card directly, Printers, mods and Blueprints.")
 

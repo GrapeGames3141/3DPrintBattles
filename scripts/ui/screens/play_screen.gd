@@ -77,7 +77,7 @@ func _deck_section(r: Rect2, compact: bool) -> void:
 		nm.position = Vector2(14, 6)
 		nm.size = Vector2(bw - 20, 24)
 		b.add_child(nm)
-		var stt := UI.label("Ready" if err == "" else "%d / %d cards" % [(d["cards"] as Array).size(), GameData.DECK_SIZE],
+		var stt := UI.label("Ready" if err == "" else "%d cards, needs %d+" % [(d["cards"] as Array).size(), GameData.DECK_MIN],
 			14, UI.GOOD if err == "" else UI.AMBER, false)
 		stt.position = Vector2(14, 32)
 		stt.size = Vector2(bw - 20, 22)

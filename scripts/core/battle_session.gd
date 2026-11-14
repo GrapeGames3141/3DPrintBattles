@@ -63,7 +63,7 @@ static func ranked(deck: Dictionary, opp: Dictionary) -> BattleSession:
 	s.arena = GameData.ARENAS[randi() % GameData.ARENAS.size()]
 	s.names = ["You", str(opp["name"])]
 	s._start(player_config(deck), {"printer": opp["printer"], "deck": (opp["deck"] as Array).duplicate(), "hp_bonus": int(opp["hp_bonus"]),
-		"builds": GameData.uniform_builds(opp["deck"], int(opp["tier"]))})
+		"mods": opp.get("mods", {}), "builds": GameData.uniform_builds(opp["deck"], int(opp["tier"]))})
 	return s
 
 

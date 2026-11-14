@@ -139,6 +139,19 @@ func _catalog() -> void:
 	for r in GameData.RARITY_ORDER:
 		ok(int(by_rarity.get(r, 0)) >= 6, "at least 6 %s cards (%d)" % [r, int(by_rarity.get(r, 0))])
 	ok(GameData.deck_error(GameData.expand(GameData.STARTER_DECK)) == "", "starter deck is legal")
+	# Decks run from 20 to 60 cards, with the same copy limits.
+	var big: Array = []
+	for c in GameData.collectible():
+		for k in GameData.max_copies(str(c["id"])):
+			if big.size() < GameData.DECK_MAX + 5:
+				big.append(str(c["id"]))
+	ok(GameData.deck_error(big.slice(0, GameData.DECK_MAX)) == "", "a deck of %d cards is legal" % GameData.DECK_MAX)
+	ok(GameData.deck_error(big.slice(0, 33)) == "", "so is one of 33")
+	ok(GameData.deck_error(big.slice(0, GameData.DECK_MAX + 1)) != "", "more than %d is not" % GameData.DECK_MAX)
+	ok(GameData.deck_error(big.slice(0, GameData.DECK_MIN - 1)) != "", "fewer than %d is not" % GameData.DECK_MIN)
+	var bigger := BattleEngine.new_game({"seed": 5, "first": 0, "players": [
+		{"printer": "ember_forge", "deck": big.slice(0, GameData.DECK_MAX)}, {"printer": "tide_press", "deck": GameData.expand(GameData.STARTER_DECK)}]})
+	ok((bigger["players"][0]["deck"] as Array).size() + (bigger["players"][0]["hand"] as Array).size() == GameData.DECK_MAX, "a 60-card deck starts a battle with all 60 cards in play")
 	for r in GameData.RIVALS:
 		var err := GameData.deck_error(GameData.expand(r["deck"]))
 		ok(err == "", "rival %s deck legal: %s" % [r["id"], err])
@@ -416,11 +429,17 @@ func _effects() -> void:
 	h = give(st, 0, "hex_keys")
 	act(st, 0, {"t": "play", "hand": h})
 	ok(int(st["players"][0]["board"][0]["atk"]) == 2 and int(st["players"][0]["board"][1]["hp"]) == 2, "Hex Keys buffs all")
-	st["players"][0]["flow"] = 0
+	st["players"][0]["flow"] = 1
 	var spool_before: int = int(st["players"][0]["spool"])
 	h = give(st, 0, "spare_spool")
 	act(st, 0, {"t": "play", "hand": h})
-	ok(int(st["players"][0]["flow"]) == 1 and int(st["players"][0]["spool"]) == spool_before + 3, "Spare Spool tops up the spool and gives a burst of speed")
+	ok(int(st["players"][0]["flow"]) == 2 and int(st["players"][0]["spool"]) == spool_before + 2, "Spare Spool pays 1 Filament, gives back 2 and tops up the spool by 3")
+	# Nothing you can collect plays for free; only the second player's Filament Scrap does.
+	var free: Array = []
+	for fc in GameData.collectible():
+		if int(fc["cost"]) < 1:
+			free.append(fc["id"])
+	ok(free.is_empty(), "no collectible card costs 0 (%s)" % ", ".join(free))
 
 	# printer powers
 	st = game([], [])
@@ -602,7 +621,7 @@ func _mods() -> void:
 	for pm in GameData.PRINTER_MODS:
 		every[pm["id"]] = 1
 	ok(GameData.clean_mods("ember_forge", every).size() == GameData.PRINTER_MODS.size(), "a Printer can carry every mod at once")
-	ok(GameData.clean_mods("ember_forge", {"stepper": 9, "nope": 1, "bed": 0}) == {"stepper": 1}, "unknown mods and level 0 are dropped, and a mod counts once")
+	ok(GameData.clean_mods("ember_forge", {"stepper": 9, "nope": 1, "bed": 0}) == {"stepper": GameData.mod_max_level("stepper")}, "unknown mods and level 0 are dropped, and a level is held to the mod's top")
 	# Mods that need other mods.
 	ok(GameData.clean_mods("ember_forge", {"dual_extruder": 1}).is_empty(), "Dual Extruder does nothing without Stepper Motors")
 	ok(GameData.clean_mods("ember_forge", {"dual_extruder": 1, "stepper": 1}).size() == 2, "...and works with them")
@@ -779,13 +798,13 @@ func _progression() -> void:
 	ok(pr.buy_printer("stone_kiln") != "", "a Printer needs rank (rank %d)" % pr.printer_rank("stone_kiln"))
 	ok(pr.buy_mod("stepper") != "", "a mod needs rank too")
 	ok(pr.buy_mod("spool") == "" and pr.owns_mod("spool"), "a rank-1 mod can be bought")
-	ok(pr.buy_mod("spool") != "", "and only once")
+	ok(pr.buy_mod("spool") != "", "with one Printer there is room for one copy")
 	ok(pr.installed_mods("ember_forge").has("spool"), "a new mod is fitted to your Printer straight away")
 	ok(pr.buy_mod("spool_rack") != "", "a mod that needs another needs your rank first")
 	pr.data["xp"] = 100000
 	ok(pr.buy_mod("dual_extruder") != "" and not pr.owns_mod("dual_extruder"), "Dual Extruder cannot be bought before Stepper Motors")
 	ok(pr.buy_printer("stone_kiln") == "" and pr.owns_printer("stone_kiln"), "with rank, the Printer can be bought")
-	ok(pr.installed_mods("stone_kiln").has("spool"), "and it comes with the mods you own")
+	ok(pr.installed_mods("stone_kiln").is_empty(), "a new Printer starts with no mods: a copy is on one Printer at a time")
 	ok(pr.buy_printer("tide_press") == "" and pr.owns_printer("tide_press"), "an unpicked starter Printer is buyable")
 	var c0: int = pr.coins()
 	ok(pr.buy_mod("spool_rack") == "" and pr.coins() == c0 - int(GameData.mod("spool_rack")["cost"]), "mod prices come off your coins")
@@ -799,8 +818,73 @@ func _progression() -> void:
 	ok(pr.install_mod("ember_forge", "spool_rack") != "", "the Rack cannot go back on without the Spool")
 	ok(pr.install_mod("ember_forge", "spool") == "" and pr.install_mod("ember_forge", "spool_rack") == "", "with the Spool back it can")
 	ok(pr.install_mod("ember_forge", "stepper") != "", "an unbought mod cannot be fitted")
-	pr.remove_mod("stone_kiln", "frame")
-	ok(not pr.battle_mods("stone_kiln").has("frame") and pr.battle_mods("ember_forge").has("frame"), "each Printer keeps its own set")
+
+	# Copies: one copy is on one Printer, fitting it elsewhere moves it, more can be bought.
+	ok(pr.mod_copies("frame") == 1 and pr.mod_spare_copies("frame") == 0, "one copy, fitted")
+	ok(pr.mod_donor("stone_kiln", "frame") == "ember_forge" and pr.mod_donor("ember_forge", "frame") == "", "Fit on another Printer would take the copy from Ember Forge")
+	ok(pr.install_mod("stone_kiln", "frame") == "" and pr.installed_mods("stone_kiln").has("frame") and not pr.installed_mods("ember_forge").has("frame"), "so the one copy moves")
+	var c2: int = pr.coins()
+	ok(pr.buy_mod("frame") == "" and pr.mod_copies("frame") == 2 and pr.coins() == c2 - int(GameData.mod("frame")["cost"]), "a second copy can be bought for the same price")
+	ok(pr.installed_mods("ember_forge").has("frame") and pr.installed_mods("stone_kiln").has("frame"), "and goes on a Printer that has none: both carry Reinforced Frame")
+	ok(pr.buy_mod("frame") == "" and pr.mod_copies("frame") == 3 and pr.installed_mods("tide_press").has("frame"), "a third copy goes on the third Printer")
+	ok(pr.buy_mod("frame") != "", "no more copies than Printers: a Printer carries one of each mod")
+	ok(pr.remove_mod("tide_press", "frame").is_empty() and pr.mod_copies("frame") == 3, "taking a mod off keeps the copy")
+	ok(pr.battle_mods("tide_press").is_empty(), "an unfitted copy does nothing")
+	ok(pr.install_mod("ember_forge", "frame") == "" and pr.mod_copies("frame") == 3, "fitting a mod already on the Printer changes nothing")
+	# A mod moved away takes the mods that need it with it, and they stay owned.
+	ok(pr.install_mod("stone_kiln", "spool") == "", "the single Bigger Spool moves to Stone Kiln")
+	ok(not pr.installed_mods("ember_forge").has("spool_rack") and pr.owns_mod("spool_rack") and pr.mod_spare_copies("spool_rack") == 1, "the Rack that needed it comes off Ember Forge and waits")
+	ok(pr.install_mod("ember_forge", "spool_rack") != "", "the Rack cannot go on a Printer with no Spool")
+	ok(pr.install_mod("stone_kiln", "spool_rack") == "", "but it goes on the Printer that has the Spool")
+	ok(pr.install_mod("ember_forge", "spool") == "" and not pr.installed_mods("stone_kiln").has("spool_rack"), "moving the Spool back drops the Rack again")
+
+	# Upgrades: levels, price, rank, and what a level does in a battle.
+	ok(GameData.mod_effect("stepper", 1) == 1 and GameData.mod_effect("stepper", 4) == 4 and GameData.mod_effect("stepper", 9) == 4, "Stepper Motors add 1 Filament a turn per level, up to 4")
+	ok(GameData.mod_text("stepper", 3) == "Prints 3 more Filament each turn." and GameData.mod_text("bed", 2) == "Your first print each battle gets +2/+2.", "the text follows the level")
+	ok(GameData.mod_upgrade_cost("frame", 1) == 300 and GameData.mod_upgrade_cost("frame", 2) == 600 and GameData.mod_upgrade_cost("frame", GameData.mod_max_level("frame")) == 0, "an upgrade costs the price times the current level")
+	ok(GameData.mod_upgrade_rank("stepper", 1) == 8 and GameData.mod_upgrade_rank("stepper", 3) == 14, "and asks for more Maker Rank each level")
+	ok(GameData.mod_upgrade_rank("quantum_slicer", 9) == GameData.RANK_MAX, "(never more than the top rank)")
+	var up0 := fresh_profile()
+	up0.data["coins"] = 100000
+	up0.buy_mod("spool")
+	ok(up0.upgrade_mod("ember_forge", "spool") != "" and int(up0.mod_copy_on("ember_forge", "spool")["lvl"]) == 1, "upgrades need Maker Rank (spool level 2 needs rank %d)" % GameData.mod_upgrade_rank("spool", 1))
+	up0.data["xp"] = GameData.xp_for_rank(GameData.mod_upgrade_rank("spool", 1))
+	up0.data["coins"] = 10
+	ok(up0.upgrade_mod("ember_forge", "spool") != "", "...and coins")
+	up0.data["coins"] = 100000
+	ok(up0.upgrade_mod("ember_forge", "stepper") != "", "a mod you do not have cannot be upgraded")
+	up0.free()
+	pr.data["coins"] = 1000000
+	c2 = pr.coins()
+	ok(pr.upgrade_mod("ember_forge", "frame") == "" and pr.coins() == c2 - 300, "upgrading takes the coins")
+	ok(pr.battle_mods("ember_forge")["frame"] == 2 and pr.battle_mods("stone_kiln")["frame"] == 1, "only that copy goes up a level")
+	ok(raw_game({"frame": 2})["players"][0]["max_hp"] == GameData.PRINTER_HP + 4 and raw_game({"frame": 1})["players"][0]["max_hp"] == GameData.PRINTER_HP + 2, "and its Health bonus doubles in a battle")
+	ok(pr.upgrade_mod("tide_press", "frame") != "", "an unfitted copy cannot be upgraded")
+	while pr.upgrade_problem("ember_forge", "frame") == "" and int(pr.mod_copy_on("ember_forge", "frame")["lvl"]) < 9:
+		pr.upgrade_mod("ember_forge", "frame")
+	ok(int(pr.mod_copy_on("ember_forge", "frame")["lvl"]) == GameData.mod_max_level("frame") and pr.upgrade_mod("ember_forge", "frame") != "", "a mod stops at its top level")
+	var lvl_kept := int(pr.mod_copy_on("ember_forge", "frame")["lvl"])
+	pr.remove_mod("ember_forge", "frame")
+	pr.install_mod("ember_forge", "frame")
+	ok(int(pr.mod_copy_on("ember_forge", "frame")["lvl"]) == lvl_kept, "a copy keeps its level when it is taken off and fitted again")
+	pr.remove_mod("ember_forge", "frame")
+	pr.install_mod("tide_press", "frame")
+	ok(int(pr.mod_copy_on("tide_press", "frame")["lvl"]) == lvl_kept, "fitting picks the highest level copy that is in storage")
+	ok(raw_game({"stepper": 4})["players"][0]["speed"] == GameData.PRINT_SPEED + 4 and raw_game({"bed": 2})["players"][0]["bed_bonus"] == 2, "levels reach the engine (Stepper 4: +4 Filament a turn)")
+	ok(GameData.tune({"stepper": 2, "spool": 1}) == 3 * 2 + 1 and GameData.tune({}) == 0, "Tune adds rarity points for every level")
+	# Ranked opponents are built to the same Tune.
+	var rngm := RandomNumberGenerator.new()
+	var tune_ok := true
+	var legal := true
+	for seed_m in 12:
+		rngm.seed = seed_m
+		var budget := seed_m * 7
+		var built: Dictionary = Ladder.build_mods(rngm, budget)
+		tune_ok = tune_ok and GameData.tune(built) <= budget and GameData.tune(built) >= budget - 2
+		legal = legal and GameData.clean_mods("ember_forge", built).size() == built.size()
+	ok(tune_ok, "an opponent's mods add up to the Tune it was given")
+	ok(legal, "and each of them has what it needs")
+	ok(Ladder.opponent(1000, 3, 0)["mods"].is_empty() and int(Ladder.opponent(1000, 3, 40)["tune"]) >= 38, "Ladder.opponent takes a Tune to match")
 
 	# Winning pays less than it used to, and gives Maker XP.
 	var before: int = pr.coins()
@@ -845,6 +929,23 @@ func _progression() -> void:
 	ok(pv.installed_mods("ember_forge").size() == 4 and pv.installed_mods("stone_kiln").size() == 4, "and every mod is fitted to every Printer")
 	ok(pv.battle_mods("stone_kiln") == {"stepper": 1, "spool": 1, "dual_extruder": 1, "frame": 1}, "with the dependent mod working because its parent is there")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
+	# A version 3 save owned each mod once and fitted it per Printer: each fitting becomes a copy.
+	var v3 := {"version": 3, "started": true, "coins": 100, "printers": ["ember_forge", "stone_kiln"], "mods": {"spool": 1, "frame": 1, "sorter": 1},
+		"installed": {"ember_forge": ["spool", "frame"], "stone_kiln": ["spool"]},
+		"cards": {"mossmunk": 2}, "decks": [{"cards": [], "printer": "ember_forge"}, {"cards": [], "printer": "ember_forge"}, {"cards": [], "printer": "ember_forge"}]}
+	f = FileAccess.open("user://test_profile_rules.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(v3))
+	f.close()
+	var p3: Node = load("res://scripts/core/profile.gd").new()
+	p3.path = "user://test_profile_rules.json"
+	p3.data = p3.fresh()
+	p3.load_profile()
+	ok(p3.mod_copies("spool") == 2 and p3.mod_copies("frame") == 1 and p3.mod_copies("sorter") == 1, "a version 3 save gets a copy for each Printer that carried a mod")
+	ok(p3.installed_mods("ember_forge") == ["spool", "frame"] and p3.installed_mods("stone_kiln") == ["spool"], "each on the Printer it was on")
+	ok(p3.mod_spare_copies("sorter") == 1 and p3.coins() == 100, "a mod that was on no Printer waits in storage, with no coins changed")
+	ok(int(p3.data["version"]) == Profile.SAVE_VERSION and not p3.data.has("installed") and not p3.data.has("mods"), "and the save is on version 4")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_profile_rules.json"))
+	p3.free()
 	pv.free()
 	pr.free()
 	pm.free()

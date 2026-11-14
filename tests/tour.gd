@@ -176,6 +176,9 @@ func run() -> void:
 		for pass_i in 4:
 			for m in GameData.PRINTER_MODS:
 				profile.buy_mod(m["id"])
+		for pass_i in 3:
+			for id in ["stepper", "frame", "spool", "bed"]:
+				profile.upgrade_mod("ember_forge", id)
 		app.current._open_install("ember_forge")
 		await wait(0.4)
 		await shot("workshop_install_all")

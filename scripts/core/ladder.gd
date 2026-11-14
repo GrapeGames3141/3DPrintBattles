@@ -6,7 +6,10 @@ extends RefCounted
 ## waiting, and it is how ranked works with no server at all.
 
 
-static func opponent(rating: int, seed_v: int) -> Dictionary:
+## `tune` is the strength of your own Printer mods (GameData.tune): the
+## opponent's Printer is fitted with random mods worth the same, so upgrading
+## your machine never makes ranked matches lopsided.
+static func opponent(rating: int, seed_v: int, tune := 0) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_v
 	var opp_rating := maxi(Rating.FLOOR, rating + rng.randi_range(-60, 60))
@@ -16,13 +19,41 @@ static func opponent(rating: int, seed_v: int) -> Dictionary:
 	for id in deck:
 		if GameData.card(id)["type"] == "creature":
 			creatures.append(id)
+	var mods := build_mods(rng, tune)
 	return {
 		"name": PlayerIdentity.random_name(rng), "rating": opp_rating, "printer": str(printer["id"]), "deck": deck,
+		"mods": mods, "tune": GameData.tune(mods),
 		"level": 1 if opp_rating < 1250 else 2,
 		"tier": 1 if opp_rating < 1100 else (2 if opp_rating < 1500 else 3),
 		"hp_bonus": clampi(roundi(float(opp_rating - 1000) / 150.0), -3, 3),
 		"avatar": str(creatures[rng.randi() % creatures.size()]) if not creatures.is_empty() else "",
 	}
+
+
+## Random Printer mods worth at most `budget` Tune, each one only once what it
+## needs is in. Levels rise as the budget allows, so a big budget gets upgraded mods.
+static func build_mods(rng: RandomNumberGenerator, budget: int) -> Dictionary:
+	var mods: Dictionary = {}
+	var spent := 0
+	var guard := 0
+	while guard < 400:
+		guard += 1
+		var options: Array = []
+		for m in GameData.PRINTER_MODS:
+			var id := str(m["id"])
+			var lvl := int(mods.get(id, 0))
+			var pts := int(GameData.MOD_TUNE_POINTS[m["rarity"]])
+			if lvl >= GameData.mod_max_level(id) or spent + pts > budget:
+				continue
+			if lvl == 0 and not GameData.missing_requirements(id, mods.keys()).is_empty():
+				continue
+			options.append(id)
+		if options.is_empty():
+			break
+		var pick: String = options[rng.randi() % options.size()]
+		mods[pick] = int(mods.get(pick, 0)) + 1
+		spent += int(GameData.MOD_TUNE_POINTS[GameData.mod(pick)["rarity"]])
+	return mods
 
 
 ## A legal 20-card deck: mostly prints of the Printer's element, a few tools and
