@@ -175,6 +175,34 @@ func set_frame(frame: int) -> void:
 	_mat.set_shader_parameter("region", r)
 
 
+## Evolution: the print glows white and swells, turns into its next stage
+## inside the light, then settles as the new creature.
+func evolve_to(unit: Dictionary) -> void:
+	_busy_anim = true
+	_walking = false
+	_sprite.position = Vector2(6, -12)
+	_sprite.rotation = 0.0
+	var col := GameData.element_color(def.get("element", "Neutral"))
+	Effects.burst(self, Vector2(70, 100), "buff", col, 1.4)
+	var up := create_tween().set_parallel(true)
+	up.tween_method(func(v: float): _mat.set_shader_parameter("flash", v), 0.0, 1.0, 0.45)
+	up.tween_property(_sprite, "scale", Vector2(1.18, 1.22), 0.45).set_trans(Tween.TRANS_SINE)
+	await up.finished
+	def = GameData.card(str(unit["id"]))
+	_path = GameData.art_path(def)
+	_frame = -1
+	_pose = -1
+	set_frame(0)
+	refresh(unit, false)
+	Effects.burst(self, Vector2(70, 90), "ring", UI.GOLD, 1.8)
+	Effects.burst(self, Vector2(70, 90), "spark", Color("fff3c0"), 1.4)
+	var down := create_tween().set_parallel(true)
+	down.tween_method(func(v: float): _mat.set_shader_parameter("flash", v), 1.0, 0.0, 0.5)
+	down.tween_property(_sprite, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await down.finished
+	_busy_anim = false
+
+
 ## Takes the latest unit data from the rules engine and redraws.
 func refresh(unit: Dictionary, attack_ready: bool) -> void:
 	u = unit.duplicate(true)

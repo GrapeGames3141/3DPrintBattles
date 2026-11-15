@@ -563,6 +563,34 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 	return ""
 
 
+## Turns a print into its next stage. It keeps what happened to it: damage
+## taken, Attack and Health gained, keywords it was given.
+static func _evolve(st: Dictionary, u: Dictionary, into: String, ev: Array) -> void:
+	var seat: int = int(u["seat"])
+	var old := def_of(st, seat, str(u["id"]))
+	var nxt := def_of(st, seat, into)
+	if nxt.is_empty():
+		return
+	var damage: int = int(u["max_hp"]) - int(u["hp"])
+	var gained_atk: int = int(u["atk"]) - int(old["atk"])
+	var gained_hp: int = int(u["max_hp"]) - int(old["hp"])
+	var kept: Array = []
+	for k in u["kw"]:
+		if not (old.get("kw", []) as Array).has(k):
+			kept.append(k)
+	u["id"] = into
+	u["atk"] = maxi(0, int(nxt["atk"]) + gained_atk)
+	u["max_hp"] = maxi(1, int(nxt["hp"]) + gained_hp)
+	u["hp"] = maxi(1, int(u["max_hp"]) - damage)
+	var kw: Array = (nxt.get("kw", []) as Array).duplicate()
+	for k in kept:
+		if not kw.has(k):
+			kw.append(k)
+	u["kw"] = kw
+	u["age"] = 0
+	ev.append({"e": "evolve", "uid": int(u["uid"]), "from": str(old["id"]), "unit": u.duplicate(true)})
+
+
 ## Weakness: a print that "beats" an element hits prints of it for 2 more.
 static func _weakness_bonus(attacker: Dictionary, target: Dictionary) -> int:
 	if target.is_empty():
@@ -653,6 +681,15 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 			ev.append({"e": "tox", "uid": int(u["uid"]), "n": bite, "left": int(u["tox"])})
 			_damage(st, "u%d" % int(u["uid"]), bite, ev)
 	_fire_board(st, seat, "turn_start", {}, ev)
+	# Evolution: a print that has stood on the bench long enough grows into
+	# its next stage.
+	for u in (p["board"] as Array).duplicate():
+		var evo: Dictionary = def_of(st, seat, str(u["id"])).get("evolve", {})
+		if evo.is_empty() or int(u["hp"]) <= 0:
+			continue
+		u["age"] = int(u.get("age", 0)) + 1
+		if int(u["age"]) >= int(evo["turns"]):
+			_evolve(st, u, str(evo["into"]), ev)
 	# The Printer carries on with its long print before anything else.
 	var job: Dictionary = p["job"]
 	if not job.is_empty() and not job_ready(job):

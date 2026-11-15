@@ -14,6 +14,7 @@ func _initialize() -> void:
 	_keywords()
 	_keywords2()
 	_wave3()
+	_evolution()
 	_heat_and_theft()
 	_effects()
 	_triggers()
@@ -107,7 +108,7 @@ func _catalog() -> void:
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 282, "282 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 284, "284 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
 		if c["type"] == "creature":
@@ -117,7 +118,7 @@ func _catalog() -> void:
 	for c in GameData.collectible():
 		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
 		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
-	ok(by_type == {"creature": 172, "tool": 67, "upgrade": 43}, "172 prints, 67 tools, 43 pieces of equipment (%s)" % str(by_type))
+	ok(by_type == {"creature": 174, "tool": 67, "upgrade": 43}, "174 prints, 67 tools, 43 pieces of equipment (%s)" % str(by_type))
 	# Every kind of card, and every element of print, comes in every rarity.
 	for kind in ["creature", "tool", "upgrade"]:
 		for r in GameData.RARITY_ORDER:
@@ -444,6 +445,34 @@ func _wave3() -> void:
 	stone = put(st, 1, "stoneback")
 	act(st, 0, {"t": "attack", "unit": int(fire["uid"]), "target": uid.call(stone)})
 	ok(int(stone["hp"]) == 4, "...and no extra against other elements")
+
+
+func _evolution() -> void:
+	print("evolution")
+	ok(not GameData.collectible().any(func(c): return c["id"] in ["extrudrake", "infernozzle", "voxelion", "teravox"]), "later stages are never in packs")
+	ok(GameData.collectible().any(func(c): return c["id"] == "nozzlet") and GameData.collectible().any(func(c): return c["id"] == "bytelet"), "first stages are cards you can open")
+	var st := game([], [])
+	var n := put(st, 0, "nozzlet")
+	var m0: int = int(n["max_hp"])
+	n["hp"] = 2
+	n["atk"] = 3
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(str(n["id"]) == "nozzlet", "one turn is not enough")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(str(n["id"]) == "extrudrake", "Nozzlet evolves into Extrudrake after two of its owner's turns")
+	ok(int(n["max_hp"]) == 5 + (m0 - 3) and int(n["hp"]) == int(n["max_hp"]) - (m0 - 2), "it keeps the damage it had taken (%d/%d)" % [n["hp"], n["max_hp"]])
+	ok(int(n["atk"]) == 3 + 2, "and the Attack it had gained")
+	ok((n["kw"] as Array).has("scorch"), "and gets the new stage's keywords")
+	for i in 3:
+		act(st, 0, {"t": "end"})
+		act(st, 1, {"t": "end"})
+	ok(str(n["id"]) == "infernozzle", "Extrudrake evolves into Infernozzle three turns later")
+	var hp1: int = int(st["players"][1]["hp"])
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "end"})
+	ok(int(st["players"][1]["hp"]) == hp1 - 2, "Infernozzle breathes on the enemy Printer each turn")
 
 
 func _heat_and_theft() -> void:

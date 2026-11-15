@@ -182,4 +182,32 @@ C("hexnuthog", "Hexnut Hog", S, 4, 3, 4, "rare", ["guard", "brim"], None, "src:h
 C("gcodegolem", "G-code Golem", A, 6, 5, 6, "epic", [], ability(draw(2)), "src:gcode_golem")
 C("heatbedhedgehog", "Heatbed Hedgehog", F, 3, 2, 4, "rare", ["scorch"], ability(heat(1, "print")), "src:heatbed_hedgehog")
 
+# ------------------------------- Evolution lines (rigged: tools/render_art6.gd)
+# Like a Pokemon or Digimon line: the first stage is a card you open, and on
+# the bench it grows into the next stage after some of your turns, keeping its
+# damage and buffs. Later stages are never in packs.
+
+def evolves(into, name, turns, fx=None):
+    d = dict(fx or ability())
+    d["evolve"] = {"into": into, "turns": turns}
+    line = "Evolves into %s after %d of your turns." % (name, turns)
+    d["text"] = (d["text"] + " " + line).strip()
+    return d
+
+
+def token(cid):
+    for c in CREATURES:
+        if c["id"] == cid:
+            c["token"] = True
+
+
+C("nozzlet", "Nozzlet", F, 2, 1, 3, "uncommon", [], evolves("extrudrake", "Extrudrake", 2), "rig:nozzlet")
+C("extrudrake", "Extrudrake", F, 5, 3, 5, "rare", ["scorch"], evolves("infernozzle", "Infernozzle", 3), "rig:extrudrake")
+C("infernozzle", "Infernozzle", F, 8, 6, 7, "legendary", ["scorch", "hover"], ability(on("turn_start", a_dmg(2, "enemy_printer"))), "rig:infernozzle")
+C("bytelet", "Bytelet", A, 1, 0, 2, "uncommon", [], evolves("voxelion", "Voxelion", 2, ability(draw(1))), "rig:bytelet")
+C("voxelion", "Voxelion", A, 4, 3, 4, "rare", ["menace"], evolves("teravox", "Teravox", 3), "rig:voxelion")
+C("teravox", "Teravox", A, 7, 5, 6, "legendary", ["hover", "ward"], ability(on("attack", draw(1))), "rig:teravox")
+for t in ("extrudrake", "infernozzle", "voxelion", "teravox"):
+    token(t)
+
 assert len({c["id"] for c in CREATURES}) == len(CREATURES), "duplicate creature id"

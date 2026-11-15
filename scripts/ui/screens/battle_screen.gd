@@ -1248,6 +1248,16 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 					"ally_print": "Ally Print", "foe_print": "Foe Print", "tool": "Tool", "ally_shatter": "Ally Shatter", "foe_shatter": "Foe Shatter"}.get(str(e["when"]), str(e.get("label", ""))))
 				UI.floater(_fx, label, tnode.center() + Vector2(0, -70), UI.GOLD, 18)
 			await _wait(0.2)
+		"evolve":
+			var enode: BoardUnit = _units.get(int(e["uid"]))
+			if enode != null:
+				Audio.sfx("reveal_epic")
+				var from_name: String = str(GameData.card(str(e["from"])).get("name", ""))
+				var to_name: String = str(GameData.card(str(e["unit"]["id"])).get("name", ""))
+				UI.floater(_fx, "%s is evolving!" % from_name, enode.center() + Vector2(0, -80), UI.GOLD, 22)
+				await enode.evolve_to(e["unit"])
+				UI.floater(_fx, "%s!" % to_name, enode.center() + Vector2(0, -80), UI.GOLD, 28)
+			await _wait(0.3)
 		"tox":
 			var tnode: BoardUnit = _units.get(int(e["uid"]))
 			if tnode != null:
