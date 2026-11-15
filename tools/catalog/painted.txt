@@ -155,3 +155,4 @@ treant_elder
 supporttreant
 verdant_dragon
 vine_weaver
+vinehare
