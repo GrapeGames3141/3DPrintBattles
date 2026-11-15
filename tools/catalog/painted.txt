@@ -35,3 +35,4 @@ orbit_flyer
 tengu
 jellycrown
 hex_owl
+layershifter
