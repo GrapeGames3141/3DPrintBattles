@@ -102,3 +102,4 @@ chimera_raiju
 ember_moth
 kitsune
 snow_globe_golem
+snowball_seal
