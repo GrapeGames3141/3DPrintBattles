@@ -182,3 +182,4 @@ fossil_raptor
 granitegriffin
 gravelhopper
 manticore
+marble_sculptor
