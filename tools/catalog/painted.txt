@@ -63,3 +63,4 @@ flarefox_kit
 furnace_golem
 heatbedhedgehog
 kilnback_tortoise
+kilnpup
