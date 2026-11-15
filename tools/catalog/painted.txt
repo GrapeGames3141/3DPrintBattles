@@ -51,3 +51,4 @@ void_weaver
 voidmoth
 ashling
 blaze_matriarch
+brimstone_bulldog
