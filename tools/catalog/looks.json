@@ -23,16 +23,6 @@
   "plan": "bug",
   "seed": 10175469
  },
- "ashling": {
-  "element": "Fire",
-  "plan": "bird",
-  "seed": 12249238
- },
- "avalanche_ox": {
-  "element": "Ice",
-  "plan": "quad",
-  "seed": 9864526
- },
  "barkback": {
   "colors": [
    "7a5a3a",
@@ -91,17 +81,6 @@
   "element": "Lightning",
   "plan": "bird",
   "seed": 15235615
- },
- "blaze_matriarch": {
-  "bulk": 1.1,
-  "element": "Fire",
-  "horns": "crest",
-  "legs": 2,
-  "neck": 0.5,
-  "plan": "dragon",
-  "seed": 6647814,
-  "tail": "flame",
-  "wings": "feather"
  },
  "bloom_druid": {
   "element": "Nature",
@@ -176,11 +155,6 @@
   "plan": "hybrid",
   "scale": 0.85,
   "seed": 7912778
- },
- "brimstone_bulldog": {
-  "element": "Fire",
-  "plan": "quad",
-  "seed": 15642609
  },
  "brine_bard": {
   "element": "Water",
@@ -272,50 +246,6 @@
   "plan": "bug",
   "seed": 4708705
  },
- "cerberus": {
-  "beast": "cerberus",
-  "element": "Fire",
-  "plan": "beast",
-  "seed": 7333880
- },
- "chimera": {
-  "beast": "chimera",
-  "element": "Fire",
-  "plan": "beast",
-  "seed": 15090750
- },
- "chimera_raiju": {
-  "colors": [
-   "4a4a50",
-   "c8742a",
-   "b87333",
-   "ffe03a"
-  ],
-  "element": "Lightning",
-  "extras": [
-   "spikes",
-   "coil_spine",
-   "snake_tail",
-   "armor"
-  ],
-  "frame": "quad",
-  "head": "ram",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 3370225
- },
- "cinder_juggler": {
-  "element": "Fire",
-  "plan": "biped",
-  "seed": 12388562
- },
- "cinder_sprite": {
-  "element": "Fire",
-  "plan": "floater",
-  "seed": 2733275
- },
  "cloudhopper": {
   "colors": [
    "eef4f8",
@@ -345,16 +275,6 @@
   "plan": "biped",
   "seed": 11333979
  },
- "cryo_slime": {
-  "element": "Ice",
-  "plan": "blob",
-  "seed": 13697333
- },
- "crystal_fox": {
-  "element": "Ice",
-  "plan": "quad",
-  "seed": 10296059
- },
  "cyclone_serpent": {
   "element": "Wind",
   "plan": "serpent",
@@ -370,11 +290,6 @@
   "element": "Water",
   "plan": "floater",
   "seed": 5602678
- },
- "dragon_egg": {
-  "element": "Fire",
-  "plan": "egg",
-  "seed": 7826332
  },
  "dragon_hatchling": {
   "element": "Fire",
@@ -416,23 +331,6 @@
   "seed": 6569453,
   "stage": 3
  },
- "ember_dragon": {
-  "element": "Fire",
-  "horns": "curl",
-  "legs": 4,
-  "neck": 0.55,
-  "plan": "dragon",
-  "seed": 13496134,
-  "spikes": 5,
-  "tail": "flame",
-  "wings": "bat"
- },
- "ember_moth": {
-  "element": "Fire",
-  "gift": "glider",
-  "plan": "bug",
-  "seed": 9559118
- },
  "failed_print": {
   "element": "Neutral",
   "plan": "blob",
@@ -443,11 +341,6 @@
   "element": "Wind",
   "plan": "quad",
   "seed": 3526010
- },
- "flarefox_kit": {
-  "element": "Fire",
-  "plan": "quad",
-  "seed": 15875528
  },
  "fossil_raptor": {
   "element": "Stone",
@@ -484,27 +377,6 @@
   "plan": "part",
   "seed": 6052099
  },
- "frost_wyvern": {
-  "element": "Ice",
-  "horns": "straight",
-  "legs": 2,
-  "neck": 0.55,
-  "plan": "dragon",
-  "seed": 10625543,
-  "spikes": 4,
-  "tail": "spade",
-  "wings": "bat"
- },
- "frostbit_penguin": {
-  "element": "Ice",
-  "plan": "fish",
-  "seed": 14063974
- },
- "furnace_golem": {
-  "element": "Fire",
-  "plan": "biped",
-  "seed": 1680997
- },
  "gaia_engine": {
   "element": "Nature",
   "plan": "biped",
@@ -514,42 +386,6 @@
   "element": "Stone",
   "plan": "shell",
   "seed": 2065443
- },
- "glacier_dragon": {
-  "bulk": 1.1,
-  "element": "Ice",
-  "horns": "many",
-  "legs": 4,
-  "neck": 0.7,
-  "plan": "dragon",
-  "seed": 4152844,
-  "spikes": 6,
-  "tail": "spade",
-  "wings": "crystal"
- },
- "glacier_golem": {
-  "element": "Ice",
-  "plan": "biped",
-  "seed": 1738792
- },
- "glaciermaw": {
-  "colors": [
-   "7ab8e8",
-   "eaf6ff",
-   "8f8cf0",
-   "c8f2ff"
-  ],
-  "element": "Ice",
-  "extras": [
-   "spikes"
-  ],
-  "frame": "wyrm",
-  "head": "serpent",
-  "heads": 2,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 7265056
  },
  "glue_golem": {
   "element": "Neutral",
@@ -651,25 +487,10 @@
   "scale": 0.85,
   "seed": 6872505
  },
- "hailstorm_hawk": {
-  "element": "Ice",
-  "plan": "bird",
-  "seed": 437070
- },
  "hydra_head": {
   "element": "Water",
   "plan": "serpent",
   "seed": 6111402
- },
- "ice_queen_moth": {
-  "element": "Ice",
-  "plan": "bug",
-  "seed": 9956627
- },
- "icicle_archer": {
-  "element": "Ice",
-  "plan": "quad",
-  "seed": 13154021
  },
  "ironbark_bear": {
   "element": "Nature",
@@ -693,31 +514,6 @@
   "plan": "horse",
   "seed": 6932195
  },
- "kilnback_tortoise": {
-  "element": "Fire",
-  "plan": "shell",
-  "seed": 11498534
- },
- "kilnpup": {
-  "colors": [
-   "c8402a",
-   "ffb347",
-   "b87333",
-   "ff8a2a"
-  ],
-  "element": "Fire",
-  "extras": [
-   "flame_mane",
-   "gears"
-  ],
-  "frame": "quad",
-  "head": "fox",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 10557264
- },
  "kite_drake": {
   "bulk": 0.85,
   "element": "Wind",
@@ -731,54 +527,15 @@
   "tail": "fan",
   "wings": "feather"
  },
- "kitsune": {
-  "beast": "kitsune",
-  "element": "Arcane",
-  "plan": "beast",
-  "seed": 14651479,
-  "tails": 7
- },
  "kraken": {
   "element": "Water",
   "plan": "kraken",
   "seed": 14127033
  },
- "lavalynx": {
-  "colors": [
-   "2b2f3a",
-   "e8492e",
-   "d9773a",
-   "ff8a2a"
-  ],
-  "element": "Fire",
-  "extras": [
-   "spikes",
-   "armor",
-   "core",
-   "flame_mane"
-  ],
-  "frame": "quad",
-  "head": "lion",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 16660910
- },
  "leviathan": {
   "element": "Water",
   "plan": "serpent",
   "seed": 12588278
- },
- "magma_mole": {
-  "element": "Fire",
-  "plan": "quad",
-  "seed": 9812860
- },
- "mana_wraith": {
-  "element": "Arcane",
-  "plan": "floater",
-  "seed": 1898356
  },
  "manticore": {
   "beast": "manticore",
@@ -796,11 +553,6 @@
   "element": "Stone",
   "plan": "biped",
   "seed": 230570
- },
- "mirror_imp": {
-  "element": "Arcane",
-  "plan": "biped",
-  "seed": 1308657
  },
  "mistwalker": {
   "colors": [
@@ -845,14 +597,6 @@
   "scale": 1.0,
   "seed": 6436149
  },
- "moonlight_unicorn": {
-  "crescent": true,
-  "element": "Arcane",
-  "horn": true,
-  "plan": "horse",
-  "seed": 3325280,
-  "tail_len": 1.4
- },
  "moss_sprout": {
   "element": "Nature",
   "plan": "quad",
@@ -892,31 +636,6 @@
   "plan": "fish",
   "seed": 6566700
  },
- "nova_burster": {
-  "colors": [
-   "ffb020",
-   "ff6a1a",
-   "c9a227",
-   "fff27a"
-  ],
-  "element": "Fire",
-  "extras": [
-   "spikes",
-   "core"
-  ],
-  "frame": "biped",
-  "head": "rock",
-  "heads": 1,
-  "lower": "rock",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 575888
- },
- "nullifier": {
-  "element": "Arcane",
-  "plan": "quad",
-  "seed": 2193601
- },
  "obsidian_dragon": {
   "bulk": 1.3,
   "element": "Stone",
@@ -951,12 +670,6 @@
   "plan": "hybrid",
   "scale": 1.0,
   "seed": 13665334
- },
- "oracle_orb": {
-  "element": "Arcane",
-  "plan": "blob",
-  "seed": 13918346,
-  "shape": "orb"
  },
  "overgrowth_hydra": {
   "element": "Nature",
@@ -1019,11 +732,6 @@
   "tail_len": 0.6,
   "wings": true
  },
- "permafrost_bear": {
-  "element": "Ice",
-  "plan": "quad",
-  "seed": 4374493
- },
  "pinfeather": {
   "colors": [
    "4a8ac0",
@@ -1051,11 +759,6 @@
   "seed": 3050050,
   "tail_len": 1.3,
   "wings": true
- },
- "polar_packrat": {
-  "element": "Ice",
-  "plan": "quad",
-  "seed": 12811028
  },
  "pollen_pixie": {
   "element": "Nature",
@@ -1116,49 +819,6 @@
   "scale": 1.0,
   "seed": 2426029
  },
- "rime_knight": {
-  "element": "Ice",
-  "plan": "biped",
-  "seed": 5900582
- },
- "rimefox": {
-  "colors": [
-   "e8f4ff",
-   "9fdcff",
-   "c0c8d0",
-   "bff0ff"
-  ],
-  "element": "Ice",
-  "extras": [
-   "nine_tails"
-  ],
-  "frame": "quad",
-  "head": "fox",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 14405079
- },
- "rimestag": {
-  "colors": [
-   "eaf2ff",
-   "a0d0f0",
-   "ffcf3a",
-   "c8f2ff"
-  ],
-  "element": "Ice",
-  "extras": [
-   "spikes"
-  ],
-  "frame": "quad",
-  "head": "stag",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 8635880
- },
  "rootling": {
   "element": "Nature",
   "plan": "quad",
@@ -1168,30 +828,6 @@
   "element": "Stone",
   "plan": "quad",
   "seed": 6090668
- },
- "runeling": {
-  "element": "Arcane",
-  "plan": "quad",
-  "seed": 215183
- },
- "runemite": {
-  "colors": [
-   "8a55f0",
-   "e05ad8",
-   "ffcf3a",
-   "c9a0ff"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "crown"
-  ],
-  "frame": "crawler",
-  "head": "bug",
-  "heads": 1,
-  "lower": "insect",
-  "plan": "hybrid",
-  "scale": 0.8,
-  "seed": 15390283
  },
  "sandpiper": {
   "colors": [
@@ -1218,18 +854,6 @@
   "plan": "bug",
   "seed": 664154
  },
- "scorch_wyrmling": {
-  "element": "Fire",
-  "horns": "none",
-  "legs": 4,
-  "neck": 0.35,
-  "plan": "dragon",
-  "seed": 9141143,
-  "small": true,
-  "spikes": 4,
-  "tail": "flame",
-  "wings": "none"
- },
  "seedbomb_squirrel": {
   "element": "Nature",
   "plan": "quad",
@@ -1253,18 +877,6 @@
   "plan": "hybrid",
   "scale": 0.8,
   "seed": 16746391
- },
- "shadow_mare": {
-  "element": "Arcane",
-  "flame_mane": true,
-  "pale": false,
-  "plan": "horse",
-  "seed": 15791310
- },
- "shapeshift_sage": {
-  "element": "Arcane",
-  "plan": "biped",
-  "seed": 10711729
  },
  "short_circuit": {
   "element": "Lightning",
@@ -1331,60 +943,6 @@
   "scale": 1.0,
   "seed": 8667637
  },
- "slagtooth": {
-  "element": "Fire",
-  "plan": "quad",
-  "seed": 318597
- },
- "slushpup": {
-  "colors": [
-   "8fc8f0",
-   "f4fbff",
-   "c0c8d0",
-   "c8f2ff"
-  ],
-  "element": "Ice",
-  "extras": [
-   "ram_horns",
-   "spikes"
-  ],
-  "frame": "quad",
-  "head": "dog",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 5776085
- },
- "snow_globe_golem": {
-  "element": "Ice",
-  "plan": "biped",
-  "seed": 13911220
- },
- "snowball_seal": {
-  "element": "Ice",
-  "plan": "fish",
-  "seed": 10309525
- },
- "snowdrift": {
-  "colors": [
-   "f4fbff",
-   "9fdcff",
-   "c0c8d0",
-   "c8f2ff"
-  ],
-  "element": "Ice",
-  "extras": [
-   "feather_wings"
-  ],
-  "frame": "wyrm",
-  "head": "owl",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 13789299
- },
  "snowmite": {
   "colors": [
    "bfe9ff",
@@ -1403,11 +961,6 @@
   "plan": "hybrid",
   "scale": 0.8,
   "seed": 15010214
- },
- "sootling": {
-  "element": "Fire",
-  "plan": "quad",
-  "seed": 14411270
  },
  "spark_kitten": {
   "element": "Lightning",
@@ -1432,22 +985,6 @@
   "plan": "hybrid",
   "scale": 1.0,
   "seed": 12968037
- },
- "sparkplug_imp": {
-  "element": "Fire",
-  "plan": "biped",
-  "seed": 3826276
- },
- "spellsword_fox": {
-  "element": "Arcane",
-  "plan": "quad",
-  "seed": 4384484
- },
- "sphinx": {
-  "beast": "sphinx",
-  "element": "Arcane",
-  "plan": "beast",
-  "seed": 4107089
  },
  "splashard": {
   "element": "Water",
@@ -1587,11 +1124,6 @@
   "element": "Neutral",
   "plan": "blob",
   "seed": 15528842
- },
- "sunfire_phoenix": {
-  "element": "Fire",
-  "plan": "phoenix",
-  "seed": 6707392
  },
  "support_pillar": {
   "element": "Neutral",
@@ -1812,11 +1344,6 @@
   "seed": 16081907,
   "stage": 3
  },
- "torchbearer": {
-  "element": "Fire",
-  "plan": "biped",
-  "seed": 15006712
- },
  "tornado_weasel": {
   "element": "Wind",
   "plan": "quad",
@@ -1849,14 +1376,6 @@
   "plan": "horse",
   "seed": 4645283,
   "stage": 2
- },
- "unicorn_foal": {
-  "element": "Arcane",
-  "foal": true,
-  "horn": true,
-  "plan": "horse",
-  "seed": 10881732,
-  "stage": 1
  },
  "venus_snapper": {
   "element": "Nature",
@@ -1898,46 +1417,6 @@
   "plan": "hybrid",
   "scale": 1.0,
   "seed": 4794375
- },
- "void_dragon": {
-  "element": "Arcane",
-  "heads": 2,
-  "horns": "many",
-  "legs": 4,
-  "neck": 0.7,
-  "plan": "dragon",
-  "seed": 709749,
-  "tail": "flame",
-  "wings": "double"
- },
- "void_weaver": {
-  "element": "Arcane",
-  "plan": "floater",
-  "seed": 8557136
- },
- "voidmoth": {
-  "colors": [
-   "4a2a6a",
-   "1a1030",
-   "ffcf3a",
-   "c46aff"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "bug_wings"
-  ],
-  "frame": "biped",
-  "head": "bug",
-  "heads": 1,
-  "lower": "bird",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 5702198
- },
- "volcano_tortle": {
-  "element": "Fire",
-  "plan": "shell",
-  "seed": 5122654
  },
  "volt_ferret": {
   "element": "Lightning",
