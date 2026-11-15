@@ -53,3 +53,4 @@ ashling
 blaze_matriarch
 brimstone_bulldog
 cerberus
+chimera
