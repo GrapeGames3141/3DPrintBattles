@@ -92,3 +92,4 @@ icicle_archer
 permafrost_bear
 polar_packrat
 rime_knight
+rimefox
