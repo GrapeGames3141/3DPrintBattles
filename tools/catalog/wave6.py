@@ -990,3 +990,18 @@ for c in CREATURES:
         c["look"] = lk
     if c["id"] in LOOK_TWEAKS and "look" in c:
         c["look"].update(LOOK_TWEAKS[c["id"]])
+
+
+# =========================================================== painted art
+# Creatures that now have painted sheets (tools/catalog/painted.txt) keep them:
+# no `look`, so the render scripts leave them alone.
+PAINTED = set()
+with open(_os.path.join(_os.path.dirname(__file__), "painted.txt")) as _f:
+    for _line in _f:
+        _line = _line.strip()
+        if _line and not _line.startswith("#"):
+            PAINTED.add(_line)
+for c in CREATURES:
+    if c["id"] in PAINTED:
+        c["art"] = "painted"
+        c.pop("look", None)

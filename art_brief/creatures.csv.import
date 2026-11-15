@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://oyw22fq5r4rj"
+
+[deps]
+
+files=["res://art_brief/creatures.name.translation", "res://art_brief/creatures.element.translation", "res://art_brief/creatures.rarity.translation", "res://art_brief/creatures.kind.translation", "res://art_brief/creatures.prompt.translation"]
+
+source_file="res://art_brief/creatures.csv"
+dest_files=["res://art_brief/creatures.name.translation", "res://art_brief/creatures.element.translation", "res://art_brief/creatures.rarity.translation", "res://art_brief/creatures.kind.translation", "res://art_brief/creatures.prompt.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

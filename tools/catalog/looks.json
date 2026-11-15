@@ -17,48 +17,6 @@
   "stage": 3,
   "wings": true
  },
- "ammit": {
-  "colors": [
-   "2a6a4a",
-   "d4a72c",
-   "c9a227",
-   "ffd36a"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "armor",
-   "mask",
-   "flame_mane"
-  ],
-  "frame": "quad",
-  "head": "serpent",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 5526847
- },
- "anubis_harpy": {
-  "colors": [
-   "17171c",
-   "2b2b30",
-   "d4a72c",
-   "ffd36a"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "feather_wings",
-   "gold_feathers",
-   "segment_tail"
-  ],
-  "frame": "biped",
-  "head": "jackal",
-  "heads": 1,
-  "lower": "bird",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 4627614
- },
  "arc_wasp": {
   "element": "Lightning",
   "gift": "stinger",
@@ -79,23 +37,6 @@
   "element": "Fire",
   "plan": "bird",
   "seed": 12249238
- },
- "asteroid_grubber": {
-  "colors": [
-   "6a5a4a",
-   "8a7a6a",
-   "c7ced6",
-   "ffb84a"
-  ],
-  "element": "Stone",
-  "extras": [],
-  "frame": "crawler",
-  "head": "rock",
-  "heads": 1,
-  "lower": "rock",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 4984479
  },
  "avalanche_ox": {
   "element": "Ice",
@@ -430,26 +371,6 @@
   "scale": 1.0,
   "seed": 7550665
  },
- "cockatrice": {
-  "colors": [
-   "5a8a3a",
-   "e8d8a0",
-   "b87333",
-   "c0ff6a"
-  ],
-  "element": "Nature",
-  "extras": [
-   "snake_tail",
-   "crown"
-  ],
-  "frame": "biped",
-  "head": "eagle",
-  "heads": 1,
-  "lower": "bird",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 9931212
- },
  "coral_sentinel": {
   "element": "Water",
   "plan": "biped",
@@ -580,27 +501,6 @@
   "element": "Fire",
   "plan": "quad",
   "seed": 15875528
- },
- "foo_cerberus": {
-  "colors": [
-   "3a3a40",
-   "c8ccd0",
-   "9aa0a8",
-   "5fe6ff"
-  ],
-  "element": "Stone",
-  "extras": [
-   "three_heads",
-   "armor",
-   "glow_claws"
-  ],
-  "frame": "quad",
-  "head": "lion",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 16208718
  },
  "fossil_raptor": {
   "element": "Stone",
@@ -952,25 +852,6 @@
   "plan": "serpent",
   "seed": 12588278
  },
- "lunar_crawler": {
-  "colors": [
-   "b9c2cc",
-   "e0e6ec",
-   "8a929c",
-   "c8f2ff"
-  ],
-  "element": "Ice",
-  "extras": [
-   "gears"
-  ],
-  "frame": "crawler",
-  "head": "dish",
-  "heads": 1,
-  "lower": "insect",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 15825667
- },
  "magma_mole": {
   "element": "Fire",
   "plan": "quad",
@@ -1016,25 +897,6 @@
   "element": "Stone",
   "plan": "biped",
   "seed": 230570
- },
- "minotaur_kitsune": {
-  "colors": [
-   "9a6a3a",
-   "c8884a",
-   "b87333",
-   "ff7a1a"
-  ],
-  "element": "Fire",
-  "extras": [
-   "nine_tails"
-  ],
-  "frame": "biped",
-  "head": "bull",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 14680891
  },
  "mirror_imp": {
   "element": "Arcane",
@@ -1130,26 +992,6 @@
   "fish": "narwhal",
   "plan": "fish",
   "seed": 6566700
- },
- "nebula_strider": {
-  "colors": [
-   "3a5ad8",
-   "8ab8ff",
-   "d4a72c",
-   "c8e0ff"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "bug_wings",
-   "crown"
-  ],
-  "frame": "biped",
-  "head": "human",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 128583
  },
  "nova_burster": {
   "colors": [
@@ -1370,52 +1212,10 @@
   "plan": "serpent",
   "seed": 1195870
  },
- "pyre_griffin": {
-  "colors": [
-   "b8282a",
-   "ffb347",
-   "c9a227",
-   "ff8a2a"
-  ],
-  "element": "Fire",
-  "extras": [
-   "feather_wings",
-   "armor",
-   "core",
-   "gold_feathers"
-  ],
-  "frame": "quad",
-  "head": "eagle",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 12153584
- },
  "quarry_crusher": {
   "element": "Stone",
   "plan": "quad",
   "seed": 14918426
- },
- "quasar_serpent": {
-  "colors": [
-   "d4a72c",
-   "2a4ad8",
-   "c9a227",
-   "fff27a"
-  ],
-  "element": "Lightning",
-  "extras": [
-   "spikes",
-   "coil_spine"
-  ],
-  "frame": "wyrm",
-  "head": "serpent",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 7793234
  },
  "quetzal_hydra": {
   "colors": [
@@ -1577,25 +1377,6 @@
   "gift": "carapace",
   "plan": "bug",
   "seed": 664154
- },
- "scarab_medusa": {
-  "colors": [
-   "5a2a7a",
-   "1f7a5a",
-   "c9a227",
-   "8be04a"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "gears"
-  ],
-  "frame": "taur",
-  "head": "medusa",
-  "heads": 1,
-  "lower": "scarab",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 12117182
  },
  "scorch_wyrmling": {
   "element": "Fire",
@@ -1799,25 +1580,6 @@
   "plan": "hybrid",
   "scale": 0.8,
   "seed": 15010214
- },
- "solar_flare_rover": {
-  "colors": [
-   "e8642a",
-   "2b2f3a",
-   "c7ced6",
-   "ffb347"
-  ],
-  "element": "Fire",
-  "extras": [
-   "solar"
-  ],
-  "frame": "rover",
-  "head": "robot",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 14982990
  },
  "sootling": {
   "element": "Fire",
@@ -2364,26 +2126,6 @@
   "tail": "flame",
   "wings": "double"
  },
- "void_stalker": {
-  "colors": [
-   "17171c",
-   "6a2ad8",
-   "4a4a50",
-   "b06aff"
-  ],
-  "element": "Arcane",
-  "extras": [
-   "coil_spine",
-   "spikes"
-  ],
-  "frame": "crawler",
-  "head": "bug",
-  "heads": 1,
-  "lower": "insect",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 10209201
- },
  "void_weaver": {
   "element": "Arcane",
   "plan": "floater",
@@ -2418,26 +2160,6 @@
   "plan": "quad",
   "seed": 14860946
  },
- "wendigo_sphinx": {
-  "colors": [
-   "f0ebe0",
-   "d8d0c0",
-   "d4a72c",
-   "fff4c0"
-  ],
-  "element": "Ice",
-  "extras": [
-   "mask",
-   "feather_wings"
-  ],
-  "frame": "quad",
-  "head": "stag",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 1.0,
-  "seed": 11889109
- },
  "whirligig": {
   "element": "Wind",
   "plan": "quad",
@@ -2453,26 +2175,6 @@
   "element": "Wind",
   "plan": "biped",
   "seed": 8417187
- },
- "wolpertinger": {
-  "colors": [
-   "b88a5a",
-   "f0e0c8",
-   "8a6a4a",
-   "ffe0a0"
-  ],
-  "element": "Nature",
-  "extras": [
-   "antlers",
-   "feather_wings"
-  ],
-  "frame": "quad",
-  "head": "fox",
-  "heads": 1,
-  "lower": "",
-  "plan": "hybrid",
-  "scale": 0.85,
-  "seed": 15718248
  },
  "wyvern_rider": {
   "element": "Wind",

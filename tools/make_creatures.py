@@ -45,7 +45,7 @@ def make(c):
     cid, spec = c["id"], c["art"]
     sheet_path = os.path.join(ROOT, f"{cid}_sprite_sheet.png")
     raw_path = os.path.join(ROOT, "raw", f"{cid}_raw_print.png")
-    if spec.startswith("rig:"):
+    if spec == "painted" or spec.startswith("rig:"):
         return  # rendered as a full posed sheet by tools/render_art6.gd
     if spec.startswith("src:"):
         cut = Image.open(os.path.join(SRC, spec[4:] + ".png")).convert("RGBA")
