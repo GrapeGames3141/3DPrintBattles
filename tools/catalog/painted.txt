@@ -211,3 +211,4 @@ kelp_strangler
 kelpie
 kraken
 leviathan
+mistwalker
