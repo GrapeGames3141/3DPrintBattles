@@ -239,3 +239,4 @@ jetstream_dragonfly
 kite_drake
 pegasus_courier
 pinfeather
+rotordrone
