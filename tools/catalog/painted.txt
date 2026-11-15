@@ -95,3 +95,4 @@ rime_knight
 rimefox
 rimestag
 slushpup
+nova_burster
