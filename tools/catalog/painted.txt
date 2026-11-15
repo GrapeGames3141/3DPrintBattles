@@ -76,3 +76,4 @@ sunfire_phoenix
 thermochameleon
 torchbearer
 trihydra
+volcano_tortle
