@@ -229,3 +229,4 @@ whirlpool_ray
 breeze_finch
 breezepup
 cloudhopper
+cyclone_serpent
