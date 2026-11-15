@@ -268,3 +268,4 @@ thornfang
 bouldron
 titanite
 hydra_head
+splashard
