@@ -42,3 +42,4 @@ moonlight_unicorn
 nullifier
 runeling
 runemite
+shapeshift_sage
