@@ -67,3 +67,4 @@ kilnpup
 lavalynx
 magma_mole
 magmabloom
+nozzlet
