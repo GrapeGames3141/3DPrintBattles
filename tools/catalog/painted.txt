@@ -234,3 +234,4 @@ feather_duster_fox
 gantrymantis
 griffin_knight
 gust_glider
+gustkit
