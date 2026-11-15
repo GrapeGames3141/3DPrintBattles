@@ -264,3 +264,4 @@ extrudrake
 infernozzle
 elderbloom
 swarm_larva
+thornfang
