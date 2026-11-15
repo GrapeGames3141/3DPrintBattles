@@ -728,3 +728,265 @@ _rework("direct_drive_gearbox", kind="upgrade", buff={"atk": 2, "hp": 3, "kw": [
 for c in CREATURES:
     if c["id"] == "pebble_golemite":
         c.update(ability(PER("element:Stone", E("armor", "Your Printer gains 2 Armor for each Stone print you have.", n=2))))
+
+
+# ============================================================ one of each
+# Only one card per picture and one per ability. Plain recolours of a painted
+# body are retired (the painted original stays); recolours that carry an
+# ability built for them get a body of their own instead (see LOOK_FOR below).
+# Players who owned a retired card are paid for it (Profile._sanitize).
+
+RETIRE_LOOKALIKES = """emberling sootsprite forgefinch wickfox cindermoth slagrhino blazehound furnacedrake phoenixfilament cinderwyrm
+dewdrop puddlepup tideotter pearlback kelpwyrm undertow tsunamiray leviathanvat jolthare fusefox amperfinch gigahertz arcflicker
+overcharger surgebeast stormcoil leafmite petalfawn canopyowl rootstag greenwarden worldroot frostbite icehare permafrost hailstorm
+shivercat chillwhale blizzardowl cryowyrm slatehound quarrymole geodefox titanminer mountainwyrm slipstream zephyrfinch galemoth
+squallmaw vortexray tempestforge wispling hexcat sigilowl hexstag sigilsmith cosmicray oracledrake voidwyrm""".split()
+
+RETIRED = {}
+
+
+def retire(ids):
+    for rows in (CREATURES, TOOLS, UPGRADES):
+        keep = []
+        for c in rows:
+            if c["id"] in ids:
+                RETIRED[c["id"]] = c["rarity"]
+            else:
+                keep.append(c)
+        rows[:] = keep
+
+
+retire(set(RETIRE_LOOKALIKES))
+
+
+# Cards whose ability was the same as another card's (only the numbers
+# differed). One of each stays.
+RETIRE_SAME_ABILITY = """bubblepip fine_tweezers needle_pliers plasma_cutter quartzdrake gravel_gremlin thermal_runaway linear_rails lead_screw_lance wing_kit masking_tape cubecrab pebblefin master_blueprint rubber_feet mega_spool torque_wrench bowden_whip cable_chain spool_holder servo_arms nozzle_guard glass_bed_shield scale_mail exo_frame cinderowl desiccant_packs dry_box resin_bath soldering_iron flush_cutters gigavolt_golem coilcobra heat_sink glassserpent enclosure_panels hexnuthog overdrive_chip spool_twin gcodegolem soldering_station spoolsnail spoolshell surge_seal thornfox laser_engraver""".split()
+retire(set(RETIRE_SAME_ABILITY))
+import json as _json, os as _os
+RETIRED.update(_json.load(open(_os.path.join(_os.path.dirname(__file__), "retired_base.json"))))
+
+# Duplicates the game itself leans on get an ability of their own instead.
+_rework("nautilark", [ON("turn_start", E("buff", "It gets Brim again.", atk=0, hp=0, kw=["brim"], to="self"))])
+_rework("benchyboss", [E("heal", "Repair your Printer by 3", n=3, to="own_printer"), E("summon", "and print a 1/1 Test Bot.", n=1, card="test_bot")])
+
+
+# =========================================================== new bodies
+# The recolours that kept their ability each get a hybrid body of their own
+# (tools/render_art8.gd): a frame, a head, a lower body, extras and a
+# two-tone filament.
+
+def H(frame, head, extras=(), colors=(), lower="", heads=1, scale=1.0):
+    return {"plan": "hybrid", "frame": frame, "head": head, "extras": list(extras), "colors": list(colors), "lower": lower,
+            "heads": heads, "scale": scale}
+
+
+REBODY = {
+    "kilnpup": H("quad", "fox", ["flame_mane", "gears"], ["c8402a", "ffb347", "b87333", "ff8a2a"]),
+    "lavalynx": H("quad", "lion", ["spikes", "armor", "core", "flame_mane"], ["2b2f3a", "e8492e", "d9773a", "ff8a2a"]),
+    "bubbleray": H("kraken", "owl", [], ["3a8ee8", "bfe9ff", "c7ced6", "6ad8ff"]),
+    "reefhopper": H("crawler", "bug", ["spikes"], ["ff7a6a", "ffd0c0", "e9a91c", "ffb0a0"], "insect"),
+    "mistwalker": H("biped", "owl", ["feather_wings"], ["9fc8e8", "f2f6f8", "c0c8d0", "d8f0ff"], "bird"),
+    "siphonshark": H("wyrm", "serpent", ["spikes"], ["3a6a9a", "dfe8f0", "b9c2cc", "6ad8ff"], heads=1),
+    "brineleech": H("kraken", "serpent", [], ["2a6a5a", "8fd8c0", "d9773a", "8be04a"]),
+    "zapkit": H("quad", "fox", ["spikes", "coil_spine"], ["ffcf2e", "2b2f3a", "b87333", "fff27a"]),
+    "staticcub": H("quad", "lion", ["spikes"], ["f0c030", "4a3a8a", "c7ced6", "9fe0ff"]),
+    "sparkbug": H("crawler", "bug", ["bug_wings"], ["ffd23a", "1b1b24", "c7ced6", "fff27a"], "insect"),
+    "capacitor": H("rover", "robot", ["coil_spine", "solar"], ["3a3f4a", "ffcf2e", "b87333", "5fe6ff"]),
+    "gridstag": H("quad", "stag", ["armor", "core", "gears"], ["2b2f3a", "5fe6ff", "c7ced6", "9fe0ff"]),
+    "sproutling": H("quad", "dog", ["antlers"], ["6abf4a", "a87a4a", "ff8fc0", "b6ff6a"], scale=0.85),
+    "barkback": H("quad", "bull", ["armor"], ["7a5a3a", "56b84a", "a87a4a", "b6ff6a"]),
+    "mushmunk": H("taur", "owl", [], ["d84a4a", "f4efe0", "8a5a32", "ffd0d0"], "lion", scale=0.9),
+    "seedpup": H("quad", "dog", [], ["8ac04a", "f4e0a0", "a87a4a", "d0ff8a"], scale=0.85),
+    "vinehare": H("quad", "fox", ["snake_tail"], ["56b84a", "2a6a3a", "b87333", "b6ff6a"]),
+    "bramblemaw": H("quad", "lion", ["spikes", "ram_horns"], ["4a6a2a", "8a2a4a", "8a6a4a", "c0ff6a"]),
+    "snowmite": H("crawler", "bug", ["spikes"], ["bfe9ff", "f4fbff", "8f8cf0", "c8f2ff"], "insect", scale=0.85),
+    "slushpup": H("quad", "dog", ["spikes"], ["8fc8f0", "f4fbff", "c0c8d0", "c8f2ff"]),
+    "rimefox": H("quad", "fox", ["nine_tails"], ["e8f4ff", "9fdcff", "c0c8d0", "bff0ff"]),
+    "snowdrift": H("biped", "owl", ["feather_wings"], ["f4fbff", "9fdcff", "c0c8d0", "c8f2ff"], "bird"),
+    "rimestag": H("quad", "stag", ["mask", "feather_wings"], ["eaf2ff", "a0d0f0", "ffcf3a", "c8f2ff"]),
+    "glaciermaw": H("wyrm", "serpent", ["spikes"], ["7ab8e8", "eaf6ff", "8f8cf0", "c8f2ff"], heads=2),
+    "pebblepup": H("quad", "dog", ["armor"], ["8d8a86", "c9c2b8", "e9a91c", "ffb84a"], scale=0.85),
+    "gravelhopper": H("crawler", "rock", [], ["7a7068", "a89888", "b87333", "ffb84a"], "rock"),
+    "cairncrab": H("crawler", "bug", ["armor"], ["9a8a7a", "d8c8b8", "e9a91c", "ffb84a"], "insect"),
+    "sandpiper": H("biped", "eagle", ["feather_wings"], ["d8c08a", "f4efe0", "b87333", "ffd36a"], "bird"),
+    "basaltbison": H("quad", "bull", ["armor", "gears"], ["3a3a3e", "8a6a4a", "d9773a", "ff8a2a"]),
+    "obsidianray": H("kraken", "skull", [], ["1a1a24", "4a2a6a", "c0c0d0", "c46aff"]),
+    "monolith": H("biped", "rock", ["core"], ["5a5a60", "8a8a90", "e9a91c", "5fe6ff"], "rock"),
+    "granitegriffin": H("quad", "eagle", ["feather_wings", "armor"], ["8d8a86", "f4efe0", "e9a91c", "ffb84a"]),
+    "breezepup": H("quad", "dog", ["feather_wings"], ["9fe8d0", "f2f6f8", "7fb8ff", "c6fff0"], scale=0.85),
+    "gustkit": H("quad", "fox", ["bug_wings"], ["7fe0c4", "f2f6f8", "c7ced6", "c6fff0"], scale=0.85),
+    "cloudhopper": H("biped", "owl", ["feather_wings"], ["eef4f8", "a8d8f0", "c7ced6", "ffffff"], "bird", scale=0.85),
+    "pinfeather": H("biped", "eagle", ["feather_wings", "gold_feathers"], ["4a8ac0", "f2f6f8", "e9a91c", "c6fff0"], "bird"),
+    "swiftwhip": H("wyrm", "serpent", ["bat_wings"], ["4ad0a0", "f2f6f8", "c7ced6", "c6fff0"], heads=1, scale=0.85),
+    "skyhawk": H("quad", "horse", ["feather_wings"], ["7fb8ff", "f2f6f8", "e9a91c", "c6fff0"]),
+    "tempestlynx": H("quad", "lion", ["bat_wings", "segment_tail"], ["5aa0a0", "2b2f3a", "c7ced6", "c6fff0"]),
+    "stormdrake": H("wyrm", "serpent", ["bat_wings", "spikes"], ["3a8a9a", "dfe8f0", "c7ced6", "9fe0ff"], heads=1),
+    "runemite": H("crawler", "bug", ["crown"], ["8a55f0", "e05ad8", "ffcf3a", "c9a0ff"], "insect", scale=0.8),
+    "glyphhare": H("quad", "fox", ["mask"], ["c070f0", "f0e0ff", "ffcf3a", "e0b0ff"]),
+    "voidmoth": H("biped", "bug", ["bug_wings"], ["4a2a6a", "1a1030", "ffcf3a", "c46aff"], "bird"),
+    "chronocat": H("quad", "lion", ["gears", "coil_spine", "core"], ["8a6af0", "2b2f3a", "e9a91c", "c9a0ff"]),
+}
+for c in CREATURES:
+    if c["id"] in REBODY:
+        c["art"] = "gen"
+        lk = dict(REBODY[c["id"]])
+        lk["seed"] = zlib.crc32(c["id"].encode()) & 0xffffff
+        lk["element"] = c["element"]
+        c["look"] = lk
+
+
+# ======================================================= HYBRIDS OF LEGEND
+# Several legends in one print, as a maker would build them.
+
+def HY(cid, name, element, cost, a, h, rarity, kw, fx, look):
+    K(cid, name, element, cost, a, h, rarity, kw, fx, plan="hybrid", art={k: v for k, v in look.items() if k != "plan"})
+
+
+HY("scarab_medusa", "Scarab Medusa", A, 6, 4, 6, "epic", [],
+   ability(E("sleep", "Its gaze turns the strongest enemy print to stone: it sleeps for 2 turns", n=2, to="strongest_enemy"),
+           E("buff", "and loses 2 Attack.", atk=-2, hp=0, to="strongest_enemy")),
+   H("taur", "medusa", ["gears"], ["5a2a7a", "1f7a5a", "c9a227", "8be04a"], "scarab"))
+HY("pyre_griffin", "Pyre Griffin", F, 6, 5, 5, "epic", ["hover"],
+   ability(ON("turn_start", E("heat", "Heat a random enemy print", n=2, to="random_enemy"), E("buff", "and it gets +1 Attack.", atk=1, hp=0, to="self"))),
+   H("quad", "eagle", ["feather_wings", "armor", "core", "gold_feathers"], ["b8282a", "ffb347", "c9a227", "ff8a2a"]))
+HY("scylla_kraken", "Scylla Kraken", W, 8, 6, 8, "legendary", [],
+   ability(ON("foe_attack", E("damage", "Bite the attacker for 2", n=2, to="trigger"), E("jam", "and Jam it.", to="trigger"))),
+   H("kraken", "serpent", [], ["2b2f4a", "8a4ad8", "8a8a9a", "c49aff"]))
+HY("anubis_harpy", "Anubis Harpy", A, 5, 4, 4, "rare", ["hover"],
+   ability(ON("foe_shatter", E("draw", "Draw a card.", n=1))),
+   H("biped", "jackal", ["feather_wings", "gold_feathers", "segment_tail"], ["17171c", "2b2b30", "d4a72c", "ffd36a"], "bird"))
+HY("chimera_raiju", "Chimera Raiju", L, 7, 6, 5, "epic", [],
+   ability(ON("attack", E("chain", "Lightning leaps from the print it hits: 2, then 1,", n=2), E("poison", "and its snake tail Poisons that print.", to="trigger"))),
+   H("quad", "ram", ["spikes", "coil_spine", "snake_tail", "armor"], ["4a4a50", "c8742a", "b87333", "ffe03a"]))
+HY("wendigo_sphinx", "Wendigo Sphinx", I, 6, 4, 7, "epic", [],
+   ability(ON("turn_start", IF({"foe_hand_more": True}, E("draw", "If your opponent has more cards than you, draw a card.", n=1)))),
+   H("quad", "stag", ["mask", "feather_wings"], ["f0ebe0", "d8d0c0", "d4a72c", "fff4c0"]))
+HY("pegasus_leviathan", "Pegasus Leviathan", W, 6, 5, 5, "epic", ["hover"],
+   ability(PER("element:Water", E("heal", "Repair your Printer by 2 for each Water print you have.", n=2, to="own_printer"))),
+   H("seahorse", "horse", ["feather_wings"], ["f0f2f4", "dfe6ec", "c7ced6", "2ab0d8"]))
+HY("foo_cerberus", "Foo Cerberus", S, 6, 3, 7, "epic", ["guard", "triple"],
+   ability(ON("printer_hit", E("refresh", "It can attack again.", to="self"))),
+   H("quad", "lion", ["three_heads", "armor", "glow_claws"], ["3a3a40", "c8ccd0", "9aa0a8", "5fe6ff"]))
+HY("quetzal_hydra", "Quetzal Hydra", D, 8, 6, 7, "legendary", ["hover"],
+   ability(ON("turn_start", E("buff", "Give your other prints Hover and +1 Attack.", atk=1, hp=0, kw=["hover"], to="other_friendly_prints"))),
+   H("wyrm", "serpent", ["feather_wings", "gold_feathers"], ["1f9a8a", "d4a72c", "c9a227", "ff6a4a"], heads=3))
+HY("minotaur_kitsune", "Minotaur Kitsune", F, 7, 6, 6, "epic", ["menace"],
+   ability(ON("attack", PER("element:Fire", E("buff", "It gets +1 Attack for each of your Fire prints.", atk=1, hp=0, to="self")))),
+   H("biped", "bull", ["nine_tails"], ["9a6a3a", "c8884a", "b87333", "ff7a1a"]))
+HY("nebula_strider", "Nebula Strider", A, 4, 3, 4, "rare", ["hover"],
+   ability(PER("element:Arcane", E("draw", "Draw a card for each Arcane print you have (up to 3).", n=1), cap=3)),
+   H("biped", "human", ["bug_wings", "crown"], ["3a5ad8", "8ab8ff", "d4a72c", "c8e0ff"]))
+HY("solar_flare_rover", "Solar-Flare Rover", F, 3, 2, 4, "uncommon", [],
+   ability(ON("turn_start", IF({"outnumbered": True}, E("spool", "If your opponent has more prints, add 3 Filament to your Spool.", n=3)))),
+   H("rover", "robot", ["solar"], ["e8642a", "2b2f3a", "c7ced6", "ffb347"]))
+HY("void_stalker", "Void Stalker", A, 4, 4, 3, "rare", ["cloak"],
+   ability(ON("kill", E("silence", "Silence a random enemy print.", to="random_enemy"))),
+   H("crawler", "bug", ["coil_spine", "spikes"], ["17171c", "6a2ad8", "4a4a50", "b06aff"], "insect"))
+HY("asteroid_grubber", "Asteroid Grubber", S, 3, 2, 4, "common", [],
+   ability(ON("turn_end", PER("element:Stone", E("armor", "Your Printer gains 1 Armor for each Stone print you have.", n=1)))),
+   H("crawler", "rock", [], ["6a5a4a", "8a7a6a", "c7ced6", "ffb84a"], "rock"))
+HY("lunar_crawler", "Lunar Crawler", I, 3, 2, 3, "uncommon", [],
+   ability(ON("turn_start", E("jam", "Jam the strongest enemy print.", to="strongest_enemy"))),
+   H("crawler", "dish", ["gears"], ["b9c2cc", "e0e6ec", "8a929c", "c8f2ff"], "insect"))
+HY("nova_burster", "Nova Burster", F, 5, 4, 4, "rare", [],
+   ability(SH(E("damage", "Burst: deal 3 damage to every print.", n=3, to="all_prints"))),
+   H("biped", "rock", ["spikes", "core"], ["ffb020", "ff6a1a", "c9a227", "fff27a"], "rock"))
+HY("starlight_drifter", "Starlight Drifter", D, 5, 4, 4, "rare", ["hover"],
+   ability(ON("turn_end", E("buff", "Give your weakest print +1/+1.", atk=1, hp=1, to="lowest_ally"))),
+   H("wyrm", "serpent", ["solar"], ["3a6ad8", "c8d8ff", "c7ced6", "e8f0ff"], heads=1))
+HY("meteorite_golem", "Meteorite Golem", S, 7, 6, 8, "epic", [],
+   ability(E("fight", "It crashes into the strongest enemy print: they hit each other.", to="strongest_enemy")),
+   H("biped", "rock", ["core"], ["2a2a2e", "6a4a3a", "b87333", "ff8a2a"], "rock"))
+HY("quasar_serpent", "Quasar Serpent", L, 6, 5, 5, "epic", [],
+   ability(ON("attack", E("slow", "Your opponent gets 1 less Filament next turn.", n=1))),
+   H("wyrm", "serpent", ["spikes", "coil_spine"], ["d4a72c", "2a4ad8", "c9a227", "fff27a"], heads=1))
+HY("orbit_flyer", "Orbit Flyer", D, 3, 3, 2, "uncommon", ["hover"],
+   ability(ON("foe_print", E("damage", "Deal 1 damage to the enemy Printer.", n=1, to="enemy_printer"))),
+   H("biped", "bug", ["bug_wings", "segment_tail"], ["17171c", "ffcf2e", "c7ced6", "fff27a"], "bird"))
+HY("cockatrice", "Cockatrice", N, 4, 3, 3, "rare", [],
+   ability(ON("attack", E("silence", "Silence the print it hits.", to="trigger"))),
+   H("biped", "eagle", ["snake_tail", "feather_wings"], ["5a8a3a", "e8d8a0", "b87333", "c0ff6a"], "bird"))
+HY("wolpertinger", "Wolpertinger", N, 2, 2, 2, "uncommon", [],
+   ability(ON("turn_end", IF({"allies_at_least": 3}, E("draw", "If you have 3 or more prints, draw a card.", n=1)))),
+   H("quad", "fox", ["antlers", "feather_wings"], ["b88a5a", "f0e0c8", "8a6a4a", "ffe0a0"], scale=0.85))
+HY("ammit", "Ammit the Devourer", A, 5, 4, 5, "rare", [],
+   ability(ON("foe_shatter", E("heal", "Repair your Printer by 2.", n=2, to="own_printer"))),
+   H("quad", "serpent", ["armor", "mask", "flame_mane"], ["2a6a4a", "d4a72c", "c9a227", "ffd36a"]))
+HY("tengu", "Tengu", D, 4, 3, 4, "rare", ["quick"],
+   ability(E("buff", "Give your other prints Quick Draw.", atk=0, hp=0, kw=["quick"], to="other_friendly_prints")),
+   H("biped", "eagle", ["feather_wings", "mask"], ["1a1a20", "c82a2a", "d4a72c", "ff6a4a"], "bird"))
+
+
+# ===================================================== every body its own
+# The picture check (identical silhouettes) found look-alikes among the plans
+# that had no variation; each of these now differs in build.
+LOOK_TWEAKS = {
+    "ember_dragon": {"legs": 4, "neck": 0.55, "horns": "curl", "wings": "bat", "tail": "flame", "spikes": 5},
+    "tidal_dragon": {"legs": 2, "neck": 0.8, "horns": "crest", "wings": "feather", "tail": "fan", "spikes": 0, "bulk": 0.9},
+    "storm_dragon": {"legs": 4, "neck": 0.45, "horns": "straight", "wings": "double", "tail": "spikes", "spikes": 3, "bulk": 0.95},
+    "verdant_dragon": {"legs": 4, "neck": 0.6, "horns": "antler", "wings": "feather", "tail": "fan", "spikes": 2, "bulk": 1.15},
+    "glacier_dragon": {"legs": 4, "neck": 0.7, "horns": "many", "wings": "crystal", "tail": "spade", "spikes": 6, "bulk": 1.1},
+    "obsidian_dragon": {"legs": 4, "neck": 0.35, "horns": "curl", "wings": "bat", "tail": "club", "spikes": 7, "bulk": 1.3, "span": 0.8},
+    "tempest_dragon": {"legs": 2, "neck": 0.6, "horns": "straight", "wings": "bat", "tail": "spade", "spikes": 0, "bulk": 0.8, "span": 1.3},
+    "void_dragon": {"legs": 4, "neck": 0.7, "horns": "many", "wings": "double", "tail": "flame", "heads": 2},
+    "blaze_matriarch": {"legs": 2, "neck": 0.5, "horns": "crest", "wings": "feather", "tail": "flame", "bulk": 1.1},
+    "frost_wyvern": {"legs": 2, "neck": 0.55, "horns": "straight", "wings": "bat", "tail": "spade", "spikes": 4},
+    "elder_wyrm": {"legs": 4, "neck": 0.8, "horns": "many", "wings": "double", "tail": "club", "bulk": 1.3, "heads": 3},
+    "fairy_dragon": {"legs": 4, "neck": 0.4, "horns": "antler", "wings": "bug", "tail": "fan", "spikes": 0},
+    "wyvern_rider": {"legs": 2, "neck": 0.5, "horns": "curl", "wings": "bat", "tail": "spade", "spikes": 2},
+    "kite_drake": {"legs": 2, "neck": 0.45, "horns": "none", "wings": "feather", "tail": "fan", "spikes": 0, "bulk": 0.85},
+    "scorch_wyrmling": {"legs": 4, "neck": 0.35, "horns": "none", "wings": "none", "tail": "flame", "spikes": 4},
+    "dragon_hatchling": {"legs": 4, "neck": 0.3, "horns": "curl", "wings": "bat", "tail": "spade", "spikes": 1, "span": 0.7},
+    "moonlight_unicorn": {"crescent": True, "tail_len": 1.4},
+    "thunder_kirin": {"horn": False, "antlers": True, "flame_mane": True},
+    "rainbow_unicorn": {"wings": False, "tail_len": 1.6, "flame_mane": True},
+    "shadow_mare": {"flame_mane": True},
+    "kelpie": {"fish_tail": True},
+
+    "plasma_pegasus": {"flame_mane": True, "tail_len": 1.3},
+    "swarm_scout": {"gift": "scout"}, "swarm_warden": {"gift": "warden"}, "swarm_stinger": {"gift": "stinger"},
+    "swarm_carapace": {"gift": "carapace"}, "swarm_glider": {"gift": "glider"}, "swarm_leech": {"gift": "leech"},
+    "swarm_twinwing": {"gift": "twinwing"}, "arc_wasp": {"gift": "stinger"}, "ember_moth": {"gift": "glider"},
+    "sandstone_scarab": {"gift": "carapace"}, "pegasus_courier": {"foal": True, "tail_len": 0.6}, "swarm_larva": {"gift": "larva"}, "swarm_queen": {"gift": "queen"},
+    "failed_print": {"shape": "tangle"}, "support_pillar": {"shape": "pillar"}, "mushroom_choir": {"plan": "blob", "shape": "mushroom"},
+    "calibration_cube": {"shape": "cube"}, "dripling": {"shape": "drop"}, "pebbit": {"shape": "pebble"},
+    "pearl_oyster": {"shape": "clam"}, "oracle_orb": {"shape": "orb"},
+    "narwhal_lancer": {"fish": "narwhal"}, "whirlpool_ray": {"fish": "ray"}, "splashard": {"fish": "sail"},
+"ashling": {"plan": "bird"}, "pollen_pixie": {"plan": "bird"},
+}
+REBODY2 = {
+    "cloudhopper": H("quad", "owl", ["antlers"], ["eef4f8", "a8d8f0", "c7ced6", "ffffff"]),
+    "mistwalker": H("taur", "human", ["feather_wings"], ["9fc8e8", "f2f6f8", "c0c8d0", "d8f0ff"], "horse"),
+    "snowdrift": H("wyrm", "owl", ["feather_wings"], ["f4fbff", "9fdcff", "c0c8d0", "c8f2ff"], heads=1),
+    "sandpiper": H("biped", "eagle", ["segment_tail"], ["d8c08a", "f4efe0", "b87333", "ffd36a"], "bird", scale=0.85),
+    "cockatrice": H("biped", "eagle", ["snake_tail", "crown"], ["5a8a3a", "e8d8a0", "b87333", "c0ff6a"], "bird"),
+    "seedpup": H("biped", "dog", ["antlers"], ["8ac04a", "f4e0a0", "a87a4a", "d0ff8a"], scale=0.8),
+    "gustkit": H("quad", "fox", ["bat_wings"], ["7fe0c4", "f2f6f8", "c7ced6", "c6fff0"], scale=0.85),
+    "slushpup": H("quad", "dog", ["ram_horns", "spikes"], ["8fc8f0", "f4fbff", "c0c8d0", "c8f2ff"]),
+    "glyphhare": H("taur", "fox", ["mask"], ["c070f0", "f0e0ff", "ffcf3a", "e0b0ff"], "lion"),
+    "barkback": H("quad", "bull", ["antlers"], ["7a5a3a", "56b84a", "a87a4a", "b6ff6a"]),
+    "brineleech": H("crawler", "serpent", [], ["2a6a5a", "8fd8c0", "d9773a", "8be04a"], "insect"),
+    "gravelhopper": H("quad", "rock", ["spikes"], ["7a7068", "a89888", "b87333", "ffb84a"]),
+    "cairncrab": H("crawler", "bug", ["armor", "spikes"], ["9a8a7a", "d8c8b8", "e9a91c", "ffb84a"], "rock"),
+    "rimestag": H("quad", "stag", ["spikes"], ["eaf2ff", "a0d0f0", "ffcf3a", "c8f2ff"]),
+    "storm_roc": H("biped", "eagle", ["bat_wings", "coil_spine"], ["5a7ab0", "f2f6f8", "e9a91c", "c6fff0"], "bird", scale=1.15),
+    "surge_owl": H("biped", "owl", ["spikes", "coil_spine"], ["ffcf2e", "2b2f3a", "c7ced6", "fff27a"], "bird"),
+    "static_hedgehog": H("crawler", "fox", ["spikes"], ["ffcf2e", "2b2f3a", "c7ced6", "fff27a"], "rock", scale=0.8),
+    "tidecaller_crab": H("crawler", "bug", ["armor"], ["e8643a", "ffd0b0", "c7ced6", "ffb0a0"], "insect"),
+    "boulder_beetle": H("quad", "bug", ["armor"], ["8d8a86", "c9c2b8", "e9a91c", "ffb84a"]),
+    "swiftwhip": H("wyrm", "fox", ["bat_wings"], ["4ad0a0", "f2f6f8", "c7ced6", "c6fff0"], heads=1, scale=0.85),
+    "snowmite": H("biped", "bug", ["spikes"], ["bfe9ff", "f4fbff", "8f8cf0", "c8f2ff"], "bird", scale=0.8),
+    "granitegriffin": H("biped", "eagle", ["armor", "feather_wings"], ["8d8a86", "f4efe0", "e9a91c", "ffb84a"], "rock"),
+    "pinfeather": H("wyrm", "eagle", ["feather_wings"], ["4a8ac0", "f2f6f8", "e9a91c", "c6fff0"], heads=1, scale=0.85),
+    "siphon_squid": H("seahorse", "serpent", [], ["d86a8a", "f8d0e0", "c7ced6", "ff9ac0"]),
+}
+for c in CREATURES:
+    if c["id"] in REBODY2:
+        lk = dict(REBODY2[c["id"]])
+        lk["seed"] = zlib.crc32(c["id"].encode()) & 0xffffff
+        lk["element"] = c["element"]
+        c["art"] = "gen"
+        c["look"] = lk
+    if c["id"] in LOOK_TWEAKS and "look" in c:
+        c["look"].update(LOOK_TWEAKS[c["id"]])

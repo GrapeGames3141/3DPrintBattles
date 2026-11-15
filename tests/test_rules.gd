@@ -109,7 +109,7 @@ func _catalog() -> void:
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 519, "519 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 438, "438 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
 		if c["type"] == "creature":
@@ -119,7 +119,7 @@ func _catalog() -> void:
 	for c in GameData.collectible():
 		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
 		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
-	ok(by_type == {"creature": 350, "tool": 99, "upgrade": 70}, "350 prints, 99 tools, 70 pieces of equipment (%s)" % str(by_type))
+	ok(by_type == {"creature": 299, "tool": 85, "upgrade": 54}, "299 prints, 85 tools, 54 pieces of equipment (%s)" % str(by_type))
 	# Every kind of card, and every element of print, comes in every rarity.
 	for kind in ["creature", "tool", "upgrade"]:
 		for r in GameData.RARITY_ORDER:
@@ -476,28 +476,70 @@ func _evolution() -> void:
 	ok(int(st["players"][1]["hp"]) == hp1 - 2, "Infernozzle breathes on the enemy Printer each turn")
 
 
+## What an ability does, with the numbers taken out.
+func _ability_sig(c: Dictionary) -> String:
+	var strip := func(e, me: Callable) -> String:
+		if e is Dictionary:
+			var keys: Array = e.keys()
+			keys.sort()
+			var parts: Array = []
+			for k in keys:
+				if k in ["n", "cap", "max_cost"]:
+					continue
+				var v = e[k]
+				if k in ["atk", "hp"]:
+					v = "+" if int(v) > 0 else ("-" if int(v) < 0 else "0")
+				parts.append("%s=%s" % [k, me.call(v, me)])
+			return "{" + ",".join(parts) + "}"
+		if e is Array:
+			var a: Array = []
+			for x in e:
+				a.append(me.call(x, me))
+			return "[" + ",".join(a) + "]"
+		return str(e)
+	var kw: Array = (c.get("kw", []) as Array).duplicate()
+	kw.sort()
+	if c["type"] == "upgrade":
+		var b: Dictionary = c["buff"]
+		return "U|%s|%s|%s|%s" % [strip.call({"atk": b["atk"], "hp": b["hp"]}, strip), ",".join(b.get("kw", [])), strip.call(c.get("grant", []), strip), strip.call(c.get("effects", []), strip)]
+	if c["type"] == "tool":
+		return "T|" + strip.call(c.get("effects", []), strip) + "|" + str(c.get("target", ""))
+	return "C|%s|%s|%s|%s|%s|%s" % [",".join(kw), strip.call(c.get("on_print", []), strip), strip.call(c.get("trig", []), strip), strip.call(c.get("shatter", []), strip), strip.call(c.get("evolve", {}), strip), str(c.get("beats", ""))]
+
+
 func _wave6() -> void:
 	print("wave 6 moves")
 	var uid := func(u: Dictionary) -> String: return "u%d" % int(u["uid"])
-	# Every card in the game has rules text of its own.
+	# Every card in the game does something of its own: no two share an
+	# ability, even with different numbers (the Forbidden Printer's parts are
+	# meant to match).
 	var seen := {}
 	var dupes: Array = []
 	for c in GameData.collectible():
-		var t := str(c.get("text", "")) + "|" + ",".join(c.get("kw", []))
-		if str(c.get("text", "")) != "" and seen.has(t) and not str(c["id"]).begins_with("fp_"):
+		if str(c["id"]).begins_with("fp_"):
+			continue
+		var t := _ability_sig(c)
+		if seen.has(t):
 			dupes.append("%s = %s" % [c["id"], seen[t]])
 		seen[t] = c["id"]
-	ok(dupes.is_empty(), "no two cards share the same rules text (%s)" % ", ".join(dupes))
+	ok(dupes.is_empty(), "no two cards share an ability (%s)" % ", ".join(dupes))
+	ok(GameData.RETIRED.size() > 0 and not GameData.has_card(str(GameData.RETIRED.keys()[0])), "retired cards are gone from the game")
+	var owner := fresh_profile()
+	owner.data["cards"]["emberling"] = 2
+	owner.data["cards"]["cinderpaw"] = 1
+	var before_coins: int = owner.coins()
+	owner._sanitize()
+	ok(not owner.data["cards"].has("emberling") and owner.coins() == before_coins + 2 * int(GameData.RETIRED_COINS[GameData.RETIRED["emberling"]]), "owners of a retired card are paid for every copy")
 	# Missiles and chain lightning.
 	var st := game([], [])
-	var a := put(st, 1, "stoneback")
+	var a := put(st, 1, "mossmunk")
 	var hp1: int = int(st["players"][1]["hp"]) + int(a["hp"])
 	var h := give(st, 0, "cinder_juggler")
 	act(st, 0, {"t": "play", "hand": h})
 	ok(int(st["players"][1]["hp"]) + int(a["hp"]) == hp1 - 3, "Cinder Juggler throws 3 embers of 1 damage")
 	st = game([], [])
 	var e1 := put(st, 1, "stoneback")
-	var e2 := put(st, 1, "pearlback")
+	var e2 := put(st, 1, "tidewhale")
 	h = give(st, 0, "lightning_rod")
 	act(st, 0, {"t": "play", "hand": h, "target": uid.call(e1)})
 	ok(int(e1["hp"]) == 6 - 3 and int(e2["hp"]) == int(e2["max_hp"]) - 2, "Lightning Rod hits for 3, then jumps for 2")
@@ -529,7 +571,7 @@ func _wave6() -> void:
 	# Silence, swap, set Attack, double, polymorph.
 	st = game([], [])
 	st["players"][0]["flow"] = 99
-	var t1 := put(st, 1, "slagrhino")
+	var t1 := put(st, 1, "ironmaw")
 	h = give(st, 0, "mute_button")
 	act(st, 0, {"t": "play", "hand": h, "target": uid.call(t1)})
 	ok((t1["kw"] as Array).is_empty() and bool(t1["silenced"]), "Mute Button silences a print")
@@ -1329,9 +1371,9 @@ func _mods2() -> void:
 	ok(GameData.clean_mods("ember_forge", {"twin_gantry": 1, "guard_frame": 1, "frame": 1, "rush_springs": 1, "quick_release": 1}).size() == 5, "...and works once it has them")
 	# Prints come out stronger for the keyword each mod rewards.
 	for case in [
-			{"mod": {"frame": 1, "guard_frame": 1}, "base": {"frame": 1}, "card": "slagrhino", "atk": 0, "hp": 1, "name": "Guard Frame: +1 Health on Guard prints"},
+			{"mod": {"frame": 1, "guard_frame": 1}, "base": {"frame": 1}, "card": "ironmaw", "atk": 0, "hp": 1, "name": "Guard Frame: +1 Health on Guard prints"},
 			{"mod": {"quick_release": 1, "rush_springs": 1}, "base": {"quick_release": 1}, "card": "kilnpup", "atk": 1, "hp": 0, "name": "Spring-Loaded Bed: +1 Attack on Rush prints"},
-			{"mod": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1, "twin_gantry": 1}, "base": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1}, "card": "arcflicker", "atk": 1, "hp": 1, "name": "Twin Gantry: +1/+1 on Twin Nozzle prints"}]:
+			{"mod": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1, "twin_gantry": 1}, "base": {"frame": 1, "guard_frame": 1, "quick_release": 1, "rush_springs": 1}, "card": "trihydra", "atk": 1, "hp": 1, "name": "Twin Gantry: +1/+1 on Twin Nozzle prints"}]:
 		var a := game([], [], "ember_forge", "tide_press", case["base"])
 		var b := game([], [], "ember_forge", "tide_press", case["mod"])
 		# A second print, so Quick-Release's free Rush on the first does not muddy the check.
@@ -1355,7 +1397,7 @@ func _mods2() -> void:
 	# Tool Beacon: using a tool repairs the Printer.
 	var tb := game([], [], "ember_forge", "tide_press", {"tool_beacon": 1})
 	tb["players"][0]["hp"] = 10
-	act(tb, 0, {"t": "play", "hand": give(tb, 0, "nozzle_brush")})
+	act(tb, 0, {"t": "play", "hand": give(tb, 0, "calipers")})
 	ok(int(tb["players"][0]["hp"]) == 11, "Tool Beacon repairs 1 when you use a tool")
 	var tn := game([], [], "ember_forge", "tide_press")
 	tn["players"][0]["hp"] = 10

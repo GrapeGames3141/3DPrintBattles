@@ -1,5 +1,5 @@
 """New tools (one-shot effects) and equipment (permanent buffs on a print)."""
-from .fx import armor, bounce, buff, dmg, draw, heal, heat, jam, speed, spool, summon, tool_effect
+from .fx import _e, armor, bounce, buff, dmg, draw, heal, heat, jam, speed, spool, summon, tool_effect
 
 TOOLS = []
 UPGRADES = []
@@ -22,7 +22,7 @@ def U(uid, name, cost, rarity, a, h, kw=()):
 T("zip_ties", "Zip Ties", 1, "common", buff(1, 1))
 T("sandpaper", "Sandpaper", 1, "common", heal(2))
 T("masking_tape", "Masking Tape", 1, "common", armor(2))
-T("nozzle_brush", "Nozzle Brush", 1, "common", draw(1))
+T("nozzle_brush", "Nozzle Brush", 1, "common", _e("cleanse", "Cleanse a friendly print", "friendly_print", to="target"), _e("draw", "and draw a card.", "", n=1))
 T("needle_pliers", "Needle Pliers", 2, "common", dmg(3, "print"))
 T("iso_wipes", "Isopropyl Wipes", 2, "common", heal(4, "printer"))
 

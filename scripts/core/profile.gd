@@ -201,6 +201,10 @@ func _sanitize() -> void:
 		var def := GameData.card(str(id))
 		if not def.is_empty() and not def.get("token", false) and int(data["cards"][id]) > 0:
 			cards[str(id)] = int(data["cards"][id])
+		elif def.is_empty() and GameData.RETIRED.has(str(id)):
+			# A card that was taken out of the game: its owner is paid for it.
+			var each: int = int(GameData.RETIRED_COINS.get(GameData.RETIRED[str(id)], 20))
+			data["coins"] = int(data["coins"]) + each * maxi(0, int(data["cards"][id]))
 	data["cards"] = cards
 	data["xp"] = maxi(0, int(data["xp"]))
 	var builds: Dictionary = {}
