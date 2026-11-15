@@ -274,3 +274,4 @@ spark_kitten
 zapling
 rootling
 seedbomb_squirrel
+swarm_stinger
