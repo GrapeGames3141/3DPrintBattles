@@ -121,3 +121,4 @@ static_hedgehog
 staticcub
 storm_dragon
 surge_owl
+swarm_twinwing
