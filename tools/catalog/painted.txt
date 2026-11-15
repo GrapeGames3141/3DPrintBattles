@@ -118,3 +118,4 @@ raijin_reactor
 short_circuit
 sparkbug
 static_hedgehog
+staticcub
