@@ -147,3 +147,4 @@ pollen_pixie
 spaghettimess
 spoolcolossus
 sproutling
+sproutpaw
