@@ -204,3 +204,4 @@ benchyboss
 brine_bard
 brineleech
 bubbleray
+coral_sentinel
