@@ -247,3 +247,4 @@ stormdrake
 swarm_glider
 swarm_scout
 swiftwhip
+sylph_queen
