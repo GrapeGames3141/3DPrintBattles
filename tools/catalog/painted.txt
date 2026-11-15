@@ -72,3 +72,4 @@ scorch_wyrmling
 slagtooth
 sootling
 sparkplug_imp
+sunfire_phoenix
