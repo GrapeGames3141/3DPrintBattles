@@ -111,3 +111,4 @@ blackout_bat
 capacitor
 capacitor_crab
 gridstag
+multimeterbeetle
