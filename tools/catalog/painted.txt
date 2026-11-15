@@ -241,3 +241,4 @@ pegasus_courier
 pinfeather
 rotordrone
 sky_pirate_parrot
+skyhawk
