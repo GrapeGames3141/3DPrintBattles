@@ -176,3 +176,4 @@ boulder_beetle
 cairncrab
 crag_ogre
 crystalscorp
+cutie
