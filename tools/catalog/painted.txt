@@ -113,3 +113,4 @@ capacitor_crab
 gridstag
 multimeterbeetle
 overload_eel
+plasma_pegasus
