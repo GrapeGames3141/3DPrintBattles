@@ -259,3 +259,4 @@ teravox
 unicorn
 voxelion
 dragon_hatchling
+elder_wyrm
