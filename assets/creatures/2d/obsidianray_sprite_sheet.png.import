@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/obsidianray_sprite_sheet.png-e799bd654b4c1e77
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

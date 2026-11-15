@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/volt_rig.png-a3cb1ec2fc0e8df854b2df4c4ad899f1
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

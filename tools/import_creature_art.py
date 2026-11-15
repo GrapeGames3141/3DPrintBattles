@@ -81,16 +81,16 @@ def build(cid):
     sheet.save(os.path.join(OUT, cid + "_sprite_sheet.png"))
     # The raw print: the standing pose in plain light filament with layer lines.
     first = frames[0].crop(boxes[0])
-    k2 = min(1150 / first.width, 1150 / first.height)
+    k2 = min(470 / first.width, 470 / first.height)
     first = first.resize((round(first.width * k2), round(first.height * k2)), Image.LANCZOS)
     arr = np.array(first).astype(float)
     lum = (arr[:, :, :3] @ np.array([0.299, 0.587, 0.114])) / 255.0
     lines = 0.9 + 0.1 * (np.arange(arr.shape[0]) % 6 < 3)[:, None]
     grey = np.clip((0.35 + lum * 0.7) * lines * 255.0, 0, 255)
     raw = np.dstack([grey * 0.97, grey * 0.98, grey * 1.0, arr[:, :, 3]]).astype(np.uint8)
-    canvas = Image.new("RGBA", (1254, 1254), (0, 0, 0, 0))
+    canvas = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
     raw_img = Image.fromarray(raw)
-    canvas.alpha_composite(raw_img, ((1254 - raw_img.width) // 2, 1220 - raw_img.height))
+    canvas.alpha_composite(raw_img, ((512 - raw_img.width) // 2, 498 - raw_img.height))
     canvas.save(os.path.join(OUT, "raw", cid + "_raw_print.png"))
     print("imported", cid)
     return True

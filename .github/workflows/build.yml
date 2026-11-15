@@ -1,8 +1,20 @@
 name: Build game
 
 on:
+  # Pushes that only touch the art brief, docs or tools change nothing in the
+  # game, so they do not start a build (each full build costs runner minutes).
   push:
+    paths-ignore:
+      - "art_brief/**"
+      - "docs/**"
+      - "tools/**"
+      - "**/*.md"
   pull_request:
+    paths-ignore:
+      - "art_brief/**"
+      - "docs/**"
+      - "tools/**"
+      - "**/*.md"
   workflow_dispatch:
 
 permissions:

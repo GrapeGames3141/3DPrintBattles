@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/color_change.png-58af597425411be79af0ff40511c
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

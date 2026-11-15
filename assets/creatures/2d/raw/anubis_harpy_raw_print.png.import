@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/anubis_harpy_raw_print.png-2995998349392ff84e
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
