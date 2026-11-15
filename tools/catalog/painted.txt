@@ -122,3 +122,4 @@ staticcub
 storm_dragon
 surge_owl
 swarm_twinwing
+tesla_tortoise
