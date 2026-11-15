@@ -267,3 +267,4 @@ swarm_larva
 thornfang
 bouldron
 titanite
+hydra_head
