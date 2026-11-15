@@ -210,3 +210,4 @@ dripling
 kelp_strangler
 kelpie
 kraken
+leviathan
