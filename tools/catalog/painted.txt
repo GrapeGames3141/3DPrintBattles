@@ -157,3 +157,4 @@ verdant_dragon
 vine_weaver
 vinehare
 benchy_unsinkable
+calibration_cube
