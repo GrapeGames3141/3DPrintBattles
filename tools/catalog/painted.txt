@@ -99,3 +99,4 @@ nova_burster
 oracle_orb
 shadow_mare
 chimera_raiju
+ember_moth
