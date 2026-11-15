@@ -186,3 +186,4 @@ marble_sculptor
 minotaur
 monolith
 mountain_king
+obsidian_dragon
