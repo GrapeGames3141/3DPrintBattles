@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes docs/art_prompts.md: one image-generator prompt per creature that
+"""Writes art_brief/prompts.md and art_brief/creatures.csv: one image-generator prompt per creature that
 does not yet have painted art, worded to match the starters' look (Cinderpaw,
 Aquafin, Voltwig). Generate each, save it as art_inbox/<id>.png, then run
 tools/import_creature_art.py.
@@ -61,25 +61,63 @@ def describe(c):
     return " ".join(bits)
 
 
+# Hand-written concepts for the creatures drawn from the reference pictures.
+CONCEPTS = {
+    "scarab_medusa": "a Medusa centaur: a woman's upper body with a crown of snakes for hair on the body of a giant scarab beetle with six jointed legs, carved shell, brass gears at the joints",
+    "pyre_griffin": "a phoenix griffin: an eagle head with a flame crest, fiery feathered wings, a lion body in red armour plates with a glowing fire core in its chest, a flaming tail",
+    "scylla_kraken": "a Scylla kraken: a spiky armoured torso with a ring of snarling wolf heads at its waist standing on curling segmented tentacles",
+    "anubis_harpy": "an Anubis harpy: a jackal-headed warrior with golden feathered wings, eagle talon feet and a long segmented black-and-gold tail",
+    "chimera_raiju": "a chimera raiju: a copper-armoured lion with ram horns, a lightning-bolt mane, a coiled spring along its spine and a snake-headed tail",
+    "wendigo_sphinx": "a sphinx wendigo stag: a pale lion with huge branching antlers, feathered wings and a golden lion-face mask",
+    "pegasus_leviathan": "a pegasus leviathan: a white armoured winged horse whose hindquarters become a translucent blue fish tail with fins",
+    "foo_cerberus": "a cerberus foo dog: a three-headed guardian lion-dog with curly foo-dog manes, carbon-black armour and glowing cyan claws",
+    "quetzal_hydra": "a hydra quetzalcoatl: three serpent heads on ribbed necks with feather crests, big Aztec feathered wings, teal and gold",
+    "minotaur_kitsune": "a minotaur kitsune: a muscular bronze bull-headed warrior with nine glowing orange fox tails",
+    "nebula_strider": "a nebula strider: a slim star knight with a spiky star crown and translucent space-sail wings",
+    "solar_flare_rover": "a solar-flare rover: a little six-wheeled rover creature with solar-panel fins and a curious sensor head",
+    "void_stalker": "a void stalker: a black spider-like stalker with a purple spiral spine and a mechanical sting",
+    "asteroid_grubber": "an asteroid grubber: a rocky boulder creature with drill claws digging on stubby legs",
+    "lunar_crawler": "a lunar crawler: a silver crab-like crawler with a radar-dish head on many thin legs",
+    "nova_burster": "a nova burster: a golden star-fire golem bursting with flame spikes and a blazing core",
+    "starlight_drifter": "a starlight drifter: a long segmented space serpent with solar-blade fins",
+    "meteorite_golem": "a meteorite golem: a hulking black rock golem with copper seams and a glowing magma core",
+    "quasar_serpent": "a quasar serpent: a gold-and-blue armoured serpent with glowing spines",
+    "orbit_flyer": "an orbit flyer: a wasp-like flyer with a thruster backpack, clear wings and a striped segmented tail",
+    "cockatrice": "a cockatrice: a rooster-headed beast with a crown, bird legs and a snake for a tail",
+    "wolpertinger": "a wolpertinger: a little horned hare with antlers and feathered wings",
+    "ammit": "Ammit the Devourer: a crocodile-headed lion-hippo with a golden mask and flaming mane",
+    "tengu": "a tengu: a crow-faced mountain spirit warrior with a red mask and black feathered wings",
+}
+
+
 def main():
     rows = [c for c in CREATURES if c.get("art") == "gen" or str(c.get("art", "")).startswith(("rig:", "src:"))]
-    out = ["# Painted art prompts", "",
-           "Every creature below is still a placeholder 3D model. Paste its prompt into an image generator, save the result as",
-           "`art_inbox/<id>.png` and run `uv run --with numpy --with pillow python tools/import_creature_art.py`.",
-           "", "%d creatures. Tokens (later evolution stages) are marked." % len(rows), ""]
+    # The reference-inspired hybrids first, then cards, then tokens.
+    rows.sort(key=lambda c: (c["id"] not in CONCEPTS, bool(c.get("token")), c["element"], c["name"]))
+    csv_rows = []
+    out = ["# Prompts, one per creature", "",
+           "See README.md for the rules every image must follow. Save each result as `art_inbox/<id>.png`.",
+           "", "%d creatures, the reference-inspired hybrids first. Tokens (later evolution stages, never in packs) are marked." % len(rows), ""]
     for c in rows:
         colors = COLORS.get(c["element"], COLORS["Neutral"])
         if c.get("look", {}).get("colors"):
             colors = "two-tone silk " + colors
-        line = "%s, called %s. %s" % (describe(c)[0].upper() + describe(c)[1:], c["name"], STYLE.format(colors=colors))
+        what = CONCEPTS.get(c["id"]) or describe(c)
+        line = "%s, called %s. %s" % (what[0].upper() + what[1:], c["name"], STYLE.format(colors=colors))
+        csv_rows.append((c["id"], c["name"], c["element"], c["rarity"], "token" if c.get("token") else "card", line))
         out.append("## %s `%s`%s" % (c["name"], c["id"], " (token)" if c.get("token") else ""))
         out.append("")
         out.append(line.replace("..", "."))
         out.append("")
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "art_prompts.md")
-    with open(path, "w") as f:
+    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "art_brief")
+    with open(os.path.join(folder, "prompts.md"), "w") as f:
         f.write("\n".join(out))
-    print("wrote", path, len(rows))
+    import csv
+    with open(os.path.join(folder, "creatures.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "name", "element", "rarity", "kind", "prompt"])
+        w.writerows(csv_rows)
+    print("wrote art_brief/prompts.md and creatures.csv", len(rows))
 
 
 if __name__ == "__main__":
