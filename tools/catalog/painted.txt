@@ -60,3 +60,4 @@ clogglin
 dragon_egg
 ember_dragon
 flarefox_kit
+furnace_golem
