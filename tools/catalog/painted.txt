@@ -193,3 +193,4 @@ pebbit
 pebble_golemite
 pebblepup
 quarry_crusher
+rubble_hound
