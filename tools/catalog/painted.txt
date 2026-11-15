@@ -205,3 +205,4 @@ brine_bard
 brineleech
 bubbleray
 coral_sentinel
+dewdrop_sprite
