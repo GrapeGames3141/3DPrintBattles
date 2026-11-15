@@ -62,3 +62,4 @@ ember_dragon
 flarefox_kit
 furnace_golem
 heatbedhedgehog
+kilnback_tortoise
