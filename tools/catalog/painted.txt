@@ -151,3 +151,4 @@ sproutpaw
 swarm_queen
 swarm_warden
 thornback_hare
+treant_elder
