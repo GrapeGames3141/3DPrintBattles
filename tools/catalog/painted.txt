@@ -219,3 +219,4 @@ puddle_mimic
 reefhopper
 resinjelly
 siphon_squid
+siphonshark
