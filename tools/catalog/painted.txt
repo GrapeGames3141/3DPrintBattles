@@ -101,3 +101,4 @@ shadow_mare
 chimera_raiju
 ember_moth
 kitsune
+snow_globe_golem
