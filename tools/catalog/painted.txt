@@ -196,3 +196,4 @@ quarry_crusher
 rubble_hound
 sandpiper
 sandstone_scarab
+statue_gargoyle
