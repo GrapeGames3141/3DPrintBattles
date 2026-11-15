@@ -171,3 +171,4 @@ stringing_slime
 support_pillar
 tribute_titan
 basalt_colossus
+basaltbison
