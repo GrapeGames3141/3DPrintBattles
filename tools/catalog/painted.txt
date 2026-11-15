@@ -225,3 +225,4 @@ swarm_leech
 tidal_dragon
 tidecaller_crab
 tsunami_titan
+whirlpool_ray
