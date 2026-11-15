@@ -223,9 +223,43 @@ func _draw() -> void:
 		glow = 0.75 + 0.1 * sin(_t * 5.0)
 	elif attention:
 		glow = 0.35 + 0.2 * sin(_t * 2.6)
-	glow = maxf(glow, _shimmer() * 0.6)
+	glow = maxf(glow, _shimmer() * 0.35)
 	if glow <= 0.0:
 		return
 	var gold := UI.GOLD
 	var area := Rect2(Vector2.ZERO, size).grow_individual(size.x * 0.12, size.y * 0.12, size.x * 0.12, size.y * 0.12)
 	draw_texture_rect(_light(), area, false, Color(gold.r, gold.g, gold.b, 0.5 * glow))
+	if not (_hover or _down) and _glint() >= 0.0:
+		_draw_sweep(_glint())
+
+
+## The shimmer: a soft diagonal band of light that sweeps once across the
+## object, brightest down its middle and fading out at its sides and ends, so
+## it reads as light catching the object, not as a shape.
+func _draw_sweep(g: float) -> void:
+	var c := size * 0.5
+	var half := size * 0.6
+	var lean := Vector2(0.42, 1.0).normalized()          # the band's direction: steep, leaning right
+	var across := Vector2(lean.y, -lean.x)               # perpendicular to it
+	var reach := half.length()
+	var mid := c + across * lerpf(-reach * 1.1, reach * 1.1, g)
+	var width := maxf(size.x, size.y) * 0.13
+	var steps := 8
+	var warm := Color(1.0, 0.93, 0.7)
+	var fade := func(p: Vector2) -> float:
+		var d := (p - c) / half
+		return clampf(1.0 - d.length(), 0.0, 1.0)
+	for i in steps:
+		var t0 := float(i) / steps
+		var t1 := float(i + 1) / steps
+		var a := mid + lean * lerpf(-reach, reach, t0)
+		var b := mid + lean * lerpf(-reach, reach, t1)
+		for side in [-1.0, 1.0]:
+			var a2: Vector2 = a + across * width * side
+			var b2: Vector2 = b + across * width * side
+			var pts := PackedVector2Array([a, b, b2, a2])
+			var k := 0.55 * sin(PI * g)
+			var cols := PackedColorArray([
+				Color(warm, k * fade.call(a)), Color(warm, k * fade.call(b)),
+				Color(warm, 0.0), Color(warm, 0.0)])
+			draw_polygon(pts, cols)
