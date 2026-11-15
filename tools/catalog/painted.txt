@@ -273,3 +273,4 @@ torrentus
 spark_kitten
 zapling
 rootling
+seedbomb_squirrel
