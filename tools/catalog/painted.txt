@@ -200,3 +200,4 @@ statue_gargoyle
 steppergolem
 swarm_carapace
 abyssal_angler
+benchyboss
