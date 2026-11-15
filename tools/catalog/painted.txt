@@ -209,3 +209,4 @@ dewdrop_sprite
 dripling
 kelp_strangler
 kelpie
+kraken
