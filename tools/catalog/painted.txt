@@ -36,3 +36,4 @@ tengu
 jellycrown
 hex_owl
 layershifter
+mana_wraith
