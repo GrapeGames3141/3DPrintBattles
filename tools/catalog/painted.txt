@@ -44,3 +44,4 @@ runeling
 runemite
 shapeshift_sage
 spellsword_fox
+sphinx
