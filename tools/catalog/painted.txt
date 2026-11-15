@@ -49,3 +49,4 @@ unicorn_foal
 void_dragon
 void_weaver
 voidmoth
+ashling
