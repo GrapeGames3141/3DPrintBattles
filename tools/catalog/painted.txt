@@ -75,3 +75,4 @@ sparkplug_imp
 sunfire_phoenix
 thermochameleon
 torchbearer
+trihydra
