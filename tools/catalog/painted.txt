@@ -149,3 +149,4 @@ spoolcolossus
 sproutling
 sproutpaw
 swarm_queen
+swarm_warden
