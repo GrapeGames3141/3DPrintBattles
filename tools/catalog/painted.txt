@@ -169,3 +169,4 @@ raft_crawler
 rainbow_unicorn
 stringing_slime
 support_pillar
+tribute_titan
