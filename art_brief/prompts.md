@@ -2,7 +2,7 @@
 
 See README.md for the rules every image must follow. Save each result as `art_inbox/<id>.png`.
 
-264 creatures, the reference-inspired hybrids first. Tokens (later evolution stages, never in packs) are marked.
+247 creatures, the reference-inspired hybrids first. Tokens (later evolution stages, never in packs) are marked.
 
 ## Nova Burster `nova_burster`
 
@@ -11,74 +11,6 @@ A nova burster: a golden star-fire golem bursting with flame spikes and a blazin
 ## Chimera Raiju `chimera_raiju`
 
 A chimera raiju: a copper-armoured lion with ram horns, a lightning-bolt mane, a coiled spring along its spine and a snake-headed tail, called Chimera Raiju. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk bright yellow and graphite black PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Meteorite Golem `meteorite_golem`
-
-A meteorite golem: a hulking black rock golem with copper seams and a glowing magma core, called Meteorite Golem. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk granite grey, sandstone and amber PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Pegasus Leviathan `pegasus_leviathan`
-
-A pegasus leviathan: a white armoured winged horse whose hindquarters become a translucent blue fish tail with fins, called Pegasus Leviathan. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk ocean blue, teal and pearl white PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Scylla Kraken `scylla_kraken`
-
-A Scylla kraken: a spiky armoured torso with a ring of snarling wolf heads at its waist standing on curling segmented tentacles, called Scylla Kraken. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk ocean blue, teal and pearl white PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Orbit Flyer `orbit_flyer`
-
-An orbit flyer: a wasp-like flyer with a thruster backpack, clear wings and a striped segmented tail, called Orbit Flyer. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk mint, white and sky blue PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Quetzal Hydra `quetzal_hydra`
-
-A hydra quetzalcoatl: three serpent heads on ribbed necks with feather crests, big Aztec feathered wings, teal and gold, called Quetzal Hydra. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk mint, white and sky blue PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Starlight Drifter `starlight_drifter`
-
-A starlight drifter: a long segmented space serpent with solar-blade fins, called Starlight Drifter. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk mint, white and sky blue PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Tengu `tengu`
-
-A tengu: a crow-faced mountain spirit warrior with a red mask and black feathered wings, called Tengu. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk mint, white and sky blue PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Arcane Librarian `arcane_librarian`
-
-A creature standing on two legs, called Arcane Librarian. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Archmage Automaton `archmage_automaton`
-
-A creature standing on two legs, called Archmage Automaton. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Bytelet `bytelet`
-
-A creature, called Bytelet. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Chrono Snail `chrono_snail`
-
-A shelled creature, called Chrono Snail. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Chronocat `chronocat`
-
-A four-legged beast with a lion head featuring coil spine, core with small brass gears at the joints, called Chronocat. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Eternity Engine `eternity_engine`
-
-A creature standing on two legs, called Eternity Engine. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Fairy Dragon `fairy_dragon`
-
-A dragon with wings with bug wings with antler horns with a fan-tipped tail, called Fairy Dragon. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Gearspider `gearspider`
-
-A creature, called Gearspider. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Glitch Cat `glitch_cat`
-
-A four-legged beast, called Glitch Cat. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Glyphhare `glyphhare`
-
-A centaur-like creature (an upper body on a lower beast body) with a fox head and a lion lower body featuring mask with small brass gears at the joints, called Glyphhare. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
 
 ## Hex Owl `hex_owl`
 
