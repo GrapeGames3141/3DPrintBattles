@@ -108,3 +108,4 @@ snowmite
 yeti
 arc_wasp
 blackout_bat
+capacitor
