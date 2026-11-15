@@ -258,3 +258,4 @@ alicorn
 teravox
 unicorn
 voxelion
+dragon_hatchling
