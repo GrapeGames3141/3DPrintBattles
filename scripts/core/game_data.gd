@@ -142,8 +142,8 @@ const CARDS_BASE := [
 		"on_print": [{"op": "buff", "atk": 2, "hp": 2, "kw": ["brim"], "to": "other_friendly_prints"}]},
 	# ---- second wave: cousins of the first prints, in other elements
 	{"id": "sparkling", "name": "Sparkling", "type": "creature", "cost": 1, "atk": 1, "hp": 1, "element": "Lightning", "rarity": "common",
-		"kw": [], "text": "On Print: +1 Print Speed this turn.",
-		"on_print": [{"op": "filament", "n": 1}]},
+		"kw": [], "text": "Shatter: +2 Print Speed this turn.",
+		"shatter": [{"op": "filament", "n": 2}]},
 	{"id": "rainotter", "name": "Rainotter", "type": "creature", "cost": 2, "atk": 2, "hp": 2, "element": "Water", "rarity": "common",
 		"kw": [], "text": "On Print: Repair 2.", "target": "friendly",
 		"on_print": [{"op": "heal", "n": 2, "to": "target"}]},
@@ -151,8 +151,8 @@ const CARDS_BASE := [
 		"kw": [], "text": "On Print: Give a friendly print +1/+1.", "target": "friendly_print",
 		"on_print": [{"op": "buff", "atk": 1, "hp": 1, "to": "target"}]},
 	{"id": "icicle", "name": "Icicle", "type": "creature", "cost": 2, "atk": 2, "hp": 1, "element": "Ice", "rarity": "uncommon",
-		"kw": [], "text": "On Print: Jam an enemy print.", "target": "enemy_print",
-		"on_print": [{"op": "jam", "to": "target"}]},
+		"kw": [], "text": "On Print: Jam an enemy print and deal 1 damage to the enemy Printer.", "target": "enemy_print",
+		"on_print": [{"op": "jam", "to": "target"}, {"op": "damage", "n": 1, "to": "enemy_printer"}]},
 	{"id": "pebblefin", "name": "Pebblefin", "type": "creature", "cost": 2, "atk": 1, "hp": 5, "element": "Stone", "rarity": "uncommon",
 		"kw": ["guard"], "text": ""},
 	{"id": "zephyrcat", "name": "Zephyrcat", "type": "creature", "cost": 2, "atk": 2, "hp": 2, "element": "Wind", "rarity": "uncommon",
@@ -269,7 +269,7 @@ const CARDS_BASE := [
 		"effects": [{"op": "draw", "n": 3}]},
 	# -------------------------------------------------------------- upgrades
 	{"id": "helm", "name": "Printed Helm", "type": "upgrade", "cost": 1, "rarity": "common",
-		"text": "Give a friendly print +1/+2.", "target": "friendly_print", "buff": {"atk": 1, "hp": 2, "kw": []}},
+		"text": "Give a friendly print +1/+2 and Ward.", "target": "friendly_print", "buff": {"atk": 1, "hp": 2, "kw": ["ward"]}},
 	{"id": "leg_guards", "name": "Leg Guards", "type": "upgrade", "cost": 1, "rarity": "common",
 		"text": "Give a friendly print +1/+1 and Rush.", "target": "friendly_print", "buff": {"atk": 1, "hp": 1, "kw": ["rush"]}},
 	{"id": "chest_plate", "name": "Chest Plate", "type": "upgrade", "cost": 2, "rarity": "uncommon",
@@ -717,6 +717,9 @@ static func rival(id: String) -> Dictionary:
 	return {}
 
 
+## The Forbidden Printer: hold all five of these parts in your hand to win.
+const FORBIDDEN_PARTS := ["fp_left_rail", "fp_right_rail", "fp_hot_end", "fp_frame", "fp_mainboard"]
+
 ## Coins a spare copy (one a deck cannot use) is worth when it is recycled.
 const RECYCLE_COINS := {"common": 5, "uncommon": 10, "rare": 18, "epic": 30, "legendary": 50}
 
@@ -832,11 +835,17 @@ static func tier_coins(id: String, tier: int) -> int:
 ## The first effect that scales with tier: where it is, or {} (draws, jams, destroys and copies do not).
 static func _strength(d: Dictionary) -> Dictionary:
 	if d["type"] == "upgrade":
+		if int(d["buff"]["atk"]) <= 0 and int(d["buff"]["hp"]) <= 0:
+			return {}
 		return {"list": "", "key": "atk" if int(d["buff"]["atk"]) > 0 else "hp"}
 	for op in ["damage", "heal", "armor", "buff", "spool", "summon"]:
 		var list: Array = d.get("effects", [])
 		for i in list.size():
-			if list[i]["op"] == op and list[i].get("to", "") != "own_printer":
+			# Effects that scale ("for each ...") get cheaper instead: their
+			# number is per thing counted, which a bigger number would misstate.
+			if list[i].has("per"):
+				continue
+			if list[i]["op"] == op and list[i].get("to", "") != "own_printer" and int(list[i].get("atk", 1)) >= 0:
 				var key := "n"
 				if op == "buff":
 					key = "atk" if int(list[i].get("atk", 0)) > 0 else "hp"

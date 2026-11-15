@@ -1248,6 +1248,64 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 					"ally_print": "Ally Print", "foe_print": "Foe Print", "tool": "Tool", "ally_shatter": "Ally Shatter", "foe_shatter": "Foe Shatter"}.get(str(e["when"]), str(e.get("label", ""))))
 				UI.floater(_fx, label, tnode.center() + Vector2(0, -70), UI.GOLD, 18)
 			await _wait(0.2)
+		"zap":
+			# A bolt from the caster's side to whatever it hits.
+			var to := _center_of(str(e["target"]))
+			var from := _center_of("p%d" % int(e["seat"]))
+			var bolt := Line2D.new()
+			bolt.width = 5.0
+			bolt.default_color = Color("fff3a0")
+			bolt.z_index = 46
+			var pts := PackedVector2Array([from])
+			for i in range(1, 6):
+				pts.append(from.lerp(to, i / 6.0) + Vector2(randf_range(-18, 18), randf_range(-18, 18)))
+			pts.append(to)
+			bolt.points = pts
+			_fx.add_child(bolt)
+			Effects.burst(_fx, to, "spark", Color("fff3a0"), 1.2)
+			Audio.sfx("atk_lightning", 1.2, 0.6)
+			var tw := bolt.create_tween()
+			tw.tween_property(bolt, "modulate:a", 0.0, 0.25)
+			tw.tween_callback(bolt.queue_free)
+			await _wait(0.12)
+		"discard":
+			var seat_d: int = int(e["seat"])
+			if seat_d == me:
+				for h in _hand:
+					if int(h["uid"]) == int(e["uid"]):
+						_drop_hand_card(int(h["uid"]))
+						break
+			elif not _foe_backs.is_empty():
+				(_foe_backs.pop_back() as Node).queue_free()
+				_layout_hand()
+			Audio.sfx("burn")
+			UI.floater(_fx, "%s was discarded!" % str(GameData.card(str(e["id"])).get("name", "A card")), banner_pos + Vector2(0, 40), UI.AMBER, 22, 30.0, 1.2)
+			await _wait(0.35)
+		"slow":
+			UI.floater(_fx, "Slowed: -%d Filament next turn" % int(e["n"]), _center_of("p%d" % int(e["seat"])) + Vector2(0, -90), UI.CYAN, 20)
+			Audio.sfx("jam")
+			await _wait(0.25)
+		"silence":
+			var snode: BoardUnit = _units.get(int(e["uid"]))
+			if snode != null:
+				snode.refresh(e["unit"], false)
+				snode.pulse(Color("8a93a3"))
+				Effects.burst(_fx, snode.center(), "ring", Color("c9ccd6"))
+				UI.floater(_fx, "Silenced", snode.center() + Vector2(0, -60), Color("c9ccd6"), 22)
+				Audio.sfx("deny")
+			await _wait(0.25)
+		"polymorph":
+			var pnode: BoardUnit = _units.get(int(e["uid"]))
+			if pnode != null:
+				Effects.burst(_fx, pnode.center(), "dust", Color(0.9, 0.9, 1.0, 0.8), 1.6)
+				Audio.sfx("reveal")
+				await pnode.evolve_to(e["unit"])
+				UI.floater(_fx, "Transformed!", pnode.center() + Vector2(0, -70), UI.CYAN, 22)
+			await _wait(0.2)
+		"forbidden":
+			_banner("THE FORBIDDEN PRINTER IS COMPLETE!", UI.GOLD)
+			Audio.sfx("reveal_epic")
+			await _wait(1.6)
 		"evolve":
 			var enode: BoardUnit = _units.get(int(e["uid"]))
 			if enode != null:

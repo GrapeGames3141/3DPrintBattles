@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from catalog.cards import TOOLS, UPGRADES  # noqa: E402
 from catalog.creatures import CREATURES  # noqa: E402
 from catalog.mods import CARD_MODS, PRINTER_MODS  # noqa: E402
+import catalog.wave6  # noqa: E402,F401  (adds its cards to the lists above)
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "core", "catalog")
 
@@ -56,7 +57,11 @@ def main():
             c.pop("shatter")
         if not c["target"]:
             c.pop("target")
-    write("catalog_creatures.gd", "Creature cards.", CREATURES, strip=("art",))
+    looks = {c["id"]: c["look"] for c in CREATURES if "look" in c}
+    with open(os.path.join(os.path.dirname(__file__), "looks.json"), "w") as f:
+        json.dump(looks, f, indent=1, sort_keys=True)
+    print("wrote looks.json", len(looks))
+    write("catalog_creatures.gd", "Creature cards.", CREATURES, strip=("art", "look"))
     write("catalog_tools.gd", "Tool cards.", TOOLS)
     write("catalog_upgrades.gd", "Equipment cards.", UPGRADES)
     write("catalog_card_mods.gd", "Card mods.", CARD_MODS)

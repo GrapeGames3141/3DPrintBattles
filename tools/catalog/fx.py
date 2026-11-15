@@ -166,6 +166,7 @@ TRIGGERS = {
     "attack": "On Attack", "hurt": "On Hurt", "kill": "On Kill", "turn_start": "Turn Start", "turn_end": "Turn End",
     "ally_print": "On Ally Print", "foe_print": "On Foe Print", "tool": "On Tool",
     "ally_shatter": "On Ally Shatter", "foe_shatter": "On Foe Shatter",
+    "ally_attack": "On Ally Attack", "foe_attack": "On Foe Attack", "printer_hit": "When Your Printer Is Hit",
 }
 
 
@@ -222,7 +223,7 @@ def a_mill(n):
 
 
 def _join(parts):
-    return " ".join(p["text"] for p in parts)
+    return " ".join(p["text"] for p in parts if p["text"])
 
 
 def ability(*parts):

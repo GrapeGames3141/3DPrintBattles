@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_keywords2()
 	_wave3()
 	_evolution()
+	_wave6()
 	_heat_and_theft()
 	_effects()
 	_triggers()
@@ -97,18 +98,18 @@ func _catalog() -> void:
 		ok(c["type"] in ["creature", "tool", "upgrade"], c["id"] + " type")
 		var lists: Array = [c.get("on_print", []), c.get("shatter", []), c.get("effects", [])]
 		for t in c.get("trig", []):
-			ok(t["when"] in ["attack", "hurt", "kill", "turn_start", "turn_end", "ally_print", "foe_print", "tool", "ally_shatter", "foe_shatter"], c["id"] + " trigger " + str(t["when"]))
+			ok(t["when"] in ["attack", "hurt", "kill", "turn_start", "turn_end", "ally_print", "foe_print", "tool", "ally_shatter", "foe_shatter", "ally_attack", "foe_attack", "printer_hit"], c["id"] + " trigger " + str(t["when"]))
 			lists.append(t["fx"])
 		for list in lists:
 			for e in list:
-				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill", "poison", "sleep", "cleanse"], c["id"] + " op " + e["op"])
+				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill", "poison", "sleep", "cleanse", "missiles", "chain", "discard", "drain_spool", "slow", "sacrifice", "tutor", "silence", "swap", "set_atk", "double_atk", "polymorph", "transform", "fight", "destroy_if", "drain", "grant", "give_copy", "mimic"], c["id"] + " op " + e["op"])
 				if e["op"] == "summon":
 					ok(GameData.has_card(e["card"]), c["id"] + " summons a real card")
 		for k in c.get("kw", []):
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 284, "284 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 486, "486 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
 		if c["type"] == "creature":
@@ -118,7 +119,7 @@ func _catalog() -> void:
 	for c in GameData.collectible():
 		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
 		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
-	ok(by_type == {"creature": 174, "tool": 67, "upgrade": 43}, "174 prints, 67 tools, 43 pieces of equipment (%s)" % str(by_type))
+	ok(by_type == {"creature": 317, "tool": 99, "upgrade": 70}, "317 prints, 99 tools, 70 pieces of equipment (%s)" % str(by_type))
 	# Every kind of card, and every element of print, comes in every rarity.
 	for kind in ["creature", "tool", "upgrade"]:
 		for r in GameData.RARITY_ORDER:
@@ -473,6 +474,181 @@ func _evolution() -> void:
 	act(st, 0, {"t": "end"})
 	act(st, 1, {"t": "end"})
 	ok(int(st["players"][1]["hp"]) == hp1 - 2, "Infernozzle breathes on the enemy Printer each turn")
+
+
+func _wave6() -> void:
+	print("wave 6 moves")
+	var uid := func(u: Dictionary) -> String: return "u%d" % int(u["uid"])
+	# Every card in the game has rules text of its own.
+	var seen := {}
+	var dupes: Array = []
+	for c in GameData.collectible():
+		var t := str(c.get("text", "")) + "|" + ",".join(c.get("kw", []))
+		if str(c.get("text", "")) != "" and seen.has(t) and not str(c["id"]).begins_with("fp_"):
+			dupes.append("%s = %s" % [c["id"], seen[t]])
+		seen[t] = c["id"]
+	ok(dupes.is_empty(), "no two cards share the same rules text (%s)" % ", ".join(dupes))
+	# Missiles and chain lightning.
+	var st := game([], [])
+	var a := put(st, 1, "stoneback")
+	var hp1: int = int(st["players"][1]["hp"]) + int(a["hp"])
+	var h := give(st, 0, "cinder_juggler")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(int(st["players"][1]["hp"]) + int(a["hp"]) == hp1 - 3, "Cinder Juggler throws 3 embers of 1 damage")
+	st = game([], [])
+	var e1 := put(st, 1, "stoneback")
+	var e2 := put(st, 1, "pearlback")
+	h = give(st, 0, "lightning_rod")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(e1)})
+	ok(int(e1["hp"]) == 6 - 3 and int(e2["hp"]) == int(e2["max_hp"]) - 2, "Lightning Rod hits for 3, then jumps for 2")
+	# Discard, spool drain and slow.
+	st = game([], [])
+	var foe_hand: int = (st["players"][1]["hand"] as Array).size()
+	h = give(st, 0, "data_leak")
+	act(st, 0, {"t": "play", "hand": h})
+	ok((st["players"][1]["hand"] as Array).size() == foe_hand - 1, "Data Leak makes the opponent throw away a card")
+	var spool1: int = int(st["players"][1]["spool"])
+	h = give(st, 0, "siphon_filament")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(int(st["players"][1]["spool"]) == spool1 - 5, "Siphon Filament takes 5 from the enemy Spool")
+	h = give(st, 0, "thermal_throttle")
+	act(st, 0, {"t": "play", "hand": h})
+	act(st, 0, {"t": "end"})
+	ok(int(st["players"][1]["flow"]) == int(st["players"][1]["speed"]) - 3, "Thermal Throttle slows the next turn by 3")
+	# Sacrifice, with the Tribute Titan's price.
+	st = game([], [])
+	h = give(st, 0, "tribute_titan")
+	act(st, 0, {"t": "play", "hand": h})
+	ok((st["players"][0]["board"] as Array).is_empty(), "Tribute Titan scraps itself with nothing to tribute")
+	st = game([], [])
+	var fodder := put(st, 0, "mossmunk")
+	h = give(st, 0, "tribute_titan")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(not st["players"][0]["board"].has(fodder) and (st["players"][0]["board"] as Array).size() == 1, "...and stays when a print is tributed")
+	ok(int(st["players"][0]["scrapped"]) == 1, "a scrapped print counts as lost")
+	# Silence, swap, set Attack, double, polymorph.
+	st = game([], [])
+	st["players"][0]["flow"] = 99
+	var t1 := put(st, 1, "slagrhino")
+	h = give(st, 0, "mute_button")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(t1)})
+	ok((t1["kw"] as Array).is_empty() and bool(t1["silenced"]), "Mute Button silences a print")
+	var t2 := put(st, 1, "stoneback")
+	h = give(st, 0, "glitch_patch")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(t2)})
+	ok(int(t2["atk"]) == 6 and int(t2["hp"]) == 2, "Glitch Patch swaps Attack and Health")
+	h = give(st, 0, "rebalance")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(t2)})
+	ok(int(t2["atk"]) == 1, "Rebalance sets Attack to 1")
+	var mine := put(st, 0, "cinderpaw")
+	var before: int = int(mine["atk"])
+	h = give(st, 0, "double_extrusion")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(mine)})
+	ok(int(mine["atk"]) == before * 2, "Double Extrusion doubles Attack")
+	h = give(st, 0, "shapeshifter_resin")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(t2)})
+	ok(str(t2["id"]) == "test_bot" and int(t2["atk"]) == 1, "Shapeshifter Resin turns a print into a Test Bot")
+	# Conditional destruction and draining.
+	st = game([], [])
+	var weak := put(st, 1, "mossmunk")
+	var strong := put(st, 1, "stoneback")
+	h = give(st, 0, "pest_control")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(not st["players"][1]["board"].has(weak) and st["players"][1]["board"].has(strong), "Pest Control destroys only prints with 1 Attack or less")
+	strong["hp"] = 3
+	h = give(st, 0, "bed_purge")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(not st["players"][1]["board"].has(strong), "Bed Purge destroys damaged prints")
+	# Tutors.
+	st = game(["heat_gun"], [])
+	var hand0: int = (st["players"][0]["hand"] as Array).size()
+	h = give(st, 0, "polar_packrat")
+	act(st, 0, {"t": "play", "hand": h})
+	var has_tool := false
+	for c in st["players"][0]["hand"]:
+		has_tool = has_tool or str(c["id"]) == "heat_gun"
+	ok(has_tool or not (st["players"][0]["deck"] as Array).has("heat_gun"), "Polar Packrat fetches a tool from the deck")
+	# Scaling and conditions.
+	st = game([], [])
+	put(st, 0, "mossmunk")
+	put(st, 0, "mossmunk")
+	h = give(st, 0, "pack_wolf")
+	act(st, 0, {"t": "play", "hand": h})
+	var wolf: Dictionary = (st["players"][0]["board"] as Array).back()
+	ok(int(wolf["atk"]) == 2 + 3, "Pack Wolf grows for each Nature print, itself too (%d)" % int(wolf["atk"]))
+	st = game([], [])
+	h = give(st, 0, "sootling")
+	var hp_foe: int = int(st["players"][1]["hp"])
+	act(st, 0, {"t": "play", "hand": h, "target": "p1"})
+	ok(int(st["players"][1]["hp"]) == hp_foe, "Sootling needs another Fire print")
+	put(st, 0, "cinderpaw")
+	h = give(st, 0, "sootling")
+	act(st, 0, {"t": "play", "hand": h, "target": "p1"})
+	ok(int(st["players"][1]["hp"]) == hp_foe - 2, "...and then deals 2")
+	# New triggers.
+	st = game([], [])
+	var moth := put(st, 1, "ember_moth")
+	var attacker := put(st, 0, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(attacker["uid"]), "target": "p1"})
+	ok(int(attacker["heat"]) > 0, "Ember Moth heats a print that attacks")
+	st = game([], [])
+	var sentinel := put(st, 0, "coral_sentinel")
+	var hitter := put(st, 1, "cinderpaw")
+	act(st, 0, {"t": "end"})
+	act(st, 1, {"t": "attack", "unit": int(hitter["uid"]), "target": uid.call(sentinel)})
+	st = game([], [])
+	sentinel = put(st, 0, "coral_sentinel")
+	BattleEngine._damage(st, "p0", 2, [])
+	ok(int(sentinel["atk"]) == 4, "Coral Sentinel grows when your Printer is hit")
+	st = game([], [])
+	var torch := put(st, 0, "torchbearer")
+	var friend := put(st, 0, "cinderpaw")
+	act(st, 0, {"t": "attack", "unit": int(friend["uid"]), "target": "p1"})
+	ok(int(friend["atk"]) == 3 + 1, "Torchbearer cheers on an attacking ally (%d)" % int(friend["atk"]))
+	# Equipment that grants an ability, and one that pays out when it is lost.
+	st = game([], [])
+	var wearer := put(st, 0, "cinderpaw")
+	h = give(st, 0, "toxic_tip")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(wearer)})
+	var victim := put(st, 1, "stoneback")
+	act(st, 0, {"t": "attack", "unit": int(wearer["uid"]), "target": uid.call(victim)})
+	ok(int(victim["tox"]) > 0, "Toxic Tip makes its wearer poison what it hits")
+	st = game([], [])
+	var carrier := put(st, 0, "cinderpaw")
+	h = give(st, 0, "lucky_keychain")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(carrier)})
+	var n_hand: int = (st["players"][0]["hand"] as Array).size()
+	BattleEngine._damage(st, uid.call(carrier), 99, [])
+	BattleEngine._resolve(st, [])
+	ok((st["players"][0]["hand"] as Array).size() == n_hand + 1, "Lucky Keychain draws a card when its wearer is destroyed")
+	# Swarmlings share their gifts, now and when new ones arrive.
+	st = game([], [])
+	var scout_h := give(st, 0, "swarm_scout")
+	act(st, 0, {"t": "play", "hand": scout_h})
+	var warden_h := give(st, 0, "swarm_warden")
+	act(st, 0, {"t": "play", "hand": warden_h})
+	var scout: Dictionary = st["players"][0]["board"][0]
+	var warden: Dictionary = st["players"][0]["board"][1]
+	ok((scout["kw"] as Array).has("guard") and (warden["kw"] as Array).has("rush"), "Swarmlings share Rush and Guard both ways")
+	var other := put(st, 0, "cinderpaw")
+	ok(not (other["kw"] as Array).has("rush"), "...but not with other prints")
+	# The Forbidden Printer.
+	st = game([], [])
+	for id in GameData.FORBIDDEN_PARTS:
+		give(st, 0, id)
+	act(st, 0, {"t": "end"})
+	ok(bool(st["over"]) and int(st["winner"]) == 0, "holding all five Forbidden parts wins")
+	# Mimic and copying cards.
+	st = game([], [])
+	var big := put(st, 1, "stoneback")
+	h = give(st, 0, "calibration_cube")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(big)})
+	var cube: Dictionary = (st["players"][0]["board"] as Array).back()
+	ok(int(cube["atk"]) == int(big["atk"]) and int(cube["hp"]) == int(big["hp"]), "Calibration Cube copies a print's stats")
+	h = give(st, 0, "mirror_imp")
+	var hand_n: int = (st["players"][0]["hand"] as Array).size()
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(big)})
+	ok((st["players"][0]["hand"] as Array).size() == hand_n and str((st["players"][0]["hand"] as Array).back()["id"]) == "stoneback", "Mirror Imp copies an enemy card into your hand")
 
 
 func _heat_and_theft() -> void:
@@ -1540,7 +1716,7 @@ func _blueprints() -> void:
 	ok(GameData.built("test_print", {"tier": 2})["text"] == "Print three 1/1 Test Bots.", "word numbers are rewritten (two -> three)")
 	ok(int(GameData.built("calipers", {"tier": 2})["cost"]) == 2, "a card with no number gets cheaper instead")
 	ok(int(GameData.built("heat_gun", {"tier": 3})["cost"]) == 1 and int(GameData.built("printed_wrench", {"tier": 3})["cost"]) == 2, "Mk III: -1 cost, never below 1")
-	ok(GameData.built("helm", {"tier": 2})["text"] == "Give a friendly print +2/+2.", "equipment strengthens its first number")
+	ok(GameData.built("helm", {"tier": 2})["text"] == "Give a friendly print +2/+2 and Ward.", "equipment strengthens its first number")
 	ok(int(GameData.built("shadow_cloak", {"tier": 2})["buff"]["atk"]) == 2, "a +1 Attack Cloak becomes +2")
 
 	# Mods

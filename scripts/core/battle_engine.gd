@@ -78,6 +78,7 @@ static func new_game(cfg: Dictionary) -> Dictionary:
 			"tool_heal": GameData.mv(mods, "tool_beacon"),
 			"ls_used": false, "rush_used": false, "sd_turn": -1,
 			"turns": 0,
+			"scrapped": 0, "slow": 0, "tools_turn": 0,
 			"builds": GameData.clean_builds(deck, pc.get("builds", {})),
 		})
 	var first: int = int(cfg.get("first", -1))
@@ -403,7 +404,27 @@ static func apply(st: Dictionary, seat: int, action: Dictionary) -> Dictionary:
 			err = "Unknown action."
 	if err != "":
 		return _fail(err)
+	_forbidden_check(st, ev)
 	return {"ok": true, "error": "", "events": ev}
+
+
+## The Forbidden Printer: whoever holds all five of its parts in hand wins.
+static func _forbidden_check(st: Dictionary, ev: Array) -> void:
+	if st["over"]:
+		return
+	for seat in 2:
+		var held := {}
+		for c in st["players"][seat]["hand"]:
+			held[str(c["id"])] = true
+		var all := true
+		for id in GameData.FORBIDDEN_PARTS:
+			if not held.has(id):
+				all = false
+				break
+		if all:
+			ev.append({"e": "forbidden", "seat": seat})
+			_finish(st, seat, ev)
+			return
 
 
 static func _fail(msg: String) -> Dictionary:
@@ -481,6 +502,7 @@ static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_
 			_fire_board(st, seat, "ally_print", arrived, ev, int(u["uid"]))
 			_fire_board(st, 1 - seat, "foe_print", arrived, ev)
 		"tool":
+			p["tools_turn"] = int(p.get("tools_turn", 0)) + 1
 			var warded := unit_of(st, target)
 			if not warded.is_empty() and int(warded["seat"]) != seat and (warded["kw"] as Array).has("ward"):
 				# Ward: the first tool aimed at it is wasted.
@@ -497,6 +519,11 @@ static func _use(st: Dictionary, seat: int, c: Dictionary, target: String, want_
 				var b: Dictionary = def["buff"]
 				_buff(u, int(b["atk"]), int(b["hp"]), b.get("kw", []))
 				(u["gear"] as Array).append(c["id"])
+				# Equipment can carry an ability the print gains while it wears it.
+				for g in def.get("grant", []):
+					if not u.has("grants"):
+						u["grants"] = []
+					(u["grants"] as Array).append(g)
 				ev.append({"e": "gear", "uid": int(u["uid"]), "id": c["id"], "unit": u.duplicate(true)})
 				# Mods can give equipment extra effects (draw, Filament, Armor...).
 				_run(st, seat, def.get("effects", []), {"target": target, "self": -1}, ev)
@@ -557,6 +584,8 @@ static func _attack(st: Dictionary, seat: int, a: Dictionary, ev: Array) -> Stri
 		if (u["kw"] as Array).has("thief"):
 			_steal(st, uid, target, 1 + int(st["players"][seat].get("thief_bonus", 0)), 0, 1, ev)
 	_fire_unit(st, u, "attack", {"target": target, "trigger": target}, ev)
+	_fire_board(st, seat, "ally_attack", {"trigger": "u%d" % uid, "target": target}, ev, uid)
+	_fire_board(st, 1 - seat, "foe_attack", {"trigger": "u%d" % uid, "target": target}, ev)
 	if not t.is_empty() and int(t["hp"]) <= 0:
 		_fire_unit(st, u, "kill", {"target": target}, ev)
 	_resolve(st, ev)
@@ -593,7 +622,7 @@ static func _evolve(st: Dictionary, u: Dictionary, into: String, ev: Array) -> v
 
 ## Weakness: a print that "beats" an element hits prints of it for 2 more.
 static func _weakness_bonus(attacker: Dictionary, target: Dictionary) -> int:
-	if target.is_empty():
+	if target.is_empty() or bool(attacker.get("silenced", false)):
 		return 0
 	var beats: String = str(def_of_unit(attacker).get("beats", ""))
 	if beats != "" and str(def_of_unit(target).get("element", "")) == beats:
@@ -657,6 +686,10 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 	st["turn"] = int(st["turn"]) + 1
 	p["turns"] = int(p["turns"]) + 1
 	p["flow"] = int(p["speed"]) + (int(p["first_flow"]) if int(p["turns"]) == 1 else 0)
+	if int(p.get("slow", 0)) > 0:
+		p["flow"] = maxi(0, int(p["flow"]) - int(p["slow"]))
+		p["slow"] = 0
+	p["tools_turn"] = 0
 	p["power_used"] = false
 	for u in p["board"]:
 		u["fresh"] = false
@@ -685,7 +718,7 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 	# its next stage.
 	for u in (p["board"] as Array).duplicate():
 		var evo: Dictionary = def_of(st, seat, str(u["id"])).get("evolve", {})
-		if evo.is_empty() or int(u["hp"]) <= 0:
+		if evo.is_empty() or int(u["hp"]) <= 0 or bool(u.get("silenced", false)):
 			continue
 		u["age"] = int(u.get("age", 0)) + 1
 		if int(u["age"]) >= int(evo["turns"]):
@@ -713,9 +746,14 @@ static func _start_turn(st: Dictionary, ev: Array) -> void:
 # ---------------------------------------------------------------- effects
 
 static func _run(st: Dictionary, seat: int, effects: Array, ctx: Dictionary, ev: Array) -> void:
-	for e in effects:
+	for e0 in effects:
 		if st["over"]:
 			return
+		var e: Dictionary = e0
+		if e.has("if") and not _cond(st, seat, e["if"], ctx):
+			continue
+		if e.has("per"):
+			e = _scaled(st, seat, e, ctx)
 		var op: String = e["op"]
 		var p: Dictionary = st["players"][seat]
 		match op:
@@ -753,11 +791,89 @@ static func _run(st: Dictionary, seat: int, effects: Array, ctx: Dictionary, ev:
 				for i in int(e["n"]):
 					if (p["board"] as Array).size() < GameData.MAX_BOARD:
 						_summon(st, seat, e["card"], (p["board"] as Array).size(), ev, false)
+			"missiles":
+				# n separate 1-damage shots, each at a random enemy (or the Printer).
+				for i in int(e["n"]):
+					var pool: Array = []
+					for u in st["players"][1 - seat]["board"]:
+						if int(u["hp"]) > 0:
+							pool.append("u%d" % int(u["uid"]))
+					if bool(e.get("printer", true)):
+						pool.append("p%d" % (1 - seat))
+					if pool.is_empty():
+						break
+					var ref: String = pool[_rand(st, pool.size())]
+					ev.append({"e": "zap", "seat": seat, "target": ref})
+					_damage(st, ref, 1, ev)
+			"chain":
+				# Lightning that jumps: n damage, then one less to another enemy, and so on.
+				var hit := {}
+				var ref: String = str(ctx.get("target", ""))
+				var dmg: int = int(e["n"])
+				while dmg > 0:
+					if ref == "" or hit.has(ref):
+						var pool: Array = []
+						for u in st["players"][1 - seat]["board"]:
+							var r := "u%d" % int(u["uid"])
+							if not hit.has(r) and int(u["hp"]) > 0:
+								pool.append(r)
+						if pool.is_empty():
+							break
+						ref = pool[_rand(st, pool.size())]
+					hit[ref] = true
+					ev.append({"e": "zap", "seat": seat, "target": ref})
+					_damage(st, ref, dmg, ev)
+					dmg -= 1
+					ref = ""
+			"discard":
+				var hand: Array = st["players"][1 - seat]["hand"]
+				for i in int(e["n"]):
+					if hand.is_empty():
+						break
+					var c: Dictionary = hand[_rand(st, hand.size())]
+					hand.erase(c)
+					ev.append({"e": "discard", "seat": 1 - seat, "id": str(c["id"]), "uid": int(c["uid"])})
+			"drain_spool":
+				var foe_p: Dictionary = st["players"][1 - seat]
+				var take: int = mini(int(e["n"]), int(foe_p["spool"]))
+				foe_p["spool"] = int(foe_p["spool"]) - take
+				p["spool"] = int(p["spool"]) + take
+				ev.append({"e": "fil", "seat": 1 - seat, "flow": int(foe_p["flow"]), "spool": int(foe_p["spool"])})
+				ev.append({"e": "fil", "seat": seat, "flow": int(p["flow"]), "spool": int(p["spool"]), "gain": take})
+			"slow":
+				var foe_p: Dictionary = st["players"][1 - seat]
+				foe_p["slow"] = int(foe_p.get("slow", 0)) + int(e["n"])
+				ev.append({"e": "slow", "seat": 1 - seat, "n": int(foe_p["slow"])})
+			"sacrifice":
+				# Scrap your weakest other print; only then does the reward happen.
+				var victim: Dictionary = {}
+				for u in p["board"]:
+					if int(u["uid"]) != int(ctx.get("self", -1)) and int(u["hp"]) > 0 and (victim.is_empty() or int(u["atk"]) + int(u["hp"]) < int(victim["atk"]) + int(victim["hp"])):
+						victim = u
+				if not victim.is_empty():
+					victim["hp"] = 0
+					ev.append({"e": "destroy", "uid": int(victim["uid"])})
+					_resolve(st, ev)
+					_run(st, seat, e.get("then", []), ctx, ev)
+				else:
+					_run(st, seat, e.get("else", []), ctx, ev)
+			"tutor":
+				var deck: Array = p["deck"]
+				for i in range(deck.size() - 1, -1, -1):
+					var d := GameData.card(str(deck[i]))
+					if str(d.get("type", "")) == str(e.get("kind", "creature")) and (not e.has("max_cost") or int(d.get("cost", 0)) <= int(e["max_cost"])):
+						var id: String = str(deck[i])
+						deck.remove_at(i)
+						_give(st, seat, id, ev, true)
+						break
 			"steal":
 				# The thief is the print running the effect.
 				for ref in _refs(st, seat, str(e.get("to", "")), ctx):
 					_steal(st, int(ctx.get("self", -1)), ref, int(e.get("atk", 0)), int(e.get("hp", 0)), int(e.get("bonus_hp", 0)), ev)
 			_:
+				if e["op"] == "fight" or e["op"] == "mimic":
+					e = e.duplicate()
+					e["_self"] = int(ctx.get("self", -1))
 				for ref in _refs(st, seat, str(e.get("to", "")), ctx):
 					_run_on(st, seat, e, ref, ev)
 
@@ -813,11 +929,91 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 				ev.append({"e": "destroy", "uid": int(u["uid"])})
 		"bounce":
 			var u := unit_of(st, ref)
-			if not u.is_empty():
+			if not u.is_empty() and (not e.has("max_atk") or int(u["atk"]) <= int(e["max_atk"])):
 				var owner: int = int(u["seat"])
 				(st["players"][owner]["board"] as Array).erase(u)
 				ev.append({"e": "bounce", "uid": int(u["uid"]), "seat": owner})
 				_give(st, owner, u["id"], ev)
+		"silence":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				u["kw"] = []
+				u["grants"] = []
+				u["silenced"] = true
+				ev.append({"e": "silence", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"swap":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				var a: int = int(u["atk"])
+				u["atk"] = int(u["hp"])
+				u["hp"] = maxi(a, 0)
+				u["max_hp"] = maxi(a, 1)
+				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"set_atk":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				u["atk"] = int(e["n"])
+				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"double_atk":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				u["atk"] = int(u["atk"]) * 2
+				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"polymorph", "transform":
+			var u := unit_of(st, ref)
+			var into: String = "test_bot" if e["op"] == "polymorph" else str(e["card"])
+			var d := GameData.card(into)
+			if not u.is_empty() and not d.is_empty():
+				u["id"] = into
+				u["atk"] = int(d["atk"])
+				u["hp"] = int(d["hp"])
+				u["max_hp"] = int(d["hp"])
+				u["kw"] = (d.get("kw", []) as Array).duplicate()
+				u["grants"] = []
+				u["heat"] = 0
+				u["tox"] = 0
+				ev.append({"e": "polymorph", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"fight":
+			# The print running this and its target hit each other once.
+			var me := find_unit(st, int(e.get("_self", -1)))
+			var u := unit_of(st, ref)
+			if not me.is_empty() and not u.is_empty():
+				var a: int = int(me["atk"])
+				var b: int = int(u["atk"])
+				_damage(st, ref, a, ev)
+				_damage(st, "u%d" % int(me["uid"]), b, ev)
+		"destroy_if":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				var weak: bool = e.has("max_atk") and int(u["atk"]) <= int(e["max_atk"])
+				var hurt: bool = bool(e.get("damaged", false)) and int(u["hp"]) < int(u["max_hp"])
+				if weak or hurt:
+					u["hp"] = 0
+					ev.append({"e": "destroy", "uid": int(u["uid"])})
+		"drain":
+			var got := _damage(st, ref, int(e["n"]), ev)
+			if got > 0:
+				_heal(st, "p%d" % seat, got, ev)
+		"grant":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				if not u.has("grants"):
+					u["grants"] = []
+				(u["grants"] as Array).append(e["trig"])
+				ev.append({"e": "buff", "uid": int(u["uid"]), "unit": u.duplicate(true)})
+		"mimic":
+			# The print running this takes on the target's Attack and Health.
+			var me := find_unit(st, int(e.get("_self", -1)))
+			var u := unit_of(st, ref)
+			if not me.is_empty() and not u.is_empty():
+				me["atk"] = int(u["atk"])
+				me["max_hp"] = maxi(1, int(u["max_hp"]))
+				me["hp"] = maxi(1, int(u["hp"]))
+				ev.append({"e": "buff", "uid": int(me["uid"]), "unit": me.duplicate(true)})
+		"give_copy":
+			var u := unit_of(st, ref)
+			if not u.is_empty():
+				_give(st, seat, str(u["id"]), ev)
 		"copy":
 			var u := unit_of(st, ref)
 			var board: Array = st["players"][seat]["board"]
@@ -843,8 +1039,13 @@ const TRIGGER_DEPTH := 6
 static func _fire_unit(st: Dictionary, u: Dictionary, when: String, ctx: Dictionary, ev: Array) -> void:
 	if st["over"] or int(u["hp"]) <= 0 or int(st["depth"]) >= TRIGGER_DEPTH:
 		return
+	if bool(u.get("silenced", false)):
+		return
 	var fx: Array = []
 	for t in def_of(st, int(u["seat"]), u["id"]).get("trig", []):
+		if t["when"] == when:
+			fx.append_array(t["fx"])
+	for t in u.get("grants", []):
 		if t["when"] == when:
 			fx.append_array(t["fx"])
 	if fx.is_empty():
@@ -933,11 +1134,152 @@ static func _refs(st: Dictionary, seat: int, to: String, ctx: Dictionary) -> Arr
 			for s in [seat, foe]:
 				for u in st["players"][s]["board"]:
 					out.append("u%d" % int(u["uid"]))
+		"other_prints":
+			for s2 in [seat, foe]:
+				for u in st["players"][s2]["board"]:
+					if int(u["uid"]) != int(ctx.get("self", -1)):
+						out.append("u%d" % int(u["uid"]))
+		"weakest_enemy", "strongest_enemy":
+			var pick: Dictionary = {}
+			for u in st["players"][foe]["board"]:
+				if pick.is_empty() or (int(u["atk"]) < int(pick["atk"]) if to == "weakest_enemy" else int(u["atk"]) > int(pick["atk"])):
+					pick = u
+			if not pick.is_empty():
+				out.append("u%d" % int(pick["uid"]))
+		"damaged_enemies":
+			for u in st["players"][foe]["board"]:
+				if int(u["hp"]) < int(u["max_hp"]):
+					out.append("u%d" % int(u["uid"]))
+		"neighbors":
+			var board: Array = st["players"][seat]["board"]
+			for i in board.size():
+				if int(board[i]["uid"]) == int(ctx.get("self", -1)):
+					if i > 0:
+						out.append("u%d" % int(board[i - 1]["uid"]))
+					if i < board.size() - 1:
+						out.append("u%d" % int(board[i + 1]["uid"]))
+		"lowest_ally":
+			var pick: Dictionary = {}
+			for u in st["players"][seat]["board"]:
+				if pick.is_empty() or int(u["hp"]) < int(pick["hp"]):
+					pick = u
+			if not pick.is_empty():
+				out.append("u%d" % int(pick["uid"]))
+		"random_enemy_any":
+			var pool: Array = ["p%d" % foe]
+			for u in st["players"][foe]["board"]:
+				pool.append("u%d" % int(u["uid"]))
+			out.append(pool[_rand(st, pool.size())])
+		_:
+			# "tribe:<name>" and "element:<name>": your prints of that kind.
+			if to.begins_with("tribe:") or to.begins_with("element:"):
+				var want := to.split(":")[1]
+				var key := "tribe" if to.begins_with("tribe:") else "element"
+				for u in st["players"][seat]["board"]:
+					if str(GameData.card(str(u["id"])).get(key, "")) == want:
+						out.append("u%d" % int(u["uid"]))
+	return out
+
+
+## Whether an effect's "if" holds right now (every condition must).
+static func _cond(st: Dictionary, seat: int, c: Dictionary, ctx: Dictionary) -> bool:
+	var p: Dictionary = st["players"][seat]
+	var foe: Dictionary = st["players"][1 - seat]
+	for k in c:
+		var v = c[k]
+		match k:
+			"allies_at_least":
+				if (p["board"] as Array).size() < int(v):
+					return false
+			"enemies_at_least":
+				if (foe["board"] as Array).size() < int(v):
+					return false
+			"alone":
+				if (p["board"] as Array).size() != 1:
+					return false
+			"outnumbered":
+				if (foe["board"] as Array).size() <= (p["board"] as Array).size():
+					return false
+			"printer_damaged":
+				if int(p["hp"]) >= int(p["max_hp"]):
+					return false
+			"printer_at_most":
+				if int(p["hp"]) > int(v):
+					return false
+			"hand_at_least":
+				if (p["hand"] as Array).size() < int(v):
+					return false
+			"hand_at_most":
+				if (p["hand"] as Array).size() > int(v):
+					return false
+			"element_ally":
+				var found := false
+				for u in p["board"]:
+					if int(u["uid"]) != int(ctx.get("self", -1)) and str(GameData.card(str(u["id"])).get("element", "")) == str(v):
+						found = true
+				if not found:
+					return false
+			"self_damaged":
+				var me := find_unit(st, int(ctx.get("self", -1)))
+				if me.is_empty() or int(me["hp"]) >= int(me["max_hp"]):
+					return false
+			"scrapped_at_least":
+				if int(p.get("scrapped", 0)) < int(v):
+					return false
+			"turn_at_least":
+				if int(p["turns"]) < int(v):
+					return false
+			"trigger_tribe":
+				var t := unit_of(st, str(ctx.get("trigger", "")))
+				if t.is_empty() or str(GameData.card(str(t["id"])).get("tribe", "")) != str(v):
+					return false
+			"tools_this_turn":
+				if int(p.get("tools_turn", 0)) < int(v):
+					return false
+	return true
+
+
+## How many of something there are, for effects that scale ("per").
+static func _count(st: Dictionary, seat: int, per: String, ctx: Dictionary) -> int:
+	var p: Dictionary = st["players"][seat]
+	var foe: Dictionary = st["players"][1 - seat]
+	match per:
+		"allies":
+			return (p["board"] as Array).size()
+		"other_allies":
+			return maxi(0, (p["board"] as Array).size() - 1)
+		"enemies":
+			return (foe["board"] as Array).size()
+		"hand":
+			return (p["hand"] as Array).size()
+		"foe_hand":
+			return (foe["hand"] as Array).size()
+		"scrapped":
+			return int(p.get("scrapped", 0))
+		"tools":
+			return int(p.get("tools_turn", 0))
+		"damage":
+			return int(p["max_hp"]) - int(p["hp"])
+		"empty":
+			return maxi(0, GameData.MAX_BOARD - (p["board"] as Array).size())
+	if per.begins_with("element:") or per.begins_with("tribe:"):
+		return _refs(st, seat, per, ctx).size()
+	return 1
+
+
+static func _scaled(st: Dictionary, seat: int, e: Dictionary, ctx: Dictionary) -> Dictionary:
+	var k := _count(st, seat, str(e["per"]), ctx)
+	if e.has("cap"):
+		k = mini(k, int(e["cap"]))
+	var out := e.duplicate()
+	for key in ["n", "atk", "hp"]:
+		if out.has(key):
+			out[key] = int(out[key]) * k
 	return out
 
 
 static func _buff(u: Dictionary, atk: int, hp: int, kws: Array) -> void:
-	u["atk"] = int(u["atk"]) + atk
+	u["atk"] = maxi(0, int(u["atk"]) + atk)
 	u["hp"] = int(u["hp"]) + hp
 	u["max_hp"] = int(u["max_hp"]) + hp
 	for k in kws:
@@ -958,6 +1300,8 @@ static func _damage(st: Dictionary, ref: String, n: int, ev: Array) -> int:
 		p["armor"] = int(p["armor"]) - soak
 		p["hp"] = int(p["hp"]) - (n - soak)
 		ev.append({"e": "damage", "target": ref, "n": n, "hp": int(p["hp"]), "armor": int(p["armor"])})
+		if int(p["hp"]) > 0:
+			_fire_board(st, seat, "printer_hit", {"n": n}, ev)
 		# Failsafe: once a battle the Printer is brought back from the brink.
 		if int(p["hp"]) <= 0 and int(p["last_stand"]) > 0 and not bool(p["ls_used"]):
 			p["ls_used"] = true
@@ -1000,7 +1344,7 @@ static func _summon(st: Dictionary, seat: int, card_id: String, slot: int, ev: A
 		"atk": int(def["atk"]), "hp": int(def["hp"]), "max_hp": int(def["hp"]),
 		"kw": (def.get("kw", []) as Array).duplicate(),
 		"fresh": true, "attacks": 0, "jam": 0, "gear": [],
-		"heat": 0, "tox": 0, "loot": 0, "loot_el": "",
+		"heat": 0, "tox": 0, "loot": 0, "loot_el": "", "grants": [],
 		"mk": int(def.get("mk", 1)),
 		"paint": str((st["players"][seat].get("builds", {}).get(card_id, {}) as Dictionary).get("paint", "original")),
 	}
@@ -1084,6 +1428,8 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 			var owner: Dictionary = st["players"][int(u["seat"])]
 			(owner["board"] as Array).erase(u)
 			ev.append({"e": "death", "uid": int(u["uid"]), "seat": int(u["seat"])})
+			if not GameData.card(u["id"]).get("token", false):
+				owner["scrapped"] = int(owner.get("scrapped", 0)) + 1
 			if int(owner["shatter_draw"]) > 0 and int(owner["sd_turn"]) != int(st["turn"]):
 				owner["sd_turn"] = int(st["turn"])
 				_draw(st, int(u["seat"]), ev)
@@ -1095,7 +1441,12 @@ static func _resolve(st: Dictionary, ev: Array) -> void:
 				owner["spool"] = int(owner["spool"]) + int(owner["refund"])
 				ev.append({"e": "scrap", "seat": int(u["seat"]), "uid": int(u["uid"]), "n": int(owner["refund"]), "spool": int(owner["spool"])})
 		for u in dead:
-			_run(st, int(u["seat"]), def_of(st, int(u["seat"]), u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
+			if not bool(u.get("silenced", false)):
+				_run(st, int(u["seat"]), def_of(st, int(u["seat"]), u["id"]).get("shatter", []), {"target": "", "self": -1}, ev)
+				# Equipment it wore can have a parting effect too.
+				for g in u.get("grants", []):
+					if str(g["when"]) == "shatter":
+						_run(st, int(u["seat"]), g["fx"], {"target": "", "self": -1}, ev)
 			_fire_board(st, int(u["seat"]), "ally_shatter", {}, ev)
 			_fire_board(st, 1 - int(u["seat"]), "foe_shatter", {}, ev)
 	var down0: bool = int(st["players"][0]["hp"]) <= 0
