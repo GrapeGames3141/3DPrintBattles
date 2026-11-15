@@ -252,3 +252,4 @@ tempest_dragon
 tempestlynx
 tornado_weasel
 whirligig
+wyvern_rider
