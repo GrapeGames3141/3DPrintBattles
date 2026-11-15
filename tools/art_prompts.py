@@ -118,6 +118,56 @@ def main():
         w.writerow(["id", "name", "element", "rarity", "kind", "prompt"])
         w.writerows(csv_rows)
     print("wrote art_brief/prompts.md and creatures.csv", len(rows))
+    write_redo(rows, dict((r[0], r[5]) for r in csv_rows))
+
+
+HOW = {"gen": "built from 3D shapes by tools/render_art7.gd or render_art8.gd", "rig": "built from 3D shapes by tools/render_art6.gd",
+       "src": "built from 3D shapes by tools/render_art4.gd or render_art5.gd"}
+
+
+def write_redo(rows, prompts):
+    """art_brief/redo/: every creature whose picture was made from code, not an
+    image generator, with its current placeholder so the next artist can see it."""
+    from PIL import Image
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    folder = os.path.join(root, "art_brief", "redo")
+    shots = os.path.join(folder, "current_placeholders")
+    os.makedirs(shots, exist_ok=True)
+    lines = ["# Creatures to redo", "",
+             "Every creature here has a **placeholder picture made from code** (simple 3D shapes rendered in Godot),",
+             "not by an image generator. Each one needs a new painted sprite sheet in the style of the starters",
+             "(see `../style_targets/`) following the rules in `../README.md`.", "",
+             "- `redo_list.csv`: the same list as a spreadsheet, with each creature's prompt.",
+             "- `current_placeholders/<id>.png`: what the creature looks like now (its standing pose), so its",
+             "  body plan and colours can be kept or improved. Do **not** copy the placeholder's blocky style.", "",
+             "Save each new image as `art_inbox/<id>.png` and run `tools/import_creature_art.py`.", "",
+             "Also made from code: the **Test Bot** token (`test_bot`, a little 1/1 printed robot, Neutral), shown in",
+             "`current_placeholders/test_bot.png`. All tool and equipment card pictures were made from code too; they",
+             "are not in this list, which covers creatures only.", "",
+             "%d creatures." % len(rows), "",
+             "| # | id | Name | Element | Rarity | Kind | What it does | Placeholder |",
+             "|---|---|---|---|---|---|---|---|"]
+    import csv
+    with open(os.path.join(folder, "redo_list.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "name", "element", "rarity", "kind", "ability", "made_by", "placeholder", "prompt"])
+        for i, c in enumerate(rows, 1):
+            art = str(c.get("art", ""))
+            how = HOW["gen" if art == "gen" else art.split(":")[0]]
+            sheet = os.path.join(root, "assets", "creatures", "2d", c["id"] + "_sprite_sheet.png")
+            shot = "current_placeholders/%s.png" % c["id"]
+            if os.path.exists(sheet):
+                im = Image.open(sheet).convert("RGBA")
+                if im.width >= 1000:
+                    im = im.crop((0, 0, im.width // 4, im.height // 2))
+                im.resize((im.width // 2, im.height // 2), Image.LANCZOS).save(os.path.join(folder, shot), optimize=True)
+            kind = "token" if c.get("token") else "card"
+            text = (c.get("text") or "").replace("|", "/")
+            w.writerow([c["id"], c["name"], c["element"], c["rarity"], kind, text, how, shot, prompts.get(c["id"], "")])
+            lines.append("| %d | `%s` | %s | %s | %s | %s | %s | ![](%s) |" % (i, c["id"], c["name"], c["element"], c["rarity"], kind, text or "-", shot))
+    with open(os.path.join(folder, "README.md"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print("wrote art_brief/redo/", len(rows))
 
 
 if __name__ == "__main__":

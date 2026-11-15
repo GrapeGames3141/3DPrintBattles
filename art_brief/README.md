@@ -89,6 +89,8 @@ the same creature and seed, and name them `<id>_0.png` to `<id>_7.png` in the or
 
 ## Files in this folder
 
+- **`redo/`: the list of every creature to redo** (`redo/README.md` and `redo/redo_list.csv`), with
+  each one's current code-made placeholder picture in `redo/current_placeholders/`.
 - `README.md`: this brief.
 - `prompts.md`: one ready-to-paste prompt per creature, with the style and format rules
   written in.
