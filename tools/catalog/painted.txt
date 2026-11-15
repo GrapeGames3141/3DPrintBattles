@@ -154,3 +154,4 @@ thornback_hare
 treant_elder
 supporttreant
 verdant_dragon
+vine_weaver
