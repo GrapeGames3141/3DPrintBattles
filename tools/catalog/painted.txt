@@ -261,3 +261,4 @@ voxelion
 dragon_hatchling
 elder_wyrm
 extrudrake
+infernozzle
