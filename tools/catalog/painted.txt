@@ -87,3 +87,4 @@ glacier_dragon
 glacier_golem
 glaciermaw
 hailstorm_hawk
+ice_queen_moth
