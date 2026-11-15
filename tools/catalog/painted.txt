@@ -83,3 +83,4 @@ cryo_slime
 crystal_fox
 frost_wyvern
 frostbit_penguin
+glacier_dragon
