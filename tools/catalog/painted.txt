@@ -221,3 +221,4 @@ resinjelly
 siphon_squid
 siphonshark
 spool_hydra
+swarm_leech
