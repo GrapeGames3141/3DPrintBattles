@@ -223,3 +223,4 @@ siphonshark
 spool_hydra
 swarm_leech
 tidal_dragon
+tidecaller_crab
