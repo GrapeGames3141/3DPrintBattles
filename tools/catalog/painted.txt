@@ -198,3 +198,4 @@ sandpiper
 sandstone_scarab
 statue_gargoyle
 steppergolem
+swarm_carapace
