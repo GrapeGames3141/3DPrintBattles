@@ -178,9 +178,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-## 0..1 while this object's glint is running, else -1. Every few seconds a
-## gold light runs once around the object, each on its own beat, so a finger
-## can see what is there to tap without a label in the way.
+## 0..1 while this object's gentle brightening is running, else -1. Every few
+## seconds each object lights up softly, on its own beat, so a finger can see
+## what is there to tap without a label in the way.
 func _glint() -> float:
 	var ph := fmod(_t + _phase, GLINT_EVERY)
 	return ph / GLINT_TIME if ph < GLINT_TIME else -1.0
@@ -191,51 +191,41 @@ func _shimmer() -> float:
 	return sin(PI * g) if g >= 0.0 else 0.0
 
 
+## A soft round light, brightest in the middle, shared by every hotspot.
+static var _light_tex: Texture2D
+
+
+static func _light() -> Texture2D:
+	if _light_tex == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.add_point(0.55, Color(1, 1, 1, 0.45))
+		g.set_color(2, Color(1, 1, 1, 0))
+		var t := GradientTexture2D.new()
+		t.gradient = g
+		t.fill = GradientTexture2D.FILL_RADIAL
+		t.fill_from = Vector2(0.5, 0.5)
+		t.fill_to = Vector2(1.0, 0.5)
+		t.width = 128
+		t.height = 128
+		_light_tex = t
+	return _light_tex
+
+
+## The object itself lights up: a soft warm light over it (drawn additively, so
+## it brightens what is painted there) with no frame or edge. It glows when
+## touched, and every few seconds it brightens gently on its own beat.
 func _draw() -> void:
 	var glow := 0.0
-	var col := accent
 	if _down:
 		glow = 1.0
 	elif _hover:
-		glow = 0.7 + 0.15 * sin(_t * 5.0)
+		glow = 0.75 + 0.1 * sin(_t * 5.0)
 	elif attention:
-		glow = 0.25 + 0.2 * sin(_t * 2.6)
-	var ring := _local.duplicate()
-	ring.append(_local[0])
-	if glow > 0.0:
-		draw_colored_polygon(_local, Color(col.r, col.g, col.b, 0.13 * glow))
-		draw_polyline(ring, Color(col.r, col.g, col.b, 0.22 * glow), 9.0, true)
-		draw_polyline(ring, Color(col.r, col.g, col.b, 0.85 * glow), 3.0, true)
-	if _hover or _down:
+		glow = 0.35 + 0.2 * sin(_t * 2.6)
+	glow = maxf(glow, _shimmer() * 0.6)
+	if glow <= 0.0:
 		return
-	var g := _glint()
-	if g < 0.0:
-		return
-	# The glint: a soft gold outline that swells and fades, with a bright
-	# spark of light running once around it.
 	var gold := UI.GOLD
-	var swell := sin(PI * g)
-	draw_colored_polygon(_local, Color(gold.r, gold.g, gold.b, 0.07 * swell))
-	draw_polyline(ring, Color(gold.r, gold.g, gold.b, 0.18 * swell), 8.0, true)
-	draw_polyline(ring, Color(gold.r, gold.g, gold.b, 0.45 * swell), 2.5, true)
-	var total := 0.0
-	for i in ring.size() - 1:
-		total += ring[i].distance_to(ring[i + 1])
-	var head := g * total
-	var tail := head - total * 0.22
-	var run := PackedVector2Array()
-	var walked := 0.0
-	for i in ring.size() - 1:
-		var a := ring[i]
-		var b := ring[i + 1]
-		var seg := a.distance_to(b)
-		var s0 := clampf((tail - walked) / maxf(seg, 0.001), 0.0, 1.0)
-		var s1 := clampf((head - walked) / maxf(seg, 0.001), 0.0, 1.0)
-		if s1 > s0:
-			if run.is_empty():
-				run.append(a.lerp(b, s0))
-			run.append(a.lerp(b, s1))
-		walked += seg
-	if run.size() >= 2:
-		draw_polyline(run, Color(gold.r, gold.g, gold.b, 0.35 * swell), 10.0, true)
-		draw_polyline(run, Color(1.0, 0.96, 0.75, 0.95 * swell), 3.5, true)
+	var area := Rect2(Vector2.ZERO, size).grow_individual(size.x * 0.12, size.y * 0.12, size.x * 0.12, size.y * 0.12)
+	draw_texture_rect(_light(), area, false, Color(gold.r, gold.g, gold.b, 0.5 * glow))
