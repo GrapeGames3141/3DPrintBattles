@@ -191,3 +191,4 @@ obsidianray
 obsidian_sentinel
 pebbit
 pebble_golemite
+pebblepup
