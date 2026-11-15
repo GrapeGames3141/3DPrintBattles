@@ -112,3 +112,4 @@ capacitor
 capacitor_crab
 gridstag
 multimeterbeetle
+overload_eel
