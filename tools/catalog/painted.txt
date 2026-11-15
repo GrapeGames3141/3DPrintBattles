@@ -127,3 +127,4 @@ thunder_kirin
 thunderbird
 volt_ferret
 voltviper
+zapkit
