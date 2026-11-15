@@ -276,3 +276,4 @@ rootling
 seedbomb_squirrel
 swarm_stinger
 venus_snapper
+glue_golem
