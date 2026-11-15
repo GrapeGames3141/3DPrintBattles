@@ -62,6 +62,11 @@ var flipped := false
 var mods: Array = []
 var _parts: Array = []
 var _aura: TextureRect
+## The machine idles on its own (a slow hum, its nozzle light pulsing).
+## The battlefield moves it itself and turns this off.
+var idle_motion := true
+var _t := randf() * 10.0
+var _nozzle: Control
 
 
 ## `rect` is where the picture goes; `mod_ids` are the mods the Printer carries.
@@ -79,7 +84,35 @@ static func make(printer: String, mod_ids: Array, rect: Rect2, is_flipped := fal
 	r.size = rect.size
 	r.resized.connect(r._layout)
 	r.set_mods(mod_ids)
+	r._nozzle = Control.new()
+	r._nozzle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var add := CanvasItemMaterial.new()
+	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	r._nozzle.material = add
+	r._nozzle.draw.connect(r._draw_nozzle)
+	r.add_child(r._nozzle)
 	return r
+
+
+func _process(delta: float) -> void:
+	_t += delta
+	if idle_motion:
+		# A slow hum: the frame settles a hair up and down.
+		pivot_offset = Vector2(size.x * 0.5, size.y)
+		scale = Vector2(1.0 + sin(_t * 1.7) * 0.004, 1.0 - sin(_t * 1.7) * 0.006)
+	if is_instance_valid(_nozzle):
+		_nozzle.size = size
+		_nozzle.queue_redraw()
+
+
+## A warm light at the hot end that breathes, as if the heater is cycling.
+func _draw_nozzle() -> void:
+	var a := _art_rect()
+	var at := a.position + a.size * Vector2(0.5 if not flipped else 0.5, 0.47)
+	var k := 0.35 + 0.25 * sin(_t * 2.3) + 0.1 * sin(_t * 7.1)
+	var r := a.size.x * 0.07
+	_nozzle.draw_circle(at, r, Color(1.0, 0.55, 0.2, 0.18 * k))
+	_nozzle.draw_circle(at, r * 0.45, Color(1.0, 0.75, 0.4, 0.35 * k))
 
 
 ## Shows these mods on the machine.

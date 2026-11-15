@@ -33,6 +33,7 @@ static func make(printer: String, owner_seat: int, title: String, is_flipped: bo
 	v.printer_id = printer
 	var col := GameData.element_color(GameData.printer(printer)["element"])
 	v._art = PrinterRig.make(printer, mod_ids, Rect2(8, 0, 160, 146), is_flipped)
+	v._art.idle_motion = false
 	v.add_child(v._art)
 	v._name = UI.label(title, 16, col, true, 5)
 	v._name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

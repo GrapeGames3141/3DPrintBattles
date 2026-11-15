@@ -21,6 +21,13 @@ var _glow_color: Variant = null
 var _glow_k := 1.0
 var _glow_t := 0.0
 var _count: Label
+## The figure on a creature card stands about like the prints on the bench:
+## it breathes and shifts its weight now and then.
+var _fig: TextureRect
+var _fig_path := ""
+var _fig_frame := 0
+var _fig_t := randf() * 6.0
+const IDLE_CYCLE := [0, 0, 3, 0, 0, 6]
 
 
 static func make(id: String, card_scale: float = 1.0, card_build: Dictionary = {}) -> CardView:
@@ -100,7 +107,7 @@ func set_glow(color: Variant) -> void:
 		set_notify_transform(true)
 	_glow.visible = color != null
 	_glow_color = color
-	set_process(color != null)
+	set_process(color != null or _fig != null)
 	_style_glow()
 
 
@@ -123,6 +130,13 @@ func _style_glow() -> void:
 
 ## A card you can use breathes: its outline slowly swells and dims.
 func _process(delta: float) -> void:
+	if _fig != null and is_instance_valid(_fig) and is_visible_in_tree():
+		_fig_t += delta
+		_fig.scale = Vector2(1.0 + sin(_fig_t * 2.1) * 0.012, 1.0 - sin(_fig_t * 2.1) * 0.018)
+		var f: int = IDLE_CYCLE[int(_fig_t / 0.9) % IDLE_CYCLE.size()]
+		if f != _fig_frame:
+			_fig_frame = f
+			_fig.texture = UI.sprite(_fig_path, f)
 	if _glow == null or not _glow.visible:
 		return
 	_glow_t += delta
@@ -254,6 +268,11 @@ func _build_front(def: Dictionary) -> void:
 			fig.size = Vector2(180, 182)
 		fig.material = UI.paint_material(paint_id)
 		art.add_child(fig)
+		if def["type"] == "creature" and not show_raw:
+			_fig = fig
+			_fig_path = path
+			fig.pivot_offset = Vector2(fig.size.x * 0.5, fig.size.y * 0.92)
+			set_process(true)
 	UI.panel(self, Rect2(13, 13, 274, 196), UI.box(Color.TRANSPARENT, body.darkened(0.55), 4, 10))
 
 	var bar := UI.panel(self, Rect2(8, 202, 284, 44), UI.box(Color(0.04, 0.06, 0.1, 0.94), rar, 2, 9))
