@@ -89,3 +89,4 @@ glaciermaw
 hailstorm_hawk
 ice_queen_moth
 icicle_archer
+permafrost_bear
