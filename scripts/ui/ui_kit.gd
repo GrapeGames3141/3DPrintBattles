@@ -57,7 +57,7 @@ static func tex(path: String) -> Texture2D:
 
 
 ## One 384x512 cell of a creature sheet (4 columns x 2 rows). Single images
-## (the Test Bot) are returned whole.
+## smaller than a sheet are returned whole.
 static func sprite(path: String, frame: int = 0) -> Texture2D:
 	var t := tex(path)
 	if t == null or t.get_width() < 1000:

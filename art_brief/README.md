@@ -1,12 +1,27 @@
 # Art brief: painted creatures for 3D Print Arena
 
+## Completed delivery
+
+All 279 creatures from the original brief, plus the Test Bot token, now have painted
+eight-pose sprite sheets and matching raw prints in `assets/creatures/2d/`.
+The sheets use transparent backgrounds and the game's standard 4 × 2 layout.
+Test Bot uses the same animated creature-sheet path as the other creatures.
+
+`painted_art_manifest.json` preserves the original 279 prompts, recorded generation
+and refinement prompts, and SHA-256 hashes for all 560 delivered PNG files.
+Art was produced with the built-in image generator and imported with
+`tools/import_creature_art.py`. The generated backlog in `prompts.md`, `creatures.csv`
+and `redo/` now contains zero outstanding creatures.
+`painted_art_validation.json` records the dimensions, transparency, eight frame
+bounds, baselines and hashes checked for every delivered pair; all 280 passed.
+
 ## What we need
 
 One sprite sheet per creature for the **279 creatures** listed in `prompts.md` (also in
 `creatures.csv`). Each sheet shows the same creature in 8 poses. The game swaps between
 the poses to animate it: idle, walk, attack and hurt.
 
-These creatures are currently placeholder 3D models. They should look like the painted
+These creatures originally used placeholder 3D models. Their replacements match the painted
 starters in `style_targets/` (Cinderpaw, Aquafin, Voltwig, Frostling, Brambleowl).
 
 | Group | Count | Notes |
@@ -89,8 +104,9 @@ the same creature and seed, and name them `<id>_0.png` to `<id>_7.png` in the or
 
 ## Files in this folder
 
-- **`redo/`: the list of every creature to redo** (`redo/README.md` and `redo/redo_list.csv`), with
-  each one's current code-made placeholder picture in `redo/current_placeholders/`.
+- **`redo/`: the remaining creature backlog**, regenerated from the painted registry.
+- `painted_art_manifest.json`: delivered assets, original prompts, recorded generation
+  prompts and file hashes.
 - `README.md`: this brief.
 - `prompts.md`: one ready-to-paste prompt per creature, with the style and format rules
   written in.

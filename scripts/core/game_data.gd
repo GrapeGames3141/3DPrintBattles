@@ -1097,8 +1097,6 @@ static func clean_builds(deck: Array, builds: Dictionary) -> Dictionary:
 static func art_path(def: Dictionary) -> String:
 	match def.get("type", ""):
 		"creature":
-			if def["id"] == "test_bot":
-				return TOOL_ART % "test_bot_sprite"
 			return SPRITE % def["id"]
 		"upgrade":
 			return ARMOR_ART % def["id"]

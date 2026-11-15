@@ -98,6 +98,9 @@ def main():
     out = ["# Prompts, one per creature", "",
            "See README.md for the rules every image must follow. Save each result as `art_inbox/<id>.png`.",
            "", "%d creatures, the reference-inspired hybrids first. Tokens (later evolution stages, never in packs) are marked." % len(rows), ""]
+    if not rows:
+        out.extend(["All requested creature art is complete. Original prompts and delivered file hashes are archived in",
+                    "[painted_art_manifest.json](painted_art_manifest.json).", ""])
     for c in rows:
         colors = COLORS.get(c["element"], COLORS["Neutral"])
         if c.get("look", {}).get("colors"):
@@ -141,12 +144,17 @@ def write_redo(rows, prompts):
              "- `current_placeholders/<id>.png`: what the creature looks like now (its standing pose), so its",
              "  body plan and colours can be kept or improved. Do **not** copy the placeholder's blocky style.", "",
              "Save each new image as `art_inbox/<id>.png` and run `tools/import_creature_art.py`.", "",
-             "Also made from code: the **Test Bot** token (`test_bot`, a little 1/1 printed robot, Neutral), shown in",
-             "`current_placeholders/test_bot.png`. All tool and equipment card pictures were made from code too; they",
-             "are not in this list, which covers creatures only.", "",
+             ("The **Test Bot** token (`test_bot`) also has a painted eight-pose sheet."
+              if "test_bot" in catalog.wave6.PAINTED else
+              "Also made from code: the **Test Bot** token (`test_bot`, a little 1/1 printed robot, Neutral), shown in `current_placeholders/test_bot.png`."),
+             "Tool and equipment pictures are outside this creature art list.", "",
              "%d creatures." % len(rows), "",
              "| # | id | Name | Element | Rarity | Kind | What it does | Placeholder |",
              "|---|---|---|---|---|---|---|---|"]
+    if not rows:
+        lines = lines[:-2] + ["All requested creature replacements are complete. See",
+                              "[the delivered art manifest](../painted_art_manifest.json) and",
+                              "[validation report](../painted_art_validation.json)."]
     import csv
     with open(os.path.join(folder, "redo_list.csv"), "w", newline="") as f:
         w = csv.writer(f)
