@@ -79,3 +79,4 @@ trihydra
 volcano_tortle
 avalanche_ox
 chillfan
+cryo_slime
