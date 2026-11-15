@@ -68,3 +68,4 @@ lavalynx
 magma_mole
 magmabloom
 nozzlet
+scorch_wyrmling
