@@ -109,3 +109,4 @@ yeti
 arc_wasp
 blackout_bat
 capacitor
+capacitor_crab
