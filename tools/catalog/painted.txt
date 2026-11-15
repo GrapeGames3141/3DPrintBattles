@@ -86,3 +86,4 @@ frostbit_penguin
 glacier_dragon
 glacier_golem
 glaciermaw
+hailstorm_hawk
