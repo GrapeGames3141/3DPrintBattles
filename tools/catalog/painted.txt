@@ -266,3 +266,4 @@ elderbloom
 swarm_larva
 thornfang
 bouldron
+titanite
