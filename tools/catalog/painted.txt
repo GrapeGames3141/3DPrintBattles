@@ -197,3 +197,4 @@ rubble_hound
 sandpiper
 sandstone_scarab
 statue_gargoyle
+steppergolem
