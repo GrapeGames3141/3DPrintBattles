@@ -249,3 +249,4 @@ swarm_scout
 swiftwhip
 sylph_queen
 tempest_dragon
+tempestlynx
