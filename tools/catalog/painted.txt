@@ -46,3 +46,4 @@ shapeshift_sage
 spellsword_fox
 sphinx
 unicorn_foal
+void_dragon
