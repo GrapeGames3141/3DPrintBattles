@@ -178,3 +178,4 @@ crag_ogre
 crystalscorp
 cutie
 cyclops
+fossil_raptor
