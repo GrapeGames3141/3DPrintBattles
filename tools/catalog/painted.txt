@@ -243,3 +243,4 @@ rotordrone
 sky_pirate_parrot
 skyhawk
 storm_roc
+stormdrake
