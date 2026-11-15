@@ -84,3 +84,4 @@ crystal_fox
 frost_wyvern
 frostbit_penguin
 glacier_dragon
+glacier_golem
