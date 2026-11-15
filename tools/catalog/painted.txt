@@ -269,3 +269,4 @@ bouldron
 titanite
 hydra_head
 splashard
+torrentus
