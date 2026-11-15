@@ -253,3 +253,4 @@ tempestlynx
 tornado_weasel
 whirligig
 wyvern_rider
+zephyr_sprite
