@@ -187,3 +187,4 @@ minotaur
 monolith
 mountain_king
 obsidian_dragon
+obsidianray
