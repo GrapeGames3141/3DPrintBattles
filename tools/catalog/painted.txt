@@ -183,3 +183,4 @@ granitegriffin
 gravelhopper
 manticore
 marble_sculptor
+minotaur
