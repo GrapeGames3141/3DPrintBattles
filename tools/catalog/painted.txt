@@ -137,3 +137,4 @@ grove_stag
 ironbark_bear
 moss_sprout
 mushmunk
+mushroom_choir
