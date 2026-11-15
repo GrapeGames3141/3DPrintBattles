@@ -58,3 +58,4 @@ cinder_juggler
 cinder_sprite
 clogglin
 dragon_egg
+ember_dragon
