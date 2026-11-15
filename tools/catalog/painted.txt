@@ -81,3 +81,4 @@ avalanche_ox
 chillfan
 cryo_slime
 crystal_fox
+frost_wyvern
