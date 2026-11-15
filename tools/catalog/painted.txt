@@ -201,3 +201,4 @@ steppergolem
 swarm_carapace
 abyssal_angler
 benchyboss
+brine_bard
