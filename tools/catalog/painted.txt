@@ -165,3 +165,4 @@ fp_left_rail
 fp_mainboard
 fp_right_rail
 purge_line_worm
+raft_crawler
