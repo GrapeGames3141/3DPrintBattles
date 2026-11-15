@@ -208,3 +208,4 @@ coral_sentinel
 dewdrop_sprite
 dripling
 kelp_strangler
+kelpie
