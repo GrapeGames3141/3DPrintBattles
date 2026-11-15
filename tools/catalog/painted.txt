@@ -94,3 +94,4 @@ polar_packrat
 rime_knight
 rimefox
 rimestag
+slushpup
