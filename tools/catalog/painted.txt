@@ -280,3 +280,4 @@ glue_golem
 geode_armadillo
 aero_mantis
 windmill_golem
+test_bot
