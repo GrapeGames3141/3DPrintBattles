@@ -115,3 +115,4 @@ multimeterbeetle
 overload_eel
 plasma_pegasus
 raijin_reactor
+short_circuit
