@@ -153,3 +153,4 @@ swarm_warden
 thornback_hare
 treant_elder
 supporttreant
+verdant_dragon
