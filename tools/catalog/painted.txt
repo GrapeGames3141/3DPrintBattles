@@ -218,3 +218,4 @@ pearl_oyster
 puddle_mimic
 reefhopper
 resinjelly
+siphon_squid
