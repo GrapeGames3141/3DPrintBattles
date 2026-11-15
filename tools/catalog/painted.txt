@@ -130,3 +130,4 @@ voltviper
 zapkit
 barkback
 basilisk
+bloom_druid
