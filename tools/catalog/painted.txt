@@ -38,3 +38,4 @@ hex_owl
 layershifter
 mana_wraith
 mirror_imp
+moonlight_unicorn
