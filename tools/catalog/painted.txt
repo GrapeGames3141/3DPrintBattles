@@ -105,3 +105,4 @@ snow_globe_golem
 snowball_seal
 snowdrift
 snowmite
+yeti
