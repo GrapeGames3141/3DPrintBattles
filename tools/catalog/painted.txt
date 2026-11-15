@@ -189,3 +189,4 @@ mountain_king
 obsidian_dragon
 obsidianray
 obsidian_sentinel
+pebbit
