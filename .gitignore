@@ -11,3 +11,4 @@ backend/dist/
 user-data/
 __pycache__/
 *.pyc
+art_inbox/
