@@ -203,3 +203,4 @@ abyssal_angler
 benchyboss
 brine_bard
 brineleech
+bubbleray
