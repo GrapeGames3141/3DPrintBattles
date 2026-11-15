@@ -132,3 +132,4 @@ barkback
 basilisk
 bloom_druid
 bramblemaw
+gaia_engine
