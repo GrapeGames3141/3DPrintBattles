@@ -47,3 +47,4 @@ spellsword_fox
 sphinx
 unicorn_foal
 void_dragon
+void_weaver
