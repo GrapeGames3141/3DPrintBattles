@@ -2,7 +2,7 @@
 
 See README.md for the rules every image must follow. Save each result as `art_inbox/<id>.png`.
 
-247 creatures, the reference-inspired hybrids first. Tokens (later evolution stages, never in packs) are marked.
+245 creatures, the reference-inspired hybrids first. Tokens (later evolution stages, never in packs) are marked.
 
 ## Nova Burster `nova_burster`
 
@@ -11,14 +11,6 @@ A nova burster: a golden star-fire golem bursting with flame spikes and a blazin
 ## Chimera Raiju `chimera_raiju`
 
 A chimera raiju: a copper-armoured lion with ram horns, a lightning-bolt mane, a coiled spring along its spine and a snake-headed tail, called Chimera Raiju. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of two-tone silk bright yellow and graphite black PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Hex Owl `hex_owl`
-
-A round bird, called Hex Owl. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
-
-## Jellycrown `jellycrown`
-
-A creature, called Jellycrown. A sprite sheet of one cute chibi creature that looks like a glossy 3D-printed toy figure, made of violet, magenta and gold PLA filament with very fine visible print layer lines, smooth rounded shapes, big expressive eyes, soft studio lighting. Exactly 8 poses of the same creature in a grid of 4 columns and 2 rows on a plain solid black background, every pose the same size, standing on the same ground line, side three-quarter view facing right. Poses in order: 1 standing idle, 2 crouching ready, 3 walking mid-stride, 4 proud with tail or crest raised, 5 winding up to attack, 6 lunging attack with mouth open, 7 low sneaking crouch, 8 flinching hurt with eyes squeezed shut. No text, no shadows on the background, no frames.
 
 ## Kitsune `kitsune`
 

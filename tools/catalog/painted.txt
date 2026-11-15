@@ -33,3 +33,5 @@ starlight_drifter
 meteorite_golem
 orbit_flyer
 tengu
+jellycrown
+hex_owl
