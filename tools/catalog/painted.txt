@@ -55,3 +55,4 @@ brimstone_bulldog
 cerberus
 chimera
 cinder_juggler
+cinder_sprite
