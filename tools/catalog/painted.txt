@@ -139,3 +139,4 @@ moss_sprout
 mushmunk
 mushroom_choir
 nautilark
+overgrowth_hydra
