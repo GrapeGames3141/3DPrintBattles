@@ -174,3 +174,4 @@ basalt_colossus
 basaltbison
 boulder_beetle
 cairncrab
+crag_ogre
