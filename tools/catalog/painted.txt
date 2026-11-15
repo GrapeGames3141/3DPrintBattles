@@ -141,3 +141,4 @@ mushroom_choir
 nautilark
 overgrowth_hydra
 pack_wolf
+seedpup
