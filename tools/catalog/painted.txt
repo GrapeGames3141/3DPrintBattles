@@ -70,3 +70,4 @@ magmabloom
 nozzlet
 scorch_wyrmling
 slagtooth
+sootling
