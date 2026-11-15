@@ -56,3 +56,4 @@ cerberus
 chimera
 cinder_juggler
 cinder_sprite
+clogglin
