@@ -66,3 +66,4 @@ kilnback_tortoise
 kilnpup
 lavalynx
 magma_mole
+magmabloom
