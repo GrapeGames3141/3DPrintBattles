@@ -119,3 +119,4 @@ short_circuit
 sparkbug
 static_hedgehog
 staticcub
+storm_dragon
