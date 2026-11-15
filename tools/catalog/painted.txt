@@ -279,3 +279,4 @@ venus_snapper
 glue_golem
 geode_armadillo
 aero_mantis
+windmill_golem
