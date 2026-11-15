@@ -49,7 +49,10 @@ func _initialize() -> void:
 		"nozzlet": [_nozzle_line, 1], "extrudrake": [_nozzle_line, 2], "infernozzle": [_nozzle_line, 3],
 		"bytelet": [_byte_line, 1], "voxelion": [_byte_line, 2], "teravox": [_byte_line, 3],
 	}
+	var painted := FileAccess.get_file_as_string("res://tools/catalog/painted.txt").split("\n")
 	for id in jobs:
+		if painted.has(id):
+			continue
 		if only.is_empty() or only.has(id):
 			await _rig_sheet(id, jobs[id][0], int(jobs[id][1]))
 	quit()

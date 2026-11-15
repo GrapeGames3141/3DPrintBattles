@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://begsafjk4txg8"
+
+[deps]
+
+files=["res://art_brief/redo/redo_list.name.translation", "res://art_brief/redo/redo_list.element.translation", "res://art_brief/redo/redo_list.rarity.translation", "res://art_brief/redo/redo_list.kind.translation", "res://art_brief/redo/redo_list.ability.translation", "res://art_brief/redo/redo_list.made.translation", "res://art_brief/redo/redo_list.placeholder.translation", "res://art_brief/redo/redo_list.prompt.translation"]
+
+source_file="res://art_brief/redo/redo_list.csv"
+dest_files=["res://art_brief/redo/redo_list.name.translation", "res://art_brief/redo/redo_list.element.translation", "res://art_brief/redo/redo_list.rarity.translation", "res://art_brief/redo/redo_list.kind.translation", "res://art_brief/redo/redo_list.ability.translation", "res://art_brief/redo/redo_list.made.translation", "res://art_brief/redo/redo_list.placeholder.translation", "res://art_brief/redo/redo_list.prompt.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
