@@ -213,3 +213,4 @@ kraken
 leviathan
 mistwalker
 mistweaver
+narwhal_lancer
