@@ -245,3 +245,4 @@ skyhawk
 storm_roc
 stormdrake
 swarm_glider
+swarm_scout
