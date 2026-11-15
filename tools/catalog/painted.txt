@@ -263,3 +263,4 @@ elder_wyrm
 extrudrake
 infernozzle
 elderbloom
+swarm_larva
