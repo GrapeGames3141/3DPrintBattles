@@ -192,3 +192,4 @@ obsidian_sentinel
 pebbit
 pebble_golemite
 pebblepup
+quarry_crusher
