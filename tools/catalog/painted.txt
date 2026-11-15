@@ -106,3 +106,4 @@ snowball_seal
 snowdrift
 snowmite
 yeti
+arc_wasp
