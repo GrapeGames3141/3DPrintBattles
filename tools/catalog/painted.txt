@@ -64,3 +64,4 @@ furnace_golem
 heatbedhedgehog
 kilnback_tortoise
 kilnpup
+lavalynx
