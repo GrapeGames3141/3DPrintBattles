@@ -222,3 +222,4 @@ siphon_squid
 siphonshark
 spool_hydra
 swarm_leech
+tidal_dragon
