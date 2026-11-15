@@ -185,3 +185,4 @@ manticore
 marble_sculptor
 minotaur
 monolith
+mountain_king
