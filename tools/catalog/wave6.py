@@ -546,6 +546,106 @@ U("tribe_totem", "Swarm Totem", 2, "uncommon", 1, 1, text="When you fit it, give
   effects=[E("buff", "", atk=1, hp=1, to="tribe:swarm")])
 
 
+# =============================================================== MYTHICAL
+# Dragons, unicorns and the beasts of legend, each with a move of its own.
+
+def M(cid, name, element, cost, a, h, rarity, kw, fx, **art):
+    K(cid, name, element, cost, a, h, rarity, kw, fx, art=art)
+
+
+M("ember_dragon", "Ember Dragon", F, 7, 6, 6, "epic", ["hover"],
+  ability(ON("attack", E("heat", "Breathe fire: Heat all enemy prints.", n=2, to="enemy_prints"))), plan="dragon")
+M("tidal_dragon", "Tidal Dragon", W, 7, 5, 7, "epic", ["hover"],
+  ability(ON("turn_end", E("heal", "Repair your Printer by 3", n=3, to="own_printer"), E("cleanse", "and Cleanse your prints.", to="friendly_prints"))), plan="dragon")
+M("storm_dragon", "Storm Dragon", L, 7, 6, 5, "epic", ["hover"],
+  ability(E("chain", "Lightning: 4 damage to a random enemy print, then 3, 2 and 1 to others.", n=4)), plan="dragon")
+M("verdant_dragon", "Verdant Dragon", N, 7, 5, 7, "epic", ["hover"],
+  ability(E("heal", "Fully repair your prints", n=99, to="friendly_prints"), E("buff", "and give them Hover.", atk=0, hp=0, kw=["hover"], to="friendly_prints")), plan="dragon")
+M("glacier_dragon", "Glacier Dragon", I, 8, 6, 8, "legendary", ["hover"],
+  ability(ON("attack", E("sleep", "Freeze the print it hits: it sleeps for 2 turns.", n=2, to="trigger"))), plan="dragon")
+M("obsidian_dragon", "Obsidian Dragon", S, 8, 7, 8, "legendary", ["hover"],
+  ability(ON("printer_hit", E("damage", "Deal 3 damage to the enemy Printer.", n=3, to="enemy_printer"))), plan="dragon")
+M("tempest_dragon", "Tempest Dragon", D, 7, 5, 6, "epic", ["hover", "twin"],
+  ability(ON("kill", E("bounce", "Blow the strongest enemy print back to its owner's hand.", to="strongest_enemy"))), plan="dragon")
+M("void_dragon", "Void Dragon", A, 9, 7, 7, "legendary", ["hover"],
+  ability(E("silence", "Silence all enemy prints", to="enemy_prints"), E("drain_spool", "and steal 5 Filament from their Spool.", n=5)), plan="dragon")
+M("fairy_dragon", "Fairy Dragon", A, 2, 1, 2, "uncommon", ["hover"],
+  ability(E("buff", "Give a friendly print Hover and Ward.", "friendly_print", atk=0, hp=0, kw=["hover", "ward"], to="target")), plan="dragon", small=True)
+M("wyvern_rider", "Wyvern Rider", D, 4, 3, 3, "uncommon", ["hover"],
+  ability(ON("attack", E("buff", "Give a random friendly print +1/+1.", atk=1, hp=1, to="random_friendly"))), plan="dragon", small=True)
+M("dragon_egg", "Dragon Egg", F, 2, 0, 4, "rare", [], evolves("dragon_hatchling", "Dragon Hatchling", 3), plan="egg")
+M("dragon_hatchling", "Dragon Hatchling", F, 4, 3, 3, "rare", ["hover"], evolves("elder_wyrm", "Elder Wyrm", 3), plan="dragon", small=True, stage=2)
+M("elder_wyrm", "Elder Wyrm", F, 9, 8, 8, "legendary", ["hover"],
+  ability(ON("attack", E("damage", "Deal 2 damage to all enemy prints.", n=2, to="enemy_prints"))), plan="dragon", stage=3)
+
+M("unicorn_foal", "Unicorn Foal", A, 2, 1, 3, "uncommon", [], evolves("unicorn", "Unicorn", 2), plan="horse", horn=True, foal=True, stage=1)
+M("unicorn", "Unicorn", A, 5, 4, 5, "rare", [],
+  dict(evolves("alicorn", "Alicorn", 3, ability(ON("turn_start", E("cleanse", "Cleanse your prints", to="friendly_prints"), E("heal", "and repair them by 1.", n=1, to="friendly_prints"))))),
+  plan="horse", horn=True, stage=2)
+M("alicorn", "Alicorn", A, 8, 6, 7, "legendary", ["hover", "ward"],
+  ability(ON("turn_start", E("heal", "Repair your Printer by 3", n=3, to="own_printer"), E("buff", "and give your prints +1/+1.", atk=1, hp=1, to="friendly_prints"))),
+  plan="horse", horn=True, wings=True, stage=3)
+M("moonlight_unicorn", "Moonlight Unicorn", A, 5, 4, 5, "rare", [],
+  ability(E("heal", "Fully repair your prints", n=99, to="friendly_prints"), E("cleanse", "and Cleanse them.", to="friendly_prints")), plan="horse", horn=True)
+M("rainbow_unicorn", "Rainbow Unicorn", X, 6, 5, 5, "epic", [],
+  ability(PER("elements", E("buff", "Give your prints +1/+1 for each different element among them.", atk=1, hp=1, to="friendly_prints"))),
+  plan="horse", horn=True, rainbow=True)
+M("pegasus_courier", "Pegasus Courier", D, 3, 2, 3, "uncommon", ["hover"],
+  ability(ON("turn_end", E("buff", "Give a random friendly print Hover.", atk=0, hp=0, kw=["hover"], to="random_friendly"))), plan="horse", wings=True)
+M("shadow_mare", "Shadow Mare", A, 4, 3, 4, "rare", [],
+  ability(ON("attack", E("discard", "Your opponent throws away a random card.", n=1))), plan="horse", pale=False)
+M("kelpie", "Kelpie", W, 3, 3, 2, "uncommon", [],
+  ability(ON("attack", E("bounce", "Drag the print it hits back to its owner's hand if it has 2 Attack or less.", max_atk=2, to="trigger"))), plan="horse", pale=False)
+M("thunder_kirin", "Thunder Kirin", L, 6, 5, 5, "epic", [],
+  ability(E("buff", "Give all your prints Rush.", atk=0, hp=0, kw=["rush"], to="friendly_prints")), plan="horse", horn=True, pale=False)
+
+M("griffin_knight", "Griffin Knight", D, 5, 4, 4, "rare", ["hover"],
+  ability(E("buff", "Give a friendly print Hover and +2 Attack.", "friendly_print", atk=2, hp=0, kw=["hover"], to="target")), plan="beast", beast="griffin")
+M("sunfire_phoenix", "Sunfire Phoenix", F, 6, 5, 4, "legendary", ["hover", "reprint"],
+  ability(ON("turn_end", E("heal", "It rises from its ashes: fully repair it.", n=99, to="self"))), plan="phoenix")
+M("cerberus", "Cerberus", F, 5, 2, 5, "rare", ["triple"],
+  ability(ON("kill", E("heat", "Heat a random enemy print.", n=2, to="random_enemy"))), plan="beast", beast="cerberus")
+M("spool_hydra", "Spool Hydra", W, 7, 4, 7, "epic", [],
+  ability(ON("hurt", E("summon", "Grow a 1/1 Hydra Head beside it.", n=1, card="hydra_head"))), plan="hydra", heads=3)
+M("hydra_head", "Hydra Head", W, 1, 1, 1, "common", [], {"text": "", "target": "", "on_print": [], "shatter": []}, plan="serpent")
+M("kitsune", "Kitsune", A, 4, 3, 3, "rare", ["cloak"],
+  ability(PER("hand", E("buff", "Gets +1/+1 for each card in your hand (up to 4).", atk=1, hp=1, to="self"), cap=4),
+          ON("turn_end", E("buff", "It hides again with Cloak.", atk=0, hp=0, kw=["cloak"], to="self"))), plan="beast", beast="kitsune", tails=7)
+M("kraken", "Kraken", W, 9, 6, 9, "legendary", [],
+  ability(E("take", "Pull the strongest enemy print onto your side for good.", to="strongest_enemy")), plan="kraken")
+M("chimera", "Chimera", F, 6, 5, 5, "epic", [],
+  ability(ON("attack", E("heat", "Heat,", n=2, to="trigger"), E("poison", "Poison", to="trigger"), E("jam", "and Jam the print it hits.", to="trigger"))), plan="beast", beast="chimera")
+M("manticore", "Manticore", S, 5, 3, 4, "rare", ["snap"],
+  ability(PER("enemies", E("buff", "Gets +1 Attack for each enemy print.", atk=1, hp=0, to="self"))), plan="beast", beast="manticore")
+M("minotaur", "Minotaur", S, 5, 5, 5, "rare", ["menace", "overflow"],
+  ability(E("buff", "Give your other Stone prints Menace.", atk=0, hp=0, kw=["menace"], to="element:Stone")), plan="biped", bull=True)
+M("cyclops", "Cyclops", S, 4, 5, 5, "uncommon", [],
+  ability(E("destroy_if", "Knock an enemy print with Hover out of the sky: destroy it.", "enemy_print", has_kw="hover", to="target")), plan="biped", cyclops=True)
+M("sphinx", "Sphinx", A, 6, 4, 6, "epic", [],
+  ability(ON("turn_start", IF({"foe_hand_more": True}, E("discard", "If your opponent has more cards than you, they throw one away.", n=1)))), plan="beast", beast="sphinx")
+M("basilisk", "Basilisk", N, 5, 3, 5, "rare", [],
+  ability(E("destroy", "Its gaze turns the weakest enemy print to stone: destroy it.", to="weakest_enemy")), plan="serpent")
+M("leviathan", "Leviathan", W, 9, 8, 10, "legendary", [],
+  ability(E("swap", "Swap the Attack and Health of every enemy print.", to="enemy_prints")), plan="serpent")
+M("thunderbird", "Thunderbird", L, 6, 5, 4, "epic", ["hover"],
+  ability(ON("printer_hit", E("chain", "Lightning: 2 damage to a random enemy print, then 1 to another.", n=2))), plan="phoenix")
+M("yeti", "Yeti", I, 5, 4, 6, "rare", [],
+  ability(ON("foe_attack", E("sleep", "Put the attacker to sleep for 2 turns.", n=2, to="trigger"))), plan="biped")
+
+for t in ("dragon_hatchling", "elder_wyrm", "unicorn", "alicorn", "hydra_head"):
+    token(t)
+
+# Wave-6 creatures whose names promise a legend get the matching body.
+_LEGEND_LOOKS = {"scorch_wyrmling": {"plan": "dragon", "small": True}, "frost_wyvern": {"plan": "dragon"},
+                 "kite_drake": {"plan": "dragon", "small": True}, "blaze_matriarch": {"plan": "dragon"},
+                 "plasma_pegasus": {"plan": "horse", "wings": True, "pale": False}, "ashling": {"plan": "phoenix"},
+                 "overgrowth_hydra": {"plan": "hydra", "heads": 5}, "storm_roc": {"plan": "phoenix"},
+                 "statue_gargoyle": {"plan": "beast", "beast": "griffin"}, "ice_queen_moth": {"plan": "bug"}}
+for c in CREATURES:
+    if c["id"] in _LEGEND_LOOKS and "look" in c:
+        c["look"].update(_LEGEND_LOOKS[c["id"]])
+
+
 # ============================================== older cards made their own
 # Before wave 6 several cards did exactly the same thing (six of them just
 # jammed a print on arrival). Each now keeps its body and stats but gets an

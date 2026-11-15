@@ -1302,6 +1302,31 @@ func _play_event(e: Dictionary, next: Dictionary) -> void:
 				await pnode.evolve_to(e["unit"])
 				UI.floater(_fx, "Transformed!", pnode.center() + Vector2(0, -70), UI.CYAN, 22)
 			await _wait(0.2)
+		"take":
+			# A print changes sides: it fades from its row and steps out on the other.
+			var tuid: int = int(e["uid"])
+			var old: BoardUnit = _units.get(tuid)
+			var to_seat: int = int(e["seat"])
+			if old != null:
+				Effects.burst(_fx, old.center(), "ring", Color("c9a0ff"), 1.4)
+				var fade := old.create_tween()
+				fade.tween_property(old, "modulate:a", 0.0, 0.25)
+				await fade.finished
+				old.queue_free()
+			_units.erase(tuid)
+			for seat_r in 2:
+				(_rows[seat_r] as Array).erase(tuid)
+			var fresh_node := BoardUnit.make(e["unit"], to_seat != me)
+			fresh_node.scale = Vector2(unit_scale, unit_scale)
+			_board.add_child(fresh_node)
+			_units[tuid] = fresh_node
+			(_rows[to_seat] as Array).append(tuid)
+			fresh_node.position = _slot_pos(to_seat, (_rows[to_seat] as Array).size() - 1, (_rows[to_seat] as Array).size())
+			_layout_row(0)
+			_layout_row(1)
+			UI.floater(_fx, "Taken over!", fresh_node.center() + Vector2(0, -70), Color("c9a0ff"), 24)
+			Audio.sfx("reveal")
+			await _wait(0.4)
 		"forbidden":
 			_banner("THE FORBIDDEN PRINTER IS COMPLETE!", UI.GOLD)
 			Audio.sfx("reveal_epic")

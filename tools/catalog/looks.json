@@ -9,6 +9,14 @@
   "plan": "bug",
   "seed": 667572
  },
+ "alicorn": {
+  "element": "Arcane",
+  "horn": true,
+  "plan": "horse",
+  "seed": 2095221,
+  "stage": 3,
+  "wings": true
+ },
  "arc_wasp": {
   "element": "Lightning",
   "plan": "bug",
@@ -26,7 +34,7 @@
  },
  "ashling": {
   "element": "Fire",
-  "plan": "bird",
+  "plan": "phoenix",
   "seed": 12249238
  },
  "avalanche_ox": {
@@ -38,6 +46,11 @@
   "element": "Stone",
   "plan": "biped",
   "seed": 15308342
+ },
+ "basilisk": {
+  "element": "Nature",
+  "plan": "serpent",
+  "seed": 4922634
  },
  "benchy_unsinkable": {
   "element": "Neutral",
@@ -51,7 +64,7 @@
  },
  "blaze_matriarch": {
   "element": "Fire",
-  "plan": "biped",
+  "plan": "dragon",
   "seed": 6647814
  },
  "bloom_druid": {
@@ -100,6 +113,18 @@
   "plan": "bug",
   "seed": 4708705
  },
+ "cerberus": {
+  "beast": "cerberus",
+  "element": "Fire",
+  "plan": "beast",
+  "seed": 7333880
+ },
+ "chimera": {
+  "beast": "chimera",
+  "element": "Fire",
+  "plan": "beast",
+  "seed": 15090750
+ },
  "chrono_snail": {
   "element": "Arcane",
   "plan": "shell",
@@ -140,10 +165,28 @@
   "plan": "serpent",
   "seed": 11451720
  },
+ "cyclops": {
+  "cyclops": true,
+  "element": "Stone",
+  "plan": "biped",
+  "seed": 7896280
+ },
  "dewdrop_sprite": {
   "element": "Water",
   "plan": "floater",
   "seed": 5602678
+ },
+ "dragon_egg": {
+  "element": "Fire",
+  "plan": "egg",
+  "seed": 7826332
+ },
+ "dragon_hatchling": {
+  "element": "Fire",
+  "plan": "dragon",
+  "seed": 1432423,
+  "small": true,
+  "stage": 2
  },
  "dripling": {
   "element": "Water",
@@ -151,11 +194,22 @@
   "seed": 7694055,
   "stage": 1
  },
+ "elder_wyrm": {
+  "element": "Fire",
+  "plan": "dragon",
+  "seed": 12253882,
+  "stage": 3
+ },
  "elderbloom": {
   "element": "Nature",
   "plan": "quad",
   "seed": 6569453,
   "stage": 3
+ },
+ "ember_dragon": {
+  "element": "Fire",
+  "plan": "dragon",
+  "seed": 13496134
  },
  "ember_moth": {
   "element": "Fire",
@@ -171,6 +225,12 @@
   "element": "Neutral",
   "plan": "blob",
   "seed": 2074605
+ },
+ "fairy_dragon": {
+  "element": "Arcane",
+  "plan": "dragon",
+  "seed": 6449000,
+  "small": true
  },
  "feather_duster_fox": {
   "element": "Wind",
@@ -219,7 +279,7 @@
  },
  "frost_wyvern": {
   "element": "Ice",
-  "plan": "serpent",
+  "plan": "dragon",
   "seed": 10625543
  },
  "frostbit_penguin": {
@@ -247,6 +307,11 @@
   "plan": "biped",
   "seed": 11080736
  },
+ "glacier_dragon": {
+  "element": "Ice",
+  "plan": "dragon",
+  "seed": 4152844
+ },
  "glacier_golem": {
   "element": "Ice",
   "plan": "biped",
@@ -267,6 +332,12 @@
   "plan": "quad",
   "seed": 13112343
  },
+ "griffin_knight": {
+  "beast": "griffin",
+  "element": "Wind",
+  "plan": "beast",
+  "seed": 8334627
+ },
  "grove_stag": {
   "element": "Nature",
   "plan": "quad",
@@ -286,6 +357,11 @@
   "element": "Arcane",
   "plan": "bird",
   "seed": 10319366
+ },
+ "hydra_head": {
+  "element": "Water",
+  "plan": "serpent",
+  "seed": 6111402
  },
  "ice_queen_moth": {
   "element": "Ice",
@@ -312,6 +388,12 @@
   "plan": "quad",
   "seed": 15001656
  },
+ "kelpie": {
+  "element": "Water",
+  "pale": false,
+  "plan": "horse",
+  "seed": 6932195
+ },
  "kilnback_tortoise": {
   "element": "Fire",
   "plan": "shell",
@@ -319,8 +401,26 @@
  },
  "kite_drake": {
   "element": "Wind",
-  "plan": "bird",
-  "seed": 11094770
+  "plan": "dragon",
+  "seed": 11094770,
+  "small": true
+ },
+ "kitsune": {
+  "beast": "kitsune",
+  "element": "Arcane",
+  "plan": "beast",
+  "seed": 14651479,
+  "tails": 7
+ },
+ "kraken": {
+  "element": "Water",
+  "plan": "kraken",
+  "seed": 14127033
+ },
+ "leviathan": {
+  "element": "Water",
+  "plan": "serpent",
+  "seed": 12588278
  },
  "magma_mole": {
   "element": "Fire",
@@ -332,10 +432,22 @@
   "plan": "floater",
   "seed": 1898356
  },
+ "manticore": {
+  "beast": "manticore",
+  "element": "Stone",
+  "plan": "beast",
+  "seed": 4483035
+ },
  "marble_sculptor": {
   "element": "Stone",
   "plan": "quad",
   "seed": 12039666
+ },
+ "minotaur": {
+  "bull": true,
+  "element": "Stone",
+  "plan": "biped",
+  "seed": 230570
  },
  "mirror_imp": {
   "element": "Arcane",
@@ -346,6 +458,12 @@
   "element": "Water",
   "plan": "quad",
   "seed": 6586336
+ },
+ "moonlight_unicorn": {
+  "element": "Arcane",
+  "horn": true,
+  "plan": "horse",
+  "seed": 3325280
  },
  "moss_sprout": {
   "element": "Nature",
@@ -372,6 +490,11 @@
   "plan": "quad",
   "seed": 2193601
  },
+ "obsidian_dragon": {
+  "element": "Stone",
+  "plan": "dragon",
+  "seed": 6025091
+ },
  "obsidian_sentinel": {
   "element": "Stone",
   "plan": "biped",
@@ -384,7 +507,8 @@
  },
  "overgrowth_hydra": {
   "element": "Nature",
-  "plan": "quad",
+  "heads": 5,
+  "plan": "hydra",
   "seed": 13381138
  },
  "overload_eel": {
@@ -413,6 +537,12 @@
   "plan": "biped",
   "seed": 8447179
  },
+ "pegasus_courier": {
+  "element": "Wind",
+  "plan": "horse",
+  "seed": 7976710,
+  "wings": true
+ },
  "permafrost_bear": {
   "element": "Ice",
   "plan": "quad",
@@ -420,8 +550,10 @@
  },
  "plasma_pegasus": {
   "element": "Lightning",
-  "plan": "bird",
-  "seed": 3050050
+  "pale": false,
+  "plan": "horse",
+  "seed": 3050050,
+  "wings": true
  },
  "polar_packrat": {
   "element": "Ice",
@@ -458,6 +590,13 @@
   "plan": "quad",
   "seed": 3816768
  },
+ "rainbow_unicorn": {
+  "element": "Neutral",
+  "horn": true,
+  "plan": "horse",
+  "rainbow": true,
+  "seed": 13751592
+ },
  "rime_knight": {
   "element": "Ice",
   "plan": "biped",
@@ -485,13 +624,20 @@
  },
  "scorch_wyrmling": {
   "element": "Fire",
-  "plan": "serpent",
-  "seed": 9141143
+  "plan": "dragon",
+  "seed": 9141143,
+  "small": true
  },
  "seedbomb_squirrel": {
   "element": "Nature",
   "plan": "quad",
   "seed": 13511818
+ },
+ "shadow_mare": {
+  "element": "Arcane",
+  "pale": false,
+  "plan": "horse",
+  "seed": 15791310
  },
  "shapeshift_sage": {
   "element": "Arcane",
@@ -548,11 +694,23 @@
   "plan": "quad",
   "seed": 4384484
  },
+ "sphinx": {
+  "beast": "sphinx",
+  "element": "Arcane",
+  "plan": "beast",
+  "seed": 4107089
+ },
  "splashard": {
   "element": "Water",
   "plan": "fish",
   "seed": 1792050,
   "stage": 2
+ },
+ "spool_hydra": {
+  "element": "Water",
+  "heads": 3,
+  "plan": "hydra",
+  "seed": 15697228
  },
  "spool_twin": {
   "element": "Neutral",
@@ -571,19 +729,30 @@
   "seed": 7069694
  },
  "statue_gargoyle": {
+  "beast": "griffin",
   "element": "Stone",
-  "plan": "biped",
+  "plan": "beast",
   "seed": 210240
+ },
+ "storm_dragon": {
+  "element": "Lightning",
+  "plan": "dragon",
+  "seed": 9951899
  },
  "storm_roc": {
   "element": "Wind",
-  "plan": "bird",
+  "plan": "phoenix",
   "seed": 11454247
  },
  "stringing_slime": {
   "element": "Neutral",
   "plan": "blob",
   "seed": 15528842
+ },
+ "sunfire_phoenix": {
+  "element": "Fire",
+  "plan": "phoenix",
+  "seed": 6707392
  },
  "support_pillar": {
   "element": "Neutral",
@@ -660,6 +829,11 @@
   "plan": "biped",
   "seed": 8072364
  },
+ "tempest_dragon": {
+  "element": "Wind",
+  "plan": "dragon",
+  "seed": 15626474
+ },
  "tesla_tortoise": {
   "element": "Lightning",
   "plan": "shell",
@@ -676,10 +850,27 @@
   "seed": 6249770,
   "stage": 2
  },
+ "thunder_kirin": {
+  "element": "Lightning",
+  "horn": true,
+  "pale": false,
+  "plan": "horse",
+  "seed": 13664508
+ },
  "thunder_ram": {
   "element": "Lightning",
   "plan": "quad",
   "seed": 12073102
+ },
+ "thunderbird": {
+  "element": "Lightning",
+  "plan": "phoenix",
+  "seed": 11033471
+ },
+ "tidal_dragon": {
+  "element": "Water",
+  "plan": "dragon",
+  "seed": 6962949
  },
  "tidecaller_crab": {
   "element": "Water",
@@ -723,15 +914,40 @@
   "plan": "biped",
   "seed": 1419561
  },
+ "unicorn": {
+  "element": "Arcane",
+  "horn": true,
+  "plan": "horse",
+  "seed": 4645283,
+  "stage": 2
+ },
+ "unicorn_foal": {
+  "element": "Arcane",
+  "foal": true,
+  "horn": true,
+  "plan": "horse",
+  "seed": 10881732,
+  "stage": 1
+ },
  "venus_snapper": {
   "element": "Nature",
   "plan": "quad",
   "seed": 11427665
  },
+ "verdant_dragon": {
+  "element": "Nature",
+  "plan": "dragon",
+  "seed": 4682975
+ },
  "vine_weaver": {
   "element": "Nature",
   "plan": "floater",
   "seed": 5738304
+ },
+ "void_dragon": {
+  "element": "Arcane",
+  "plan": "dragon",
+  "seed": 709749
  },
  "void_weaver": {
   "element": "Arcane",
@@ -762,6 +978,17 @@
   "element": "Wind",
   "plan": "biped",
   "seed": 8417187
+ },
+ "wyvern_rider": {
+  "element": "Wind",
+  "plan": "dragon",
+  "seed": 541921,
+  "small": true
+ },
+ "yeti": {
+  "element": "Ice",
+  "plan": "biped",
+  "seed": 6353905
  },
  "zapling": {
   "element": "Lightning",

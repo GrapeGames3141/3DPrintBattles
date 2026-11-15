@@ -64,6 +64,7 @@ const KEYWORDS := {
 	"menace": {"name": "Menace", "text": "A single Guard print cannot stop it."},
 	"ward": {"name": "Ward", "text": "The first tool the enemy aims at it is wasted."},
 	"cloak": {"name": "Cloak", "text": "The enemy cannot aim tools at it until it attacks."},
+	"triple": {"name": "Three Heads", "text": "Can attack three times each turn."},
 }
 
 const SPRITE := "res://assets/creatures/2d/%s_sprite_sheet.png"

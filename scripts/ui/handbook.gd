@@ -29,6 +29,15 @@ const KEYWORD_MORE := {
 const GLOSSARY := [
 	["Heat", "A Heated print takes 1 damage at the start of its owner's turn. Scorch and some tools cause it. It does not wear off."],
 	["Jam", "A jammed print cannot attack until the end of its owner's next turn. The tag on the print says JAMMED."],
+	["Silence", "A silenced print loses its keywords and every ability, for good."],
+	["Scrap (sacrifice)", "Some cards ask you to scrap one of your own prints to pay for something big. Your weakest other print goes."],
+	["Slow", "Your opponent prints less Filament on their next turn."],
+	["Steal Filament", "Takes Filament out of your opponent's Spool and adds it to yours."],
+	["Lightning chain", "Damage that jumps from print to print, one less each time."],
+	["Take control", "The print moves to your side of the bench for the rest of the battle."],
+	["Swarmlings", "A tribe of printed bugs. Each one shares its gift with every other Swarmling you have, and with new ones as they arrive."],
+	["The Forbidden Printer", "Five Legendary parts. Hold all five in your hand at the same time and you win the battle."],
+	["Evolve", "A print with Evolve grows into its next stage after some of your turns on the bench. It keeps its damage and what it gained."],
 	["Poison", "Hurts a print at the start of its owner's turns: 1, then 2, then 3 damage, then it wears off. Cleanse removes it."],
 	["Sleep", "A sleeping print is jammed for two of its owner's turns instead of one."],
 	["Cleanse", "Removes Heat, Jam and Poison from your prints."],
@@ -103,7 +112,7 @@ static func _fill(col: VBoxContainer, chapter: int, width: float) -> void:
 			_entry(col, width, "hex", UI.BAD, "Winning", "Bring the enemy Printer's Health down to 0. A Printer starts with %d Health, and mods such as Reinforced Frame can add more, so your opponent's may be higher or lower than yours. If your hand drops below %d cards you are topped up at the start of your turn (Smart Slicer raises that), and your hand holds %d at most." % [GameData.PRINTER_HP, GameData.HAND_TOP_UP, GameData.MAX_HAND])
 			_entry(col, width, "gear", UI.MUTED, "Controls", "Right-click or Esc cancels a choice. Space ends your turn. Tap any print on the bench to read its card. F11 switches fullscreen.")
 		1:
-			var order: Array = ["guard", "rush", "brim", "siphon", "twin", "scorch", "thief", "hover", "reach", "snap", "quick", "overflow", "reprint", "menace", "ward", "cloak"]
+			var order: Array = ["guard", "rush", "brim", "siphon", "twin", "scorch", "thief", "hover", "reach", "snap", "quick", "overflow", "reprint", "menace", "ward", "cloak", "triple"]
 			for k in order:
 				var d: Dictionary = GameData.KEYWORDS[k]
 				var seen := _seen_on(k)

@@ -102,14 +102,14 @@ func _catalog() -> void:
 			lists.append(t["fx"])
 		for list in lists:
 			for e in list:
-				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill", "poison", "sleep", "cleanse", "missiles", "chain", "discard", "drain_spool", "slow", "sacrifice", "tutor", "silence", "swap", "set_atk", "double_atk", "polymorph", "transform", "fight", "destroy_if", "drain", "grant", "give_copy", "mimic"], c["id"] + " op " + e["op"])
+				ok(e["op"] in ["damage", "heal", "draw", "filament", "spool", "armor", "summon", "buff", "jam", "destroy", "bounce", "copy", "heat", "steal", "refresh", "give", "mill", "poison", "sleep", "cleanse", "missiles", "chain", "discard", "drain_spool", "slow", "sacrifice", "tutor", "silence", "swap", "set_atk", "double_atk", "polymorph", "transform", "fight", "destroy_if", "drain", "grant", "give_copy", "mimic", "take"], c["id"] + " op " + e["op"])
 				if e["op"] == "summon":
 					ok(GameData.has_card(e["card"]), c["id"] + " summons a real card")
 		for k in c.get("kw", []):
 			ok(GameData.KEYWORDS.has(k), c["id"] + " keyword " + k)
 		if c["type"] == "creature":
 			ok(GameData.ELEMENTS.has(c["element"]), c["id"] + " element")
-	ok(GameData.collectible().size() == 486, "486 collectible cards (got %d)" % GameData.collectible().size())
+	ok(GameData.collectible().size() == 519, "519 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
 		if c["type"] == "creature":
@@ -119,7 +119,7 @@ func _catalog() -> void:
 	for c in GameData.collectible():
 		by_rarity[c["rarity"]] = int(by_rarity.get(c["rarity"], 0)) + 1
 		by_type[c["type"]] = int(by_type.get(c["type"], 0)) + 1
-	ok(by_type == {"creature": 317, "tool": 99, "upgrade": 70}, "317 prints, 99 tools, 70 pieces of equipment (%s)" % str(by_type))
+	ok(by_type == {"creature": 350, "tool": 99, "upgrade": 70}, "350 prints, 99 tools, 70 pieces of equipment (%s)" % str(by_type))
 	# Every kind of card, and every element of print, comes in every rarity.
 	for kind in ["creature", "tool", "upgrade"]:
 		for r in GameData.RARITY_ORDER:
@@ -638,6 +638,44 @@ func _wave6() -> void:
 		give(st, 0, id)
 	act(st, 0, {"t": "end"})
 	ok(bool(st["over"]) and int(st["winner"]) == 0, "holding all five Forbidden parts wins")
+	# Mythical moves.
+	st = game([], [])
+	st["players"][0]["flow"] = 99
+	var big2 := put(st, 1, "stoneback")
+	put(st, 1, "mossmunk")
+	h = give(st, 0, "kraken")
+	act(st, 0, {"t": "play", "hand": h})
+	ok(st["players"][0]["board"].has(big2) and int(big2["seat"]) == 0, "Kraken pulls the strongest enemy print onto your side")
+	st = game([], [])
+	var dog := put(st, 0, "cerberus")
+	for i in 3:
+		act(st, 0, {"t": "attack", "unit": int(dog["uid"]), "target": "p1"})
+	ok(int(dog["attacks"]) == 3 and BattleEngine.attack_targets(st, int(dog["uid"])).is_empty(), "Cerberus attacks three times a turn")
+	st = game([], [])
+	var flyer := put(st, 1, "skyhawk")
+	var walker := put(st, 1, "stoneback")
+	h = give(st, 0, "cyclops")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(flyer)})
+	ok(not st["players"][1]["board"].has(flyer), "Cyclops knocks a Hover print out of the sky")
+	h = give(st, 0, "cyclops")
+	act(st, 0, {"t": "play", "hand": h, "target": uid.call(walker)})
+	ok(st["players"][1]["board"].has(walker), "...but not one on the ground")
+	st = game([], [])
+	st["players"][0]["flow"] = 99
+	var f1 := put(st, 0, "cinderpaw")
+	put(st, 0, "aquafin")
+	put(st, 0, "voltwig")
+	h = give(st, 0, "rainbow_unicorn")
+	var atk0: int = int(f1["atk"])
+	act(st, 0, {"t": "play", "hand": h})
+	ok(int(f1["atk"]) == atk0 + 4, "Rainbow Unicorn counts every element on your bench, its own too (%d)" % (int(f1["atk"]) - atk0))
+	st = game([], [])
+	var egg := put(st, 0, "dragon_egg")
+	for i in 3:
+		act(st, 0, {"t": "end"})
+		act(st, 1, {"t": "end"})
+	ok(str(egg["id"]) == "dragon_hatchling", "a Dragon Egg hatches after three turns")
+
 	# Mimic and copying cards.
 	st = game([], [])
 	var big := put(st, 1, "stoneback")

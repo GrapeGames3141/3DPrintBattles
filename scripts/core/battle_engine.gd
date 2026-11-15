@@ -151,6 +151,8 @@ static func has_guard(st: Dictionary, seat: int) -> bool:
 
 
 static func max_attacks(u: Dictionary) -> int:
+	if (u["kw"] as Array).has("triple"):
+		return 3
 	return 2 if (u["kw"] as Array).has("twin") else 1
 
 
@@ -985,7 +987,7 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 		"destroy_if":
 			var u := unit_of(st, ref)
 			if not u.is_empty():
-				var weak: bool = e.has("max_atk") and int(u["atk"]) <= int(e["max_atk"])
+				var weak: bool = (e.has("max_atk") and int(u["atk"]) <= int(e["max_atk"])) or (e.has("has_kw") and (u["kw"] as Array).has(str(e["has_kw"])))
 				var hurt: bool = bool(e.get("damaged", false)) and int(u["hp"]) < int(u["max_hp"])
 				if weak or hurt:
 					u["hp"] = 0
@@ -1010,6 +1012,17 @@ static func _run_on(st: Dictionary, seat: int, e: Dictionary, ref: String, ev: A
 				me["max_hp"] = maxi(1, int(u["max_hp"]))
 				me["hp"] = maxi(1, int(u["hp"]))
 				ev.append({"e": "buff", "uid": int(me["uid"]), "unit": me.duplicate(true)})
+		"take":
+			# Take control of an enemy print: it moves to your bench for good.
+			var u := unit_of(st, ref)
+			var mine: Array = st["players"][seat]["board"]
+			if not u.is_empty() and int(u["seat"]) != seat and mine.size() < GameData.MAX_BOARD:
+				(st["players"][int(u["seat"])]["board"] as Array).erase(u)
+				u["seat"] = seat
+				u["fresh"] = true
+				u["attacks"] = 0
+				mine.append(u)
+				ev.append({"e": "take", "uid": int(u["uid"]), "seat": seat, "unit": u.duplicate(true)})
 		"give_copy":
 			var u := unit_of(st, ref)
 			if not u.is_empty():
@@ -1229,6 +1242,9 @@ static func _cond(st: Dictionary, seat: int, c: Dictionary, ctx: Dictionary) -> 
 			"turn_at_least":
 				if int(p["turns"]) < int(v):
 					return false
+			"foe_hand_more":
+				if (foe["hand"] as Array).size() <= (p["hand"] as Array).size():
+					return false
 			"trigger_tribe":
 				var t := unit_of(st, str(ctx.get("trigger", "")))
 				if t.is_empty() or str(GameData.card(str(t["id"])).get("tribe", "")) != str(v):
@@ -1262,6 +1278,11 @@ static func _count(st: Dictionary, seat: int, per: String, ctx: Dictionary) -> i
 			return int(p["max_hp"]) - int(p["hp"])
 		"empty":
 			return maxi(0, GameData.MAX_BOARD - (p["board"] as Array).size())
+		"elements":
+			var kinds := {}
+			for u in p["board"]:
+				kinds[str(GameData.card(str(u["id"])).get("element", ""))] = true
+			return kinds.size()
 	if per.begins_with("element:") or per.begins_with("tribe:"):
 		return _refs(st, seat, per, ctx).size()
 	return 1

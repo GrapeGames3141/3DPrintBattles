@@ -103,7 +103,7 @@ func _gen(c: Node3D, p: Dictionary, stage: int, lk: Dictionary) -> void:
 	var hue_shift := _rng.randf_range(-0.04, 0.04)
 	var body_col: Color = (pal[0] as Color)
 	body_col = Color.from_hsv(fposmod(body_col.h + hue_shift, 1.0), clampf(body_col.s * _rng.randf_range(0.85, 1.1), 0, 1), body_col.v)
-	var cols := {"body": body_col, "second": pal[1], "accent": pal[2], "glow": pal[3], "el": str(lk["element"])}
+	var cols := {"body": body_col, "second": pal[1], "accent": pal[2], "glow": pal[3], "el": str(lk["element"]), "bull": bool(lk.get("bull", false)), "cyclops": bool(lk.get("cyclops", false))}
 	var k: float = [0.9, 1.0, 1.2][clampi(stage, 1, 3) - 1]
 	c.scale = Vector3.ONE * k
 	match str(lk["plan"]):
@@ -127,6 +127,20 @@ func _gen(c: Node3D, p: Dictionary, stage: int, lk: Dictionary) -> void:
 			_plan_boat(c, p, cols)
 		"part":
 			_plan_part(c, p, cols, str(lk.get("part", "")))
+		"dragon":
+			_plan_dragon(c, p, cols, lk)
+		"horse":
+			_plan_horse(c, p, cols, lk)
+		"beast":
+			_plan_beast(c, p, cols, lk)
+		"hydra":
+			_plan_hydra(c, p, cols, lk)
+		"kraken":
+			_plan_kraken(c, p, cols)
+		"egg":
+			_plan_egg(c, p, cols)
+		"phoenix":
+			_plan_phoenix(c, p, cols)
 		_:
 			_plan_quad(c, p, cols)
 
@@ -161,6 +175,9 @@ func _head(parent: Node3D, at: Vector3, r: float, p: Dictionary, cols: Dictionar
 	# Eyes: two big ones, sometimes one or three.
 	var eye_r := r * _rng.randf_range(0.3, 0.42)
 	var eyes_n: int = _pick([2, 2, 2, 2, 1, 3])
+	if bool(cols.get("cyclops", false)):
+		eyes_n = 1
+		eye_r *= 1.25
 	var iris: Color = _pick([Color("10151c"), Color("10151c"), cols["accent"].darkened(0.5), Color("3a1a5a")])
 	if eyes_n == 1:
 		side_eye(head, Vector3(r * 0.55, r * 0.35, r * 0.62), eye_r * 1.25, _p(p, "squint"), iris)
@@ -358,6 +375,9 @@ func _plan_biped(c: Node3D, p: Dictionary, cols: Dictionary) -> void:
 	if _rng.randf() < 0.3:
 		_tail(body, Vector3(-wide * 0.45, torso * 0.2, 0), p, cols, 0.5)
 	var head := _head(body, Vector3(0.05, torso + 0.25, 0), _rng.randf_range(0.27, 0.34), p, cols)
+	if bool(cols.get("bull", false)):
+		horns(head, Vector3(0.0, 0.2, 0), 0.5, Color("f4efe0"), 60.0)
+		torus(head, 0.07, 0.015, Vector3(0.42, -0.12, 0), Color("ffcf3a"), Vector3(0, 90, 0), metal_mat(Color("ffcf3a")))
 	if _rng.randf() < 0.3:
 		for i in 3:
 			cyl(head, 0.05, 0.0, 0.16 + (0.06 if i == 1 else 0.0), Vector3(-0.05, 0.36, (i - 1) * 0.12), BRASS, Vector3.ZERO, 8, metal_mat(BRASS))
@@ -983,3 +1003,305 @@ func _g_tribe_totem(r: Node3D) -> void:
 		ball(r, 0.2 - i * 0.03, Vector3(0, 0.25 + i * 0.32, 0), [Color("56b84a"), Color("ffcf3a"), Color("56b84a")][i], Vector3(1.2, 0.9, 1.0))
 	for s in [-1.0, 1.0]:
 		box(r, Vector3(0.4, 0.02, 0.15), Vector3(s * 0.25, 0.9, 0), Color("c8f2ff"), Vector3(0, 0, s * 20), gloss(Color("c8f2ff"), 0.3, 0.6), 0.0)
+
+
+# =================================================================== mythical
+
+## A double-sided skin stretched over points (a fan from the first point):
+## dragon and bat wings, fins, frills.
+func membrane(parent: Node3D, pts: Array, col: Color, alpha := 0.92) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(1, pts.size() - 1):
+		for v in [pts[0], pts[i], pts[i + 1]]:
+			st.add_vertex(v)
+	st.generate_normals()
+	var n := MeshInstance3D.new()
+	n.mesh = st.commit()
+	var m := StandardMaterial3D.new()
+	var c2: Color = RAW_GREY if _raw else col
+	m.albedo_color = Color(c2.r, c2.g, c2.b, alpha)
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.5
+	if alpha < 1.0:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	n.material_override = m
+	parent.add_child(n)
+
+
+## Bat-style wings: finger bones from the shoulder with skin between them.
+func bat_wings(body: Node3D, at: Vector3, span: float, p: Dictionary, bone: Color, skin: Color) -> void:
+	for side: float in [-1.0, 1.0]:
+		var w := joint(body, at + Vector3(0, 0, side * 0.18), Vector3(side * (12.0 + _p(p, "arm") * 0.6), 0, 25.0 + _p(p, "arm") * 1.1))
+		var tips: Array = []
+		for f in 4:
+			var a := deg_to_rad(80.0 + f * 28.0)
+			var tip := Vector3(cos(a) * span * (1.0 - f * 0.12), sin(a) * span * (1.0 - f * 0.12), side * f * 0.05)
+			stick(w, Vector3.ZERO, tip, 0.035, bone)
+			ball(w, 0.045, tip, bone)
+			tips.append(tip)
+		var fan: Array = [Vector3.ZERO]
+		fan.append_array(tips)
+		fan.append(Vector3(-span * 0.35, -0.05, 0))
+		membrane(w, fan, skin)
+
+
+## Feathered wings: overlapping long feathers.
+func feather_wings(body: Node3D, at: Vector3, span: float, p: Dictionary, a_col: Color, b_col: Color) -> void:
+	for side: float in [-1.0, 1.0]:
+		var w := joint(body, at + Vector3(0, 0, side * 0.2), Vector3(side * (15.0 + _p(p, "arm") * 0.7), 0, 30.0 + _p(p, "arm") * 1.1))
+		# Feathers lie flat in the wing's plane, fanning back from the shoulder.
+		for f in 6:
+			var a := deg_to_rad(100.0 + f * 15.0)
+			var d := Vector3(cos(a), sin(a), 0)
+			var length := span * (1.0 - f * 0.09)
+			box(w, Vector3(length, 0.18, 0.04), d * length * 0.5 + Vector3(0, 0, side * f * 0.015), a_col if f % 2 == 0 else b_col, Vector3(0, 0, rad_to_deg(a)), null, 0.05)
+
+
+func horns(head: Node3D, at: Vector3, length: float, col: Color, curl := -50.0) -> void:
+	for side: float in [-1.0, 1.0]:
+		chain(head, at + Vector3(0, 0, side * 0.12), Vector3(-0.7, 0.8, side * 0.35), length, curl, 0.06, 0.015, col, 5)
+
+
+## A spiral horn, the unicorn's: rings stacked on a tapering cone.
+func spiral_horn(head: Node3D, at: Vector3, length: float, col: Color) -> void:
+	var tilt := Vector3(0, 0, -35)
+	cyl(head, 0.07, 0.0, length, at + Vector3(length * 0.25, length * 0.4, 0), col, tilt, 24, gloss(col, 0.6, 1.0, 0.15))
+	for i in 5:
+		var t := float(i) / 5.0
+		torus(head, 0.065 * (1.0 - t), 0.012, at + Vector3(length * 0.25 * (0.2 + t * 1.0) - length * 0.05, length * (0.08 + t * 0.62), 0), col.lightened(0.3), tilt, gloss(col.lightened(0.3), 0.8))
+
+
+func spikes_along(parent: Node3D, pts: Array, col: Color, size: float) -> void:
+	for pt in pts:
+		cyl(parent, size * 0.4, 0.0, size, pt + Vector3(0, size * 0.4, 0), col, Vector3(0, 0, 18), 8)
+
+
+## A dragon: four strong legs, a long spined neck, a horned head with a jaw
+## that breathes, bat wings, a spiked tail with a spade.
+func _plan_dragon(c: Node3D, p: Dictionary, cols: Dictionary, lk: Dictionary) -> void:
+	var scales: Color = cols["body"]
+	var belly: Color = cols["second"]
+	var spike: Color = cols["accent"]
+	var body := joint(c, Vector3(_p(p, "lean"), 0.62 + _p(p, "bob"), 0), Vector3(0, 0, -_p(p, "pitch")))
+	ball(body, 0.45, Vector3.ZERO, scales, Vector3(1.4, 0.9, 0.95))
+	for i in 4:
+		ball(body, 0.17, Vector3(-0.3 + i * 0.2, -0.3, 0), belly, Vector3(1.0, 0.45, 1.6))
+	spikes_along(body, [Vector3(-0.35, 0.36, 0), Vector3(-0.1, 0.4, 0), Vector3(0.15, 0.38, 0)], spike, 0.16)
+	# Legs: thick thighs, claws.
+	for side: float in [-1.0, 1.0]:
+		for front: bool in [true, false]:
+			var swing: float = _p(p, "stride") * (1.0 if front else -1.0) * side
+			if front:
+				swing += maxf(_p(p, "arm"), 0.0) * 0.5
+			var hip := joint(body, Vector3(0.35 if front else -0.38, -0.12, side * 0.3), Vector3(0, 0, swing))
+			ball(hip, 0.15, Vector3(0, -0.05, 0), scales.darkened(0.08), Vector3(1.0, 1.3, 1.0))
+			stick(hip, Vector3(0, -0.1, 0), Vector3(0.05, -0.42, 0), 0.08, scales.darkened(0.12))
+			for t in 3:
+				cyl(hip, 0.035, 0.0, 0.12, Vector3(0.14, -0.48, (t - 1) * 0.06), Color("f4efe0"), Vector3(0, 0, -80), 8)
+	# Tail with a spade.
+	var tail := joint(body, Vector3(-0.58, 0.05, 0), Vector3(0, 0, 10.0 + _p(p, "tail")))
+	var end := chain(tail, Vector3.ZERO, Vector3(-1, -0.1, 0), 1.0, 70.0, 0.14, 0.05, scales, 8)
+	box(tail, Vector3(0.22, 0.2, 0.04), end + Vector3(-0.05, 0.04, 0), spike, Vector3(0, 0, 45), null, 0.02)
+	# Wings.
+	var span := 1.05 if not lk.get("small", false) else 0.6
+	bat_wings(body, Vector3(0.05, 0.3, 0), span, p, scales.darkened(0.2), cols["accent"].lerp(scales, 0.4))
+	# Neck and head.
+	var neck_end := chain(body, Vector3(0.5, 0.18, 0), Vector3(0.6, 1.0, 0), 0.55, -40.0, 0.15, 0.11, scales, 5)
+	var head := joint(body, neck_end + Vector3(0.05, 0.02, 0), Vector3(0, 0, -_p(p, "head") - 10.0))
+	box(head, Vector3(0.42, 0.28, 0.32), Vector3(0.1, 0.0, 0), scales, Vector3.ZERO, null, 0.1)
+	box(head, Vector3(0.32, 0.16, 0.24), Vector3(0.38, -0.04, 0), scales.lightened(0.05), Vector3.ZERO, null, 0.06)
+	for side: float in [-1.0, 1.0]:
+		ball(head, 0.025, Vector3(0.53, 0.02, side * 0.06), Color("2b2f3a"))
+	var jaw := joint(head, Vector3(0.12, -0.12, 0), Vector3(0, 0, -_p(p, "jaw") * 30.0))
+	box(jaw, Vector3(0.48, 0.07, 0.24), Vector3(0.22, -0.02, 0), belly, Vector3.ZERO, null, 0.03)
+	for t in 3:
+		cyl(jaw, 0.02, 0.0, 0.06, Vector3(0.3 + t * 0.08, 0.03, 0.09), WHITE, Vector3.ZERO, 6)
+	if _p(p, "jaw") > 0.5:
+		glow(head, 0.1, Vector3(0.6, -0.12, 0), cols["glow"], 4.0)
+		for i in 4:
+			ball(head, 0.06 + i * 0.02, Vector3(0.7 + i * 0.13, -0.15 - i * 0.03, 0), cols["glow"]).material_override = gloss(cols["glow"], 2.5, 0.8)
+	for side: float in [-1.0, 1.0]:
+		side_eye(head, Vector3(0.15, 0.1, side * 0.15), 0.09, _p(p, "squint"), Color("2a1a08"))
+	horns(head, Vector3(-0.08, 0.12, 0), 0.45, Color("f4efe0"))
+	spikes_along(head, [Vector3(-0.1, 0.12, 0), Vector3(-0.16, 0.05, 0)], spike, 0.1)
+
+
+## Horses of legend: unicorn (spiral horn), pegasus (wings), alicorn (both).
+func _plan_horse(c: Node3D, p: Dictionary, cols: Dictionary, lk: Dictionary) -> void:
+	var coat: Color = cols["second"] if bool(lk.get("pale", true)) else cols["body"]
+	var mane_cols: Array = [cols["body"], cols["accent"], cols["glow"]]
+	if bool(lk.get("rainbow", false)):
+		mane_cols = [Color("ff5a5a"), Color("ffb347"), Color("ffe14a"), Color("6ad86a"), Color("5ab0ff"), Color("b07aff")]
+	var foal: bool = bool(lk.get("foal", false))
+	var leg := 0.42 if not foal else 0.3
+	var body := joint(c, Vector3(_p(p, "lean"), leg + 0.3 + _p(p, "bob"), 0), Vector3(0, 0, -_p(p, "pitch") * 0.8))
+	ball(body, 0.36, Vector3.ZERO, coat, Vector3(1.55, 0.9, 0.85))
+	for side: float in [-1.0, 1.0]:
+		for front: bool in [true, false]:
+			var swing: float = _p(p, "stride") * (1.0 if front else -1.0) * side
+			if front:
+				swing += maxf(_p(p, "arm"), 0.0) * 0.9
+			var hip := joint(body, Vector3(0.36 if front else -0.38, -0.15, side * 0.16), Vector3(0, 0, swing))
+			var knee := Vector3(0.03, -leg * 0.55, 0)
+			stick(hip, Vector3.ZERO, knee, 0.055, coat)
+			stick(hip, knee, Vector3(0, -leg, 0), 0.045, coat)
+			cyl(hip, 0.06, 0.07, 0.08, Vector3(0, -leg - 0.02, 0), Color("ffcf3a") if bool(lk.get("horn", false)) else Color("5a4a3a"), Vector3.ZERO, 16)
+	# Tail: flowing strands.
+	var tail := joint(body, Vector3(-0.55, 0.12, 0), Vector3(0, 0, 20.0 + _p(p, "tail")))
+	for i in mane_cols.size():
+		chain(tail, Vector3(0, 0, (i - mane_cols.size() * 0.5) * 0.03), Vector3(-1, -0.6, 0), 0.55, 40.0 + i * 6.0, 0.05, 0.02, mane_cols[i], 6)
+	if bool(lk.get("wings", false)):
+		feather_wings(body, Vector3(0.0, 0.25, 0), 0.85 if not foal else 0.5, p, WHITE, cols["glow"])
+	# Neck and head.
+	var neck := joint(body, Vector3(0.42, 0.15, 0), Vector3(0, 0, 0))
+	stick(neck, Vector3.ZERO, Vector3(0.18, 0.42, 0), 0.13, coat)
+	var head := joint(neck, Vector3(0.22, 0.5, 0), Vector3(0, 0, -_p(p, "head") - 20.0))
+	box(head, Vector3(0.3, 0.22, 0.22), Vector3(0.05, 0, 0), coat, Vector3.ZERO, null, 0.08)
+	box(head, Vector3(0.22, 0.16, 0.18), Vector3(0.25, -0.06, 0), coat.darkened(0.04), Vector3(0, 0, -10), null, 0.06)
+	var jaw := joint(head, Vector3(0.2, -0.12, 0), Vector3(0, 0, -_p(p, "jaw") * 20.0))
+	box(jaw, Vector3(0.18, 0.04, 0.14), Vector3(0.08, 0, 0), coat.darkened(0.1), Vector3.ZERO, null, 0.02)
+	for side: float in [-1.0, 1.0]:
+		side_eye(head, Vector3(0.08, 0.05, side * 0.12), 0.07, _p(p, "squint"), Color("3a2a5a"))
+		cyl(head, 0.04, 0.0, 0.12, Vector3(-0.06, 0.15, side * 0.07), coat, Vector3(side * 10, 0, 10), 8)
+	# Mane: strands down the neck.
+	for i in 6:
+		var at := Vector3(-0.02 + i * 0.03, 0.08 + i * 0.07, 0)
+		chain(neck, at, Vector3(-1, 0.2, 0), 0.25, 30.0, 0.045, 0.02, mane_cols[i % mane_cols.size()], 3)
+	if bool(lk.get("horn", false)):
+		spiral_horn(head, Vector3(0.12, 0.1, 0), 0.32 if not foal else 0.18, Color("ffe58a"))
+
+
+## Mixed beasts from legend, on a lion-like body: griffin (eagle head and
+## wings), kitsune (fox with many tails), cerberus (three heads), manticore
+## (bat wings and a scorpion tail), chimera (goat horns, snake tail), sphinx.
+func _plan_beast(c: Node3D, p: Dictionary, cols: Dictionary, lk: Dictionary) -> void:
+	var kind := str(lk.get("beast", "griffin"))
+	var fur: Color = cols["body"]
+	var body := joint(c, Vector3(_p(p, "lean"), 0.58 + _p(p, "bob"), 0), Vector3(0, 0, -_p(p, "pitch")))
+	ball(body, 0.38, Vector3.ZERO, fur, Vector3(1.4, 0.88, 0.92))
+	_legs4(body, p, cols, 0.36, 0.22, -0.18, 0.38, 0.075)
+	var heads: Array = [0.0]
+	if kind == "cerberus":
+		heads = [-0.22, 0.0, 0.22]
+	match kind:
+		"griffin":
+			feather_wings(body, Vector3(0.05, 0.25, 0), 0.9, p, cols["second"], cols["accent"])
+			chain(body, Vector3(-0.5, 0.05, 0), Vector3(-1, 0.2, 0), 0.5, 50.0, 0.04, 0.02, fur, 5)
+			ball(body, 0.08, Vector3(-0.85, 0.3, 0), fur.darkened(0.2))
+		"kitsune":
+			var tails: int = int(lk.get("tails", 5))
+			for i in tails:
+				var spread := (i - (tails - 1) * 0.5) * 0.18
+				var t := joint(body, Vector3(-0.5, 0.15, spread * 0.3), Vector3(0, spread * 30.0, -50.0 + i * (100.0 / tails) + _p(p, "tail")))
+				var tip := chain(t, Vector3.ZERO, Vector3(-0.5, 1.0, 0), 0.7, -50.0, 0.1, 0.07, fur if i % 2 == 0 else fur.lightened(0.15), 5)
+				ball(t, 0.1, tip, WHITE)
+				glow(t, 0.05, tip + Vector3(-0.05, 0.05, 0), cols["glow"], 2.5)
+		"manticore":
+			bat_wings(body, Vector3(0.0, 0.28, 0), 0.75, p, fur.darkened(0.25), cols["accent"])
+			var t := joint(body, Vector3(-0.5, 0.15, 0), Vector3(0, 0, 50.0 + _p(p, "tail")))
+			var tip := chain(t, Vector3.ZERO, Vector3(-0.6, 1, 0), 0.75, -120.0, 0.09, 0.06, cols["second"], 7)
+			cyl(t, 0.07, 0.0, 0.2, tip + Vector3(0.05, -0.05, 0), Color("2b2f3a"), Vector3(0, 0, -150), 8)
+		"chimera":
+			var t := joint(body, Vector3(-0.5, 0.05, 0), Vector3(0, 0, 25.0 + _p(p, "tail")))
+			var tip := chain(t, Vector3.ZERO, Vector3(-1, 0.5, 0), 0.6, 60.0, 0.07, 0.05, Color("56b84a"), 6)
+			ball(t, 0.1, tip, Color("56b84a"), Vector3(1.4, 0.8, 0.9))
+			side_eye(t, tip + Vector3(0.03, 0.05, 0.06), 0.04, 0.0)
+			ball(body, 0.24, Vector3(0.1, 0.36, 0), Color("e9e2d0"))
+			horns(body, Vector3(0.12, 0.5, 0), 0.35, Color("8a6a4a"), -80.0)
+		"sphinx":
+			chain(body, Vector3(-0.5, 0.0, 0), Vector3(-1, 0.1, 0), 0.5, 40.0, 0.04, 0.02, fur, 5)
+			feather_wings(body, Vector3(0.0, 0.25, 0), 0.6, p, Color("ffcf3a"), cols["accent"])
+		_:
+			chain(body, Vector3(-0.5, 0.05, 0), Vector3(-1, 0.2, 0), 0.5, 50.0, 0.05, 0.03, fur, 5)
+	for hz in heads:
+		var head := joint(body, Vector3(0.5, 0.28, float(hz)), Vector3(float(hz) * -40.0, 0, -_p(p, "head") - (float(hz) * 20.0 if kind == "cerberus" else 0.0)))
+		if kind == "griffin":
+			ball(head, 0.24, Vector3.ZERO, WHITE)
+			cyl(head, 0.09, 0.0, 0.26, Vector3(0.28, -0.04, 0), Color("ffb347"), Vector3(0, 0, -100 + _p(p, "jaw") * 10.0), 12)
+			for i in 3:
+				box(head, Vector3(0.25, 0.05, 0.08), Vector3(-0.15, 0.1 + i * 0.05, 0), cols["accent"], Vector3(0, 0, 30 + i * 12), null, 0.02)
+			for side: float in [-1.0, 1.0]:
+				side_eye(head, Vector3(0.1, 0.06, side * 0.16), 0.08, _p(p, "squint"))
+			continue
+		var r := 0.25 if kind != "cerberus" else 0.19
+		ball(head, r, Vector3.ZERO, fur, Vector3(1.05, 0.95, 1.0))
+		ball(head, r * 0.55, Vector3(r * 0.9, -r * 0.25, 0), cols["second"], Vector3(1.3, 0.8, 1.0))
+		ball(head, r * 0.12, Vector3(r * 1.45, -r * 0.15, 0), Color("2b2f3a"))
+		var jaw := joint(head, Vector3(r * 0.7, -r * 0.5, 0), Vector3(0, 0, -_p(p, "jaw") * 26.0))
+		box(jaw, Vector3(r * 0.8, r * 0.15, r * 0.8), Vector3(r * 0.25, 0, 0), cols["second"], Vector3.ZERO, null, r * 0.05)
+		for side: float in [-1.0, 1.0]:
+			side_eye(head, Vector3(r * 0.45, r * 0.3, side * r * 0.6), r * 0.33, _p(p, "squint"), cols["accent"].darkened(0.5))
+			if kind == "kitsune" or kind == "cerberus":
+				cyl(head, r * 0.3, 0.0, r * 0.9, Vector3(-r * 0.2, r * 0.95, side * r * 0.45), fur, Vector3(side * 15, 0, 10), 8)
+		if kind == "sphinx":
+			box(head, Vector3(r * 1.6, r * 0.5, r * 2.4), Vector3(-r * 0.4, r * 0.5, 0), Color("ffcf3a"), Vector3(0, 0, 10), null, 0.04)
+			for i in 3:
+				box(head, Vector3(r * 1.62, r * 0.08, r * 2.42), Vector3(-r * 0.4, r * 0.35 + i * r * 0.15, 0), Color("2f8cf0"), Vector3(0, 0, 10), null, 0.0)
+		if kind == "manticore":
+			for i in 7:
+				var a := TAU * i / 7.0
+				ball(head, r * 0.35, Vector3(-r * 0.3, sin(a) * r * 0.85, cos(a) * r * 0.85), cols["accent"])
+
+
+## Many heads on one body.
+func _plan_hydra(c: Node3D, p: Dictionary, cols: Dictionary, lk: Dictionary) -> void:
+	var body := joint(c, Vector3(_p(p, "lean"), 0.45 + _p(p, "bob"), 0), Vector3(0, 0, -_p(p, "pitch") * 0.5))
+	ball(body, 0.48, Vector3.ZERO, cols["body"], Vector3(1.2, 0.85, 1.0))
+	ball(body, 0.35, Vector3(0.1, -0.15, 0), cols["second"], Vector3(1.2, 0.7, 1.1))
+	_legs4(body, p, cols, 0.34, 0.3, -0.2, 0.25, 0.09)
+	chain(body, Vector3(-0.5, 0.0, 0), Vector3(-1, -0.2, 0), 0.7, 60.0, 0.14, 0.04, cols["body"], 6)
+	var n: int = int(lk.get("heads", 3))
+	for i in n:
+		var z := (i - (n - 1) * 0.5) * 0.3
+		var sway := sin(_p(p, "spin") * TAU + i * 1.7) * 12.0
+		var neck := joint(body, Vector3(0.3, 0.25, z), Vector3(z * 60.0, 0, sway))
+		var tip := chain(neck, Vector3.ZERO, Vector3(0.4, 1.0, z * 1.2), 0.85 + (0.15 if i == n / 2 else 0.0), -60.0, 0.11, 0.08, cols["body"], 6)
+		var head := joint(neck, tip + Vector3(0.04, 0, 0), Vector3(0, 0, -_p(p, "head") - 15.0))
+		box(head, Vector3(0.28, 0.18, 0.2), Vector3(0.08, 0, 0), cols["body"], Vector3.ZERO, null, 0.07)
+		var jaw := joint(head, Vector3(0.05, -0.08, 0), Vector3(0, 0, -_p(p, "jaw") * 30.0))
+		box(jaw, Vector3(0.26, 0.05, 0.16), Vector3(0.12, 0, 0), cols["second"], Vector3.ZERO, null, 0.02)
+		for side: float in [-1.0, 1.0]:
+			side_eye(head, Vector3(0.1, 0.07, side * 0.09), 0.055, _p(p, "squint"), Color("2a1a08"))
+		cyl(head, 0.03, 0.0, 0.14, Vector3(-0.05, 0.12, 0), cols["accent"], Vector3(0, 0, 30), 6)
+
+
+## A kraken: a big dome with eyes and curling tentacles.
+func _plan_kraken(c: Node3D, p: Dictionary, cols: Dictionary) -> void:
+	var body := joint(c, Vector3(_p(p, "lean"), 0.65 + _p(p, "bob") * 1.5, 0), Vector3(0, 0, -_p(p, "pitch") * 0.6))
+	ball(body, 0.5, Vector3(-0.05, 0.25, 0), cols["body"], Vector3(1.0, 1.25, 1.0))
+	for i in 5:
+		ball(body, 0.06, Vector3(-0.25 + i * 0.06, 0.6 - abs(i - 2) * 0.05, 0.3), cols["accent"])
+	for side: float in [-1.0, 1.0]:
+		side_eye(body, Vector3(0.32, 0.15, side * 0.22), 0.14, _p(p, "squint"), Color("ffcf3a").darkened(0.6))
+	for i in 8:
+		var a := TAU * i / 8.0
+		var root := Vector3(cos(a) * 0.32, -0.15, sin(a) * 0.32)
+		var wave := sin(_p(p, "spin") * TAU + i) * 30.0
+		chain(body, root, Vector3(cos(a), -1.0, sin(a)), 0.8, 90.0 + wave, 0.08, 0.025, cols["body"] if i % 2 else cols["second"], 7)
+
+
+## An egg about to hatch: a spotted shell with eyes peeking through a crack.
+func _plan_egg(c: Node3D, p: Dictionary, cols: Dictionary) -> void:
+	var body := joint(c, Vector3(_p(p, "lean") * 0.3, 0.0, 0), Vector3(_p(p, "stride") * 0.3, 0, -_p(p, "pitch") * 0.8))
+	ball(body, 0.45, Vector3(0, 0.55 + _p(p, "bob") * 0.5, 0), cols["second"], Vector3(0.95, 1.25, 0.95))
+	for i in 7:
+		var a := float(i) * 2.3
+		ball(body, 0.09, Vector3(cos(a) * 0.36, 0.35 + (i % 3) * 0.22, sin(a) * 0.36 + 0.06), cols["body"], Vector3(1, 1, 0.3))
+	for i in 5:
+		box(body, Vector3(0.12, 0.03, 0.02), Vector3(0.32, 0.7 + (i % 2) * 0.04, -0.16 + i * 0.08), Color("2b2f3a"), Vector3(0, 70, 25 if i % 2 else -25), null, 0.0)
+	for side: float in [-1.0, 1.0]:
+		side_eye(body, Vector3(0.36, 0.62, side * 0.1), 0.06, _p(p, "squint"), Color("2a1a08"))
+	glow(body, 0.05, Vector3(0.38, 0.55, 0), cols["glow"], 2.0)
+
+
+## A phoenix: a bird of fire with a long trailing tail of flames.
+func _plan_phoenix(c: Node3D, p: Dictionary, cols: Dictionary) -> void:
+	_plan_bird(c, p, cols)
+	var body: Node3D = c.get_child(0) as Node3D
+	for i in 5:
+		var t := joint(body, Vector3(-0.4, 0.0, (i - 2) * 0.06), Vector3((i - 2) * 8.0, 0, -20.0 + _p(p, "tail") * 0.5))
+		var tip := chain(t, Vector3.ZERO, Vector3(-1, -0.2, 0), 0.9 + (0.2 if i == 2 else 0.0), 50.0, 0.05, 0.02, cols["accent"] if i % 2 else cols["body"], 6)
+		glow(t, 0.07, tip, cols["glow"], 3.5)
+	for i in 3:
+		cyl(body, 0.06, 0.0, 0.35, Vector3(-0.05 + i * 0.1, 0.42, 0), cols["accent"], Vector3(0, 0, -20 + i * 20), 8, gloss(cols["accent"], 1.5))
