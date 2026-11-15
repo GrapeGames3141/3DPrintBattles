@@ -250,3 +250,4 @@ swiftwhip
 sylph_queen
 tempest_dragon
 tempestlynx
+tornado_weasel
