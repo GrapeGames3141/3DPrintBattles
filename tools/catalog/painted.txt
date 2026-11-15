@@ -231,3 +231,4 @@ breezepup
 cloudhopper
 cyclone_serpent
 feather_duster_fox
+gantrymantis
