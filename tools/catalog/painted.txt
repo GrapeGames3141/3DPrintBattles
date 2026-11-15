@@ -133,3 +133,4 @@ basilisk
 bloom_druid
 bramblemaw
 gaia_engine
+grove_stag
