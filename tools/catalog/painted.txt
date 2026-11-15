@@ -77,3 +77,4 @@ thermochameleon
 torchbearer
 trihydra
 volcano_tortle
+avalanche_ox
