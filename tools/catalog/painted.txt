@@ -129,3 +129,4 @@ volt_ferret
 voltviper
 zapkit
 barkback
+basilisk
