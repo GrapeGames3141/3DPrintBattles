@@ -167,3 +167,4 @@ fp_right_rail
 purge_line_worm
 raft_crawler
 rainbow_unicorn
+stringing_slime
