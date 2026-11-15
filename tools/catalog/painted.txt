@@ -220,3 +220,4 @@ reefhopper
 resinjelly
 siphon_squid
 siphonshark
+spool_hydra
