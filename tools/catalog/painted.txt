@@ -177,3 +177,4 @@ cairncrab
 crag_ogre
 crystalscorp
 cutie
+cyclops
