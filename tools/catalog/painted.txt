@@ -173,3 +173,4 @@ tribute_titan
 basalt_colossus
 basaltbison
 boulder_beetle
+cairncrab
