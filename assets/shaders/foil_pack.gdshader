@@ -19,6 +19,7 @@ uniform sampler2D art : source_color, filter_linear_mipmap, repeat_disable;
 uniform vec4 art_region = vec4(0.0, 0.0, 1.0, 1.0);
 uniform float art_aspect = 1.0;
 uniform float art_fit = 0.92;
+uniform float art_raw = 0.0;   // 1 shows the figure as a raw, unpainted print
 uniform vec4 window = vec4(38.0, 92.0, 260.0, 260.0);
 
 uniform float tear = 0.0;
@@ -106,6 +107,10 @@ vec3 foil(vec2 q, float aa) {
 		vec2 a = rel / (window.w * art_fit * vec2(art_aspect, 1.0)) + 0.5;
 		if (a.x > 0.0 && a.x < 1.0 && a.y > 0.0 && a.y < 1.0) {
 			vec4 fig = texture(art, art_region.xy + a * art_region.zw);
+			if (art_raw > 0.5) {
+				float lum = dot(fig.rgb, vec3(0.299, 0.587, 0.114));
+				fig.rgb = vec3(0.97, 0.98, 1.0) * (0.35 + lum * 0.7) * (0.9 + 0.1 * step(0.5, fract(a.y * 60.0)));
+			}
 			back = mix(back, fig.rgb, fig.a);
 		}
 		float rim = smoothstep(5.0, 2.0, -sd);

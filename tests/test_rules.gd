@@ -112,8 +112,6 @@ func _catalog() -> void:
 	ok(GameData.collectible().size() == 438, "438 collectible cards (got %d)" % GameData.collectible().size())
 	for c in GameData.collectible():
 		ok(FileAccess.file_exists(GameData.art_path(c)) or ResourceLoader.exists(GameData.art_path(c)), "%s has art" % c["id"])
-		if c["type"] == "creature":
-			ok(ResourceLoader.exists(GameData.RAW % c["id"]) or FileAccess.file_exists(GameData.RAW % c["id"]), "%s has a raw print" % c["id"])
 	var by_rarity: Dictionary = {}
 	var by_type: Dictionary = {}
 	for c in GameData.collectible():

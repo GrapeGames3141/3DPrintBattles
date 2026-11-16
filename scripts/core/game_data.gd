@@ -68,7 +68,6 @@ const KEYWORDS := {
 }
 
 const SPRITE := "res://assets/creatures/2d/%s_sprite_sheet.png"
-const RAW := "res://assets/creatures/2d/raw/%s_raw_print.png"
 const TOOL_ART := "res://assets/tools/%s.png"
 const ARMOR_ART := "res://assets/armor/raw/%s_raw_print_alpha_v2.png"
 

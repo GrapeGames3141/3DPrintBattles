@@ -248,25 +248,20 @@ func _build_front(def: Dictionary) -> void:
 			bed.draw_circle(Vector2.ZERO, 96, body.darkened(0.2))
 			bed.draw_arc(Vector2.ZERO, 96, 0, TAU, 48, accent.darkened(0.2), 5.0, true))
 		var tex := UI.sprite(path, 0) if def["type"] == "creature" else UI.tex(path)
-		var raw_path: String = GameData.RAW % def["id"]
-		var show_raw: bool = raw and def["type"] == "creature" and ResourceLoader.exists(raw_path)
-		if show_raw:
-			tex = UI.tex(raw_path)
+		# A card you do not own shows its creature as a raw, unpainted print.
+		var show_raw: bool = raw and def["type"] == "creature"
 		var fig := TextureRect.new()
 		fig.texture = tex
 		fig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		fig.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		fig.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if show_raw:
-			fig.position = Vector2(36, -8)
-			fig.size = Vector2(196, 196)
-		elif def["type"] == "creature":
+		if def["type"] == "creature":
 			fig.position = Vector2(24, -14)
 			fig.size = Vector2(220, 212)
 		else:
 			fig.position = Vector2(44, 4)
 			fig.size = Vector2(180, 182)
-		fig.material = UI.paint_material(paint_id)
+		fig.material = UI.raw_material() if show_raw else UI.paint_material(paint_id)
 		art.add_child(fig)
 		if def["type"] == "creature" and not show_raw:
 			_fig = fig

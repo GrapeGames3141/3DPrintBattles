@@ -44,10 +44,8 @@ func _identity(r: Rect2) -> void:
 	var art := Profile.avatar_id()
 	var frame := UI.panel(_body, Rect2(x, y, 150, 150), UI.box(Color("0b1220"), col, 4, 18, 8))
 	if art != "":
-		var raw: String = GameData.RAW % art
-		if ResourceLoader.exists(raw):
-			var img := UI.image(raw, Rect2(8, 8, 134, 134), true)
-			frame.add_child(img)
+		if ResourceLoader.exists(GameData.SPRITE % art):
+			frame.add_child(UI.raw_figure(art, Rect2(8, 8, 134, 134)))
 	var name_l := UI.label(Profile.player_name(), 30, UI.CREAM, true, 5)
 	UI.place(_body, name_l, Vector2(x + 168, y + 4), Vector2(r.size.x - 200, 38))
 	var title_l := UI.label(Profile.title_name(), 20, UI.AMBER, false)
@@ -259,9 +257,8 @@ func _side(box: Control, at: Vector2, name: String, rating: int, art: String, pr
 	var col: Color = LEAGUE_COLORS[int(lg["index"])]
 	var frame := UI.panel(box, Rect2(at + Vector2(25, 0), Vector2(150, 150)), UI.box(Color("0b1220"), col, 4, 18, 8))
 	if art != "":
-		var raw: String = GameData.RAW % art
-		if ResourceLoader.exists(raw):
-			frame.add_child(UI.image(raw, Rect2(8, 8, 134, 134), true))
+		if ResourceLoader.exists(GameData.SPRITE % art):
+			frame.add_child(UI.raw_figure(art, Rect2(8, 8, 134, 134)))
 	var n := UI.label(name, 20, UI.CREAM, true, 4)
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UI.place(box, n, at + Vector2(-20, 156), Vector2(240, 28))

@@ -44,10 +44,11 @@ func _build(margin: float) -> void:
 	_mat.set_shader_parameter("tint_deep", Color(def["foil_deep"]))
 	_mat.set_shader_parameter("holo", float(def["holo"]))
 	_mat.set_shader_parameter("tear_y", TEAR_Y)
-	var path: String = (GameData.RAW if def["art_raw"] else GameData.SPRITE) % def["art"]
+	var path: String = GameData.SPRITE % def["art"]
 	var tex := UI.tex(path)
 	if tex != null:
-		var region := Vector4(0, 0, 1, 1) if def["art_raw"] else UI.sprite_region(path, 0)
+		var region := UI.sprite_region(path, 0)
+		_mat.set_shader_parameter("art_raw", 1.0 if def["art_raw"] else 0.0)
 		_mat.set_shader_parameter("art", tex)
 		_mat.set_shader_parameter("art_region", region)
 		_mat.set_shader_parameter("art_aspect", (tex.get_width() * region.z) / (tex.get_height() * region.w))

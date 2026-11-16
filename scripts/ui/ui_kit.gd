@@ -36,6 +36,25 @@ static func paint_material(paint_id: String) -> ShaderMaterial:
 	return _paints[paint_id]
 
 
+static var _raw_mat: ShaderMaterial
+
+
+## The material that shows painted art as a raw, unpainted print.
+static func raw_material() -> ShaderMaterial:
+	if _raw_mat == null:
+		_raw_mat = ShaderMaterial.new()
+		_raw_mat.shader = load("res://assets/shaders/raw_print.gdshader")
+	return _raw_mat
+
+
+## A creature's standing pose as a raw, unpainted print.
+static func raw_figure(id: String, rect: Rect2) -> TextureRect:
+	var t := image(GameData.SPRITE % id, rect)
+	t.texture = sprite(GameData.SPRITE % id, 0)
+	t.material = raw_material()
+	return t
+
+
 ## Applies a paint to a BoardUnit-style print_reveal material.
 static func paint_params(mat: ShaderMaterial, paint_id: String) -> void:
 	var p := GameData.paint(paint_id)
@@ -56,7 +75,7 @@ static func tex(path: String) -> Texture2D:
 	return _tex[path]
 
 
-## One 384x512 cell of a creature sheet (4 columns x 2 rows). Single images
+## One cell of a creature sheet (4 columns x 2 rows). Single images
 ## smaller than a sheet are returned whole.
 static func sprite(path: String, frame: int = 0) -> Texture2D:
 	var t := tex(path)

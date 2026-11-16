@@ -87,7 +87,7 @@ func run() -> void:
 	if want("shop"):
 		await go("shop")
 		await shot("shop")
-		app.current._open("standard")
+		app.current._open("basic")
 		await wait(0.9)
 		await shot("pack_sealed")
 		var op = app.current._opener

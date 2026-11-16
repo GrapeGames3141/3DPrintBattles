@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Brings painted creature art into the game in the same shape as the
-starters' (Cinderpaw, Aquafin, Voltwig): a 1536x1024 sheet of eight 384x512
-poses on a transparent background, plus a raw single-colour print.
+starters' (Cinderpaw, Aquafin, Voltwig): a 1152x768 sheet of eight 288x384
+poses on a transparent background. (The raw, unpainted look for cards you do
+not own is made from the sheet by a shader, so no second image is needed.)
 
 Drop images into art_inbox/ (kept out of Git), named by card id:
 
@@ -26,8 +27,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
 INBOX = os.path.join(ROOT, "art_inbox")
 OUT = os.path.join(ROOT, "assets", "creatures", "2d")
-CELL_W, CELL_H = 384, 512
-FIT_W, FIT_H, BASE = 352, 470, 500
+CELL_W, CELL_H = 288, 384
+FIT_W, FIT_H, BASE = 264, 352, 375
 
 
 def cut_background(img):
@@ -79,19 +80,6 @@ def build(cid):
         y = i // 4 * CELL_H + BASE - fig.height
         sheet.alpha_composite(fig, (x, y))
     sheet.save(os.path.join(OUT, cid + "_sprite_sheet.png"))
-    # The raw print: the standing pose in plain light filament with layer lines.
-    first = frames[0].crop(boxes[0])
-    k2 = min(470 / first.width, 470 / first.height)
-    first = first.resize((round(first.width * k2), round(first.height * k2)), Image.LANCZOS)
-    arr = np.array(first).astype(float)
-    lum = (arr[:, :, :3] @ np.array([0.299, 0.587, 0.114])) / 255.0
-    lines = 0.9 + 0.1 * (np.arange(arr.shape[0]) % 6 < 3)[:, None]
-    grey = np.clip((0.35 + lum * 0.7) * lines * 255.0, 0, 255)
-    raw = np.dstack([grey * 0.97, grey * 0.98, grey * 1.0, arr[:, :, 3]]).astype(np.uint8)
-    canvas = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
-    raw_img = Image.fromarray(raw)
-    canvas.alpha_composite(raw_img, ((512 - raw_img.width) // 2, 498 - raw_img.height))
-    canvas.save(os.path.join(OUT, "raw", cid + "_raw_print.png"))
     print("imported", cid)
     return True
 

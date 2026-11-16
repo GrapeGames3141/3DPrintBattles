@@ -99,8 +99,8 @@ the same creature and seed, and name them `<id>_0.png` to `<id>_7.png` in the or
   uv run --with numpy --with pillow python tools/import_creature_art.py
   ```
 
-  It removes the black background, lines the 8 poses up and writes the game's sprite sheet
-  and the raw (unpainted) version used for cards you don't own yet.
+  It removes the black background, lines the 8 poses up and writes the game's sprite sheet.
+  (The unpainted look for cards you don't own is made from the sheet in-game.)
 
 ## Files in this folder
 
