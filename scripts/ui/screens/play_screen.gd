@@ -167,6 +167,13 @@ func _versus_section(r: Rect2) -> void:
 	y += 48
 	UI.place(_body, UI.label("Over the network", 18, UI.CYAN), Vector2(x, y), Vector2(w, 26))
 	y += 30
+	if OS.has_feature("web"):
+		# A browser cannot open the direct connection a network game uses.
+		var note := UI.label("Network games need the downloaded game. In the browser, play Pass & Play with a friend instead.", 14, UI.MUTED, false)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.place(_body, note, Vector2(x, y), Vector2(w, 60))
+		return
 	var host := UI.button("Host a game", "primary", Vector2(w, 46), 18)
 	host.pressed.connect(_host)
 	UI.place(_body, host, Vector2(x, y))

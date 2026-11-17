@@ -100,6 +100,8 @@ func build() -> void:
 	var quit := UI.button("Quit", "plain", Vector2(76, 44), 17)
 	quit.pressed.connect(func(): get_tree().quit())
 	UI.place(self, quit, Vector2(W - 14 - 76, 12))
+	# A browser tab is closed by the player, not by the game.
+	quit.visible = not OS.has_feature("web")
 
 	if _popup_kind == "help":
 		_open_help()
