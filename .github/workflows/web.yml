@@ -1,0 +1,73 @@
+name: Web version
+
+# Builds the browser version of the game from main and publishes it on this
+# repository's GitHub Pages site. The HTML-Games arcade links to it, so the
+# game's files never have to be committed anywhere.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "art_brief/**"
+      - "docs/**"
+      - "tools/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only the newest build is published; an older one still running is dropped.
+concurrency:
+  group: web-pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.1"
+
+jobs:
+  build:
+    name: Build the web version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Godot and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      # Exported as index.html so the site opens straight into the game.
+      - name: Export Web
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          test -s build/web/index.pck
+          test -s build/web/index.wasm
+          ls -l build/web
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+          retention-days: 1
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
